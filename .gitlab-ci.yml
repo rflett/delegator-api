@@ -1,0 +1,29 @@
+stages:
+  - build
+  - deployStaging
+
+variables:
+  AMZ_REGISTRY: 292374005836.dkr.ecr.ap-southeast-2.amazonaws.com
+  AWS_DEFAULT_REGION: ap-southeast-2
+
+build:
+  stage: build
+  image: $AMZ_REGISTRY/docker:latest
+  tags:
+    - docker
+  script:
+    - eval $(aws ecr get-login --no-include-email)
+    # build, tag, and push commit
+    - docker build -t $AMZ_REGISTRY/api:CI_COMMIT_SHORT_SHA .
+    - docker push $AMZ_REGISTRY/api:CI_COMMIT_SHORT_SHA
+    # tag and push latest
+    - docker tag $AMZ_REGISTRY/api:CI_COMMIT_SHORT_SHA $AMZ_REGISTRY/api:latest
+    - docker push $AMZ_REGISTRY/api:latest
+
+deployStaging:
+  stage: deployStaging
+  image: $AMZ_REGISTRY/docker:latest
+  tags:
+    - docker
+  script:
+    - python deploy/deploy.py api staging
