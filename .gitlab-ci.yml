@@ -8,11 +8,15 @@ variables:
 
 build:
   stage: build
-  image: $AMZ_REGISTRY/docker:latest
+  image: docker:18.06
+  before_script:
+    - apk add python3 && python3 -m ensurepip && pip3 install aws
   tags:
     - docker
   script:
+    # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
+    # create image registry repo if not exists
     - aws ecr create-repository --repository-name api || true
     # build, tag, and push commit
     - docker build -t $AMZ_REGISTRY/api:CI_COMMIT_SHORT_SHA .
@@ -23,8 +27,11 @@ build:
 
 deployStaging:
   stage: deployStaging
-  image: $AMZ_REGISTRY/docker:latest
+  image: python:3.7-alpine
+  when: manual
   tags:
     - docker
+  before_script:
+    - pip install boto3
   script:
     - python deploy/deploy.py api staging
