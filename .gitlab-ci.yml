@@ -13,6 +13,7 @@ build:
     - docker
   script:
     - eval $(aws ecr get-login --no-include-email)
+    - aws ecr create-repository --repository-name api || true
     # build, tag, and push commit
     - docker build -t $AMZ_REGISTRY/api:CI_COMMIT_SHORT_SHA .
     - docker push $AMZ_REGISTRY/api:CI_COMMIT_SHORT_SHA
