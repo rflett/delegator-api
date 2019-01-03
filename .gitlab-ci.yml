@@ -8,7 +8,9 @@ variables:
 
 build:
   stage: build
-  image: docker:dind
+  image: docker
+  services:
+    - docker:dind
   before_script:
     - apk add python3 build-base
     - python3 -m ensurepip
