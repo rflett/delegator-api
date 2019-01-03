@@ -10,7 +10,10 @@ build:
   stage: build
   image: docker:18.06
   before_script:
-    - apk add python3 && python3 -m ensurepip && pip3 install aws
+    - apk add python3
+    - python3 -m ensurepip
+    - pip3 install --upgrade pip
+    - pip3 install aws
   tags:
     - docker
   script:
