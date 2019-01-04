@@ -27,11 +27,9 @@ build:
 
 deployStaging:
   stage: deployStaging
-  image: python:3.7-alpine
+  image: $GITLAB_REGISTRY/python:latest
   when: manual
   tags:
     - docker
-  before_script:
-    - pip install boto3
   script:
     - python deploy/deploy.py api staging
