@@ -23,9 +23,9 @@ tags = [
 register_res = ecs.register_task_definition(
     family=service_name,
     networkMode='bridge',
-    containerDefinitions=json.load('deploy/container_definitions.json'),
-    cpu=256,
-    memory=512,
+    containerDefinitions=json.load(open('deploy/container_definitions.json')),
+    cpu='256',
+    memory='256',
     tags=tags
 )
 
@@ -42,7 +42,6 @@ for _service in services.get('services'):
 # update or create service
 common_service_settings = {
     'cluster': environment,
-    'service': service_name,
     'desiredCount': 1,
     'taskDefinition': service_name,
     'deploymentConfiguration': {
@@ -53,11 +52,13 @@ common_service_settings = {
 if service_exists:
     ecs.update_service(
         **common_service_settings,
+        service=service_name,
         forceNewDeployment=True
     )
 else:
     ecs.create_service(
         **common_service_settings,
+        serviceName=service_name,
         clientToken=''.join(random.choices(string.ascii_uppercase + string.digits, k=20)),
         launchType='EC2',
         placementStrategy=[
@@ -69,6 +70,5 @@ else:
         schedulingStrategy='REPLICA',
         deploymentController={
             'type': 'ECS'
-        },
-        propagateTags='TASK_DEFINITION'
+        }
     )

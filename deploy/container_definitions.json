@@ -2,29 +2,15 @@
     {
         "name": "api",
         "image": "292374005836.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest",
-        "memory": "512",
-        "memoryReservation": "256",
+        "memory": 256,
+        "memoryReservation": 128,
         "essential": true,
         "portMappings": [
             {
-                "hostPort": "5000",
-                "containerPort": "5000",
+                "hostPort": 5000,
+                "containerPort": 5000,
                 "protocol": "tcp"
             }
-        ],
-        "environment": null,
-        "secrets": null,
-        "mountPoints": null,
-        "volumesFrom": null,
-        "hostname": null,
-        "user": null,
-        "workingDirectory": null,
-        "extraHosts": null,
-        "logConfiguration": null,
-        "ulimits": null,
-        "dockerLabels": null,
-        "repositoryCredentials": {
-            "credentialsParameter": ""
-        }
+        ]
     }
 ]
