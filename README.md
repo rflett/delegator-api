@@ -19,7 +19,7 @@ To run the api with hot reloading just run
 
 ``` pipenv run flask run --reload ``` 
 
-in the project root. Then visit or curl ``` localhost:5000 ```. The Flask server will update when files are changed.
+in the ``` src ``` folder. Then visit or curl ``` localhost:5000 ```. The Flask server will update when files are changed.
 
 ## Build and run container stack
 cd to the dev folder then
