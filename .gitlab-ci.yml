@@ -4,17 +4,13 @@ stages:
 
 variables:
   AMZ_REGISTRY: 292374005836.dkr.ecr.ap-southeast-2.amazonaws.com
-  AWS_DEFAULT_REGION: ap-southeast-2
+  GITLAB_REGISTRY: registry.gitlab.com/rflett/containers
 
 build:
   stage: build
-  image: docker
+  image: $GITLAB_REGISTRY/docker:latest
   services:
     - docker:dind
-  before_script:
-    - apk add python3 build-base
-    - python3 -m ensurepip
-    - pip3 install awscli
   tags:
     - docker
   script:
