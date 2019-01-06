@@ -13,3 +13,9 @@ services:
     ports:
       - 80:80
       - 443:443
+  postgres:
+    build:
+      context: postgres/
+      dockerfile: Dockerfile
+    ports:
+      - 5432:5432
