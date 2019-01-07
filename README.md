@@ -12,7 +12,7 @@ Local development setup steps
 2. Install [Docker](https://www.docker.com/get-started)
 3. Install pipenv ```pip install pipenv```
 
-Now that your environment is set up, run `pipenv install` in the project root to setup your virtualenv and requirements.
+Now that your environment is set up, run `pipenv install` in the src root to setup your virtualenv and requirements.
 
 ## Local development with hot reload
 To run the api with hot reloading just run
@@ -20,6 +20,9 @@ To run the api with hot reloading just run
 ``` pipenv run flask run --reload ``` 
 
 in the ``` src ``` folder. Then visit or curl ``` localhost:5000 ```. The Flask server will update when files are changed.
+
+### Testing
+To run pytest, cd to the ``` src ``` folder and run ``` python -m pytest ```.
 
 ## Build and run container stack
 cd to the dev folder then
