@@ -10,6 +10,8 @@ flask = "*"
 flake8 = "*"
 gunicorn = "*"
 pytest = "*"
+pip = "*"
+pyjwt = "*"
 
 [requires]
 python_version = "3.7"

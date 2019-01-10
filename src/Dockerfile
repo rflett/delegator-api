@@ -1,9 +1,10 @@
 FROM python:3.7-alpine
 
-ENV FLASK_APP api.py
+ENV FLASK_APP=api.py
+ENV APP_ENV=Local
 
 RUN mkdir /api
-COPY api.py Pipfile /api/
+COPY api.py Pipfile config.py /api/
 COPY app /api/app
 WORKDIR /api
 

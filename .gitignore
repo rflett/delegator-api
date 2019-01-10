@@ -1,3 +1,4 @@
 .idea/
 src/.pytest_cache
 tests/__pycache__
+src/app/__pycache__

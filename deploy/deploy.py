@@ -55,7 +55,7 @@ if __name__ == '__main__':
         'taskDefinition': args.service_name,
         'deploymentConfiguration': {
             'maximumPercent': 200,
-            'minimumHealthyPercent': 50
+            'minimumHealthyPercent': 0
         }
     }
 
