@@ -12,6 +12,9 @@ gunicorn = "*"
 pytest = "*"
 pip = "*"
 pyjwt = "*"
+sqlalchemy = "*"
+psycopg = "*"
+psycopg2 = "*"
 
 [requires]
 python_version = "3.7"

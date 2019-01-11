@@ -1,7 +1,7 @@
 import json
 from app import app
 from flask import Response, request
-from app.Controllers import JWTController
+from app.Controllers import JWTController, UserController
 
 
 @app.route('/')
@@ -17,19 +17,15 @@ def health():
 @app.route('/login', methods=['POST'])
 def login():
     req = request.get_json()
-    user = req.get('user')
-    password = req.get('password')
-    if user == 'user' and password == 'password':
-        encoded = JWTController.get_jwt({'extra': 'payload'})
-        return Response(
-            "Welcome!",
-            status=200,
-            headers={
-                "auth": encoded
-            }
-        )
-    else:
-        return Response("Missing auth", status=403)
+    logged_in_user = UserController.get_user(req.get('username'), req.get('password'))
+
+    return Response(
+        "Welcome!",
+        status=200,
+        headers={
+            "auth": JWTController.get_jwt(logged_in_user)
+        }
+    )
 
 
 @app.route('/secret', methods=['GET'])
