@@ -1,5 +1,5 @@
 stages:
-  - test
+  - unitTest
   - build
   - deployStaging
 
@@ -7,8 +7,8 @@ variables:
   AMZ_REGISTRY: 292374005836.dkr.ecr.ap-southeast-2.amazonaws.com
   GITLAB_REGISTRY: registry.gitlab.com/rflett/containers
 
-unitTests:
-  stage: test
+unitTest:
+  stage: unitTest
   image: $GITLAB_REGISTRY/python:latest
   script:
     - cd src/
@@ -17,6 +17,7 @@ unitTests:
 build:
   stage: build
   image: $GITLAB_REGISTRY/docker:latest
+  when: manual
   services:
     - docker:dind
   tags:
