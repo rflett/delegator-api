@@ -1,4 +1,4 @@
-from app.Controllers import DBBase
+from app import DBBase
 from sqlalchemy import Column, String
 
 

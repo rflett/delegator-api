@@ -1,5 +1,5 @@
+from app import DBSession
 from app.Models import User
-from app.Controllers import DBSession
 
 session = DBSession()
 
