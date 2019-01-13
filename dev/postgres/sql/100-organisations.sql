@@ -1,7 +1,7 @@
 create table organisations
 (
 	id serial not null,
-	name int not null
+	name varchar not null
 );
 
 create unique index organisations_id_uindex

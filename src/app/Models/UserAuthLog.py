@@ -1,0 +1,26 @@
+from app import DBBase
+from sqlalchemy import Column, Integer, String, DateTime
+
+
+class UserAuthLog(DBBase):
+    __tablename__ = "user_auth_log"
+
+    id = Column('id', Integer())
+    org_id = Column('org_id', Integer())
+    user_id = Column('user_id', Integer())
+    action = Column('action', String())
+    created_at = Column('created_at', DateTime())
+
+    def __init__(
+        self,
+        id: int,
+        org_id: int,
+        user_id: int,
+        action: str,
+        created_at: int
+    ):
+        self.id = id
+        self.org_id = org_id
+        self.user_id = user_id
+        self.action = action
+        self.created_at = created_at
