@@ -13,6 +13,5 @@ class Organisation(DBBase):
 
     def as_dict(self):
         return {
-            "id": self.id,
             "name": self.name
         }
