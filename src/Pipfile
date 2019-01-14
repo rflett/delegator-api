@@ -13,7 +13,6 @@ pytest = "*"
 pip = "*"
 pyjwt = "*"
 sqlalchemy = "*"
-psycopg = "*"
 psycopg2 = "*"
 
 [requires]
