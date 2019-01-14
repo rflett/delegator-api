@@ -1,38 +1,28 @@
 import json
 from app import app
-from flask import Response, request
-from app.Controllers import JWTController, UserController
+from flask import Response
+from app.Controllers import UserController, OrganisationController
+from app.Models.Enums import UserRole
 
 
 @app.route('/')
 def index():
-    return "Hello World!"
+    OrganisationController.create_org("new_org")
+    org = OrganisationController.get_org_by_name("new_org")
+
+    UserController.create_user(
+        org_id=org.id,
+        username="fletty",
+        email="ryan.flett1@gmail.com",
+        first_name="Ryan",
+        last_name="Flett",
+        password="supersecretpassword",
+        role=UserRole.ADMIN
+    )
+    user = UserController.get_user_by_username('fletty')
+    return json.dumps(user.as_dict())
 
 
 @app.route('/health')
 def health():
     return Response(status=200)
-
-
-@app.route('/login', methods=['POST'])
-def login():
-    req = request.get_json()
-    logged_in_user = UserController.get_user(req.get('username'), req.get('password'))
-
-    return Response(
-        "Welcome!",
-        status=200,
-        headers={
-            "auth": JWTController.get_jwt(logged_in_user)
-        }
-    )
-
-
-@app.route('/secret', methods=['GET'])
-def secret():
-    token = request.headers.get('auth')
-    if token is None:
-        return Response("Nope", status=403)
-    else:
-        decoded = JWTController.validate(token)
-        return Response(json.dumps(decoded), status=200)

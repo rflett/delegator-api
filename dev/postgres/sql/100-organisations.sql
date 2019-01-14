@@ -1,13 +1,10 @@
 create table organisations
 (
-	id serial not null,
+	id serial not null
+		constraint organisations_pk
+			primary key,
 	name varchar not null
 );
 
-create unique index organisations_id_uindex
-	on organisations (id);
-
-alter table organisations
-	add constraint organisations_pk
-		primary key (id);
-
+create unique index organisations_name_uindex
+	on organisations (name);

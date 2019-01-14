@@ -1,18 +1,18 @@
 version: '3.7'
 services:
-  api:
-    build:
-      context: ../src
-      dockerfile: Dockerfile
-    ports:
-      - 5000:5000
-  nginx:
-    build:
-      context: nginx/
-      dockerfile: Dockerfile
-    ports:
-      - 80:80
-      - 443:443
+  # api:
+  #   build:
+  #     context: ../src
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - 5000:5000
+  # nginx:
+  #   build:
+  #     context: nginx/
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - 80:80
+  #     - 443:443
   postgres:
     build:
       context: postgres/
