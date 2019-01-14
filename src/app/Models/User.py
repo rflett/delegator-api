@@ -1,6 +1,5 @@
 import datetime
 from app import DBBase
-from app.Models.Enums import UserRole
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -27,7 +26,7 @@ class User(DBBase):
             first_name: str,
             last_name: str,
             password: str,
-            role: UserRole
+            role: str
     ):
         self.org_id = org_id
         self.username = username
