@@ -12,6 +12,7 @@ unitTest:
   image: $GITLAB_REGISTRY/python:latest
   script:
     - cd src/
+    - pipenv install
     - pipenv run python -m pytest
 
 build:
