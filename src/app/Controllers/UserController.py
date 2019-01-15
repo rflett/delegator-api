@@ -38,4 +38,3 @@ class UserController(object):
             return session.query(User).filter(User.email == email).first()
         else:
             raise ValueError(f"User with email {email} does not exist.")
-

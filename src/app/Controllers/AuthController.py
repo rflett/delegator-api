@@ -23,15 +23,7 @@ def _get_jwt(payload: typing.Union[dict, None] = None) -> str:
     ).decode("utf-8")
 
 
-def validate_jwt(token: str) -> typing.Union[dict, bool]:
-    """ Returns the JWT payload if decode is successful, otherwise returns False """
-    try:
-        return jwt.decode(jwt=token, key=app.config['JWT_SECRET'], algorithms='HS256')
-    except Exception as e:
-        return False
-
-
-def invalidate_jwt(token: str) -> None:
+def _invalidate_jwt(token: str) -> None:
     raise NotImplementedError
 
 
@@ -45,14 +37,14 @@ class AuthController(object):
         password = req.get('password', None)
 
         # validate email
-        email_validate = ValidationController.validate_email(email)
-        if isinstance(email_validate, Response):
-            return email_validate
+        email_validate_res = ValidationController.validate_email(email)
+        if isinstance(email_validate_res, Response):
+            return email_validate_res
 
         # validate password
-        password_validate = ValidationController.validate_password(password)
-        if isinstance(password_validate, Response):
-            return password_validate
+        password_validate_res = ValidationController.validate_password(password)
+        if isinstance(password_validate_res, Response):
+            return password_validate_res
 
         # get user
         try:
@@ -73,3 +65,29 @@ class AuthController(object):
                 "Password incorrect.",
                 status=403
             )
+
+    @staticmethod
+    def validate_jwt(token: str) -> bool:
+        """ Returns the JWT payload if decode is successful, otherwise returns False """
+        try:
+            jwt.decode(jwt=token, key=app.config['JWT_SECRET'], algorithms='HS256')
+            return True
+        except Exception as e:
+            # _invalidate_jwt(token)
+            return False
+
+    @staticmethod
+    def check_authorization_header(auth: str) -> typing.Union[bool, Response]:
+        from app.Controllers import AuthController
+
+        def unauthenticated(message: str) -> Response:
+            return Response(message, status=403)
+
+        if auth is None:
+            return unauthenticated("Missing Authorization header.")
+        elif not isinstance(auth, str):
+            return unauthenticated(f"Expected Authorization header type int got {type(auth)}.")
+        elif not AuthController.validate_jwt(auth.replace('Bearer ', '')):
+            return unauthenticated("Invalid token.")
+
+        return True
