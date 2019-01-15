@@ -1,4 +1,5 @@
 import datetime
+import typing
 from app import DBBase
 from app.Models import Organisation
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
@@ -14,6 +15,7 @@ class UserAuthLog(DBBase):
     user_id = Column('user_id', Integer(), ForeignKey('users.id'))
     user = relationship("User")
     action = Column('action', String())
+    action_detail = Column('action_detail', String(), default=None)
     created_at = Column('created_at', DateTime(), default=datetime.datetime.utcnow)
 
     def __init__(
@@ -21,7 +23,9 @@ class UserAuthLog(DBBase):
         org_id: int,
         user_id: int,
         action: str,
+        action_detail: typing.Optional[str] = None
     ):
         self.org_id = org_id
         self.user_id = user_id
         self.action = action
+        self.action_detail = action_detail

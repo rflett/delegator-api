@@ -1,6 +1,8 @@
 import jwt
 import typing
 from app import app
+from app.Controllers.LogControllers import UserAuthLogController
+from app.Models.Enums import UserAuthLogAction
 from flask import Response
 
 
@@ -54,6 +56,10 @@ class AuthController(object):
 
         # TODO actually encrypt password
         if user.password == password:
+            UserAuthLogController.log(
+                user=user,
+                action=UserAuthLogAction.LOGIN
+            )
             return Response(
                 "Welcome.",
                 headers={

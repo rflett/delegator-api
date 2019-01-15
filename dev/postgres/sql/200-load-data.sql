@@ -1,4 +1,4 @@
-insert into organsations values ('etemt');
+insert into organisations (name) values ('etemt');
 
 insert into users (
     org_id,
