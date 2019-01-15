@@ -1,6 +1,7 @@
 from app import DBSession
 from app.Models import User
 from app.Models.Enums import UserRole
+from sqlalchemy import exists
 
 session = DBSession()
 
@@ -30,11 +31,11 @@ class UserController(object):
         session.commit()
 
     @staticmethod
-    def get_user_by_username(username: str) -> User:
-        """ Gets a user by username """
-        return session.query(User).filter(User.username == username).first()
-
-    @staticmethod
     def get_user_by_email(email: str) -> User:
         """ Gets a user by username """
-        return session.query(User).filter(User.email == email).first()
+        user_exists = session.query(exists().where(User.email == email)).scalar()
+        if user_exists:
+            return session.query(User).filter(User.email == email).first()
+        else:
+            raise ValueError(f"User with email {email} does not exist.")
+

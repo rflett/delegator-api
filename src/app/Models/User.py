@@ -36,6 +36,16 @@ class User(DBBase):
         self.password = password
         self.role = role
 
+    def claims(self) -> dict:
+        """ Returns claims for JWT """
+        return {
+            "claims": {
+                "role": self.role,
+                "org": self.org_id,
+                "username": self.username
+            }
+        }
+
     def as_dict(self) -> dict:
         """ Returns dict repr of User """
         return {
