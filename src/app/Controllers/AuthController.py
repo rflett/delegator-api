@@ -12,6 +12,10 @@ _common_payload = {
 }
 
 
+def _unauthenticated(message: str) -> Response:
+    return Response(message, status=403)
+
+
 def _get_jwt(user: User) -> str:
     """ Returns an encoded JWT token """
     payload = user.claims()
@@ -28,11 +32,19 @@ def _get_jwt(user: User) -> str:
     ).decode("utf-8")
 
 
-def _invalidate_jwt(token: str) -> None:
-    raise NotImplementedError
-
-
 class AuthController(object):
+    def invalidate_jwt(self, token: str = None, payload: dict = None) -> None:
+        from app.Controllers import BlacklistedTokenController
+        if token is not None:
+            from app.Controllers import AuthController
+            payload = AuthController.validate_jwt(token.replace('Bearer ', ''))
+            self.invalidate_jwt(payload=payload)
+        elif payload is not None:
+            if payload.get('jti') is None:
+                pass
+            blacklist_id = f"{payload.get('aud')}:{payload.get('jti')}"
+            BlacklistedTokenController.blacklist_token(blacklist_id)
+
     @staticmethod
     def login(req: dict) -> Response:
         """ Login """
@@ -76,35 +88,51 @@ class AuthController(object):
             )
 
     @staticmethod
-    def validate_jwt(token: str) -> bool:
-        """ Returns the JWT payload if decode is successful, otherwise returns False """
+    def logout(headers: dict) -> Response:
+        """ Logout """
+        from app.Controllers import AuthController
+        auth = headers.get('Authorization', None)
+        payload = AuthController.validate_jwt(auth.replace('Bearer ', ''))
+        if payload is False:
+            return _unauthenticated('Invalid token.')
+        else:
+            AuthController().invalidate_jwt(payload=payload)
+            return Response('Logged out')
+
+    @staticmethod
+    def validate_jwt(token: str) -> typing.Union[bool, dict]:
+        """ Returns the payload if decode is successful, otherwise returns False """
+        from app.Controllers import BlacklistedTokenController
         try:
             suspect_jwt = jwt.decode(jwt=token, algorithms='HS256', verify=False)
+
+            # check if aud:jti is blacklisted
+            blacklist_id = f"{suspect_jwt.get('aud')}:{suspect_jwt.get('jti')}"
+            if BlacklistedTokenController.is_token_blacklisted(blacklist_id):
+                return False
+
+            # check username exists, is valid
             username = suspect_jwt.get('claims').get('username')
             if username is not None:
                 from app.Controllers import UserController
                 user = UserController.get_user_by_username(username)
-                jwt.decode(jwt=token, key=user.get_jwt_secret(), algorithms='HS256')
-                return True
+                return jwt.decode(jwt=token, key=user.get_jwt_secret(), audience=user.get_aud(), algorithms='HS256')
             else:
-                # _invalidate_jwt(token)
+                AuthController().invalidate_jwt(token=token)
                 return False
         except Exception as e:
-            # _invalidate_jwt(token)
+            AuthController().invalidate_jwt(token=token)
             return False
 
     @staticmethod
     def check_authorization_header(auth: str) -> typing.Union[bool, Response]:
         from app.Controllers import AuthController
 
-        def unauthenticated(message: str) -> Response:
-            return Response(message, status=403)
-
         if auth is None:
-            return unauthenticated("Missing Authorization header.")
+            return _unauthenticated("Missing Authorization header.")
         elif not isinstance(auth, str):
-            return unauthenticated(f"Expected Authorization header type str got {type(auth)}.")
-        elif not AuthController.validate_jwt(auth.replace('Bearer ', '')):
-            return unauthenticated("Invalid token.")
+            return _unauthenticated(f"Expected Authorization header type str got {type(auth)}.")
+        elif AuthController.validate_jwt(auth.replace('Bearer ', '')) is False:
+            return _unauthenticated("Invalid token.")
 
         return True

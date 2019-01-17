@@ -21,6 +21,12 @@ def login():
     return AuthController.login(request.get_json())
 
 
+@app.route('/logout', methods=['POST'])
+@requires_jwt
+def logout():
+    return AuthController.logout(request.headers)
+
+
 @app.route('/health', methods=['GET'])
 def health():
     return Response(status=200)

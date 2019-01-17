@@ -44,6 +44,6 @@ class UserController(object):
         """ Gets a user by username """
         user_exists = session.query(exists().where(User.username == username)).scalar()
         if user_exists:
-            return session.query(User).filter(User.email == username).first()
+            return session.query(User).filter(User.username == username).first()
         else:
             raise ValueError(f"User with username {username} does not exist.")
