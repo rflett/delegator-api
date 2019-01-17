@@ -17,7 +17,7 @@ def requires_jwt(f):
 
 
 @app.route('/login', methods=['POST'])
-def index():
+def login():
     return AuthController.login(request.get_json())
 
 

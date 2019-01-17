@@ -1,7 +1,18 @@
+import binascii
 import datetime
+import hashlib
+import os
 from app import DBBase
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
+
+
+def _hash_password(password: str) -> str:
+    """ Hash a password for storing. See https://www.vitoshacademy.com/hashing-passwords-in-python/"""
+    salt = hashlib.sha256(os.urandom(60)).hexdigest().encode('ascii')
+    pwdhash = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), salt, 100000)
+    pwdhash = binascii.hexlify(pwdhash)
+    return (salt + pwdhash).decode('ascii')
 
 
 class User(DBBase):
@@ -33,12 +44,39 @@ class User(DBBase):
         self.email = email
         self.first_name = first_name
         self.last_name = last_name
-        self.password = password
+        self.password = _hash_password(password)
         self.role = role
+
+    def check_password(self, password: str) -> bool:
+        """ Checks the provided password against the stored password """
+        print(f"SUPPLIED PASSWORD: {password}")
+        salt = self.password[:64]
+        stored_password = self.password[64:]
+        pwdhash = hashlib.pbkdf2_hmac('sha512',
+                                      password.encode('utf-8'),
+                                      salt.encode('ascii'),
+                                      100000)
+        pwdhash = binascii.hexlify(pwdhash).decode('ascii')
+        print(f"STORED PASSWORD: {stored_password}")
+        print(f"HASHED SUPPLIED PASSWORD: {pwdhash}")
+        return pwdhash == stored_password
+
+    def get_jwt_secret(self):
+        """ Gets the JWT secret for this users organisation """
+        from app.Controllers import OrganisationController
+        user_org = OrganisationController.get_org_by_id(self.org_id)
+        return user_org.jwt_secret
+
+    def get_aud(self):
+        """ Gets the JWT aud for this users organisation """
+        from app.Controllers import OrganisationController
+        user_org = OrganisationController.get_org_by_id(self.org_id)
+        return user_org.jwt_aud
 
     def claims(self) -> dict:
         """ Returns claims for JWT """
         return {
+            "aud": self.get_aud(),
             "claims": {
                 "role": self.role,
                 "org": self.org_id,

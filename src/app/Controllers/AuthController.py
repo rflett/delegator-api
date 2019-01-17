@@ -1,18 +1,21 @@
 import jwt
+import uuid
 import typing
-from app import app
 from app.Controllers.LogControllers import UserAuthLogController
+from app.Models import User
 from app.Models.Enums import UserAuthLogAction
 from flask import Response
 
 
 _common_payload = {
-    "common": "payload"
+    "jti": str(uuid.uuid4())
 }
 
 
-def _get_jwt(payload: typing.Union[dict, None] = None) -> str:
+def _get_jwt(user: User) -> str:
     """ Returns an encoded JWT token """
+    payload = user.claims()
+    jwt_secret = user.get_jwt_secret()
     if payload is None:
         payload = {}
     return jwt.encode(
@@ -20,7 +23,7 @@ def _get_jwt(payload: typing.Union[dict, None] = None) -> str:
             **_common_payload,
             **payload
         },
-        key=app.config['JWT_SECRET'],
+        key=jwt_secret,
         algorithm='HS256'
     ).decode("utf-8")
 
@@ -54,8 +57,8 @@ class AuthController(object):
         except ValueError:
             return Response("User does not exist", 400)
 
-        # TODO actually encrypt password
-        if user.password == password:
+        # check password
+        if user.check_password(password):
             UserAuthLogController.log(
                 user=user,
                 action=UserAuthLogAction.LOGIN
@@ -63,7 +66,7 @@ class AuthController(object):
             return Response(
                 "Welcome.",
                 headers={
-                    'Authorization': f"Bearer {_get_jwt(user.claims())}"
+                    'Authorization': f"Bearer {_get_jwt(user)}"
                 }
             )
         else:
@@ -76,8 +79,16 @@ class AuthController(object):
     def validate_jwt(token: str) -> bool:
         """ Returns the JWT payload if decode is successful, otherwise returns False """
         try:
-            jwt.decode(jwt=token, key=app.config['JWT_SECRET'], algorithms='HS256')
-            return True
+            suspect_jwt = jwt.decode(jwt=token, algorithms='HS256', verify=False)
+            username = suspect_jwt.get('claims').get('username')
+            if username is not None:
+                from app.Controllers import UserController
+                user = UserController.get_user_by_username(username)
+                jwt.decode(jwt=token, key=user.get_jwt_secret(), algorithms='HS256')
+                return True
+            else:
+                # _invalidate_jwt(token)
+                return False
         except Exception as e:
             # _invalidate_jwt(token)
             return False
@@ -92,7 +103,7 @@ class AuthController(object):
         if auth is None:
             return unauthenticated("Missing Authorization header.")
         elif not isinstance(auth, str):
-            return unauthenticated(f"Expected Authorization header type int got {type(auth)}.")
+            return unauthenticated(f"Expected Authorization header type str got {type(auth)}.")
         elif not AuthController.validate_jwt(auth.replace('Bearer ', '')):
             return unauthenticated("Invalid token.")
 

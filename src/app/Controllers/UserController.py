@@ -38,3 +38,12 @@ class UserController(object):
             return session.query(User).filter(User.email == email).first()
         else:
             raise ValueError(f"User with email {email} does not exist.")
+
+    @staticmethod
+    def get_user_by_username(username: str) -> User:
+        """ Gets a user by username """
+        user_exists = session.query(exists().where(User.username == username)).scalar()
+        if user_exists:
+            return session.query(User).filter(User.email == username).first()
+        else:
+            raise ValueError(f"User with username {username} does not exist.")
