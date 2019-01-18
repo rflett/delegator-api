@@ -16,6 +16,11 @@ def requires_jwt(f):
     return decorated
 
 
+@app.route('/health', methods=['GET'])
+def health():
+    return Response(status=200)
+
+
 @app.route('/login', methods=['POST'])
 def login():
     return AuthController.login(request.get_json())
@@ -25,11 +30,6 @@ def login():
 @requires_jwt
 def logout():
     return AuthController.logout(request.headers)
-
-
-@app.route('/health', methods=['GET'])
-def health():
-    return Response(status=200)
 
 
 @app.route('/secret', methods=['GET'])

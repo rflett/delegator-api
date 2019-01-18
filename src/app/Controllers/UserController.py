@@ -1,6 +1,5 @@
 from app import DBSession
 from app.Models import User
-from app.Models.Enums import UserRole
 from sqlalchemy import exists
 
 session = DBSession()
@@ -15,7 +14,7 @@ class UserController(object):
             first_name: str,
             last_name: str,
             password: str,
-            role: UserRole
+            role: int
     ) -> None:
         """ Creates a user """
         user = User(

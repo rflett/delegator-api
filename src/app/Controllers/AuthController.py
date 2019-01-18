@@ -15,10 +15,9 @@ def _unauthenticated(message: str) -> Response:
     return Response(message, status=403)
 
 
-def _get_jwt(user: User) -> str:
+def _generate_jwt_token(user: User) -> str:
     """ Returns an encoded JWT token """
     payload = user.claims()
-    jwt_secret = user.jwt_secret
     if payload is None:
         payload = {}
     return jwt.encode(
@@ -27,7 +26,7 @@ def _get_jwt(user: User) -> str:
             "jti": str(uuid.uuid4()),
             "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=TOKEN_TTL_IN_MINUTES)
         },
-        key=jwt_secret,
+        key=user.jwt_secret,
         algorithm='HS256'
     ).decode("utf-8")
 
@@ -35,7 +34,7 @@ def _get_jwt(user: User) -> str:
 class AuthController(object):
     @staticmethod
     def login(req: dict) -> Response:
-        """ Login """
+        """ Login, returns a bearer token on successful login. """
         from app.Controllers import ValidationController, UserController
 
         email = req.get('email')
@@ -66,7 +65,7 @@ class AuthController(object):
             return Response(
                 "Welcome.",
                 headers={
-                    'Authorization': f"Bearer {_get_jwt(user)}"
+                    'Authorization': f"Bearer {_generate_jwt_token(user)}"
                 }
             )
         else:
@@ -77,7 +76,7 @@ class AuthController(object):
 
     @staticmethod
     def logout(headers: dict) -> Response:
-        """ Logout """
+        """ Logs out, invalidates JWT token. """
         from app.Controllers import AuthController, UserController
         from app.Controllers.LogControllers import UserAuthLogController
 
@@ -94,7 +93,7 @@ class AuthController(object):
 
     @staticmethod
     def validate_jwt(token: str) -> typing.Union[bool, dict]:
-        """ Returns the payload if decode is successful, otherwise returns False """
+        """ Returns the payload if decode and verification is successful, otherwise returns False """
         from app.Controllers import BlacklistedTokenController
         try:
             suspect_jwt = jwt.decode(jwt=token, algorithms='HS256', verify=False)
@@ -120,6 +119,7 @@ class AuthController(object):
 
     @staticmethod
     def invalidate_jwt_token(token: str) -> None:
+        """ Blacklists a JWT token """
         from app.Controllers import BlacklistedTokenController, AuthController
         payload = AuthController.validate_jwt(token.replace('Bearer ', ''))
         if payload.get('jti') is None:
@@ -129,13 +129,17 @@ class AuthController(object):
 
     @staticmethod
     def check_authorization_header(auth: str) -> typing.Union[bool, Response]:
-        from app.Controllers import AuthController
+        """ Checks to make sure there is a JWT token in the Bearer token. Does not validate it. """
 
         if auth is None:
             return _unauthenticated("Missing Authorization header.")
         elif not isinstance(auth, str):
             return _unauthenticated(f"Expected Authorization header type str got {type(auth)}.")
-        elif AuthController.validate_jwt(auth.replace('Bearer ', '')) is False:
+
+        try:
+            token = auth.replace('Bearer ', '')
+            jwt.decode(jwt=token, algorithms='HS256', verify=False)
+        except Exception as e:
             return _unauthenticated("Invalid token.")
 
         return True

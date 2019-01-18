@@ -1,4 +1,3 @@
-import typing
 from app import DBSession
 from app.Models import BlacklistedToken
 from sqlalchemy import exists
@@ -6,20 +5,22 @@ from sqlalchemy import exists
 session = DBSession()
 
 
-def id_exists(id: str) -> bool:
-    return session.query(exists().where(BlacklistedToken.id == id)).scalar()
+def id_exists(blacklist_id: str) -> bool:
+    """ Checks database to see if token is blacklisted. """
+    return session.query(exists().where(BlacklistedToken.id == blacklist_id)).scalar()
 
 
 class BlacklistedTokenController(object):
 
     @staticmethod
-    def is_token_blacklisted(id: str) -> bool:
-        return id_exists(id)
+    def is_token_blacklisted(blacklist_id: str) -> bool:
+        """ Checks to see if a token is blacklisted. """
+        return id_exists(blacklist_id)
 
     @staticmethod
-    def blacklist_token(id: str, exp: int):
-        """ Blacklist token if it isn't already blacklisted"""
-        if not id_exists(id):
-            token = BlacklistedToken(id, exp)
+    def blacklist_token(blacklist_id: str, exp: int):
+        """ Blacklist token if it isn't already blacklisted. """
+        if not id_exists(blacklist_id):
+            token = BlacklistedToken(blacklist_id, exp)
             session.add(token)
             session.commit()

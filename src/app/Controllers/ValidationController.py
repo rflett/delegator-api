@@ -4,6 +4,7 @@ from flask import Response
 
 
 def _check_password_reqs(password: str) -> typing.Union[str, bool]:
+    """ Ensures password meets requirements. """
     min_length = 6
     min_special_chars = 1
     min_caps = 1
@@ -33,4 +34,7 @@ class ValidationController(object):
         """ Validates a password """
         if not isinstance(password, str):
             return Response(f"Bad email expected str got {type(password)}", 400)
+        # password_check = _check_password_reqs(password)
+        # if isinstance(password_check, str):
+        #     return Response(password_check, 400)
         return None

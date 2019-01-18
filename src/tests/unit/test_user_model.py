@@ -1,5 +1,4 @@
 from app.Models import User
-from app.Models.Enums import UserRole
 
 
 def test_user_as_dict():
@@ -9,8 +8,7 @@ def test_user_as_dict():
         email='ryan@flett.com',
         first_name='ryan',
         last_name='flett',
-        password='password',
-        role=UserRole.ADMIN
+        password='password'
     )
     expected = {
         'org_id': 1,
@@ -18,8 +16,7 @@ def test_user_as_dict():
         'email': 'ryan@flett.com',
         'first_name': 'ryan',
         'last_name': 'flett',
-        'password': 'password',
-        'role': 'admin'
+        'password': 'password'
     }
     actual = user.as_dict()
     assert expected == actual
