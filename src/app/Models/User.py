@@ -26,7 +26,7 @@ class User(DBBase):
     first_name = Column('first_name', String())
     last_name = Column('last_name', String())
     password = Column('password', String())
-    role = Column('role', String())
+    role = Column('role', Integer())
     created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
 
     def __init__(
@@ -37,7 +37,7 @@ class User(DBBase):
             first_name: str,
             last_name: str,
             password: str,
-            role: str
+            role: int
     ):
         self.org_id = org_id
         self.username = username
