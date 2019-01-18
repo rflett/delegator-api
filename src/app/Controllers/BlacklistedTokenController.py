@@ -17,9 +17,9 @@ class BlacklistedTokenController(object):
         return id_exists(id)
 
     @staticmethod
-    def blacklist_token(id: str):
+    def blacklist_token(id: str, exp: int):
         """ Blacklist token if it isn't already blacklisted"""
         if not id_exists(id):
-            token = BlacklistedToken(id)
+            token = BlacklistedToken(id, exp)
             session.add(token)
             session.commit()

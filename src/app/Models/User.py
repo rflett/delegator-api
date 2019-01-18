@@ -49,7 +49,6 @@ class User(DBBase):
 
     def check_password(self, password: str) -> bool:
         """ Checks the provided password against the stored password """
-        print(f"SUPPLIED PASSWORD: {password}")
         salt = self.password[:64]
         stored_password = self.password[64:]
         pwdhash = hashlib.pbkdf2_hmac('sha512',
@@ -57,8 +56,6 @@ class User(DBBase):
                                       salt.encode('ascii'),
                                       100000)
         pwdhash = binascii.hexlify(pwdhash).decode('ascii')
-        print(f"STORED PASSWORD: {stored_password}")
-        print(f"HASHED SUPPLIED PASSWORD: {pwdhash}")
         return pwdhash == stored_password
 
     def get_jwt_secret(self):

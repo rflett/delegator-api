@@ -1,15 +1,14 @@
+import datetime
 import jwt
-import uuid
 import typing
+import uuid
 from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User
 from app.Models.Enums import UserAuthLogAction
 from flask import Response
 
 
-_common_payload = {
-    "jti": str(uuid.uuid4())
-}
+TOKEN_TTL_IN_MINUTES = 60
 
 
 def _unauthenticated(message: str) -> Response:
@@ -24,8 +23,9 @@ def _get_jwt(user: User) -> str:
         payload = {}
     return jwt.encode(
         payload={
-            **_common_payload,
-            **payload
+            **payload,
+            "jti": str(uuid.uuid4()),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=TOKEN_TTL_IN_MINUTES)
         },
         key=jwt_secret,
         algorithm='HS256'
@@ -33,25 +33,13 @@ def _get_jwt(user: User) -> str:
 
 
 class AuthController(object):
-    def invalidate_jwt(self, token: str = None, payload: dict = None) -> None:
-        from app.Controllers import BlacklistedTokenController
-        if token is not None:
-            from app.Controllers import AuthController
-            payload = AuthController.validate_jwt(token.replace('Bearer ', ''))
-            self.invalidate_jwt(payload=payload)
-        elif payload is not None:
-            if payload.get('jti') is None:
-                pass
-            blacklist_id = f"{payload.get('aud')}:{payload.get('jti')}"
-            BlacklistedTokenController.blacklist_token(blacklist_id)
-
     @staticmethod
     def login(req: dict) -> Response:
         """ Login """
         from app.Controllers import ValidationController, UserController
 
-        email = req.get('email', None)
-        password = req.get('password', None)
+        email = req.get('email')
+        password = req.get('password')
 
         # validate email
         email_validate_res = ValidationController.validate_email(email)
@@ -90,13 +78,18 @@ class AuthController(object):
     @staticmethod
     def logout(headers: dict) -> Response:
         """ Logout """
-        from app.Controllers import AuthController
+        from app.Controllers import AuthController, UserController
+        from app.Controllers.LogControllers import UserAuthLogController
+
         auth = headers.get('Authorization', None)
         payload = AuthController.validate_jwt(auth.replace('Bearer ', ''))
+
         if payload is False:
             return _unauthenticated('Invalid token.')
         else:
-            AuthController().invalidate_jwt(payload=payload)
+            user = UserController.get_user_by_username(payload.get('claims').get('username'))
+            AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
+            UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
             return Response('Logged out')
 
     @staticmethod
@@ -118,11 +111,21 @@ class AuthController(object):
                 user = UserController.get_user_by_username(username)
                 return jwt.decode(jwt=token, key=user.get_jwt_secret(), audience=user.get_aud(), algorithms='HS256')
             else:
-                AuthController().invalidate_jwt(token=token)
+                AuthController.invalidate_jwt_token(token=token)
                 return False
+            
         except Exception as e:
-            AuthController().invalidate_jwt(token=token)
-            return False
+            AuthController.invalidate_jwt_token(token=token)
+            raise e
+
+    @staticmethod
+    def invalidate_jwt_token(token: str) -> None:
+        from app.Controllers import BlacklistedTokenController, AuthController
+        payload = AuthController.validate_jwt(token.replace('Bearer ', ''))
+        if payload.get('jti') is None:
+            pass
+        blacklist_id = f"{payload.get('aud')}:{payload.get('jti')}"
+        BlacklistedTokenController.blacklist_token(blacklist_id, payload.get('exp'))
 
     @staticmethod
     def check_authorization_header(auth: str) -> typing.Union[bool, Response]:
