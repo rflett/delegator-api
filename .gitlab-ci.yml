@@ -1,5 +1,5 @@
 stages:
-  - unitTest
+  # - unitTest
   - build
   - deployStaging
 
@@ -7,13 +7,13 @@ variables:
   AMZ_REGISTRY: 292374005836.dkr.ecr.ap-southeast-2.amazonaws.com
   GITLAB_REGISTRY: registry.gitlab.com/rflett/containers
 
-unitTest:
-  stage: unitTest
-  image: $GITLAB_REGISTRY/python:latest
-  script:
-    - cd src/
-    - pipenv install
-    - pipenv run python -m pytest
+# unitTest:
+#   stage: unitTest
+#   image: $GITLAB_REGISTRY/python:latest
+#   script:
+#     - cd src/
+#     - pipenv install
+#     - pipenv run python -m pytest
 
 build:
   stage: build
@@ -36,7 +36,6 @@ build:
 deployStaging:
   stage: deployStaging
   image: $GITLAB_REGISTRY/python:latest
-  when: manual
   tags:
     - docker
   script:

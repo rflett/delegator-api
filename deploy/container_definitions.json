@@ -11,6 +11,23 @@
                 "containerPort": 5000,
                 "protocol": "tcp"
             }
+        ],
+        "links": [
+            "postgres:postgres"
+        ]
+    },
+    {
+        "name": "postgres",
+        "image": "292374005836.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest",
+        "memory": 512,
+        "memoryReservation": 256,
+        "essential": true,
+        "portMappings": [
+            {
+                "hostPort": 5432,
+                "containerPort": 5432,
+                "protocol": "tcp"
+            }
         ]
     }
 ]
