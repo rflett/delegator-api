@@ -18,7 +18,7 @@ def _unauthenticated(message: str) -> Response:
 def _get_jwt(user: User) -> str:
     """ Returns an encoded JWT token """
     payload = user.claims()
-    jwt_secret = user.get_jwt_secret()
+    jwt_secret = user.jwt_secret
     if payload is None:
         payload = {}
     return jwt.encode(
@@ -109,7 +109,7 @@ class AuthController(object):
             if username is not None:
                 from app.Controllers import UserController
                 user = UserController.get_user_by_username(username)
-                return jwt.decode(jwt=token, key=user.get_jwt_secret(), audience=user.get_aud(), algorithms='HS256')
+                return jwt.decode(jwt=token, key=user.jwt_secret, audience=user.jwt_aud, algorithms='HS256')
             else:
                 AuthController.invalidate_jwt_token(token=token)
                 return False
