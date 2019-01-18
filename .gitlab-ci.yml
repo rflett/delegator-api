@@ -18,7 +18,6 @@ variables:
 build:
   stage: build
   image: $GITLAB_REGISTRY/docker:latest
-  when: manual
   services:
     - docker:dind
   tags:
