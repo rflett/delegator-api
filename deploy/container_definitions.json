@@ -14,6 +14,9 @@
         ],
         "links": [
             "postgres:postgres"
+        ],
+        "environment" : [
+            { "name" : "APP_ENV", "value" : "Staging" }
         ]
     },
     {

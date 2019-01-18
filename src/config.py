@@ -16,4 +16,4 @@ class Local(object):
 class Staging(object):
     DB_USER = "etemt"
     DB_PASS = "etemt"
-    DB_HOST = "some.host"
+    DB_HOST = "postgres"
