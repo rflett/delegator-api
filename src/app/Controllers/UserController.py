@@ -1,11 +1,21 @@
 from app import DBSession
 from app.Models import User
+from app.Models.RBAC import Operation, Resource
+from flask import request, Response
 from sqlalchemy import exists
 
 session = DBSession()
 
 
 class UserController(object):
+    @staticmethod
+    def test_create() -> Response:
+        user = UserController.get_user_by_email('ryan.flett1@gmail.com')
+        if user.can(Operation.CREATE, Resource.TASK):
+            return Response("You can create a user")
+        else:
+            return Response("You cannot create a user", 403)
+
     @staticmethod
     def create_user(
             org_id: int,
@@ -14,9 +24,9 @@ class UserController(object):
             first_name: str,
             last_name: str,
             password: str,
-            role: int
+            role: str
     ) -> None:
-        """ Creates a user """
+        """ Creates a user NOT TESTED"""
         user = User(
             org_id=org_id,
             username=username,

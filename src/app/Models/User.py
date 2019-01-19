@@ -2,9 +2,12 @@ import binascii
 import datetime
 import hashlib
 import os
-from app import DBBase
+from app import DBBase, DBSession
+from app.Controllers.RBAC.RoleController import RoleController
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
+
+session = DBSession()
 
 
 def _hash_password(password: str) -> str:
@@ -34,14 +37,16 @@ class User(DBBase):
 
     id = Column('id', Integer(), primary_key=True)
     org_id = Column('org_id', Integer(), ForeignKey('organisations.id'))
-    org = relationship("Organisation")
     username = Column('username', String())
     email = Column('email', String())
     first_name = Column('first_name', String())
     last_name = Column('last_name', String())
     password = Column('password', String())
-    role = Column('role', Integer())
+    role = Column('role', String(), ForeignKey('rbac_roles.id'))
     created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
+
+    org_r = relationship("Organisation")
+    role_r = relationship("Role")
 
     def __init__(
             self,
@@ -51,7 +56,7 @@ class User(DBBase):
             first_name: str,
             last_name: str,
             password: str,
-            role: int
+            role: str
     ):
         self.org_id = org_id
         self.username = username
@@ -62,6 +67,10 @@ class User(DBBase):
         self.role = role
         self.jwt_aud = _get_aud(self.org_id)
         self.jwt_secret = _get_jwt_secret(self.org_id)
+
+    def can(self, operation: str, resource: str) -> bool:
+        """ Checks if user can perform {operation} on {resource} with their {role} """
+        return RoleController.role_can(self.role, operation, resource)
 
     def check_password(self, password: str) -> bool:
         """ Checks the provided password against the stored password """
