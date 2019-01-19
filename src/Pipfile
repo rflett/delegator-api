@@ -15,6 +15,7 @@ pyjwt = "*"
 sqlalchemy = "*"
 psycopg2 = "*"
 validate-email = "*"
+boto3 = "*"
 
 [requires]
 python_version = "3.7"

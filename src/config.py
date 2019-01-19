@@ -7,6 +7,11 @@ class Docker(object):
     DB_HOST = "postgres"
 
 
+class Scott(object):
+    DB_USER = "etemt"
+    DB_PASS = "etemt"
+
+
 class Local(object):
     DB_USER = "etemt"
     DB_PASS = "etemt"
