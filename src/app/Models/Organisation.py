@@ -2,7 +2,7 @@ import binascii
 import hashlib
 import uuid
 from app import DBBase
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import Column, String, Integer, DateTime
 
 
 class Organisation(DBBase):

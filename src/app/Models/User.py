@@ -25,7 +25,7 @@ def _get_jwt_secret(org_id: int) -> str:
     return user_org.jwt_secret
 
 
-def _get_aud(org_id: int) -> str:
+def _get_jwt_aud(org_id: int) -> str:
     """ Gets the JWT aud for this users organisation """
     from app.Controllers import OrganisationController
     user_org = OrganisationController.get_org_by_id(org_id)
@@ -65,8 +65,6 @@ class User(DBBase):
         self.last_name = last_name
         self.password = _hash_password(password)
         self.role = role
-        self.jwt_aud = _get_aud(self.org_id)
-        self.jwt_secret = _get_jwt_secret(self.org_id)
 
     def can(self, operation: str, resource: str) -> bool:
         """ Checks if user can perform {operation} on {resource} with their {role} """
@@ -86,13 +84,24 @@ class User(DBBase):
     def claims(self) -> dict:
         """ Returns claims for JWT """
         return {
-            "aud": self.jwt_aud,
+            "aud": self.jwt_aud(),
             "claims": {
                 "role": self.role,
                 "org": self.org_id,
                 "username": self.username
             }
         }
+
+    def jwt_aud(self) -> str:
+        return _get_jwt_aud(self.org_id)
+
+    def jwt_secret(self) -> str:
+        return _get_jwt_secret(self.org_id)
+
+    def log(self, operation: str, resource: str) -> None:
+        """ Logs the {operation} on {resource} from this {user} """
+        from app.Controllers.LogControllers import RBACAuditLogController
+        RBACAuditLogController.log(self, operation, resource)
 
     def as_dict(self) -> dict:
         """ Returns dict repr of User """
@@ -102,6 +111,7 @@ class User(DBBase):
             "email": self.email,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "password": self.password,
-            "role": self.role
+            "role": self.role,
+            "jwt_aud": self.jwt_aud,
+            "jwt_secret": self.jwt_secret
         }

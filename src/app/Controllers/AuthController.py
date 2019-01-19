@@ -5,13 +5,13 @@ import uuid
 from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User
 from app.Models.Enums import UserAuthLogAction
-from flask import Response
+from flask import Response, request
 
 
 TOKEN_TTL_IN_MINUTES = 60
 
 
-def _unauthenticated(message: str) -> Response:
+def _unauthenticated(message: str = "Invalid credentials.") -> Response:
     return Response(message, status=403)
 
 
@@ -26,7 +26,7 @@ def _generate_jwt_token(user: User) -> str:
             "jti": str(uuid.uuid4()),
             "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=TOKEN_TTL_IN_MINUTES)
         },
-        key=user.jwt_secret,
+        key=user.jwt_secret(),
         algorithm='HS256'
     ).decode("utf-8")
 
@@ -92,6 +92,25 @@ class AuthController(object):
             return Response('Logged out')
 
     @staticmethod
+    def get_user_from_request(req: request) -> typing.Union[User, Response]:
+        """ Gets a user from the JWT token """
+        from app.Controllers import UserController
+
+        auth = req.headers.get('Authorization', None)
+        payload = AuthController.validate_jwt(auth.replace('Bearer ', ''))
+
+        if isinstance(payload, dict):
+            username = payload.get('claims').get('username')
+        else:
+            return _unauthenticated()
+
+        try:
+            user = UserController.get_user_by_username(username)
+            return user
+        except Exception as e:
+            return Response('No user found.', 400)
+
+    @staticmethod
     def validate_jwt(token: str) -> typing.Union[bool, dict]:
         """ Returns the payload if decode and verification is successful, otherwise returns False """
         from app.Controllers import BlacklistedTokenController
@@ -108,7 +127,7 @@ class AuthController(object):
             if username is not None:
                 from app.Controllers import UserController
                 user = UserController.get_user_by_username(username)
-                return jwt.decode(jwt=token, key=user.jwt_secret, audience=user.jwt_aud, algorithms='HS256')
+                return jwt.decode(jwt=token, key=user.jwt_secret(), audience=user.jwt_aud(), algorithms='HS256')
             else:
                 AuthController.invalidate_jwt_token(token=token)
                 return False

@@ -1,7 +1,7 @@
 from app import app
 from functools import wraps
 from flask import Response, request
-from app.Controllers import AuthController, UserController
+from app.Controllers import AuthController, ExampleController
 
 
 def requires_jwt(f):
@@ -32,6 +32,7 @@ def logout():
     return AuthController.logout(request.headers)
 
 
-@app.route('/test_create', methods=['GET'])
-def test_create():
-    return UserController.test_create()
+@app.route('/example', methods=['GET'])
+@requires_jwt
+def example():
+    return ExampleController.example(request)

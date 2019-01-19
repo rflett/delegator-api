@@ -12,6 +12,7 @@ class UserController(object):
     def test_create() -> Response:
         user = UserController.get_user_by_email('ryan.flett1@gmail.com')
         if user.can(Operation.CREATE, Resource.TASK):
+            user.log(Operation.CREATE, Resource.TASK)
             return Response("You can create a user")
         else:
             return Response("You cannot create a user", 403)
