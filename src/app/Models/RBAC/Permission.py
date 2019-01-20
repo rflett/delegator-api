@@ -22,7 +22,7 @@ class Permission(DBBase):
         self.resource_id = resource_id
 
     def as_dict(self) -> dict:
-        """ Returns dict repr of User """
+        """ Returns dict repr of Permission """
         return {
             "role_id":  self.role_id,
             "operation_id": self.operation_id,

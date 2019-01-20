@@ -15,3 +15,10 @@ class BlacklistedToken(DBBase):
     def __init__(self, id: str, exp: int):
         self.id = id
         self.exp = exp
+
+    def as_dict(self) -> dict:
+        """ Returns dict repr of BlacklistedToken """
+        return {
+            "id":  self.id,
+            "exp": self.exp
+        }

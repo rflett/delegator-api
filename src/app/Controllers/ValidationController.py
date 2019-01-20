@@ -4,7 +4,13 @@ from flask import Response
 
 
 def _check_password_reqs(password: str) -> typing.Union[str, bool]:
-    """ Ensures password meets requirements. """
+    """ 
+    Ensures a password meets minimum security requirements. 
+    
+    :param password str: The password to check
+    
+    :return: A message if it does not meet the requirements, or True
+    """
     min_length = 6
     min_special_chars = 1
     min_caps = 1
@@ -19,22 +25,35 @@ def _check_password_reqs(password: str) -> typing.Union[str, bool]:
 
 
 class ValidationController(object):
-
     @staticmethod
-    def validate_email(email: str) -> typing.Union[None, Response]:
-        """ Validates an email """
+    def validate_email(email: str) -> typing.Union[bool, Response]:
+        """ 
+        Validates an email address. It checks to make sure it's a string, and calls the 
+        validate_email package which compares it to a huge regex. This package has support
+        for MX record check.
+        
+        :param email str: The email to validate
+
+        :return: True if the email is valid, or a Flask Response.
+        """
         if not isinstance(email, str):
             return Response(f"Bad email expected str got {type(email)}", 400)
         if validate_email(email) is False:
             return Response("Invalid email", 400)
-        return None
+        return True
 
     @staticmethod
-    def validate_password(password: str) -> typing.Union[None, Response]:
-        """ Validates a password """
+    def validate_password(password: str) -> typing.Union[bool, Response]:
+        """ 
+        Validates a password. Makes sure it's a string, and can do a strength check.
+
+        :param password str: The password to check
+
+        :return: True if password is valid, or a Flask Response
+        """
         if not isinstance(password, str):
             return Response(f"Bad email expected str got {type(password)}", 400)
         # password_check = _check_password_reqs(password)
         # if isinstance(password_check, str):
         #     return Response(password_check, 400)
-        return None
+        return True

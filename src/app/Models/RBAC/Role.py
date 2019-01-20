@@ -21,10 +21,8 @@ class Role(DBBase):
         self.name = name
         self.description = description
 
-
-
     def as_dict(self) -> dict:
-        """ Returns dict repr of User """
+        """ Returns dict repr of Role """
         return {
             "id":  self.id,
             "name": self.name,

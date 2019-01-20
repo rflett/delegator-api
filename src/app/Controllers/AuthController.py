@@ -12,11 +12,25 @@ TOKEN_TTL_IN_MINUTES = 60
 
 
 def _unauthenticated(message: str = "Invalid credentials.") -> Response:
+    """
+    Simple helper function for returning a 403 Response.
+
+    :param message str: The message to return
+    :return: Response 403 Forbidden
+    """
     return Response(message, status=403)
 
 
 def _generate_jwt_token(user: User) -> str:
-    """ Returns an encoded JWT token """
+    """ 
+    Creates a JWT token containing a relevant payload for the {user}.
+    The jti is a uniqie identifier for the token.
+    The exp is the time after which the token is no longer valid.
+    
+    :param user User: The user to generate the token for.
+
+    :return: The token as a string.
+    """
     payload = user.claims()
     if payload is None:
         payload = {}
@@ -32,9 +46,20 @@ def _generate_jwt_token(user: User) -> str:
 
 
 class AuthController(object):
+    """
+    The AuthController manages functions regarding generating, decoding and validating
+    JWT tokens, login/logout functionality, and validating Authorization headers.
+    """
     @staticmethod
     def login(req: dict) -> Response:
-        """ Login, returns a bearer token on successful login. """
+        """ 
+        Logic for logging a user in. It will validate the request params and then return
+        a JWT token with the user details.
+        
+        :param req dict: The request data as a dict
+
+        :return: Response
+        """
         from app.Controllers import ValidationController, UserController
 
         email = req.get('email')
@@ -76,7 +101,14 @@ class AuthController(object):
 
     @staticmethod
     def logout(headers: dict) -> Response:
-        """ Logs out, invalidates JWT token. """
+        """
+        Logic for logging a user out. Basically checks the headers,
+        gets the user, and then invalidates the JWT token.
+
+        :param headers dict: The request headers as a dict.
+
+        :return: Response
+        """
         from app.Controllers import AuthController, UserController
         from app.Controllers.LogControllers import UserAuthLogController
 
@@ -93,17 +125,26 @@ class AuthController(object):
 
     @staticmethod
     def get_user_from_request(req: request) -> typing.Union[User, Response]:
-        """ Gets a user from the JWT token """
+        """ 
+        Get the user object that is claimed in the JWT payload.
+
+        :param req request: The Flask request
+
+        :return: A User object if a user is found, or a Flask Response
+        """
         from app.Controllers import UserController
 
+        # get auth from request
         auth = req.headers.get('Authorization', None)
         payload = AuthController.validate_jwt(auth.replace('Bearer ', ''))
 
+        # get username
         if isinstance(payload, dict):
             username = payload.get('claims').get('username')
         else:
             return _unauthenticated()
 
+        # get User object
         try:
             user = UserController.get_user_by_username(username)
             return user
@@ -112,7 +153,17 @@ class AuthController(object):
 
     @staticmethod
     def validate_jwt(token: str) -> typing.Union[bool, dict]:
-        """ Returns the payload if decode and verification is successful, otherwise returns False """
+        """ 
+        Validates a JWT token. The token will be decoded without any secret keys, to ensure it is actually
+        a JWT token. Once the decode is successfull the username will be pulled out of the token and
+        then checked against what is in the database. If the user object can be retrieved (and hence their orgs
+        secret key), then try and decode the JWT again with the secret key. 
+        If this works, then the token is good, and JWT payload.
+
+        :param token str: The JWT token as a string.
+
+        :return: JWT payload if decode was successful, or False.
+        """
         from app.Controllers import BlacklistedTokenController
         try:
             suspect_jwt = jwt.decode(jwt=token, algorithms='HS256', verify=False)
@@ -138,7 +189,12 @@ class AuthController(object):
 
     @staticmethod
     def invalidate_jwt_token(token: str) -> None:
-        """ Blacklists a JWT token """
+        """ 
+        Blacklists a JWT token. This involves getting the audience and unique id (aud and jti)
+        and putting them in the blacklisted tokens table.
+
+        :param token str: The token to invalidate. 
+        """
         from app.Controllers import BlacklistedTokenController, AuthController
         payload = AuthController.validate_jwt(token.replace('Bearer ', ''))
         if payload.get('jti') is None:
@@ -148,7 +204,13 @@ class AuthController(object):
 
     @staticmethod
     def check_authorization_header(auth: str) -> typing.Union[bool, Response]:
-        """ Checks to make sure there is a JWT token in the Bearer token. Does not validate it. """
+        """ 
+        Checks to make sure there is a JWT token in the Bearer token. Does not validate it. 
+        
+        :param auth str: The Authorization header from the request.
+
+        :return: True if the token exists and is a JWT, or an unauthenticated response.
+        """
 
         if auth is None:
             return _unauthenticated("Missing Authorization header.")
