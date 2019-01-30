@@ -1,4 +1,4 @@
-from app import DBSession
+from app import DBSession, logger
 from app.Models import User
 from app.Models.LogModels import RBACAuditLog
 
@@ -23,3 +23,4 @@ class RBACAuditLogController(object):
         )
         session.add(audit_log)
         session.commit()
+        logger.debug(f"logged op {operation} on res {resource} against user {user.id}")

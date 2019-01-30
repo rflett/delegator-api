@@ -19,39 +19,23 @@ class SignupController(object):
         """
         request_body = request.get_json()
 
-        # validate and create organisation
-        check_org = ValidationController.validate_org_request(request_body)
-        if isinstance(check_org, Response):
-            return check_org
-        else:
-            organisation = Organisation(
-                name=check_org.org_name
-            )
-            session.add(organisation)
-            session.commit()
+        create_org_res = OrganisationController.org_create(request, require_auth=False)
 
-            # validate and check user
-            new_org = OrganisationController.get_org_by_name(organisation.name)
-            request_body['role_name'] = SIGNUP_ROLE
-            request_body['org_id'] = new_org.id
-            check_user = ValidationController.validate_user_request(request_body)
-            if isinstance(check_user, Response):
-                return check_user
-            else:
-                user = User(
-                    org_id=check_user.org_id,
-                    email=check_user.email,
-                    first_name=check_user.first_name,
-                    last_name=check_user.last_name,
-                    password=check_user.password,
-                    role=check_user.role_name
-                )
-                session.add(user)
-                session.commit()
+        if create_org_res.status_code != 200:
+            return create_org_res
 
-                # log events
-                new_user = UserController.get_user_by_email(user.email)
-                new_user.log(Operation.CREATE, Resource.ORGANISATION)
-                new_user.log(Operation.CREATE, Resource.USER)
+        new_org = OrganisationController.get_org_by_name(request_body.get('org_name'))
+        request_body['role_name'] = SIGNUP_ROLE
+        request_body['org_id'] = new_org.id
 
-                return Response("Successfully signed up.", 200)
+        create_user_res = UserController.user_create(request, require_auth=False)
+
+        if create_user_res.status_code != 200:
+            return create_user_res
+
+        # log events
+        new_user = UserController.get_user_by_email(request_body.get('email'))
+        new_user.log(Operation.CREATE, Resource.ORGANISATION)
+        new_user.log(Operation.CREATE, Resource.USER)
+
+        return Response("Successfully signed up.", 200)

@@ -1,8 +1,9 @@
 import datetime
+import json
 import jwt
 import typing
 import uuid
-from app import DBSession
+from app import DBSession, logger
 from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User
 from app.Models.Enums import UserAuthLogAction
@@ -32,6 +33,7 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
     # get user id
     if isinstance(payload, dict):
         user_id = payload.get('claims').get('user_id')
+        logger.debug(f"Got user ID {user_id}")
     else:
         return _unauthenticated()
 
@@ -65,6 +67,7 @@ def _generate_jwt_token(user: User) -> str:
     """
     payload = user.claims()
     if payload is None:
+        logger.debug(f"Claims payload was None")
         payload = {}
     return jwt.encode(
         payload={
@@ -84,6 +87,7 @@ class AuthController(object):
     """
     @staticmethod
     def authorize_request(request: request, operation: str, resource: str) -> typing.Union[Response, User]:
+        logger.debug(f'authorizing request {json.dumps(request.get_json())}')
         auth_user = _get_user_from_request(request)
         if isinstance(auth_user, Response):
             return auth_user
@@ -91,6 +95,7 @@ class AuthController(object):
             if auth_user.can(operation, resource):
                 return auth_user
             else:
+                logger.debug(f"user id {auth_user.id} cannot perform {operation} on {resource}")
                 return Response(f"No permissions to {operation} {resource}", 403)
 
     @staticmethod
@@ -107,6 +112,8 @@ class AuthController(object):
 
         email = req.get('email')
         password = req.get('password')
+
+        logger.debug(f"login requested for {json.dumps(req)}")
 
         # validate email
         email_validate_res = ValidationController.validate_email(email)
@@ -130,6 +137,7 @@ class AuthController(object):
                 user=user,
                 action=UserAuthLogAction.LOGIN
             )
+            logger.debug(f"user {user.id} logged in")
             return Response(
                 "Welcome.",
                 headers={
@@ -137,6 +145,7 @@ class AuthController(object):
                 }
             )
         else:
+            logger.debug(f"incorrect password attempt for user {user.id}")
             return Response(
                 "Password incorrect.",
                 status=403
@@ -164,6 +173,7 @@ class AuthController(object):
             user = UserController.get_user_by_id(payload.get('claims').get('user_id'))
             AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
             UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
+            logger.debug(f"user {user.id} logged out")
             return Response('Logged out')
 
     @staticmethod
@@ -182,6 +192,7 @@ class AuthController(object):
         from app.Controllers import BlacklistedTokenController
         try:
             suspect_jwt = jwt.decode(jwt=token, algorithms='HS256', verify=False)
+            logger.debug(f"received suspect jwt {suspect_jwt}")
 
             # check if aud:jti is blacklisted
             blacklist_id = f"{suspect_jwt.get('aud')}:{suspect_jwt.get('jti')}"
@@ -193,12 +204,15 @@ class AuthController(object):
             if user_id is not None:
                 from app.Controllers import UserController
                 user = UserController.get_user_by_id(user_id)
+                logger.debug(f"found user {user.id} in jwt claim. attempting to decode jwt.")
                 return jwt.decode(jwt=token, key=user.jwt_secret(), audience=user.jwt_aud(), algorithms='HS256')
             else:
+                logger.debug(f"user {suspect_jwt.get('claims').get('user_id')} does not exist")
                 AuthController.invalidate_jwt_token(token=token)
                 return False
             
         except Exception as e:
+            logger.debug(f"decoding raised {e}, likely failed to decode jwt due to user secret/aud issue")
             AuthController.invalidate_jwt_token(token=token)
             raise e
 
@@ -213,6 +227,7 @@ class AuthController(object):
         from app.Controllers import BlacklistedTokenController, AuthController
         payload = AuthController.validate_jwt(token.replace('Bearer ', ''))
         if payload.get('jti') is None:
+            logger.debug(f"no jti in token")
             pass
         blacklist_id = f"{payload.get('aud')}:{payload.get('jti')}"
         BlacklistedTokenController.blacklist_token(blacklist_id, payload.get('exp'))
@@ -228,13 +243,16 @@ class AuthController(object):
         """
 
         if auth is None:
+            logger.debug('missing authorization header')
             return _unauthenticated("Missing Authorization header.")
         elif not isinstance(auth, str):
+            logger.debug(f"Expected Authorization header type str got {type(auth)}.")
             return _unauthenticated(f"Expected Authorization header type str got {type(auth)}.")
 
         try:
             token = auth.replace('Bearer ', '')
             jwt.decode(jwt=token, algorithms='HS256', verify=False)
+
         except Exception as e:
             return _unauthenticated("Invalid token.")
 

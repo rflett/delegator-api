@@ -1,6 +1,7 @@
 import typing
+from app import logger
+from app.Controllers import AuthController
 from dataclasses import dataclass
-from app.Controllers import AuthController, OrganisationController
 from flask import Response
 from validate_email import validate_email
 
@@ -18,11 +19,15 @@ def _check_password_reqs(password: str) -> typing.Union[str, bool]:
     min_caps = 1
     special_chars = r' !#$%&\'()*+,-./:;<=>?@[\]^_`{|}~'
     if len(password) < min_length:
+        logger.debug(f"password length less than {min_length}.")
         return f"Password length less than {min_length}."
     if len([char for char in password if char in special_chars]) < min_special_chars:
+        logger.debug(f"password requires more than {min_length} special character(s).")
         return f"Password requires more than {min_length} special character(s)."
     if sum(1 for c in password if c.isupper()) < min_caps:
+        logger.debug(f"password requires more than {min_length} capital letter(s).")
         return f"Password requires more than {min_length} capital letter(s)."
+    logger.debug(f"password meets requirements")
     return True
 
 
@@ -39,8 +44,10 @@ class ValidationController(object):
         :return: True if the email is valid, or a Flask Response.
         """
         if not isinstance(email, str):
+            logger.debug(f"bad email expected str got {type(email)}")
             return Response(f"Bad email expected str got {type(email)}", 400)
         if validate_email(email) is False:
+            logger.debug("email is invalid")
             return Response("Invalid email", 400)
         return True
 
@@ -54,6 +61,7 @@ class ValidationController(object):
         :return: True if password is valid, or a Flask Response
         """
         if not isinstance(password, str):
+            logger.debug(f"bad email expected str got {type(password)}")
             return Response(f"Bad email expected str got {type(password)}", 400)
         # password_check = _check_password_reqs(password)
         # if isinstance(password_check, str):
@@ -61,13 +69,15 @@ class ValidationController(object):
         return True
 
     @staticmethod
-    def validate_user_request(request_body: dict) -> typing.Union[Response, dataclass]:
+    def validate_create_user_request(request_body: dict) -> typing.Union[Response, dataclass]:
         """
         Validates a user request body
 
         :param request_body: The request body from the create user request
         :return: Response if the request body contains invalid values, or the UserRequest dataclass
         """
+        from app.Controllers import UserController, OrganisationController
+
         @dataclass
         class UserRequest:
             """ A user request dataclass which represents the values in a create user request object. """
@@ -78,15 +88,24 @@ class ValidationController(object):
             last_name: str
             role_name: str
 
-        # check org
-        org_id = request_body.get('org_id')
-        if not isinstance(org_id, int):
-            return Response(f"Bad org_id, expected int got {type(org_id)}.", 400)
         # check email
         email = request_body.get('email')
         email_check = ValidationController.validate_email(email)
         if isinstance(email_check, Response):
             return email_check
+        # check user doesn't already exist
+        if UserController.user_exists(request_body.get('email')):
+            logger.debug(f"user {request_body.get('email')} already exists")
+            return Response(f"User already exists.", 400)
+        # check org
+        org_id = request_body.get('org_id')
+        if not isinstance(org_id, int):
+            logger.debug(f"Bad org_id, expected int got {type(org_id)}.")
+            return Response(f"Bad org_id, expected int got {type(org_id)}.", 400)
+        # check that org exists
+        if not OrganisationController.org_exists(org_id):
+            logger.debug(f"org id {org_id} doesn't exist")
+            return Response(f"Org id does not exist", 400)
         # check password
         password = request_body.get('password')
         password_check = ValidationController.validate_password(password)
@@ -95,23 +114,30 @@ class ValidationController(object):
         # check firstname
         first_name = request_body.get('first_name')
         if not isinstance(first_name, str):
+            logger.debug(f"Bad first_name, expected str got {type(first_name)}.")
             return Response(f"Bad first_name, expected str got {type(first_name)}.", 400)
         if len(first_name) == 0:
+            logger.debug(f"first_name is required.")
             return Response(f"first_name is required.", 400)
         # check last_name
         last_name = request_body.get('last_name')
         if not isinstance(last_name, str):
+            logger.debug(f"Bad last_name, expected str got {type(last_name)}.")
             return Response(f"Bad last_name, expected str got {type(last_name)}.", 400)
         if len(last_name) == 0:
+            logger.debug(f"last_name is required.")
             return Response(f"last_name is required.", 400)
         # check role
         role_name = request_body.get('role_name')
         if not isinstance(role_name, str):
+            logger.debug(f"Bad role_name, expected str got {type(role_name)}.")
             return Response(f"Bad role_name, expected str got {type(role_name)}.", 400)
         if len(role_name) == 0:
+            logger.debug(f"role_name is required.")
             return Response(f"role_name is required.", 400)
         if not AuthController.role_exists(role_name):
-            return Response("Role does not exist", 400)
+            logger.debug(f"Role {role_name} does not exist")
+            return Response(f"Role {role_name} does not exist", 400)
 
         return UserRequest(
             org_id=org_id,
@@ -123,7 +149,7 @@ class ValidationController(object):
         )
 
     @staticmethod
-    def validate_org_request(request_body: dict) -> typing.Union[Response, dataclass]:
+    def validate_create_org_request(request_body: dict) -> typing.Union[Response, dataclass]:
         """
         Validates a user request body
 
@@ -131,6 +157,7 @@ class ValidationController(object):
         :return: Response if the request body contains invalid values, or the OrgRequest dataclass
         """
         from app.Controllers import OrganisationController
+
         @dataclass
         class OrgRequest:
             """ An org request dataclass which represents the values in a create org request object. """
@@ -139,10 +166,13 @@ class ValidationController(object):
         # check organisation name
         org_name = request_body.get('name', request_body.get('org_name'))
         if OrganisationController.org_exists(org_name):
+            logger.debug(f"organisation {org_name} already exists")
             return Response("Organisation already exists", 400)
         if not isinstance(org_name, str):
+            logger.debug(f"bad org_name, exepected str got {type(org_name)}")
             return Response(f"Bad org_name, expected str got {type(org_name)}.", 400)
         if len(org_name) == 0:
+            logger.debug(f"org_name is required")
             return Response(f"org_name is required.", 400)
 
         return OrgRequest(

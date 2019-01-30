@@ -1,6 +1,7 @@
+import json
 from app.Models.RBAC import Role
 from app.Models.RBAC.Permission import Permission
-from app import DBSession
+from app import DBSession, logger
 
 session = DBSession()
 
@@ -31,6 +32,8 @@ class RoleController(object):
             }
             roles.append(return_role_dict)
 
+        logger.debug(f"retrieved {len(roles)} roles: {json.dumps(roles)}")
+
         return roles
 
     @staticmethod
@@ -46,6 +49,7 @@ class RoleController(object):
         :return: True or False
         """
         if role == 'ADMIN':
+            logger.debug('role check was performed against ADMIN, allowing all actions')
             return True
         return session.query(session.query(Permission).filter(
             Permission.role_id == role,

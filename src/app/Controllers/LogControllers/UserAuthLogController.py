@@ -1,5 +1,5 @@
 import typing
-from app import DBSession
+from app import DBSession, logger
 from app.Models import User
 from app.Models.LogModels import UserAuthLog
 
@@ -17,3 +17,4 @@ class UserAuthLogController(object):
         )
         session.add(auth_log)
         session.commit()
+        logger.debug(f"logged {action} against user {user.id}")

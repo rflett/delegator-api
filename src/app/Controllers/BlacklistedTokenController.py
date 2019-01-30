@@ -1,4 +1,4 @@
-from app import DBSession
+from app import DBSession, logger
 from app.Models import BlacklistedToken
 from sqlalchemy import exists
 
@@ -41,3 +41,5 @@ class BlacklistedTokenController(object):
             token = BlacklistedToken(blacklist_id, exp)
             session.add(token)
             session.commit()
+        else:
+            logger.debug(f"blacklist token id {blacklist_id} already blacklisted")

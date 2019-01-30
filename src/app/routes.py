@@ -67,7 +67,7 @@ def user_create():
 
     :return: Response
     """
-    return UserController.create_user(request)
+    return UserController.user_create(request)
 
 
 @app.route('/org/create', methods=['POST'])
