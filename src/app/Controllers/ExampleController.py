@@ -6,6 +6,13 @@ from flask import request, Response
 class ExampleController(object):
     @staticmethod
     def example(req: request) -> Response:
+        """
+        An example.
+
+        :param req request: The Flask request object.
+
+        :return: Flask Response
+        """
         user = AuthController.get_user_from_request(req)
         if isinstance(user, Response):
             return user

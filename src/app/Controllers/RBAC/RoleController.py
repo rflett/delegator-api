@@ -1,7 +1,6 @@
 from app.Models.RBAC import Role
 from app.Models.RBAC.Permission import Permission
 from app import DBSession
-from sqlalchemy import exists
 
 session = DBSession()
 
@@ -9,7 +8,16 @@ session = DBSession()
 class RoleController(object):
     @staticmethod
     def list_roles() -> list:
-        """ Returns a list of roles as dicts """
+        """ 
+        Gets all roles from the database, returns them as a list of dicts like:
+            {
+                "id": "ADMIN",
+                "name": "Admin",
+                "description": "This role can do anything"
+            }
+        
+        :return: List of roles.
+        """
         roles_qry = session.query(Role).all()
         roles = []
 
@@ -27,7 +35,18 @@ class RoleController(object):
 
     @staticmethod
     def role_can(role: str, operation: str, resource: str) -> bool:
-        """ Check to see if a {role} can perform {operation} on {resource}. """
+        """ 
+        Check to see if a {role} can perform {operation} on {resource}. All it needs to do
+        is check to see if the role permission exists in the database.
+
+        :param role str:        The role
+        :param operation str:   The operation to perform
+        :param resource str:    The resource that will be affected
+        
+        :return: True or False
+        """
+        if role == 'ADMIN':
+            return True
         return session.query(session.query(Permission).filter(
             Permission.role_id == role,
             Permission.operation_id == operation,

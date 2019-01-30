@@ -20,8 +20,6 @@ services:
   #     - 80:80
   #     - 443:443
   postgres:
-    build:
-      context: postgres/
-      dockerfile: Dockerfile
+    image: 292374005836.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
     ports:
       - 5432:5432
