@@ -1,4 +1,4 @@
-from app import app
+from app import app, logger
 from functools import wraps
 from flask import Response, request
 from app.Controllers import AuthController, ExampleController, UserController, OrganisationController, SignupController
