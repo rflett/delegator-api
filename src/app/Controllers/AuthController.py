@@ -13,6 +13,8 @@ from sqlalchemy import exists
 
 
 TOKEN_TTL_IN_MINUTES = 60
+FAILED_LOGIN_ATTEMPTS_MAX = 5
+FAILED_LOGIN_ATTEMPTS_TIMEOUT = 300
 session = DBSession()
 
 
@@ -52,6 +54,7 @@ def _unauthenticated(message: str = "Invalid credentials.") -> Response:
     :param message str: The message to return
     :return: Response 403 Forbidden
     """
+    logger.debug(f'unauthenticated: {message}')
     return Response(message, status=403)
 
 
@@ -127,9 +130,30 @@ class AuthController(object):
 
         # get user
         try:
-            user = UserController.get_user_by_email(email)
+            user = session.merge(UserController.get_user_by_email(email))
         except ValueError:
             return Response("User does not exist", 400)
+
+        # check login attempts
+        if user.failed_login_attempts > 0:
+            logger.debug(f"user {user.id} has failed to log in "
+                         f"{user.failed_login_attempts} / {FAILED_LOGIN_ATTEMPTS_MAX} times.")
+            if user.failed_login_attempts >= FAILED_LOGIN_ATTEMPTS_MAX:
+                # check timeout
+                diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
+                if diff < FAILED_LOGIN_ATTEMPTS_TIMEOUT:
+                    logger.debug(f"user last failed {diff}s ago. timeout is {FAILED_LOGIN_ATTEMPTS_TIMEOUT}s")
+                    return Response(
+                        "Too many incorrect attempts.",
+                        403
+                    )
+                else:
+                    # reset
+                    logger.debug(f"user last failed {diff}s ago. timeout is {FAILED_LOGIN_ATTEMPTS_TIMEOUT}s. "
+                                 f"resetting timeout.")
+                    user.failed_login_attempts = 0
+                    user.failed_login_time = None
+                    session.commit()
 
         # check password
         if user.check_password(password):
@@ -138,6 +162,9 @@ class AuthController(object):
                 action=UserAuthLogAction.LOGIN
             )
             logger.debug(f"user {user.id} logged in")
+            user.failed_login_attempts = 0
+            user.failed_login_time = None
+            session.commit()
             return Response(
                 "Welcome.",
                 headers={
@@ -146,6 +173,9 @@ class AuthController(object):
             )
         else:
             logger.debug(f"incorrect password attempt for user {user.id}")
+            user.failed_login_attempts += 1
+            user.failed_login_time = datetime.datetime.utcnow()
+            session.commit()
             return Response(
                 "Password incorrect.",
                 status=403
@@ -214,7 +244,6 @@ class AuthController(object):
         except Exception as e:
             logger.debug(f"decoding raised {e}, likely failed to decode jwt due to user secret/aud issue")
             AuthController.invalidate_jwt_token(token=token)
-            raise e
 
     @staticmethod
     def invalidate_jwt_token(token: str) -> None:
@@ -225,7 +254,7 @@ class AuthController(object):
         :param token str: The token to invalidate.
         """
         from app.Controllers import BlacklistedTokenController, AuthController
-        payload = AuthController.validate_jwt(token.replace('Bearer ', ''))
+        payload = jwt.decode(jwt=token, algorithms='HS256', verify=False)
         if payload.get('jti') is None:
             logger.debug(f"no jti in token")
             pass

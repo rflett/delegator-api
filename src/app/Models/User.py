@@ -65,6 +65,8 @@ class User(DBBase):
     last_name = Column('last_name', String())
     password = Column('password', String())
     role = Column('role', String(), ForeignKey('rbac_roles.id'))
+    failed_login_attempts = Column('failed_login_attempts', Integer(), default=0)
+    failed_login_time = Column('failed_login_time', DateTime, default=None)
     created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
 
     org_r = relationship("Organisation")
@@ -166,6 +168,8 @@ class User(DBBase):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "role": self.role,
-            "jwt_aud": self.jwt_aud,
-            "jwt_secret": self.jwt_secret
+            "jwt_aud": self.jwt_aud(),
+            "jwt_secret": self.jwt_secret(),
+            "failed_login_attempts": self.failed_login_attempts,
+            "failed_login_time": self.failed_login_time
         }

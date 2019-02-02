@@ -48,8 +48,10 @@ class UserController(object):
         :return: The User
         """
         if _user_exists(email):
+            logger.debug(f"user {email} exists")
             return session.query(User).filter(User.email == email).first()
         else:
+            logger.debug(f"User with email {email} does not exist.")
             raise ValueError(f"User with email {email} does not exist.")
 
     @staticmethod
@@ -63,9 +65,11 @@ class UserController(object):
         :return: The User
         """
         if _user_exists(user_id):
+            logger.debug(f"user with id {user_id} exists")
             return session.query(User).filter(User.id == user_id).first()
         else:
-            raise ValueError(f"User with id {id} does not exist.")
+            logger.debug(f"User with id {user_id} does not exist.")
+            raise ValueError(f"User with id {user_id} does not exist.")
 
     @staticmethod
     def user_create(request: request, require_auth: bool = True) -> Response:

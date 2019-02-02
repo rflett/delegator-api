@@ -27,7 +27,12 @@ class BlacklistedTokenController(object):
 
         :return: True if blacklisted or False
         """
-        return id_exists(blacklist_id)
+        if id_exists(blacklist_id):
+            logger.debug(f"token pair {blacklist_id} is blacklisted")
+            return True
+        else:
+            logger.debug(f"token pair {blacklist_id} is not blacklisted")
+            return False
 
     @staticmethod
     def blacklist_token(blacklist_id: str, exp: int):
