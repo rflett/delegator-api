@@ -17,8 +17,12 @@ def _org_exists(org_identifier: typing.Union[int, str]) -> bool:
 
     :return: True if the org exists or False
     """
-    return session.query(exists().where(Organisation.name == org_identifier)).scalar() \
-        or session.query(exists().where(Organisation.id == org_identifier)).scalar()
+    if isinstance(org_identifier, str):
+        logger.debug("org_identifier is a str so finding org by name")
+        return session.query(exists().where(Organisation.name == org_identifier)).scalar()
+    elif isinstance(org_identifier, int):
+        logger.debug("org_identifier is an int so finding org by id")
+        return session.query(exists().where(Organisation.id == org_identifier)).scalar()
 
 
 class OrganisationController(object):
@@ -89,7 +93,7 @@ class OrganisationController(object):
                 )
                 session.add(organisation)
                 session.commit()
-                logger.debug(f"created organisation {check_request.org_name}")
+                logger.debug(f"created organisation {organisation.as_dict()}")
                 return Response("Successfully created the organisation", 200)
 
         if require_auth:

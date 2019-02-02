@@ -98,14 +98,23 @@ class ValidationController(object):
             logger.debug(f"user {request_body.get('email')} already exists")
             return Response(f"User already exists.", 400)
         # check org
-        org_id = request_body.get('org_id')
-        if not isinstance(org_id, int):
-            logger.debug(f"Bad org_id, expected int got {type(org_id)}.")
-            return Response(f"Bad org_id, expected int got {type(org_id)}.", 400)
+        org_identifier = request_body.get('org_id', request_body.get('org_name'))
+        if not (isinstance(org_identifier, int) or isinstance(org_identifier, str)):
+            logger.debug(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+            return Response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
         # check that org exists
-        if not OrganisationController.org_exists(org_id):
-            logger.debug(f"org id {org_id} doesn't exist")
-            return Response(f"Org id does not exist", 400)
+        if not OrganisationController.org_exists(org_identifier):
+            logger.debug(f"org {org_identifier} doesn't exist")
+            return Response(f"Org does not exist", 400)
+        # get org_id
+        if isinstance(org_identifier, str):
+            org_id = OrganisationController.get_org_by_name(org_identifier).id
+        elif isinstance(org_identifier, int):
+            org_id = org_identifier
+        else:
+            # should never be here??
+            logger.debug("Expected org_id to be set but it isn't.")
+            return Response(f"Expected org_id to be set but it isn't.", 400)
         # check password
         password = request_body.get('password')
         password_check = ValidationController.validate_password(password)
