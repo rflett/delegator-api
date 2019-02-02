@@ -3,7 +3,7 @@ import json
 import jwt
 import typing
 import uuid
-from app import DBSession, logger
+from app import DBSession, logger, app
 from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User
 from app.Models.Enums import UserAuthLogAction
@@ -12,9 +12,6 @@ from flask import Response, request
 from sqlalchemy import exists
 
 
-TOKEN_TTL_IN_MINUTES = 60
-FAILED_LOGIN_ATTEMPTS_MAX = 5
-FAILED_LOGIN_ATTEMPTS_TIMEOUT = 300
 session = DBSession()
 
 
@@ -76,7 +73,7 @@ def _generate_jwt_token(user: User) -> str:
         payload={
             **payload,
             "jti": str(uuid.uuid4()),
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=TOKEN_TTL_IN_MINUTES)
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=app.config['TOKEN_TTL_IN_MINUTES'])
         },
         key=user.jwt_secret(),
         algorithm='HS256'
@@ -137,19 +134,19 @@ class AuthController(object):
         # check login attempts
         if user.failed_login_attempts > 0:
             logger.debug(f"user {user.id} has failed to log in "
-                         f"{user.failed_login_attempts} / {FAILED_LOGIN_ATTEMPTS_MAX} times.")
-            if user.failed_login_attempts >= FAILED_LOGIN_ATTEMPTS_MAX:
+                         f"{user.failed_login_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
+            if user.failed_login_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
                 # check timeout
                 diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
-                if diff < FAILED_LOGIN_ATTEMPTS_TIMEOUT:
-                    logger.debug(f"user last failed {diff}s ago. timeout is {FAILED_LOGIN_ATTEMPTS_TIMEOUT}s")
+                if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
+                    logger.debug(f"user last failed {diff}s ago. timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
                     return Response(
                         "Too many incorrect attempts.",
                         403
                     )
                 else:
                     # reset
-                    logger.debug(f"user last failed {diff}s ago. timeout is {FAILED_LOGIN_ATTEMPTS_TIMEOUT}s. "
+                    logger.debug(f"user last failed {diff}s ago. timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. "
                                  f"resetting timeout.")
                     user.failed_login_attempts = 0
                     user.failed_login_time = None

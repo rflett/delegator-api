@@ -1,28 +1,24 @@
 # common settings
-
-
-class Docker(object):
+class Config(object):
     DB_USER = "etemt"
     DB_PASS = "etemt"
+    LOG_LEVEL = "DEBUG"
+    TOKEN_TTL_IN_MINUTES = 60
+    FAILED_LOGIN_ATTEMPTS_MAX = 5
+    FAILED_LOGIN_ATTEMPTS_TIMEOUT = 300
+
+
+class Docker(Config):
     DB_HOST = "postgres"
-    LOG_LEVEL = "DEBUG"
 
 
-class Scott(object):
-    DB_USER = "etemt"
-    DB_PASS = "etemt"
-    LOG_LEVEL = "DEBUG"
+class Scott(Config):
+    SCOTT = "AWESOME" # can't be empty lol
 
 
-class Local(object):
-    DB_USER = "etemt"
-    DB_PASS = "etemt"
+class Local(Config):
     DB_HOST = "localhost"
-    LOG_LEVEL = "DEBUG"
 
 
-class Staging(object):
-    DB_USER = "etemt"
-    DB_PASS = "etemt"
+class Staging(Config):
     DB_HOST = "postgres"
-    LOG_LEVEL = "DEBUG"
