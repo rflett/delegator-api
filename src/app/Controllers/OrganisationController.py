@@ -76,11 +76,12 @@ class OrganisationController(object):
         :param require_auth: If request needs to have authoriziation (e.g. not if signing up)
         :return: A response
         """
-        def create_org(request_body: dict) -> Response:
+        def create_org(request_body: dict, req_user: User = None) -> Response:
             """
             Creates the organisation
 
-            :param request_body: Request body
+            :param request_body:    Request body
+            :param req_user:        The user making the request
             :return: Response
             """
             from app.Controllers import ValidationController
@@ -93,6 +94,12 @@ class OrganisationController(object):
                 )
                 session.add(organisation)
                 session.commit()
+                if isinstance(req_user, User):
+                    req_user.log(
+                        operation=Operation.CREATE,
+                        resource=Resource.ORGANISATION,
+                        resource_id=organisation.id
+                    )
                 logger.debug(f"created organisation {organisation.as_dict()}")
                 return Response("Successfully created the organisation", 200)
 
@@ -102,8 +109,7 @@ class OrganisationController(object):
             if isinstance(req_user, Response):
                 return req_user
             elif isinstance(req_user, User):
-                req_user.log(Operation.CREATE, Resource.ORGANISATION)
-                return create_org(request.get_json())
+                return create_org(request.get_json(), req_user=req_user)
         else:
             logger.debug("not requiring auth to create org")
             return create_org(request.get_json())

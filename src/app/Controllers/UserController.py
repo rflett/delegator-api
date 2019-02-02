@@ -110,6 +110,11 @@ class UserController(object):
                 )
                 session.add(user)
                 session.commit()
+                req_user.log(
+                    operation=Operation.CREATE,
+                    resource=Resource.USER,
+                    resource_id=user.id
+                )
                 logger.debug(f"created user {user.as_dict()}")
                 return Response("Successfully created user", 200)
 
@@ -119,7 +124,6 @@ class UserController(object):
             if isinstance(req_user, Response):
                 return req_user
             elif isinstance(req_user, User):
-                req_user.log(Operation.CREATE, Resource.USER)
                 return create_user(request.get_json(), req_user=req_user)
         else:
             logger.debug("not requiring auth to create user")

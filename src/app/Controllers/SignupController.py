@@ -35,7 +35,13 @@ class SignupController(object):
 
         # log events
         new_user = UserController.get_user_by_email(request_body.get('email'))
-        new_user.log(Operation.CREATE, Resource.ORGANISATION)
-        new_user.log(Operation.CREATE, Resource.USER)
+        new_user.log(
+            operation=Operation.CREATE,
+            resource=Resource.ORGANISATION
+        )
+        new_user.log(
+            operation=Operation.CREATE,
+            resource=Resource.USER
+        )
 
         return Response("Successfully signed up.", 200)

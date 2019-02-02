@@ -1,7 +1,7 @@
 from app import app, logger
 from functools import wraps
 from flask import Response, request
-from app.Controllers import AuthController, ExampleController, UserController, OrganisationController, SignupController
+from app.Controllers import AuthController, UserController, OrganisationController, SignupController
 
 
 def requires_jwt(f):
@@ -79,13 +79,3 @@ def org_create():
     :return: Response
     """
     return OrganisationController.org_create(request)
-
-
-@app.route('/example', methods=['GET'])
-@requires_jwt
-def example():
-    """
-    An example route which can be a basis for other routes moving forward.
-    :return: Response
-    """
-    return ExampleController.example(request)

@@ -1,4 +1,5 @@
 import datetime
+import typing
 from app import DBBase
 from app.Models import Organisation, User
 from app.Models.RBAC import Resource, Operation
@@ -14,6 +15,7 @@ class RBACAuditLog(DBBase):
     user_id = Column('user_id', Integer(), ForeignKey('users.id'))
     operation = Column('operation', String(), ForeignKey('rbac_operations.id'))
     resource = Column('resource', String(), ForeignKey('rbac_resources.id'))
+    resource_id = Column('resource_id', Integer(), default=None)
     created_at = Column('created_at', DateTime(), default=datetime.datetime.utcnow)
 
     r_org = relationship("Organisation")
@@ -25,10 +27,19 @@ class RBACAuditLog(DBBase):
         self,
         org_id: int,
         user_id: int,
-        operation: str,
-        resource: str
+        **kwargs
     ):
         self.org_id = org_id
         self.user_id = user_id
-        self.operation = operation
-        self.resource = resource
+        self.operation = kwargs.get('operation')
+        self.resource = kwargs.get('resource')
+        self.resource_id = kwargs.get('resource_id')
+
+    def to_dict(self) -> dict:
+        return {
+            'org_id': self.org_id,
+            'user_id': self.user_id,
+            'operation': self.operation,
+            'resource': self.resource,
+            'resource_id': self.resource_id
+        }

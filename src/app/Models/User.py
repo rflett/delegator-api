@@ -2,6 +2,7 @@ import binascii
 import datetime
 import hashlib
 import os
+import typing
 from app import DBBase, DBSession
 from app.Controllers.RBAC.RoleController import RoleController
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
@@ -146,15 +147,16 @@ class User(DBBase):
         """
         return _get_jwt_secret(self.org_id)
 
-    def log(self, operation: str, resource: str) -> None:
+    def log(self, **kwargs) -> None:
         """ 
         Logs the {operation} on {resource} from this {user} 
         
-        :param operation str:   The operation that was performed.
-        :param resource str:    The resource that was affected.
+        :param operation:   The operation that was performed.
+        :param resource:    The resource that was affected.
+        :param resource_id:     An optional resource identifier.
         """
         from app.Controllers.LogControllers import RBACAuditLogController
-        RBACAuditLogController.log(self, operation, resource)
+        RBACAuditLogController.log(self, **kwargs)
 
     def as_dict(self) -> dict:
         """ Returns dict repr of User """
