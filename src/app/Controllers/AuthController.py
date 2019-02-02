@@ -5,7 +5,7 @@ import typing
 import uuid
 from app import DBSession, logger, app
 from app.Controllers.LogControllers import UserAuthLogController
-from app.Models import User
+from app.Models import User, LoginBadEmail
 from app.Models.Enums import UserAuthLogAction
 from app.Models.RBAC import Role
 from flask import Response, request
@@ -80,6 +80,51 @@ def _generate_jwt_token(user: User) -> str:
     ).decode("utf-8")
 
 
+def _clear_failed_logins(email: str) -> None:
+    failed_email = session.query(exists().where(LoginBadEmail.email == email)).scalar()
+    if failed_email:
+        session.query(LoginBadEmail).filter(LoginBadEmail.email == email).delete()
+
+
+def _failed_login_attempt(email: str) -> Response:
+    # check if it's failed before
+    logger.debug(f"attempted to login with non existing email {email}")
+    failed_email = session.query(exists().where(LoginBadEmail.email == email)).scalar()
+    if failed_email:
+        # it's failed before so increment
+        failure_entry = session.query(LoginBadEmail).filter(LoginBadEmail.email == email).first()
+        logger.debug(f"email {email} has failed to log in "
+                     f"{failure_entry.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
+        # check if it has breached the limits
+        if failure_entry.failed_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
+            # check timeout
+            diff = (datetime.datetime.utcnow() - failure_entry.failed_time).seconds
+            if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
+                logger.debug(f"email last failed {diff}s ago. "
+                             f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
+                return Response("Too many incorrect attempts.", 403)
+            else:
+                # reset
+                logger.debug(f"email last failed {diff}s ago. "
+                             f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
+                session.delete(failure_entry)
+                return Response("Email incorrect.", 403)
+        else:
+            # increment
+            failure_entry.failed_attempts += 1
+            failure_entry.failed_time = datetime.datetime.utcnow()
+            session.commit()
+            logger.debug(f"incorrect email attempt for user {email}")
+            return Response("Email incorrect.", 403)
+    else:
+        # hasn't failed before, so create it
+        logger.debug(f"first login failure for email {email}")
+        new_failure = LoginBadEmail(email=email)
+        session.add(new_failure)
+        session.commit()
+        return Response("Email incorrect.", 403)
+
+
 class AuthController(object):
     """
     The AuthController manages functions regarding generating, decoding and validating
@@ -126,10 +171,12 @@ class AuthController(object):
             return password_validate_res
 
         # get user
-        try:
+        if UserController.user_exists(email):
             user = session.merge(UserController.get_user_by_email(email))
-        except ValueError:
-            return Response("User does not exist", 400)
+            _clear_failed_logins(user.email)
+        else:
+            # bad email attempt
+            return _failed_login_attempt(email)
 
         # check login attempts
         if user.failed_login_attempts > 0:
@@ -139,15 +186,13 @@ class AuthController(object):
                 # check timeout
                 diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
                 if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
-                    logger.debug(f"user last failed {diff}s ago. timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
-                    return Response(
-                        "Too many incorrect attempts.",
-                        403
-                    )
+                    logger.debug(f"user last failed {diff}s ago. "
+                                 f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
+                    return Response("Too many incorrect attempts.", 403)
                 else:
                     # reset
-                    logger.debug(f"user last failed {diff}s ago. timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. "
-                                 f"resetting timeout.")
+                    logger.debug(f"user last failed {diff}s ago. "
+                                 f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
                     user.failed_login_attempts = 0
                     user.failed_login_time = None
                     session.commit()
@@ -173,10 +218,7 @@ class AuthController(object):
             user.failed_login_attempts += 1
             user.failed_login_time = datetime.datetime.utcnow()
             session.commit()
-            return Response(
-                "Password incorrect.",
-                status=403
-            )
+            return Response("Password incorrect.", 403)
 
     @staticmethod
     def logout(headers: dict) -> Response:

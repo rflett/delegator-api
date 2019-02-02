@@ -1,17 +1,17 @@
 version: '3.7'
 services:
-  # api:
-  #   build:
-  #     context: ../src
-  #     dockerfile: Dockerfile
-  #     args:
-  #       FLASK_ENV: development
-  #       APP_ENV: Docker
-  #   command: pipenv run flask run --host 0.0.0.0 --reload
-  #   ports:
-  #     - 5000:5000
-  #   volumes:
-  #     - ./src:/app
+  api:
+    build:
+      context: ../src
+      dockerfile: Dockerfile
+      args:
+        FLASK_ENV: development
+        APP_ENV: Docker
+    command: pipenv run flask run --host 0.0.0.0 --reload
+    ports:
+      - 5000:5000
+    volumes:
+      - ../src:/app
   # nginx:
   #   build:
   #     context: nginx/
@@ -20,6 +20,8 @@ services:
   #     - 80:80
   #     - 443:443
   postgres:
-    image: 292374005836.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
+    build:
+      context: ../../containers/postgres
+      dockerfile: Dockerfile
     ports:
       - 5432:5432

@@ -1,12 +1,10 @@
-from app import DBSession
+from app import DBSession, app
 from app.Controllers import ValidationController, UserController, OrganisationController
 from app.Models import Organisation, User
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 
 session = DBSession()
-
-SIGNUP_ROLE = 'ADMIN'
 
 
 class SignupController(object):
@@ -19,16 +17,26 @@ class SignupController(object):
         """
         request_body = request.get_json()
 
-        create_org_res = OrganisationController.org_create(request, require_auth=False)
+        try:
+            create_org_res = OrganisationController.org_create(request, require_auth=False)
+        except Exception as e:
+            # rollback org
+            session.rollback()
+            return Response("There was an issue creating the organisation", 500)
 
         if create_org_res.status_code != 200:
             return create_org_res
 
         new_org = OrganisationController.get_org_by_name(request_body.get('org_name'))
-        request_body['role_name'] = SIGNUP_ROLE
+        request_body['role_name'] = app.config['SIGNUP_ROLE']
         request_body['org_id'] = new_org.id
 
-        create_user_res = UserController.user_create(request, require_auth=False)
+        try:
+            create_user_res = UserController.user_create(request, require_auth=False)
+        except Exception as e:
+            # rollback org and user
+            session.rollback()
+            return Response("There was an issue creating the user", 500)
 
         if create_user_res.status_code != 200:
             return create_user_res

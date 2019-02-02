@@ -114,11 +114,18 @@ class UserController(object):
                 )
                 session.add(user)
                 session.commit()
-                req_user.log(
-                    operation=Operation.CREATE,
-                    resource=Resource.USER,
-                    resource_id=user.id
-                )
+                if req_user is not None:
+                    req_user.log(
+                        operation=Operation.CREATE,
+                        resource=Resource.USER,
+                        resource_id=user.id
+                    )
+                else:
+                    user.log(
+                        operation=Operation.CREATE,
+                        resource=Resource.USER,
+                        resource_id=user.id
+                    )
                 logger.debug(f"created user {user.as_dict()}")
                 return Response("Successfully created user", 200)
 
