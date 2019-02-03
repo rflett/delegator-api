@@ -1,5 +1,5 @@
 import typing
-from app import session, logger
+from app import session, logger, g_response
 from app.Controllers import AuthController
 from app.Models import Organisation, User
 from app.Models.RBAC import Operation, Resource
@@ -89,7 +89,7 @@ class OrganisationController(object):
                         resource_id=organisation.id
                     )
                 logger.debug(f"created organisation {organisation.as_dict()}")
-                return Response("Successfully created the organisation", 200)
+                return g_response("Successfully created the organisation", 201)
 
         if require_auth:
             logger.debug("requiring auth to create org")

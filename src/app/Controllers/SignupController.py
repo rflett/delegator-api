@@ -1,4 +1,4 @@
-from app import session, app, logger
+from app import session, app, logger, g_response
 from app.Controllers import UserController, OrganisationController
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -17,12 +17,12 @@ class SignupController(object):
         # check if org already exists
         if OrganisationController.org_exists(request_body.get('org_name')):
             logger.debug(f"organisation {request_body.get('org_name')} already exists")
-            return Response("Organisation already exists.", 400)
+            return g_response("Organisation already exists.", 400)
 
         # check if user already exists
         if UserController.user_exists(request_body.get('email')):
             logger.debug(f"user {request_body.get('email')} already exists")
-            return Response("User already exists.", 400)
+            return g_response("User already exists.", 400)
 
         try:
             create_org_res = OrganisationController.org_create(request, require_auth=False)
@@ -30,9 +30,9 @@ class SignupController(object):
             # rollback org
             logger.error(str(e))
             session.rollback()
-            return Response("There was an issue creating the organisation", 500)
+            return g_response("There was an issue creating the organisation", 500)
 
-        if create_org_res.status_code != 200:
+        if create_org_res.status_code != 201:
             return create_org_res
 
         new_org = OrganisationController.get_org_by_name(request_body.get('org_name'))
@@ -45,9 +45,9 @@ class SignupController(object):
             # rollback org and user
             logger.error(str(e))
             session.rollback()
-            return Response("There was an issue creating the user", 500)
+            return g_response("There was an issue creating the user", 500)
 
-        if create_user_res.status_code != 200:
+        if create_user_res.status_code != 201:
             return create_user_res
 
         # log events
@@ -61,4 +61,4 @@ class SignupController(object):
             resource=Resource.USER
         )
 
-        return Response("Successfully signed up.", 200)
+        return g_response("Successfully signed up.", 200)

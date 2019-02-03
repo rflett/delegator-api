@@ -1,5 +1,6 @@
+import json
+from flask import Flask, Response
 from logging.handlers import SysLogHandler
-from flask import Flask
 from os import getenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -40,6 +41,37 @@ else:
 DBSession = sessionmaker(bind=engine)
 DBBase = declarative_base()
 session = DBSession()
+
+
+# generic response object
+def g_response(msg: str, status: int = 200, **kwargs) -> Response:
+    """
+    Just a Flask Response but gives one place to define a consistent response to use for generic responses
+    throughout the application.
+    :param msg:     The message to send as part of the "msg" key
+    :param status:  The HTTP status for the Response
+    :param kwargs:  Other Flask Response object kwargs (such as headers, status etc.)
+    :return:        A Flask Response
+    """
+    # default headers
+    headers = {'Content-Type': 'application/json'}
+
+    # merge new headers if there are any
+    if kwargs.get('headers') is not None:
+        headers = {
+            **headers,
+            **kwargs.pop('headers')
+        }
+
+    return Response(
+        json.dumps({
+            "msg": msg
+        }),
+        status=status,
+        headers=headers,
+        **kwargs
+    )
+
 
 # routes
 from app import routes   # noqa

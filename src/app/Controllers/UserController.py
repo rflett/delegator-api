@@ -1,5 +1,5 @@
 import typing
-from app import session, logger
+from app import session, logger, g_response
 from app.Controllers import AuthController
 from app.Models import User
 from app.Models.RBAC import Operation, Resource
@@ -35,7 +35,7 @@ class UserController(object):
     def get_user_by_email(email: str) -> User:
         """
         Gets a user by their email address
-        :param emails:          The user's email
+        :param email:          The user's email
         :raises ValueError:     If the user doesn't exist.
         :return:                The User
         """
@@ -88,7 +88,7 @@ class UserController(object):
                     if req_user.org_id != check_request.org_id and req_user.role != 'ADMIN':
                         logger.debug(f"user {req_user.id} with role {req_user.role} attempted to create a user under "
                                      f"org {check_request.org_id} when their org is {req_user.id}")
-                        return Response("Cannot create user for org that is not your own", 403)
+                        return g_response("Cannot create user for org that is not your own", 403)
                     else:
                         logger.debug(f"user {req_user.id} with role {req_user.role} can create a user under "
                                      f"org {check_request.org_id} when their org is {req_user.id}")
@@ -116,7 +116,7 @@ class UserController(object):
                         resource_id=user.id
                     )
                 logger.debug(f"created user {user.as_dict()}")
-                return Response("Successfully created user", 200)
+                return g_response("Successfully created user")
 
         if require_auth:
             logger.debug("requiring auth to create user")

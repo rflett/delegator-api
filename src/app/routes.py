@@ -1,4 +1,4 @@
-from app import app
+from app import app, g_response
 from functools import wraps
 from flask import Response, request
 from app.Controllers import AuthController, UserController, OrganisationController, SignupController
@@ -8,7 +8,7 @@ def requires_jwt(f):
     """
     Decorator that checks that the request contains a JWT token in the Authorization header.
     This won't validate the user, just make sure there is a token.
-    :return: Either a response (usually 403) or the decorated function.
+    :return: Either a response (usually 401) or the decorated function.
     """
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -27,7 +27,7 @@ def health():
     Health endpoint, required for load balancers etc.
     :return: OK Response"
     """
-    return Response(status=200)
+    return g_response("yeet")
 
 
 @app.route('/login', methods=['POST'])
@@ -49,7 +49,7 @@ def logout():
     return AuthController.logout(request.headers)
 
 
-@app.route('/signup', methods=['POST'])
+@app.route('/signup', methods=['PUT'])
 def signup():
     """
     Handles signup
@@ -58,7 +58,7 @@ def signup():
     return SignupController.signup(request)
 
 
-@app.route('/user/create', methods=['POST'])
+@app.route('/user/create', methods=['PUT'])
 @requires_jwt
 def user_create():
     """
@@ -68,7 +68,7 @@ def user_create():
     return UserController.user_create(request)
 
 
-@app.route('/org/create', methods=['POST'])
+@app.route('/org/create', methods=['PUT'])
 @requires_jwt
 def org_create():
     """

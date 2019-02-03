@@ -3,7 +3,7 @@ import json
 import jwt
 import typing
 import uuid
-from app import session, logger, app
+from app import session, logger, app, g_response
 from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User, LoginBadEmail
 from app.Models.Enums import UserAuthLogAction
@@ -29,7 +29,7 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
         user_id = payload.get('claims').get('user_id')
         logger.debug(f"Got user ID {user_id}")
     else:
-        return _unauthenticated()
+        return g_response("Missing payload from Bearer token", 401)
 
     # get User object
     try:
@@ -37,17 +37,7 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
         return user
     except Exception as e:
         logger.error(str(e))
-        return Response('No user found.', 400)
-
-
-def _unauthenticated(message: str = "Invalid credentials.") -> Response:
-    """
-    Simple helper function for returning a 403 Response.
-    :param message: The message to return
-    :return:        Response 403 Forbidden
-    """
-    logger.debug(f'unauthenticated: {message}')
-    return Response(message, status=403)
+        return g_response('No user found in Bearer token.', 401)
 
 
 def _generate_jwt_token(user: User) -> str:
@@ -107,27 +97,27 @@ def _failed_login_attempt(email: str) -> Response:
             if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
                 logger.debug(f"email last failed {diff}s ago. "
                              f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
-                return Response("Too many incorrect attempts.", 403)
+                return g_response("Too many incorrect attempts.", 401)
             else:
                 # reset
                 logger.debug(f"email last failed {diff}s ago. "
                              f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
                 session.delete(failure_entry)
-                return Response("Email incorrect.", 403)
+                return g_response("Email incorrect.", 401)
         else:
             # increment
             failure_entry.failed_attempts += 1
             failure_entry.failed_time = datetime.datetime.utcnow()
             session.commit()
             logger.debug(f"incorrect email attempt for user {email}")
-            return Response("Email incorrect.", 403)
+            return g_response("Email incorrect.", 401)
     else:
         # hasn't failed before, so create it
         logger.debug(f"first login failure for email {email}")
         new_failure = LoginBadEmail(email=email)
         session.add(new_failure)
         session.commit()
-        return Response("Email incorrect.", 403)
+        return g_response("Email incorrect.", 401)
 
 
 class AuthController(object):
@@ -154,7 +144,7 @@ class AuthController(object):
                 return auth_user
             else:
                 logger.debug(f"user id {auth_user.id} cannot perform {operation} on {resource}")
-                return Response(f"No permissions to {operation} {resource}", 403)
+                return g_response(f"No permissions to {operation} {resource}", 403)
 
     @staticmethod
     def login(req: dict) -> Response:
@@ -199,7 +189,7 @@ class AuthController(object):
                 if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
                     logger.debug(f"user last failed {diff}s ago. "
                                  f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
-                    return Response("Too many incorrect attempts.", 403)
+                    return g_response("Too many incorrect password attempts.", 401)
                 else:
                     # reset
                     logger.debug(f"user last failed {diff}s ago. "
@@ -218,8 +208,9 @@ class AuthController(object):
             user.failed_login_attempts = 0
             user.failed_login_time = None
             session.commit()
-            return Response(
+            return g_response(
                 "Welcome.",
+                status=201,
                 headers={
                     'Authorization': f"Bearer {_generate_jwt_token(user)}"
                 }
@@ -229,7 +220,7 @@ class AuthController(object):
             user.failed_login_attempts += 1
             user.failed_login_time = datetime.datetime.utcnow()
             session.commit()
-            return Response("Password incorrect.", 403)
+            return g_response("Password incorrect.", 401)
 
     @staticmethod
     def logout(headers: dict) -> Response:
@@ -246,13 +237,13 @@ class AuthController(object):
         payload = AuthController.validate_jwt(auth.replace('Bearer ', ''))
 
         if payload is False:
-            return _unauthenticated('Invalid token.')
+            return g_response('Invalid token.', 401)
         else:
             user = UserController.get_user_by_id(payload.get('claims').get('user_id'))
             AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
             UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
             logger.debug(f"user {user.id} logged out")
-            return Response('Logged out')
+            return g_response('Logged out')
 
     @staticmethod
     def validate_jwt(token: str) -> typing.Union[bool, dict]:
@@ -317,10 +308,10 @@ class AuthController(object):
 
         if auth is None:
             logger.debug('missing authorization header')
-            return _unauthenticated("Missing Authorization header.")
+            return g_response("Missing Authorization header.", 401)
         elif not isinstance(auth, str):
             logger.debug(f"Expected Authorization header type str got {type(auth)}.")
-            return _unauthenticated(f"Expected Authorization header type str got {type(auth)}.")
+            return g_response(f"Expected Authorization header type str got {type(auth)}.", 401)
 
         try:
             token = auth.replace('Bearer ', '')
@@ -328,7 +319,7 @@ class AuthController(object):
 
         except Exception as e:
             logger.error(str(e))
-            return _unauthenticated("Invalid token.")
+            return g_response("Invalid token.", 401)
 
         return True
 
