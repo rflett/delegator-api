@@ -143,6 +143,14 @@ class User(DBBase):
         from app.Controllers.LogControllers import RBACAuditLogController
         RBACAuditLogController.log(self, **kwargs)
 
+    def reset_password(self, password) -> None:
+        """
+        Resets the user's password
+        :param password: The password
+        :return: None
+        """
+        self.password = _hash_password(password)
+
     def as_dict(self) -> dict:
         """
         :return: The dict repr of a User object
@@ -150,11 +158,12 @@ class User(DBBase):
         return {
             "org_id": self.org_id,
             "email": self.email,
+            "password": self.password,
             "first_name": self.first_name,
             "last_name": self.last_name,
             "role": self.role,
             "jwt_aud": self.jwt_aud(),
             "jwt_secret": self.jwt_secret(),
-            "failed_login_attempts": self.failed_login_attempts,
-            "failed_login_time": self.failed_login_time
+            "failed_login_attempts": self.failed_login_attempts
+            # "failed_login_time": self.failed_login_time
         }

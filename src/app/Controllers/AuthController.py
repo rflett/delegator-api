@@ -1,9 +1,12 @@
 import datetime
 import json
 import jwt
+import random
+import string
 import typing
 import uuid
 from app import session, logger, app, g_response
+from app.Controllers import ValidationController
 from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User, LoginBadEmail
 from app.Models.Enums import UserAuthLogAction
@@ -210,7 +213,7 @@ class AuthController(object):
             session.commit()
             return g_response(
                 "Welcome.",
-                status=201,
+                status=200,
                 headers={
                     'Authorization': f"Bearer {_generate_jwt_token(user)}"
                 }
@@ -244,6 +247,23 @@ class AuthController(object):
             UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
             logger.debug(f"user {user.id} logged out")
             return g_response('Logged out')
+
+    @staticmethod
+    def reset_password(request_body: dict):
+        from app.Controllers import UserController
+        check_email = ValidationController.validate_email(request_body.get('email'))
+        if isinstance(check_email, Response):
+            return check_email
+        else:
+            logger.debug(f"received password reset for {request_body.get('email')}")
+            user = UserController.get_user_by_email(request_body.get('email'))
+            new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])
+            user.reset_password(new_password)
+            UserAuthLogController.log(user, 'reset_password')
+            session.commit()
+            logger.debug(json.dumps(user.as_dict()))
+            logger.debug(f"password successfully reset for {request_body.get('email')}")
+            return g_response(f"Password reset successfully, new password is {new_password}")
 
     @staticmethod
     def validate_jwt(token: str) -> typing.Union[bool, dict]:

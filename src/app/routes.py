@@ -49,6 +49,15 @@ def logout():
     return AuthController.logout(request.headers)
 
 
+@app.route('/reset_password', methods=['POST'])
+def reset_password():
+    """
+    Handles resetting a forgotten password
+    :return: Response
+    """
+    return AuthController.reset_password(request.get_json())
+
+
 @app.route('/signup', methods=['PUT'])
 def signup():
     """
