@@ -14,10 +14,21 @@ class SignupController(object):
         """
         request_body = request.get_json()
 
+        # check if org already exists
+        if OrganisationController.org_exists(request_body.get('org_name')):
+            logger.debug(f"organisation {request_body.get('org_name')} already exists")
+            return Response("Organisation already exists.", 400)
+
+        # check if user already exists
+        if UserController.user_exists(request_body.get('email')):
+            logger.debug(f"user {request_body.get('email')} already exists")
+            return Response("User already exists.", 400)
+
         try:
             create_org_res = OrganisationController.org_create(request, require_auth=False)
         except Exception as e:
             # rollback org
+            logger.error(str(e))
             session.rollback()
             return Response("There was an issue creating the organisation", 500)
 
