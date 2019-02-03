@@ -3,16 +3,13 @@ import json
 import jwt
 import typing
 import uuid
-from app import DBSession, logger, app
+from app import session, logger, app
 from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User, LoginBadEmail
 from app.Models.Enums import UserAuthLogAction
 from app.Models.RBAC import Role
 from flask import Response, request
 from sqlalchemy import exists
-
-
-session = DBSession()
 
 
 def _get_user_from_request(req: request) -> typing.Union[User, Response]:
@@ -41,6 +38,7 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
         user = UserController.get_user_by_id(user_id)
         return user
     except Exception as e:
+        logger.error(str(e))
         return Response('No user found.', 400)
 
 
@@ -281,6 +279,7 @@ class AuthController(object):
                 return False
             
         except Exception as e:
+            logger.error(str(e))
             logger.debug(f"decoding raised {e}, likely failed to decode jwt due to user secret/aud issue")
             AuthController.invalidate_jwt_token(token=token)
 
@@ -322,6 +321,7 @@ class AuthController(object):
             jwt.decode(jwt=token, algorithms='HS256', verify=False)
 
         except Exception as e:
+            logger.error(str(e))
             return _unauthenticated("Invalid token.")
 
         return True

@@ -1,5 +1,5 @@
 import datetime
-from app import DBBase, DBSession
+from app import DBBase
 from sqlalchemy import Integer, String, DateTime, Column
 
 
@@ -12,10 +12,3 @@ class LoginBadEmail(DBBase):
 
     def __init__(self, email: str):
         self.email = email
-
-    def occured(self) -> None:
-        self.failed_attempts += 1
-        self.failed_time = datetime.datetime.utcnow()
-        session = DBSession()
-        session.add(self)
-        session.commit()

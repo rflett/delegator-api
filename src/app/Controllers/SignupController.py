@@ -1,10 +1,7 @@
-from app import DBSession, app
-from app.Controllers import ValidationController, UserController, OrganisationController
-from app.Models import Organisation, User
+from app import session, app, logger
+from app.Controllers import UserController, OrganisationController
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
-
-session = DBSession()
 
 
 class SignupController(object):
@@ -35,6 +32,7 @@ class SignupController(object):
             create_user_res = UserController.user_create(request, require_auth=False)
         except Exception as e:
             # rollback org and user
+            logger.error(str(e))
             session.rollback()
             return Response("There was an issue creating the user", 500)
 

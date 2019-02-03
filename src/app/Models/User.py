@@ -3,12 +3,10 @@ import datetime
 import hashlib
 import os
 import typing
-from app import DBBase, DBSession
+from app import DBBase, session
 from app.Controllers.RBAC.RoleController import RoleController
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-
-session = DBSession()
 
 
 def _hash_password(password: str) -> str:

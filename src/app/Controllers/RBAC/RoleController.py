@@ -1,9 +1,7 @@
 import json
 from app.Models.RBAC import Role
 from app.Models.RBAC.Permission import Permission
-from app import DBSession, logger
-
-session = DBSession()
+from app import session, logger
 
 
 class RoleController(object):

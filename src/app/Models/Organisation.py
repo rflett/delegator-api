@@ -1,4 +1,5 @@
 import binascii
+import datetime
 import hashlib
 import uuid
 from app import DBBase
@@ -12,6 +13,7 @@ class Organisation(DBBase):
     name = Column('name', String())
     jwt_aud = Column('jwt_aud', String())
     jwt_secret = Column('jwt_secret', String())
+    created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
 
     def __init__(self, name: str):
         self.name = name

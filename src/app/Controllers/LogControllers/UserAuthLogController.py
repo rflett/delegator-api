@@ -1,9 +1,7 @@
 import typing
-from app import DBSession, logger
+from app import session, logger
 from app.Models import User
 from app.Models.LogModels import UserAuthLog
-
-session = DBSession()
 
 
 class UserAuthLogController(object):

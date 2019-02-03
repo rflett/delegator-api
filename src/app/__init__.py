@@ -36,8 +36,10 @@ else:
     engine = create_engine(
         f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{app.config['DB_HOST']}/etemt")
 
+# database session and base
 DBSession = sessionmaker(bind=engine)
 DBBase = declarative_base()
+session = DBSession()
 
 # routes
 from app import routes

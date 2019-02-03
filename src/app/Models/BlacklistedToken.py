@@ -1,8 +1,6 @@
 import datetime
-from app import DBSession, DBBase
+from app import DBBase
 from sqlalchemy import Column, String, DateTime
-
-session = DBSession()
 
 
 class BlacklistedToken(DBBase):

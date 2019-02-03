@@ -1,12 +1,10 @@
 import typing
-from app import DBSession, logger
-from app.Controllers import AuthController, ValidationController
+from app import session, logger
+from app.Controllers import AuthController
 from app.Models import User
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 from sqlalchemy import exists
-
-session = DBSession()
 
 
 def _user_exists(user_identifier: typing.Union[int, str]) -> bool:
