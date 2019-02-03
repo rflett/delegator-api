@@ -1,6 +1,6 @@
 import datetime
 from app import DBBase
-from app.Models import Organisation, User  #noqa
+from app.Models import Organisation, User  # noqa
 from sqlalchemy import Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship
 
