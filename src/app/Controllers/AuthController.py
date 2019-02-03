@@ -15,10 +15,8 @@ from sqlalchemy import exists
 def _get_user_from_request(req: request) -> typing.Union[User, Response]:
     """
     Get the user object that is claimed in the JWT payload.
-
-    :param req request: The Flask request
-
-    :return: A User object if a user is found, or a Flask Response
+    :param req: The Flask request
+    :return:    A User object if a user is found, or a Flask Response
     """
     from app.Controllers import UserController
 
@@ -45,23 +43,20 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
 def _unauthenticated(message: str = "Invalid credentials.") -> Response:
     """
     Simple helper function for returning a 403 Response.
-
-    :param message str: The message to return
-    :return: Response 403 Forbidden
+    :param message: The message to return
+    :return:        Response 403 Forbidden
     """
     logger.debug(f'unauthenticated: {message}')
     return Response(message, status=403)
 
 
 def _generate_jwt_token(user: User) -> str:
-    """ 
+    """
     Creates a JWT token containing a relevant payload for the {user}.
     The jti is a uniqie identifier for the token.
     The exp is the time after which the token is no longer valid.
-    
-    :param user User: The user to generate the token for.
-
-    :return: The token as a string.
+    :param user:    The user to generate the token for.
+    :return:        The token as a string.
     """
     payload = user.claims()
     if payload is None:
@@ -79,12 +74,24 @@ def _generate_jwt_token(user: User) -> str:
 
 
 def _clear_failed_logins(email: str) -> None:
+    """
+    Removes an email address from the failed logins table
+    :param email:   The email to clear
+    :return:        None
+    """
     failed_email = session.query(exists().where(LoginBadEmail.email == email)).scalar()
     if failed_email:
         session.query(LoginBadEmail).filter(LoginBadEmail.email == email).delete()
 
 
 def _failed_login_attempt(email: str) -> Response:
+    """
+    Checks to see if the email passed has failed to log in before due to it not existing. If this is the case
+    it will update the failed logins table and increment the attempts and time. Checks are done against
+    login limits to prevent excessive attempts to find email addresses.
+    :param email:   The email that failed to login
+    :return:        A Flask Response
+    """
     # check if it's failed before
     logger.debug(f"attempted to login with non existing email {email}")
     failed_email = session.query(exists().where(LoginBadEmail.email == email)).scalar()
@@ -130,6 +137,14 @@ class AuthController(object):
     """
     @staticmethod
     def authorize_request(request: request, operation: str, resource: str) -> typing.Union[Response, User]:
+        """
+        Checks to see if the user in the request has authorization to perform the request operation on a
+        particular resource.
+        :param request:     The request object
+        :param operation:   The operation to perform
+        :param resource:    The resource to affect
+        :return:            The User object if they have authority, or a Response if the don't
+        """
         logger.debug(f'authorizing request {json.dumps(request.get_json())}')
         auth_user = _get_user_from_request(request)
         if isinstance(auth_user, Response):
@@ -143,13 +158,11 @@ class AuthController(object):
 
     @staticmethod
     def login(req: dict) -> Response:
-        """ 
+        """
         Logic for logging a user in. It will validate the request params and then return
         a JWT token with the user details.
-        
-        :param req dict: The request data as a dict
-
-        :return: Response
+        :param req: The request data as a dict
+        :return:    Response
         """
         from app.Controllers import ValidationController, UserController
 
@@ -223,10 +236,8 @@ class AuthController(object):
         """
         Logic for logging a user out. Basically checks the headers,
         gets the user, and then invalidates the JWT token.
-
-        :param headers dict: The request headers as a dict.
-
-        :return: Response
+        :param headers: The request headers as a dict.
+        :return:        Response
         """
         from app.Controllers import AuthController, UserController
         from app.Controllers.LogControllers import UserAuthLogController
@@ -245,16 +256,14 @@ class AuthController(object):
 
     @staticmethod
     def validate_jwt(token: str) -> typing.Union[bool, dict]:
-        """ 
+        """
         Validates a JWT token. The token will be decoded without any secret keys, to ensure it is actually
         a JWT token. Once the decode is successfull the userid will be pulled out of the token and
         then checked against what is in the database. If the user object can be retrieved (and hence their orgs
-        secret key), then try and decode the JWT again with the secret key. 
+        secret key), then try and decode the JWT again with the secret key.
         If this works, then the token is good, and JWT payload.
-
-        :param token str: The JWT token as a string.
-
-        :return: JWT payload if decode was successful, or False.
+        :param token:   The JWT token as a string.
+        :return:        JWT payload if decode was successful, or False.
         """
         from app.Controllers import BlacklistedTokenController
         try:
@@ -277,7 +286,7 @@ class AuthController(object):
                 logger.debug(f"user {suspect_jwt.get('claims').get('user_id')} does not exist")
                 AuthController.invalidate_jwt_token(token=token)
                 return False
-            
+
         except Exception as e:
             logger.error(str(e))
             logger.debug(f"decoding raised {e}, likely failed to decode jwt due to user secret/aud issue")
@@ -285,13 +294,12 @@ class AuthController(object):
 
     @staticmethod
     def invalidate_jwt_token(token: str) -> None:
-        """ 
+        """
         Blacklists a JWT token. This involves getting the audience and unique id (aud and jti)
         and putting them in the blacklisted tokens table.
-
-        :param token str: The token to invalidate.
+        :param token: The token to invalidate.
         """
-        from app.Controllers import BlacklistedTokenController, AuthController
+        from app.Controllers import BlacklistedTokenController
         payload = jwt.decode(jwt=token, algorithms='HS256', verify=False)
         if payload.get('jti') is None:
             logger.debug(f"no jti in token")
@@ -301,12 +309,10 @@ class AuthController(object):
 
     @staticmethod
     def check_authorization_header(auth: str) -> typing.Union[bool, Response]:
-        """ 
-        Checks to make sure there is a JWT token in the Bearer token. Does not validate it. 
-        
-        :param auth str: The Authorization header from the request.
-
-        :return: True if the token exists and is a JWT, or an unauthenticated response.
+        """
+        Checks to make sure there is a JWT token in the Bearer token. Does not validate it.
+        :param auth:    The Authorization header from the request.
+        :return:        True if the token exists and is a JWT, or an unauthenticated response.
         """
 
         if auth is None:
@@ -330,9 +336,7 @@ class AuthController(object):
     def role_exists(role_name: str) -> User:
         """
         Checks to see if a role exists
-
-        :param role_name str: The role name
-
-        :return: True if the role exists or False
+        :param role_name:   The role name
+        :return:            True if the role exists or False
         """
         return session.query(exists().where(Role.id == role_name)).scalar()

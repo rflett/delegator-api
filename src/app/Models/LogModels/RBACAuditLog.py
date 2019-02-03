@@ -1,8 +1,7 @@
 import datetime
-import typing
 from app import DBBase
-from app.Models import Organisation, User
-from app.Models.RBAC import Resource, Operation
+from app.Models import Organisation, User   # noqa
+from app.Models.RBAC import Resource, Operation   # noqa
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -36,6 +35,9 @@ class RBACAuditLog(DBBase):
         self.resource_id = kwargs.get('resource_id')
 
     def to_dict(self) -> dict:
+        """
+        :return: The dict repr of an RBACAuditLog object
+        """
         return {
             'org_id': self.org_id,
             'user_id': self.user_id,

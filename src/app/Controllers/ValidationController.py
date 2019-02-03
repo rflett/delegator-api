@@ -7,12 +7,10 @@ from validate_email import validate_email
 
 
 def _check_password_reqs(password: str) -> typing.Union[str, bool]:
-    """ 
-    Ensures a password meets minimum security requirements. 
-    
-    :param password str: The password to check
-    
-    :return: A message if it does not meet the requirements, or True
+    """
+    Ensures a password meets minimum security requirements.
+    :param password:    The password to check
+    :return:            A message if it does not meet the requirements, or True
     """
     min_length = 6
     min_special_chars = 1
@@ -34,14 +32,12 @@ def _check_password_reqs(password: str) -> typing.Union[str, bool]:
 class ValidationController(object):
     @staticmethod
     def validate_email(email: str) -> typing.Union[bool, Response]:
-        """ 
-        Validates an email address. It checks to make sure it's a string, and calls the 
+        """
+        Validates an email address. It checks to make sure it's a string, and calls the
         validate_email package which compares it to a huge regex. This package has support
         for MX record check.
-        
-        :param email str: The email to validate
-
-        :return: True if the email is valid, or a Flask Response.
+        :param email:   The email to validate
+        :return:        True if the email is valid, or a Flask Response.
         """
         if not isinstance(email, str):
             logger.debug(f"bad email expected str got {type(email)}")
@@ -53,12 +49,10 @@ class ValidationController(object):
 
     @staticmethod
     def validate_password(password: str) -> typing.Union[bool, Response]:
-        """ 
+        """
         Validates a password. Makes sure it's a string, and can do a strength check.
-
-        :param password str: The password to check
-
-        :return: True if password is valid, or a Flask Response
+        :param password:    The password to check
+        :return:            True if password is valid, or a Flask Response
         """
         if not isinstance(password, str):
             logger.debug(f"bad email expected str got {type(password)}")
@@ -72,9 +66,8 @@ class ValidationController(object):
     def validate_create_user_request(request_body: dict) -> typing.Union[Response, dataclass]:
         """
         Validates a user request body
-
-        :param request_body: The request body from the create user request
-        :return: Response if the request body contains invalid values, or the UserRequest dataclass
+        :param request_body:    The request body from the create user request
+        :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
         from app.Controllers import UserController, OrganisationController
 
@@ -162,8 +155,8 @@ class ValidationController(object):
         """
         Validates a user request body
 
-        :param request_body: The request body from the create org request
-        :return: Response if the request body contains invalid values, or the OrgRequest dataclass
+        :param request_body:    The request body from the create org request
+        :return:                Response if the request body contains invalid values, or the OrgRequest dataclass
         """
         from app.Controllers import OrganisationController
 

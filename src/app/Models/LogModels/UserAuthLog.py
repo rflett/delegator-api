@@ -1,7 +1,7 @@
 import datetime
 import typing
 from app import DBBase
-from app.Models import Organisation
+from app.Models import Organisation   # noqa
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 

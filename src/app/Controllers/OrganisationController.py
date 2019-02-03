@@ -10,10 +10,8 @@ from sqlalchemy import exists
 def _org_exists(org_identifier: typing.Union[int, str]) -> bool:
     """
     Checks to see if an org exists
-
-    :param org_identifier: The org id or name
-
-    :return: True if the org exists or False
+    :param org_identifier:  The org id or name
+    :return:                True if the org exists or False
     """
     if isinstance(org_identifier, str):
         logger.debug("org_identifier is a str so finding org by name")
@@ -27,22 +25,18 @@ class OrganisationController(object):
     @staticmethod
     def org_exists(org_identifier: typing.Union[str, int]) -> bool:
         """
-        Checks to see if an org exists
-
-        :param org_identifier: The org id or name
-
-        :return: True if the org exists or False
+        Checks to see if an org exists. Public wrapper function for _org_exists.
+        :param org_identifier:  The org id or name
+        :return:                True if the org exists or False
         """
         return _org_exists(org_identifier)
 
     @staticmethod
     def get_org_by_id(id: int) -> Organisation:
-        """ 
+        """
         Gets an organisation by its id.
-        
-        :param id: The id of the organisation
-
-        :return: The Organisation object.
+        :param id:  The id of the organisation
+        :return:    The Organisation object.
         """
         if _org_exists(id):
             return session.query(Organisation).filter(Organisation.id == id).first()
@@ -54,10 +48,8 @@ class OrganisationController(object):
     def get_org_by_name(name: str) -> Organisation:
         """
         Gets an organisation by its name.
-
-        :param name: The name of the organisation
-
-        :return: The Organisation object.
+        :param name:    The name of the organisation
+        :return:        The Organisation object.
         """
         if _org_exists(name):
             return session.query(Organisation).filter(Organisation.name == name).first()
@@ -69,18 +61,16 @@ class OrganisationController(object):
     def org_create(request: request, require_auth: bool = True) -> Response:
         """
         Creates an organisation.
-
-        :param request: The request to create an org
-        :param require_auth: If request needs to have authoriziation (e.g. not if signing up)
-        :return: A response
+        :param request:         The request to create an org
+        :param require_auth:    If request needs to have authoriziation (e.g. not if signing up)
+        :return:                A response
         """
         def create_org(request_body: dict, req_user: User = None) -> Response:
             """
             Creates the organisation
-
             :param request_body:    Request body
             :param req_user:        The user making the request
-            :return: Response
+            :return:                Response
             """
             from app.Controllers import ValidationController
             check_request = ValidationController.validate_create_org_request(request_body)

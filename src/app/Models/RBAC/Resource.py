@@ -26,7 +26,9 @@ class Resource(DBBase):
         self.description = description
 
     def as_dict(self) -> dict:
-        """ Returns dict repr of Resource """
+        """
+        :return: The dict repr of a Resource object
+        """
         return {
             "id":  self.id,
             "name": self.name,

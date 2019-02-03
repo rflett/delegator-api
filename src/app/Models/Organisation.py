@@ -22,7 +22,9 @@ class Organisation(DBBase):
             hashlib.pbkdf2_hmac('sha256', uuid.uuid4().bytes, uuid.uuid4().bytes, 100000)).decode('ascii')
 
     def as_dict(self):
-        """ Returns dict repr of BlacklistedToken """
+        """
+        :return: The dict repr of an Organisation object
+        """
         return {
             "name": self.name,
             "jwt_aud": self.jwt_aud,

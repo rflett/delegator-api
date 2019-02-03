@@ -1,4 +1,4 @@
-from app import app, logger
+from app import app
 from functools import wraps
 from flask import Response, request
 from app.Controllers import AuthController, UserController, OrganisationController, SignupController
@@ -53,7 +53,6 @@ def logout():
 def signup():
     """
     Handles signup
-
     :return: Response
     """
     return SignupController.signup(request)
@@ -64,7 +63,6 @@ def signup():
 def user_create():
     """
     Handles creating a user.
-
     :return: Response
     """
     return UserController.user_create(request)
@@ -75,7 +73,6 @@ def user_create():
 def org_create():
     """
     Handles creating an organisation.
-    
     :return: Response
     """
     return OrganisationController.org_create(request)

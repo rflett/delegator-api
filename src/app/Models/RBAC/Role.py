@@ -22,7 +22,9 @@ class Role(DBBase):
         self.description = description
 
     def as_dict(self) -> dict:
-        """ Returns dict repr of Role """
+        """
+        :return: The dict repr of a Role object
+        """
         return {
             "id":  self.id,
             "name": self.name,

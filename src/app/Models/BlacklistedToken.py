@@ -15,7 +15,9 @@ class BlacklistedToken(DBBase):
         self.exp = exp
 
     def as_dict(self) -> dict:
-        """ Returns dict repr of BlacklistedToken """
+        """
+        :return: The dict repr of a BlacklistedToken object
+        """
         return {
             "id":  self.id,
             "exp": self.exp

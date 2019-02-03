@@ -14,7 +14,7 @@ class Docker(Config):
 
 
 class Scott(Config):
-    SCOTT = "AWESOME" # can't be empty lol
+    SCOTT = "AWESOME"  # can't be empty lol
 
 
 class Local(Config):

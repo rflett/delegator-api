@@ -42,4 +42,4 @@ DBBase = declarative_base()
 session = DBSession()
 
 # routes
-from app import routes
+from app import routes   # noqa

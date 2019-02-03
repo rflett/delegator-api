@@ -8,11 +8,8 @@ class RBACAuditLogController(object):
     def log(user: User, **kwargs) -> None:
         """
         Logs an action that a user would perform.
-        
-        :param user User:       The user to log the action against.
-        :param operation str:   The operation performed.
-        :param resource str:    The resource affected
-        :param resource_id:     An optional resource id
+        :param user:    The user to log the action against.
+        :param kwargs:  operation, resource, optional(resource_id)
         """
         audit_log = RBACAuditLog(
             org_id=user.org_id,

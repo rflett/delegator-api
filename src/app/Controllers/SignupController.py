@@ -9,8 +9,8 @@ class SignupController(object):
     def signup(request: request) -> Response:
         """
         Signup a user, which effectively creates an organisation and a user against that organisation.
-        :param request:
-        :return:
+        :param request: The request object
+        :return:        Response
         """
         request_body = request.get_json()
 

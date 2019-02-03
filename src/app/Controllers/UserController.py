@@ -9,11 +9,9 @@ from sqlalchemy import exists
 
 def _user_exists(user_identifier: typing.Union[int, str]) -> bool:
     """
-    Checks to see if an org exists
-
-    :param user_identifier: The org id or name
-
-    :return: True if the org exists or False
+    Checks to see if a user exists
+    :param user_identifier: The user id or email
+    :return:                True if the user exists or False
     """
     if isinstance(user_identifier, str):
         logger.debug("user_identifier is a str so finding user by email")
@@ -28,22 +26,18 @@ class UserController(object):
     def user_exists(user_identifier: typing.Union[str, int]):
         """
         Checks to see if a user exists
-
         :param user_identifier: The user id or email
-
-        :return: True if the user exists or False
+        :return:                True if the user exists or False
         """
         return _user_exists(user_identifier)
-        
+
     @staticmethod
     def get_user_by_email(email: str) -> User:
-        """ 
-        Gets a user by their email address 
-        
-        :param emails str: The user's email
-        :raises ValueError: If the user doesn't exist.
-
-        :return: The User
+        """
+        Gets a user by their email address
+        :param emails:          The user's email
+        :raises ValueError:     If the user doesn't exist.
+        :return:                The User
         """
         if _user_exists(email):
             logger.debug(f"user {email} exists")
@@ -56,11 +50,9 @@ class UserController(object):
     def get_user_by_id(user_id: int) -> User:
         """
         Gets a user by their id
-
-        :param id str: The user's id
-        :raises ValueError: If the user doesn't exist.
-
-        :return: The User
+        :param user_id:              The user's id
+        :raises ValueError:     If the user doesn't exist.
+        :return:                The User
         """
         if _user_exists(user_id):
             logger.debug(f"user with id {user_id} exists")
@@ -73,18 +65,17 @@ class UserController(object):
     def user_create(request: request, require_auth: bool = True) -> Response:
         """
         Creates a user from a request
-
-        :param request: The request object
-        :param require_auth: If request needs to have authoriziation (e.g. not if signing up)
-        :return: Response
+        :param request:         The request object
+        :param require_auth:    If request needs to have authorization (e.g. not if signing up)
+        :return:                Response
         """
         def create_user(request_body: dict, req_user: User = None) -> Response:
             """
             Creates the user
 
-            :param request_body: Request body
-            :param req_user: The user making the request, if it was an authenticated request.
-            :return: Response
+            :param request_body:    Request body
+            :param req_user:        The user making the request, if it was an authenticated request.
+            :return:                Response
             """
             from app.Controllers import ValidationController
             check_request = ValidationController.validate_create_user_request(request_body)
