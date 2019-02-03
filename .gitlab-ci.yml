@@ -1,4 +1,5 @@
 stages:
+  - lint
   # - unitTest
   - build
   - deployStaging
@@ -6,6 +7,13 @@ stages:
 variables:
   AMZ_REGISTRY: 292374005836.dkr.ecr.ap-southeast-2.amazonaws.com
   GITLAB_REGISTRY: registry.gitlab.com/rflett/containers
+
+flake8:
+  stage: lint
+  allow_failure: true
+  image: $GITLAB_REGISTRY/python:latest
+  script:
+    - flake8 src/
 
 # unitTest:
 #   stage: unitTest
