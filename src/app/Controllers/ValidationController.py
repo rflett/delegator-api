@@ -1,6 +1,5 @@
 import typing
 from app import logger, g_response
-from app.Controllers import AuthController
 from dataclasses import dataclass
 from flask import Response
 from validate_email import validate_email

@@ -67,7 +67,7 @@ def signup():
     return SignupController.signup(request)
 
 
-@app.route('/user/create', methods=['PUT'])
+@app.route('/user', methods=['PUT'])
 @requires_jwt
 def user_create():
     """
@@ -77,7 +77,7 @@ def user_create():
     return UserController.user_create(request)
 
 
-@app.route('/user', methods=['PUT'])
+@app.route('/user', methods=['POST'])
 @requires_jwt
 def update_user():
     """
