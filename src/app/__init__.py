@@ -1,6 +1,7 @@
 import json
 import typing
 from flask import Flask, Response
+from flask_cors import CORS
 from logging.handlers import SysLogHandler
 from os import getenv
 from sqlalchemy import create_engine
@@ -10,6 +11,9 @@ from sqlalchemy.orm import sessionmaker
 # flask conf
 app = Flask(__name__)
 app.config.from_object(f"config.{getenv('APP_ENV', 'Local')}")
+
+# CORS
+CORS(app)
 
 # logging conf
 log_handler = SysLogHandler()
