@@ -69,7 +69,7 @@ class ValidationController(object):
         :param request_body:    The request body from the create user request
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
-        from app.Controllers import UserController, OrganisationController
+        from app.Controllers import UserController, OrganisationController, AuthController
 
         @dataclass
         class UserRequest:

@@ -94,13 +94,14 @@ class UserController(object):
             else:
                 # check that user being created is for the same org as the user making the request
                 # unless they're an admin
-                if _compare_user_orgs(check_request, req_user):
-                    logger.debug(f"user {req_user.id} with role {req_user.role} can create a user under "
-                                 f"org {check_request.org_id} when their org is {req_user.id}")
-                else:
-                    logger.debug(f"user {req_user.id} with role {req_user.role} attempted to create a user under "
-                                 f"org {check_request.org_id} when their org is {req_user.id}")
-                    return g_response("Cannot create user for org that is not your own", 403)
+                if req_user is not None:
+                    if _compare_user_orgs(check_request, req_user):
+                        logger.debug(f"user {req_user.id} with role {req_user.role} can create a user under "
+                                     f"org {check_request.org_id} when their org is {req_user.id}")
+                    else:
+                        logger.debug(f"user {req_user.id} with role {req_user.role} attempted to create a user under "
+                                     f"org {check_request.org_id} when their org is {req_user.id}")
+                        return g_response("Cannot create user for org that is not your own", 403)
 
                 user = User(
                     org_id=check_request.org_id,
