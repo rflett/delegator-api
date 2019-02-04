@@ -17,7 +17,15 @@
         ],
         "environment" : [
             { "name" : "APP_ENV", "value" : "Staging" }
-        ]
+        ],
+        "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "api",
+                "awslogs-region": "ap-southeast-2",
+                "awslogs-stream-prefix": "api"
+            }
+        }
     },
     {
         "name": "postgres",
@@ -31,6 +39,14 @@
                 "containerPort": 5432,
                 "protocol": "tcp"
             }
-        ]
+        ],
+        "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "postgres",
+                "awslogs-region": "ap-southeast-2",
+                "awslogs-stream-prefix": "postgres"
+            }
+        }
     }
 ]
