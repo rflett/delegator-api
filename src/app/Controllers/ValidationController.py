@@ -234,7 +234,6 @@ class ValidationController(object):
         return UserRequest(
             org_id=org_id,
             email=email,
-            password=password,
             first_name=first_name,
             last_name=last_name,
             role_name=role_name
