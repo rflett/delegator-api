@@ -18,4 +18,4 @@ RUN pip install pipenv && pipenv install
 
 EXPOSE 5000
 
-CMD ["pipenv", "run", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "api:app"]
+CMD ["pipenv", "run", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--log-level", "debug", "api:app"]
