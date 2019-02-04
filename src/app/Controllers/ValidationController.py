@@ -151,6 +151,96 @@ class ValidationController(object):
         )
 
     @staticmethod
+    def validate_update_user_request(request_body: dict) -> typing.Union[Response, dataclass]:
+        """
+        Validates a user request body
+        :param request_body:    The request body from the update user request
+        :return:                Response if the request body contains invalid values, or the UserRequest dataclass
+        """
+        from app.Controllers import UserController, AuthController, OrganisationController
+
+        @dataclass
+        class UserRequest:
+            """ A user request dataclass which represents the values in a update user request object. """
+            org_id: int
+            email: str
+            first_name: str
+            last_name: str
+            role_name: str
+
+            def __iter__(self):
+                for attr, value in self.__dict__.items():
+                    yield attr, value
+
+        # check id
+        id = request_body.get('id')
+        if not isinstance(id, int):
+            return g_response(f"Bad id, expected int got {type(id)}")
+        # check email
+        email = request_body.get('email')
+        email_check = ValidationController.validate_email(email)
+        if isinstance(email_check, Response):
+            return email_check
+        # check user does exist
+        if not UserController.user_exists(request_body.get('email')):
+            logger.debug(f"user {request_body.get('email')} doesn't exist")
+            return g_response(f"User doesn't exist.", 400)
+        # check org
+        org_identifier = request_body.get('org_id', request_body.get('org_name'))
+        if not (isinstance(org_identifier, int) or isinstance(org_identifier, str)):
+            logger.debug(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+            return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
+        # check that org exists
+        if not OrganisationController.org_exists(org_identifier):
+            logger.debug(f"org {org_identifier} doesn't exist")
+            return g_response(f"Org does not exist", 400)
+        # get org_id
+        if isinstance(org_identifier, str):
+            org_id = OrganisationController.get_org_by_name(org_identifier).id
+        elif isinstance(org_identifier, int):
+            org_id = org_identifier
+        else:
+            # should never be here??
+            logger.debug("Expected org_id to be set but it isn't.")
+            return g_response(f"Expected org_id to be set but it isn't.", 400)
+        # check firstname
+        first_name = request_body.get('first_name')
+        if not isinstance(first_name, str):
+            logger.debug(f"Bad first_name, expected str got {type(first_name)}.")
+            return g_response(f"Bad first_name, expected str got {type(first_name)}.", 400)
+        if len(first_name) == 0:
+            logger.debug(f"first_name is required.")
+            return g_response(f"first_name is required.", 400)
+        # check last_name
+        last_name = request_body.get('last_name')
+        if not isinstance(last_name, str):
+            logger.debug(f"Bad last_name, expected str got {type(last_name)}.")
+            return g_response(f"Bad last_name, expected str got {type(last_name)}.", 400)
+        if len(last_name) == 0:
+            logger.debug(f"last_name is required.")
+            return g_response(f"last_name is required.", 400)
+        # check role
+        role_name = request_body.get('role_name')
+        if not isinstance(role_name, str):
+            logger.debug(f"Bad role_name, expected str got {type(role_name)}.")
+            return g_response(f"Bad role_name, expected str got {type(role_name)}.", 400)
+        if len(role_name) == 0:
+            logger.debug(f"role_name is required.")
+            return g_response(f"role_name is required.", 400)
+        if not AuthController.role_exists(role_name):
+            logger.debug(f"Role {role_name} does not exist")
+            return g_response(f"Role {role_name} does not exist", 400)
+
+        return UserRequest(
+            org_id=org_id,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            role_name=role_name
+        )
+
+    @staticmethod
     def validate_create_org_request(request_body: dict) -> typing.Union[Response, dataclass]:
         """
         Validates a user request body

@@ -21,6 +21,17 @@ def _user_exists(user_identifier: typing.Union[int, str]) -> bool:
         return session.query(exists().where(User.id == user_identifier)).scalar()
 
 
+def _compare_user_orgs(user_resource: User, request_user: User) -> bool:
+    """
+    Checks to see if the user making the request belongs to the same organisation as the user they're
+    affecting. The exception to this rule is for the global superuser account.
+    :param user_resource:   The user affected by the request_user
+    :param request_user:    The user making the request
+    :return:                True if the orgs are equal or false
+    """
+    return True if request_user.org_id == user_resource.org_id or request_user.role == 'ADMIN' else False
+
+
 class UserController(object):
     @staticmethod
     def user_exists(user_identifier: typing.Union[str, int]):
@@ -72,7 +83,6 @@ class UserController(object):
         def create_user(request_body: dict, req_user: User = None) -> Response:
             """
             Creates the user
-
             :param request_body:    Request body
             :param req_user:        The user making the request, if it was an authenticated request.
             :return:                Response
@@ -84,14 +94,13 @@ class UserController(object):
             else:
                 # check that user being created is for the same org as the user making the request
                 # unless they're an admin
-                if isinstance(req_user, User):
-                    if req_user.org_id != check_request.org_id and req_user.role != 'ADMIN':
-                        logger.debug(f"user {req_user.id} with role {req_user.role} attempted to create a user under "
-                                     f"org {check_request.org_id} when their org is {req_user.id}")
-                        return g_response("Cannot create user for org that is not your own", 403)
-                    else:
-                        logger.debug(f"user {req_user.id} with role {req_user.role} can create a user under "
-                                     f"org {check_request.org_id} when their org is {req_user.id}")
+                if _compare_user_orgs(check_request, req_user):
+                    logger.debug(f"user {req_user.id} with role {req_user.role} can create a user under "
+                                 f"org {check_request.org_id} when their org is {req_user.id}")
+                else:
+                    logger.debug(f"user {req_user.id} with role {req_user.role} attempted to create a user under "
+                                 f"org {check_request.org_id} when their org is {req_user.id}")
+                    return g_response("Cannot create user for org that is not your own", 403)
 
                 user = User(
                     org_id=check_request.org_id,
@@ -128,3 +137,51 @@ class UserController(object):
         else:
             logger.debug("not requiring auth to create user")
             return create_user(request.get_json())
+
+    @staticmethod
+    def user_update(request: request) -> Response:
+        """
+        Updates a user, requires the full user object in the response body.
+        :param request: The request object
+        :return:        Response
+        """
+        def update_user(request_body: dict, req_user: User) -> Response:
+            """
+            Updates the user
+            :param request_body:    Request body
+            :param req_user:        The user making the request
+            :return:                Response
+            """
+            from app.Controllers import ValidationController
+            check_request = ValidationController.validate_update_user_request(request_body)
+            if isinstance(check_request, Response):
+                return check_request
+            else:
+                # check that user being updated is for the same org as the user making the request
+                # unless they're an admin
+                if _compare_user_orgs(check_request, req_user):
+                    logger.debug(f"user {req_user.id} with role {req_user.role} can update a user under "
+                                 f"org {check_request.org_id} when their org is {req_user.id}")
+                else:
+                    logger.debug(f"user {req_user.id} with role {req_user.role} attempted to update a user under "
+                                 f"org {check_request.org_id} when their org is {req_user.id}")
+                    return g_response("Cannot update user for org that is not your own", 403)
+
+                user_to_update = UserController.get_user_by_email(check_request.email)
+                for prop, val in check_request:
+                    user_to_update.__setattr__(prop, val)
+                session.commit()
+
+                req_user.log(
+                    operation=Operation.UPDATE,
+                    resource=Resource.USER,
+                    resource_id=user_to_update.id
+                )
+                logger.debug(f"updated user {user_to_update.as_dict()}")
+                return g_response(status=204)
+
+        req_user = AuthController.authorize_request(request, Operation.UPDATE, Resource.USER)
+        if isinstance(req_user, Response):
+            return req_user
+        elif isinstance(req_user, User):
+            return update_user(request.get_json(), req_user=req_user)

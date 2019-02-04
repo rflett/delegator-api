@@ -1,4 +1,5 @@
 import json
+import typing
 from flask import Flask, Response
 from logging.handlers import SysLogHandler
 from os import getenv
@@ -44,7 +45,7 @@ session = DBSession()
 
 
 # generic response object
-def g_response(msg: str, status: int = 200, **kwargs) -> Response:
+def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) -> Response:
     """
     Just a Flask Response but gives one place to define a consistent response to use for generic responses
     throughout the application.

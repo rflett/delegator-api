@@ -77,6 +77,16 @@ def user_create():
     return UserController.user_create(request)
 
 
+@app.route('/user', methods=['PUT'])
+@requires_jwt
+def update_user():
+    """
+    Handles updating a user
+    :return: Response
+    """
+    return UserController.user_update(request)
+
+
 @app.route('/org/create', methods=['PUT'])
 @requires_jwt
 def org_create():

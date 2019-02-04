@@ -5,6 +5,7 @@ from sqlalchemy import Column, String, DateTime
 
 CREATE = 'CREATE'
 DELETE = 'DELETE'
+UPDATE = 'UPDATE'
 
 
 class Operation(DBBase):
