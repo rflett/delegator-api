@@ -129,7 +129,11 @@ class AuthController(object):
     JWT tokens, login/logout functionality, and validating Authorization headers.
     """
     @staticmethod
-    def authorize_request(request: request, operation: str, resource: str) -> typing.Union[Response, User]:
+    def authorize_request(
+            request: request,
+            operation: str,
+            resource: str
+    ) -> typing.Union[Response, User]:
         """
         Checks to see if the user in the request has authorization to perform the request operation on a
         particular resource.
@@ -144,6 +148,7 @@ class AuthController(object):
             return auth_user
         else:
             if auth_user.can(operation, resource):
+                logger.debug(f"user id {auth_user.id} can perform {operation} on {resource}")
                 return auth_user
             else:
                 logger.debug(f"user id {auth_user.id} cannot perform {operation} on {resource}")

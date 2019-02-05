@@ -156,14 +156,10 @@ class User(DBBase):
         :return: The dict repr of a User object
         """
         return {
+            "id": self.id,
             "org_id": self.org_id,
             "email": self.email,
-            "password": self.password,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "role": self.role,
-            "jwt_aud": self.jwt_aud(),
-            "jwt_secret": self.jwt_secret(),
-            "failed_login_attempts": self.failed_login_attempts
-            # "failed_login_time": self.failed_login_time
+            "role": self.role
         }

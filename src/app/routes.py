@@ -58,7 +58,7 @@ def reset_password():
     return AuthController.reset_password(request.get_json())
 
 
-@app.route('/signup', methods=['PUT'])
+@app.route('/signup', methods=['POST'])
 def signup():
     """
     Handles signup
@@ -67,7 +67,7 @@ def signup():
     return SignupController.signup(request)
 
 
-@app.route('/user', methods=['PUT'])
+@app.route('/user', methods=['POST'])
 @requires_jwt
 def user_create():
     """
@@ -77,7 +77,7 @@ def user_create():
     return UserController.user_create(request)
 
 
-@app.route('/user', methods=['POST'])
+@app.route('/user', methods=['PUT'])
 @requires_jwt
 def update_user():
     """
@@ -87,7 +87,17 @@ def update_user():
     return UserController.user_update(request)
 
 
-@app.route('/org/create', methods=['PUT'])
+@app.route('/user/<identifier>', methods=['GET'])
+@requires_jwt
+def get_user(identifier):
+    """
+    Handles getting a single user
+    :return:
+    """
+    return UserController.user_get(identifier, request)
+
+
+@app.route('/org', methods=['POST'])
 @requires_jwt
 def org_create():
     """

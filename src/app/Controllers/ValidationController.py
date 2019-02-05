@@ -239,6 +239,15 @@ class ValidationController(object):
         )
 
     @staticmethod
+    def validate_get_user_request(user_id: int) -> typing.Union[Response, int]:
+        from app.Controllers import UserController
+        # check they exist
+        if not UserController.user_exists(user_id):
+            logger.debug(f"user with id {user_id} does not exist")
+            return g_response("User does not exist.", 400)
+        return user_id
+
+    @staticmethod
     def validate_create_org_request(request_body: dict) -> typing.Union[Response, dataclass]:
         """
         Validates a user request body

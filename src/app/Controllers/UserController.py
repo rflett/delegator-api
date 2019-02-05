@@ -1,6 +1,7 @@
+import json
 import typing
 from app import session, logger, g_response
-from app.Controllers import AuthController
+from app.Controllers import AuthController, ValidationController
 from app.Models import User
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -34,13 +35,32 @@ def _compare_user_orgs(user_resource: User, request_user: User) -> bool:
 
 class UserController(object):
     @staticmethod
-    def user_exists(user_identifier: typing.Union[str, int]):
+    def user_exists(user_identifier: typing.Union[str, int]) -> bool:
         """
         Checks to see if a user exists
         :param user_identifier: The user id or email
         :return:                True if the user exists or False
         """
         return _user_exists(user_identifier)
+
+    @staticmethod
+    def get_user(user_identifier: typing.Union[str, int]) -> User:
+        """
+        Gets a user by their id or email
+        :param user_identifier: The user id or email
+        :raises ValueError:     If the user doesn't exist.
+        :return:                The User
+        """
+        if _user_exists(user_identifier):
+            if isinstance(user_identifier, str):
+                logger.debug("user_identifier is a str so finding user by email")
+                return session.query(User).filter(User.email == user_identifier).first()
+            elif isinstance(user_identifier, int):
+                logger.debug("user_identifier is an int so finding user by id")
+                return session.query(User).filter(User.id == user_identifier).first()
+        else:
+            logger.debug(f"User with identifier {user_identifier} does not exist.")
+            raise ValueError(f"User with identifier {user_identifier} does not exist.")
 
     @staticmethod
     def get_user_by_email(email: str) -> User:
@@ -185,4 +205,64 @@ class UserController(object):
         if isinstance(req_user, Response):
             return req_user
         elif isinstance(req_user, User):
-            return update_user(request.get_json(), req_user=req_user)
+            return update_user(request.get_json(), req_user)
+
+    @staticmethod
+    def user_get(user_identifier: typing.Union[int, str], request: request) -> Response:
+        """
+        Get a single user.
+        :param user_identifier:     The user ID
+        :param request:     The request object
+        :return:
+        """
+        def get_user(identifier: typing.Union[int, str], req_user: User) -> Response:
+            """
+            Gets the user
+            :param user_id:    The user id to GET
+            :param req_user:   The user making the request
+            :return:           Response
+            """
+            from app.Controllers import ValidationController, UserController
+            check_request = ValidationController.validate_get_user_request(identifier)
+            if isinstance(check_request, Response):
+                return check_request
+            else:
+                user = UserController.get_user(identifier)
+                if _compare_user_orgs(user, req_user):
+                    logger.debug(f"user {req_user.id} with role {req_user.role} can get a user under "
+                                 f"org {user.org_id} when their org is {req_user.id}")
+                else:
+                    logger.debug(f"user {req_user.id} with role {req_user.role} attempted to get a user under "
+                                 f"org {user.org_id} when their org is {req_user.id}")
+                    return g_response("Cannot get user for org that is not your own", 403)
+
+            req_user.log(
+                operation=Operation.GET,
+                resource=Resource.USER,
+                resource_id=user.id
+            )
+            logger.debug(f"got user {user.as_dict()}")
+            return Response(json.dumps(user.as_dict()), headers={'Content-Type': 'application/json'})
+
+        # is the identifier an email or user_id?
+        try:
+            user_identifier = int(user_identifier)
+            logger.debug("user_identifier is an id")
+        except ValueError as e:
+            from app.Controllers import ValidationController
+            validate_identifier = ValidationController.validate_email(user_identifier)
+            if isinstance(validate_identifier, Response):
+                return validate_identifier
+            else:
+                user_identifier = str(user_identifier)
+            logger.debug("user_identifier is an email")
+
+        req_user = AuthController.authorize_request(
+            request=request,
+            operation=Operation.UPDATE,
+            resource=Resource.USER
+        )
+        if isinstance(req_user, Response):
+            return req_user
+        elif isinstance(req_user, User):
+            return get_user(user_identifier, req_user)
