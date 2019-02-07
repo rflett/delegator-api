@@ -87,7 +87,7 @@ def update_user():
     return UserController.user_update(request)
 
 
-@app.route('/user/<identifier>', methods=['GET'])
+@app.route('/users/<identifier>', methods=['GET'])
 @requires_jwt
 def get_user(identifier):
     """
