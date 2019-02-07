@@ -1,4 +1,5 @@
 import json
+import typing
 from app.Models.RBAC import Role
 from app.Models.RBAC.Permission import Permission
 from app import session, logger
@@ -34,7 +35,7 @@ class RoleController(object):
         return roles
 
     @staticmethod
-    def role_can(role: str, operation: str, resource: str) -> bool:
+    def role_can(role: str, operation: str, resource: str) -> typing.Union[bool, str]:
         """
         Check to see if a {role} can perform {operation} on {resource}. All it needs to do
         is check to see if the role permission exists in the database.
@@ -43,11 +44,20 @@ class RoleController(object):
         :param resource:    The resource that will be affected
         :return: True or False
         """
-        if role == 'ADMIN':
-            logger.debug('role check was performed against ADMIN, allowing all actions')
-            return True
-        return session.query(session.query(Permission).filter(
+        # check permission exists
+
+        exists = session.query(session.query(Permission).filter(
             Permission.role_id == role,
             Permission.operation_id == operation,
             Permission.resource_id == resource
         ).exists()).scalar()
+
+        if exists:
+            permission = session.query(Permission).filter(
+                Permission.role_id == role,
+                Permission.operation_id == operation,
+                Permission.resource_id == resource
+            ).first()
+            return permission.resource_scope
+        else:
+            return False

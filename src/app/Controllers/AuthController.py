@@ -10,7 +10,8 @@ from app.Controllers import ValidationController
 from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User, LoginBadEmail
 from app.Models.Enums import UserAuthLogAction
-from app.Models.RBAC import Role
+from app.Models.RBAC import Role, ResourceScope
+from dataclasses import dataclass
 from flask import Response, request
 from sqlalchemy import exists
 
@@ -128,31 +129,84 @@ class AuthController(object):
     The AuthController manages functions regarding generating, decoding and validating
     JWT tokens, login/logout functionality, and validating Authorization headers.
     """
+    @dataclass
+    class ResourceObject:
+        """ A generic object which covers all resources """
+        org_id: int
+        user_id: int
+
     @staticmethod
     def authorize_request(
             request: request,
             operation: str,
-            resource: str
+            resource: str,
+            resource_org_id: typing.Optional[int] = None,
+            resource_user_id: typing.Optional[int] = None
     ) -> typing.Union[Response, User]:
         """
         Checks to see if the user in the request has authorization to perform the request operation on a
         particular resource.
-        :param request:     The request object
-        :param operation:   The operation to perform
-        :param resource:    The resource to affect
-        :return:            The User object if they have authority, or a Response if the don't
+        :param request:             The request object
+        :param operation:           The operation to perform
+        :param resource:            The resource to affect
+        :param resource_org_id:     If the resource has an org_id, this is it
+        :param resource_user_id:    If the resource has a user_id, this is it
+        :return:                    The User object if they have authority, or a Response if the don't
         """
         logger.debug(f'authorizing request {json.dumps(request.get_json())}')
         auth_user = _get_user_from_request(request)
         if isinstance(auth_user, Response):
             return auth_user
         else:
-            if auth_user.can(operation, resource):
-                logger.debug(f"user id {auth_user.id} can perform {operation} on {resource}")
-                return auth_user
-            else:
+            user_permission_scope = auth_user.can(operation, resource)
+            if user_permission_scope is False:
                 logger.debug(f"user id {auth_user.id} cannot perform {operation} on {resource}")
                 return g_response(f"No permissions to {operation} {resource}", 403)
+            else:
+                if isinstance(user_permission_scope, str):
+                    if user_permission_scope == ResourceScope.SELF:
+                        # this user can only perform actions on resources it owns
+                        if resource_user_id is not None and resource_org_id is not None:
+                            # check ids match
+                            if auth_user.id == resource_user_id and auth_user.org_id == resource_org_id:
+                                logger.debug(f"user {auth_user.id} has {user_permission_scope} permissions, "
+                                             f"and can {operation} {resource}")
+                                return auth_user
+                            else:
+                                # they don't own this resource
+                                logger.debug(f"No permissions to {operation} {resource}, "
+                                             f"because user {auth_user.id} != resource_user_id {resource_user_id} "
+                                             f"or user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
+                                return g_response(f"No permissions to {operation} {resource}, "
+                                                  f"because user {auth_user.id} does not own it.", 403)
+                        else:
+                            logger.warning(f"resource_org_id is None, resource_user_id is None")
+                            return g_response("resource_org_id is None, resource_user_id is None", 403)
+                    elif user_permission_scope == ResourceScope.ORG:
+                        # this user can perform operations on resources in its organisation
+                        if resource_org_id is not None:
+                            # check org id matches
+                            if auth_user.org_id == resource_org_id:
+                                logger.debug(f"user {auth_user.id} has {user_permission_scope} permissions, "
+                                             f"and can {operation} {resource}")
+                                return auth_user
+                            else:
+                                # this resource belongs to a different organisation
+                                logger.debug(f"No permissions to {operation} {resource}, because "
+                                             f"user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
+                                return g_response(f"No permissions to {operation} {resource}, "
+                                                  f"because user {auth_user.id} is in org {auth_user.org_id} but "
+                                                  f"the resource belongs to org {resource_org_id}.", 403)
+                        else:
+                            return g_response("resource_org_id is None", 403)
+                    elif user_permission_scope == ResourceScope.GLOBAL:
+                        # they can do anything cos they're l33t
+                        logger.debug(f"user {auth_user.id} has {user_permission_scope} permissions")
+                        return auth_user
+
+                else:
+                    logger.warning(f"user_permission_scope incorrect, expected str got {type(user_permission_scope)}")
+                    return g_response(f"No permissions to {operation} {resource}", 403)
 
     @staticmethod
     def login(req: dict) -> Response:

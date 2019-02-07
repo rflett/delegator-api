@@ -65,39 +65,49 @@ class OrganisationController(object):
         :param require_auth:    If request needs to have authoriziation (e.g. not if signing up)
         :return:                A response
         """
-        def create_org(request_body: dict, req_user: User = None) -> Response:
+
+        def create_org(valid_org: Organisation, req_user: User = None) -> Response:
             """
             Creates the organisation
-            :param request_body:    Request body
-            :param req_user:        The user making the request
-            :return:                Response
+            :param valid_org:  The validated organisation object
+            :param req_user:   The user making the request
+            :return:           Response
             """
-            from app.Controllers import ValidationController
-            check_request = ValidationController.validate_create_org_request(request_body)
-            if isinstance(check_request, Response):
-                return check_request
-            else:
-                organisation = Organisation(
-                    name=check_request.org_name
+            organisation = Organisation(
+                name=valid_org.org_name
+            )
+            session.add(organisation)
+            session.commit()
+            if isinstance(req_user, User):
+                req_user.log(
+                    operation=Operation.CREATE,
+                    resource=Resource.ORGANISATION,
+                    resource_id=organisation.id
                 )
-                session.add(organisation)
-                session.commit()
-                if isinstance(req_user, User):
-                    req_user.log(
-                        operation=Operation.CREATE,
-                        resource=Resource.ORGANISATION,
-                        resource_id=organisation.id
-                    )
-                logger.debug(f"created organisation {organisation.as_dict()}")
-                return g_response("Successfully created the organisation", 201)
+            logger.debug(f"created organisation {organisation.as_dict()}")
+            return g_response("Successfully created the organisation", 201)
+
+        request_body = request.get_json()
+
+        # validate org
+        from app.Controllers import ValidationController
+        valid_org = ValidationController.validate_create_org_request(request_body)
 
         if require_auth:
-            logger.debug("requiring auth to create org")
-            req_user = AuthController.authorize_request(request, Operation.CREATE, Resource.ORGANISATION)
-            if isinstance(req_user, Response):
-                return req_user
-            elif isinstance(req_user, User):
-                return create_org(request.get_json(), req_user=req_user)
+            if isinstance(valid_org, Response):
+                return valid_org
+            else:
+                logger.debug("requiring auth to create org")
+                req_user = AuthController.authorize_request(
+                    request=request,
+                    operation=Operation.CREATE,
+                    resource=Resource.ORGANISATION,
+                    resource_org_id=valid_org.org_id
+                )
+                if isinstance(req_user, Response):
+                    return req_user
+                elif isinstance(req_user, User):
+                    return create_org(request_body, req_user=req_user)
         else:
             logger.debug("not requiring auth to create org")
-            return create_org(request.get_json())
+            return create_org(valid_org)

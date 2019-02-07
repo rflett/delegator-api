@@ -161,6 +161,7 @@ class ValidationController(object):
         @dataclass
         class UserRequest:
             """ A user request dataclass which represents the values in a update user request object. """
+            id: int
             org_id: int
             email: str
             first_name: str
@@ -169,7 +170,8 @@ class ValidationController(object):
 
             def __iter__(self):
                 for attr, value in self.__dict__.items():
-                    yield attr, value
+                    if attr != 'id':
+                        yield attr, value
 
         # check id
         id = request_body.get('id')
@@ -231,6 +233,7 @@ class ValidationController(object):
             return g_response(f"Role {role_name} does not exist", 400)
 
         return UserRequest(
+            id=id,
             org_id=org_id,
             email=email,
             first_name=first_name,

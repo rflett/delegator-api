@@ -2,6 +2,7 @@ import binascii
 import datetime
 import hashlib
 import os
+import typing
 from app import DBBase
 from app.Controllers.RBAC.RoleController import RoleController
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
@@ -81,7 +82,7 @@ class User(DBBase):
         self.password = _hash_password(password)
         self.role = role
 
-    def can(self, operation: str, resource: str) -> bool:
+    def can(self, operation: str, resource: str) -> typing.Union[bool, str]:
         """
         Checks if user can perform {operation} on {resource} with their {role}. Basically checks
         if their role can do this.
