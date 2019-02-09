@@ -95,13 +95,3 @@ def get_user(identifier):
     :return:
     """
     return UserController.user_get(identifier, request)
-
-
-@app.route('/orgs', methods=['POST'])
-@requires_jwt
-def org_create():
-    """
-    Handles creating an organisation.
-    :return: Response
-    """
-    return OrganisationController.org_create(request)
