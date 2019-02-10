@@ -47,7 +47,7 @@
 					"response": []
 				},
 				{
-					"name": "Signup",
+					"name": "Signup (etemt org)",
 					"event": [
 						{
 							"listen": "test",
@@ -149,7 +149,7 @@
 					"response": []
 				},
 				{
-					"name": "Create User",
+					"name": "Create User (Manager)",
 					"event": [
 						{
 							"listen": "test",
@@ -190,6 +190,61 @@
 						"body": {
 							"mode": "raw",
 							"raw": "{\n\t\"org_name\": \"etemt\",\n\t\"email\": \"james@sink.etemt.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"MANAGER\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User (User)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"etemt\",\n\t\"email\": \"luke@sink.etemt.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"Luke\",\n\t\"last_name\": \"Meeking\",\n\t\"role_name\": \"USER\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -443,6 +498,1408 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Signup (eta org)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "6b10c2a9-c7f8-4953-b8a3-64d188a70e03",
+								"exec": [
+									"pm.test(\"signup is ok\", function() {",
+									"    pm.response.to.have.status(200);",
+									"    pm.response.to.be.json;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"eta\",\n\t\"email\": \"ryan-eta@sink.etemt.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"Ryan\",\n\t\"last_name\": \"Flett\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/signup",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"signup"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Manager Permissions Testing",
+			"item": [
+				{
+					"name": "Login as Manager",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "cbd11473-6df8-4648-adda-2d86b6e11777",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"token in header\", function()  {\r",
+									"    pm.response.to.have.header(\"Authorization\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"set token\", function() {\r",
+									"    const jwt = postman.getResponseHeader(\"Authorization\");\r",
+									"    pm.environment.set(\"token\", jwt);\r",
+									"    pm.expect(pm.environment.get(\"token\")).to.equal(jwt); \r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"email\": \"james@sink.etemt.com\",\n\t\"password\": \"secret\"\n}\n"
+						},
+						"url": {
+							"raw": "{{host}}/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create another Manager",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"etemt\",\n\t\"email\": \"testmanager@sink.etemt.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"MANAGER\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"etemt\",\n\t\"email\": \"testuser@sink.etemt.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User in another Org",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is forbidden\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"eta\",\n\t\"email\": \"testmanageetar@sink.etemt.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"MANAGER\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a997de87-9019-479f-956a-a9ab01a5df2c",
+								"exec": [
+									"// user created in previous create user should have id=2",
+									"pm.environment.set(\"user_id\", 2);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a442e9d-e958-48e9-aa44-abe36e745630",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"var Ajv = require('ajv'),\r",
+									"    ajv = new Ajv({logger: console}),\r",
+									"    schema = {\r",
+									"        \"properties\": {\r",
+									"            \"org_id\": {\r",
+									"                \"type\": \"integer\"\r",
+									"            },\r",
+									"            \"id\": {\r",
+									"                \"type\": \"integer\"\r",
+									"            },\r",
+									"            \"email\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"first_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"last_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"role_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            }\r",
+									"        }\r",
+									"    };\r",
+									"\r",
+									"pm.test('Schema is valid', function() {\r",
+									"    pm.expect(ajv.validate(schema, responseBody)).to.be.true;\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/users/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by Email",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a997de87-9019-479f-956a-a9ab01a5df2c",
+								"exec": [
+									"pm.environment.set(\"user_id\", \"testuser@sink.etemt.com\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a442e9d-e958-48e9-aa44-abe36e745630",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"var Ajv = require('ajv'),\r",
+									"    ajv = new Ajv({logger: console}),\r",
+									"    schema = {\r",
+									"        \"properties\": {\r",
+									"            \"org_id\": {\r",
+									"                \"type\": \"integer\"\r",
+									"            },\r",
+									"            \"id\": {\r",
+									"                \"type\": \"integer\"\r",
+									"            },\r",
+									"            \"email\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"first_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"last_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"role_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            }\r",
+									"        }\r",
+									"    };\r",
+									"\r",
+									"pm.test('Schema is valid', function() {\r",
+									"    pm.expect(ajv.validate(schema, responseBody)).to.be.true;\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/users/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user from other org",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a997de87-9019-479f-956a-a9ab01a5df2c",
+								"exec": [
+									"// user created in previous create user should have id=2",
+									"pm.environment.set(\"user_id\", \"ryan-eta@sink.etemt.com\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a442e9d-e958-48e9-aa44-abe36e745630",
+								"exec": [
+									"pm.test(\"response is forbidden\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/users/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "9788b4b6-1790-4473-8d82-0b02eaee8ac5",
+								"exec": [
+									"pm.test(\"update user\", function() {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_id\": 1,\n\t\"id\": 3,\n\t\"email\": \"luke@sink.etemt.com\",\n\t\"first_name\": \"Lukass\",\n\t\"last_name\": \"Meeko\",\n\t\"role_name\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update user in other org",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "9788b4b6-1790-4473-8d82-0b02eaee8ac5",
+								"exec": [
+									"pm.test(\"update user forbidden\", function() {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"",
+									"pm.test(\"response must be valid and have a body\", function () {",
+									"     pm.response.to.be.json;",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_id\": 2,\n\t\"id\": 4,\n\t\"email\": \"ryan-eta@sink.etemt.com\",\n\t\"first_name\": \"Rizza\",\n\t\"last_name\": \"Dizza\",\n\t\"role_name\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1dcba06e-f8ea-47c7-a04a-5d6f0cbbb250",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/logout",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "98a3698c-4bb4-488d-b3f8-b315389c2fa3",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "5cbd6457-e8f4-4c18-8bd0-90680c8cf996",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "User Permissions Testing",
+			"item": [
+				{
+					"name": "Login as User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "cbd11473-6df8-4648-adda-2d86b6e11777",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"token in header\", function()  {\r",
+									"    pm.response.to.have.header(\"Authorization\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"set token\", function() {\r",
+									"    const jwt = postman.getResponseHeader(\"Authorization\");\r",
+									"    pm.environment.set(\"token\", jwt);\r",
+									"    pm.expect(pm.environment.get(\"token\")).to.equal(jwt); \r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"email\": \"luke@sink.etemt.com\",\n\t\"password\": \"secret\"\n}\n"
+						},
+						"url": {
+							"raw": "{{host}}/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is forbidden\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"etemt\",\n\t\"email\": \"testuserother@sink.etemt.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User in another Org",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is forbidden\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"eta\",\n\t\"email\": \"testmanageetarother@sink.etemt.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"MANAGER\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID (self)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a997de87-9019-479f-956a-a9ab01a5df2c",
+								"exec": [
+									"// user created in previous create user should have id=3",
+									"pm.environment.set(\"user_id\", 3);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a442e9d-e958-48e9-aa44-abe36e745630",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"var Ajv = require('ajv'),\r",
+									"    ajv = new Ajv({logger: console}),\r",
+									"    schema = {\r",
+									"        \"properties\": {\r",
+									"            \"org_id\": {\r",
+									"                \"type\": \"integer\"\r",
+									"            },\r",
+									"            \"id\": {\r",
+									"                \"type\": \"integer\"\r",
+									"            },\r",
+									"            \"email\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"first_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"last_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"role_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            }\r",
+									"        }\r",
+									"    };\r",
+									"\r",
+									"pm.test('Schema is valid', function() {\r",
+									"    pm.expect(ajv.validate(schema, responseBody)).to.be.true;\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/users/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID (other)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a997de87-9019-479f-956a-a9ab01a5df2c",
+								"exec": [
+									"pm.environment.set(\"user_id\", 2);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a442e9d-e958-48e9-aa44-abe36e745630",
+								"exec": [
+									"pm.test(\"response is forbidden\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/users/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID (other org)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a997de87-9019-479f-956a-a9ab01a5df2c",
+								"exec": [
+									"pm.environment.set(\"user_id\", 4);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a442e9d-e958-48e9-aa44-abe36e745630",
+								"exec": [
+									"pm.test(\"response is forbidden\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/users/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by Email (self)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a997de87-9019-479f-956a-a9ab01a5df2c",
+								"exec": [
+									"pm.environment.set(\"user_id\", \"luke@sink.etemt.com\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a442e9d-e958-48e9-aa44-abe36e745630",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"var Ajv = require('ajv'),\r",
+									"    ajv = new Ajv({logger: console}),\r",
+									"    schema = {\r",
+									"        \"properties\": {\r",
+									"            \"org_id\": {\r",
+									"                \"type\": \"integer\"\r",
+									"            },\r",
+									"            \"id\": {\r",
+									"                \"type\": \"integer\"\r",
+									"            },\r",
+									"            \"email\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"first_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"last_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"role_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            }\r",
+									"        }\r",
+									"    };\r",
+									"\r",
+									"pm.test('Schema is valid', function() {\r",
+									"    pm.expect(ajv.validate(schema, responseBody)).to.be.true;\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/users/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by Email (other org)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a997de87-9019-479f-956a-a9ab01a5df2c",
+								"exec": [
+									"pm.environment.set(\"user_id\", \"ryan-eta@sink.etemt.com\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a442e9d-e958-48e9-aa44-abe36e745630",
+								"exec": [
+									"pm.test(\"response is forbidden\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/users/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User (self)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "9788b4b6-1790-4473-8d82-0b02eaee8ac5",
+								"exec": [
+									"pm.test(\"update user\", function() {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_id\": 1,\n\t\"id\": 3,\n\t\"email\": \"luke@sink.etemt.com\",\n\t\"first_name\": \"Lukass\",\n\t\"last_name\": \"Meeko\",\n\t\"role_name\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update user in other org",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "9788b4b6-1790-4473-8d82-0b02eaee8ac5",
+								"exec": [
+									"pm.test(\"response is forbidden\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_id\": 2,\n\t\"id\": 4,\n\t\"email\": \"ryan-eta@sink.etemt.com\",\n\t\"first_name\": \"Rizza\",\n\t\"last_name\": \"Dizza\",\n\t\"role_name\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1dcba06e-f8ea-47c7-a04a-5d6f0cbbb250",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/logout",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "98a3698c-4bb4-488d-b3f8-b315389c2fa3",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "5cbd6457-e8f4-4c18-8bd0-90680c8cf996",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
 				}
 			]
 		}
@@ -467,6 +1924,14 @@
 					""
 				]
 			}
+		}
+	],
+	"variable": [
+		{
+			"id": "5806d534-e18e-43e1-affa-2a49bb20188b",
+			"key": "host",
+			"value": "api",
+			"type": "string"
 		}
 	]
 }

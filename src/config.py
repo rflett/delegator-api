@@ -9,7 +9,7 @@ class Config(object):
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 300
 
 
-class Docker(Config):
+class Ci(Config):
     DB_HOST = "postgres"
 
 
