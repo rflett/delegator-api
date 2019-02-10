@@ -320,7 +320,7 @@ class AuthController(object):
         if isinstance(check_email, Response):
             return check_email
         else:
-            with session_scope() as session:
+            with session_scope():
                 logger.debug(f"received password reset for {request_body.get('email')}")
                 user = UserController.get_user_by_email(request_body.get('email'))
                 new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])

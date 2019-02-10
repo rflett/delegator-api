@@ -1,7 +1,7 @@
 import json
 import typing
 from app import logger, g_response, session_scope
-from app.Controllers import AuthController, ValidationController
+from app.Controllers import AuthController
 from app.Models import User
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -197,7 +197,7 @@ class UserController(object):
             elif isinstance(req_user, User):
                 user_to_update = UserController.get_user_by_id(valid_user.id)
 
-                with session_scope() as session:
+                with session_scope():
                     for prop, val in valid_user:
                         user_to_update.__setattr__(prop, val)
 
@@ -223,7 +223,7 @@ class UserController(object):
         try:
             user_identifier = int(user_identifier)
             logger.debug("user_identifier is an id")
-        except ValueError as e:
+        except ValueError as e:  # noqa
             from app.Controllers import ValidationController
             validate_identifier = ValidationController.validate_email(user_identifier)
             if isinstance(validate_identifier, Response):

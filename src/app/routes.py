@@ -1,7 +1,7 @@
 from app import app, g_response
 from functools import wraps
 from flask import Response, request
-from app.Controllers import AuthController, UserController, OrganisationController, SignupController
+from app.Controllers import AuthController, UserController, SignupController
 
 
 def requires_jwt(f):

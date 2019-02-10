@@ -1,4 +1,4 @@
-from app import  app, logger, g_response
+from app import app, logger, g_response
 from app.Controllers import UserController, OrganisationController
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response

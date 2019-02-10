@@ -61,7 +61,7 @@ def session_scope():
 
 
 @app.teardown_appcontext
-def shutdown_session(exception = None):
+def shutdown_session(exception=None):
     session.close()
 
 

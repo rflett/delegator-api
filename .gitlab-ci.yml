@@ -45,6 +45,7 @@ integrationTest:
   stage: integrationTest
   image: $GITLAB_REGISTRY/docker:latest
   allow_failure: true
+  when: manual
   services:
     - docker:dind
   tags:
@@ -55,7 +56,7 @@ integrationTest:
 
     # start services
     - docker run -d -p 5432:5432 --name postgres $AMZ_REGISTRY/postgres:latest
-    - docker run -d -p 5000:5000 --build-arg APP_ENV=Ci --name api --link postgres:postgres $AMZ_REGISTRY/api:latest
+    - docker run -d -p 5000:5000 --arg APP_ENV=Ci --name api --link postgres:postgres $AMZ_REGISTRY/api:latest
 
     # run tests
     - docker run -it --link api:api $GITLAB_REGISTRY/newman:latest newman run src/tests/integration.postman_collection.json
