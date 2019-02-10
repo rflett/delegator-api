@@ -23,5 +23,14 @@ services:
     build:
       context: ../../containers/postgres
       dockerfile: Dockerfile
+    command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track='all'
     ports:
       - 5432:5432
+  pg_hero:
+    image: ankane/pghero:latest
+    environment:
+      DATABASE_URL: postgres://etemt:etemt@postgres/etemt
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres
