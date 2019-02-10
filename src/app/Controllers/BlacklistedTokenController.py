@@ -1,4 +1,4 @@
-from app import session, logger
+from app import logger, session_scope
 from app.Models import BlacklistedToken
 from sqlalchemy import exists
 
@@ -9,7 +9,9 @@ def id_exists(blacklist_id: str) -> bool:
     :param blacklist_id:    The aud:jti combination the is a blacklist_id
     :return:                True if blacklisted or False
     """
-    return session.query(exists().where(BlacklistedToken.id == blacklist_id)).scalar()
+    with session_scope() as session:
+        ret = session.query(exists().where(BlacklistedToken.id == blacklist_id)).scalar()
+        return ret
 
 
 class BlacklistedTokenController(object):
@@ -37,7 +39,7 @@ class BlacklistedTokenController(object):
         """
         if not id_exists(blacklist_id):
             token = BlacklistedToken(blacklist_id, exp)
-            session.add(token)
-            session.commit()
+            with session_scope() as session:
+                session.add(token)
         else:
             logger.debug(f"blacklist token id {blacklist_id} already blacklisted")

@@ -5,7 +5,7 @@ import random
 import string
 import typing
 import uuid
-from app import session, logger, app, g_response
+from app import logger, app, g_response, session_scope
 from app.Controllers import ValidationController
 from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User, LoginBadEmail
@@ -73,9 +73,12 @@ def _clear_failed_logins(email: str) -> None:
     :param email:   The email to clear
     :return:        None
     """
-    failed_email = session.query(exists().where(LoginBadEmail.email == email)).scalar()
-    if failed_email:
-        session.query(LoginBadEmail).filter(LoginBadEmail.email == email).delete()
+    with session_scope() as session:
+        failed_email = session.query(exists().where(LoginBadEmail.email == email)).scalar()
+
+    with session_scope() as session:
+        if failed_email:
+            session.query(LoginBadEmail).filter(LoginBadEmail.email == email).delete()
 
 
 def _failed_login_attempt(email: str) -> Response:
@@ -88,40 +91,43 @@ def _failed_login_attempt(email: str) -> Response:
     """
     # check if it's failed before
     logger.debug(f"attempted to login with non existing email {email}")
-    failed_email = session.query(exists().where(LoginBadEmail.email == email)).scalar()
+    with session_scope() as session:
+        failed_email = session.query(exists().where(LoginBadEmail.email == email)).scalar()
     if failed_email:
         # it's failed before so increment
-        failure_entry = session.query(LoginBadEmail).filter(LoginBadEmail.email == email).first()
-        logger.debug(f"email {email} has failed to log in "
-                     f"{failure_entry.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
-        # check if it has breached the limits
-        if failure_entry.failed_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
-            # check timeout
-            diff = (datetime.datetime.utcnow() - failure_entry.failed_time).seconds
-            if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
-                logger.debug(f"email last failed {diff}s ago. "
-                             f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
-                return g_response("Too many incorrect attempts.", 401)
+        with session_scope() as session:
+            failure_entry = session.query(LoginBadEmail).filter(LoginBadEmail.email == email).first()
+            logger.debug(f"email {email} has failed to log in "
+                         f"{failure_entry.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
+
+        with session_scope() as session:
+            # check if it has breached the limits
+            if failure_entry.failed_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
+                # check timeout
+                diff = (datetime.datetime.utcnow() - failure_entry.failed_time).seconds
+                if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
+                    logger.debug(f"email last failed {diff}s ago. "
+                                 f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
+                    return g_response("Too many incorrect attempts.", 401)
+                else:
+                    # reset
+                    logger.debug(f"email last failed {diff}s ago. "
+                                 f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
+                    session.delete(failure_entry)
+                    return g_response("Email incorrect.", 401)
             else:
-                # reset
-                logger.debug(f"email last failed {diff}s ago. "
-                             f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
-                session.delete(failure_entry)
+                # increment
+                failure_entry.failed_attempts += 1
+                failure_entry.failed_time = datetime.datetime.utcnow()
+                logger.debug(f"incorrect email attempt for user {email}")
                 return g_response("Email incorrect.", 401)
-        else:
-            # increment
-            failure_entry.failed_attempts += 1
-            failure_entry.failed_time = datetime.datetime.utcnow()
-            session.commit()
-            logger.debug(f"incorrect email attempt for user {email}")
-            return g_response("Email incorrect.", 401)
     else:
-        # hasn't failed before, so create it
-        logger.debug(f"first login failure for email {email}")
-        new_failure = LoginBadEmail(email=email)
-        session.add(new_failure)
-        session.commit()
-        return g_response("Email incorrect.", 401)
+        with session_scope() as session:
+            # hasn't failed before, so create it
+            logger.debug(f"first login failure for email {email}")
+            new_failure = LoginBadEmail(email=email)
+            session.add(new_failure)
+            return g_response("Email incorrect.", 401)
 
 
 class AuthController(object):
@@ -235,8 +241,9 @@ class AuthController(object):
 
         # get user
         if UserController.user_exists(email):
-            user = session.merge(UserController.get_user_by_email(email))
-            _clear_failed_logins(user.email)
+            with session_scope() as session:
+                user = session.merge(UserController.get_user_by_email(email))
+                _clear_failed_logins(user.email)
         else:
             # bad email attempt
             return _failed_login_attempt(email)
@@ -253,36 +260,35 @@ class AuthController(object):
                                  f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
                     return g_response("Too many incorrect password attempts.", 401)
                 else:
-                    # reset
-                    logger.debug(f"user last failed {diff}s ago. "
-                                 f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
-                    user.failed_login_attempts = 0
-                    user.failed_login_time = None
-                    session.commit()
+                    with session_scope() as session:
+                        # reset
+                        logger.debug(f"user last failed {diff}s ago. "
+                                     f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
+                        user.failed_login_attempts = 0
+                        user.failed_login_time = None
 
-        # check password
-        if user.check_password(password):
-            UserAuthLogController.log(
-                user=user,
-                action=UserAuthLogAction.LOGIN
-            )
-            logger.debug(f"user {user.id} logged in")
-            user.failed_login_attempts = 0
-            user.failed_login_time = None
-            session.commit()
-            return g_response(
-                "Welcome.",
-                status=200,
-                headers={
-                    'Authorization': f"Bearer {_generate_jwt_token(user)}"
-                }
-            )
-        else:
-            logger.debug(f"incorrect password attempt for user {user.id}")
-            user.failed_login_attempts += 1
-            user.failed_login_time = datetime.datetime.utcnow()
-            session.commit()
-            return g_response("Password incorrect.", 401)
+        with session_scope() as session:
+            # check password
+            if user.check_password(password):
+                UserAuthLogController.log(
+                    user=user,
+                    action=UserAuthLogAction.LOGIN
+                )
+                logger.debug(f"user {user.id} logged in")
+                user.failed_login_attempts = 0
+                user.failed_login_time = None
+                return g_response(
+                    "Welcome.",
+                    status=200,
+                    headers={
+                        'Authorization': f"Bearer {_generate_jwt_token(user)}"
+                    }
+                )
+            else:
+                logger.debug(f"incorrect password attempt for user {user.id}")
+                user.failed_login_attempts += 1
+                user.failed_login_time = datetime.datetime.utcnow()
+                return g_response("Password incorrect.", 401)
 
     @staticmethod
     def logout(headers: dict) -> Response:
@@ -314,15 +320,15 @@ class AuthController(object):
         if isinstance(check_email, Response):
             return check_email
         else:
-            logger.debug(f"received password reset for {request_body.get('email')}")
-            user = UserController.get_user_by_email(request_body.get('email'))
-            new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])
-            user.reset_password(new_password)
-            UserAuthLogController.log(user, 'reset_password')
-            session.commit()
-            logger.debug(json.dumps(user.as_dict()))
-            logger.debug(f"password successfully reset for {request_body.get('email')}")
-            return g_response(f"Password reset successfully, new password is {new_password}")
+            with session_scope() as session:
+                logger.debug(f"received password reset for {request_body.get('email')}")
+                user = UserController.get_user_by_email(request_body.get('email'))
+                new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])
+                user.reset_password(new_password)
+                UserAuthLogController.log(user, 'reset_password')
+                logger.debug(json.dumps(user.as_dict()))
+                logger.debug(f"password successfully reset for {request_body.get('email')}")
+                return g_response(f"Password reset successfully, new password is {new_password}")
 
     @staticmethod
     def validate_jwt(token: str) -> typing.Union[bool, dict]:
@@ -409,4 +415,6 @@ class AuthController(object):
         :param role_name:   The role name
         :return:            True if the role exists or False
         """
-        return session.query(exists().where(Role.id == role_name)).scalar()
+        with session_scope() as session:
+            ret = session.query(exists().where(Role.id == role_name)).scalar()
+            return ret

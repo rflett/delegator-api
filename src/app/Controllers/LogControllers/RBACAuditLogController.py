@@ -1,4 +1,4 @@
-from app import session, logger
+from app import logger, session_scope
 from app.Models import User
 from app.Models.LogModels import RBACAuditLog
 
@@ -16,7 +16,7 @@ class RBACAuditLogController(object):
             user_id=user.id,
             **kwargs
         )
-        session.add(audit_log)
-        session.commit()
+        with session_scope() as session:
+            session.add(audit_log)
         logger.debug(f"logged op {kwargs.get('operation')} on res {kwargs.get('resource')} "
                      f"with id {kwargs.get('resource_id')} against user {user.id}")

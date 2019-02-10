@@ -1,5 +1,5 @@
 import typing
-from app import session, logger, g_response
+from app import session_scope, logger, g_response
 from app.Controllers import AuthController
 from app.Models import Organisation, User
 from app.Models.RBAC import Operation, Resource
@@ -15,10 +15,14 @@ def _org_exists(org_identifier: typing.Union[int, str]) -> bool:
     """
     if isinstance(org_identifier, str):
         logger.debug("org_identifier is a str so finding org by name")
-        return session.query(exists().where(Organisation.name == org_identifier)).scalar()
+        with session_scope() as session:
+            ret = session.query(exists().where(Organisation.name == org_identifier)).scalar()
+            return ret
     elif isinstance(org_identifier, int):
         logger.debug("org_identifier is an int so finding org by id")
-        return session.query(exists().where(Organisation.id == org_identifier)).scalar()
+        with session_scope() as session:
+            ret = session.query(exists().where(Organisation.id == org_identifier)).scalar()
+            return ret
 
 
 class OrganisationController(object):
@@ -38,8 +42,11 @@ class OrganisationController(object):
         :param id:  The id of the organisation
         :return:    The Organisation object.
         """
+        # TODO this query causes the 'idle in transaction' issue
         if _org_exists(id):
-            return session.query(Organisation).filter(Organisation.id == id).first()
+            with session_scope() as session:
+                ret = session.query(Organisation).filter(Organisation.id == id).first()
+                return ret
         else:
             logger.debug(f"org {id} does not exist")
             raise ValueError(f"Org with id {id} does not exist.")
@@ -52,7 +59,9 @@ class OrganisationController(object):
         :return:        The Organisation object.
         """
         if _org_exists(name):
-            return session.query(Organisation).filter(Organisation.name == name).first()
+            with session_scope() as session:
+                ret = session.query(Organisation).filter(Organisation.name == name).first()
+                return ret
         else:
             logger.debug(f"org {name} does not exist")
             raise ValueError(f"Org with name {name} does not exist.")
@@ -73,19 +82,19 @@ class OrganisationController(object):
             :param req_user:   The user making the request
             :return:           Response
             """
-            organisation = Organisation(
-                name=valid_org.org_name
-            )
-            session.add(organisation)
-            session.commit()
-            if isinstance(req_user, User):
-                req_user.log(
-                    operation=Operation.CREATE,
-                    resource=Resource.ORGANISATION,
-                    resource_id=organisation.id
+            with session_scope() as session:
+                organisation = Organisation(
+                    name=valid_org.org_name
                 )
-            logger.debug(f"created organisation {organisation.as_dict()}")
-            return g_response("Successfully created the organisation", 201)
+                session.add(organisation)
+                if isinstance(req_user, User):
+                    req_user.log(
+                        operation=Operation.CREATE,
+                        resource=Resource.ORGANISATION,
+                        resource_id=organisation.id
+                    )
+                logger.debug(f"created organisation {organisation.as_dict()}")
+                return g_response("Successfully created the organisation", 201)
 
         request_body = request.get_json()
 
@@ -93,21 +102,21 @@ class OrganisationController(object):
         from app.Controllers import ValidationController
         valid_org = ValidationController.validate_create_org_request(request_body)
 
+        if isinstance(valid_org, Response):
+            return valid_org
+
         if require_auth:
-            if isinstance(valid_org, Response):
-                return valid_org
-            else:
-                logger.debug("requiring auth to create org")
-                req_user = AuthController.authorize_request(
-                    request=request,
-                    operation=Operation.CREATE,
-                    resource=Resource.ORGANISATION,
-                    resource_org_id=valid_org.org_id
-                )
-                if isinstance(req_user, Response):
-                    return req_user
-                elif isinstance(req_user, User):
-                    return create_org(request_body, req_user=req_user)
+            logger.debug("requiring auth to create org")
+            req_user = AuthController.authorize_request(
+                request=request,
+                operation=Operation.CREATE,
+                resource=Resource.ORGANISATION,
+                resource_org_id=valid_org.org_id
+            )
+            if isinstance(req_user, Response):
+                return req_user
+            elif isinstance(req_user, User):
+                return create_org(request_body, req_user=req_user)
         else:
             logger.debug("not requiring auth to create org")
             return create_org(valid_org)

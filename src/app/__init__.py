@@ -1,5 +1,6 @@
 import json
 import typing
+from contextlib import contextmanager
 from flask import Flask, Response
 from flask_cors import CORS
 from logging.handlers import SysLogHandler
@@ -46,6 +47,22 @@ else:
 DBSession = sessionmaker(bind=engine)
 DBBase = declarative_base()
 session = DBSession()
+
+
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    try:
+        yield session
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+
+
+@app.teardown_appcontext
+def shutdown_session(exception = None):
+    session.close()
 
 
 # generic response object

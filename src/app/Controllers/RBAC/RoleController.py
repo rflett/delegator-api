@@ -2,7 +2,7 @@ import json
 import typing
 from app.Models.RBAC import Role
 from app.Models.RBAC.Permission import Permission
-from app import session, logger
+from app import logger, session_scope
 
 
 class RoleController(object):
@@ -17,7 +17,9 @@ class RoleController(object):
             }
         :return: List of roles.
         """
-        roles_qry = session.query(Role).all()
+        with session_scope() as session:
+            roles_qry = session.query(Role).all()
+
         roles = []
 
         # get dict for each role and just get the id, name and desc
@@ -45,19 +47,20 @@ class RoleController(object):
         :return: True or False
         """
         # check permission exists
-
-        exists = session.query(session.query(Permission).filter(
-            Permission.role_id == role,
-            Permission.operation_id == operation,
-            Permission.resource_id == resource
-        ).exists()).scalar()
-
-        if exists:
-            permission = session.query(Permission).filter(
+        with session_scope() as session:
+            exists = session.query(session.query(Permission).filter(
                 Permission.role_id == role,
                 Permission.operation_id == operation,
                 Permission.resource_id == resource
-            ).first()
-            return permission.resource_scope
+            ).exists()).scalar()
+
+        if exists:
+            with session_scope() as session:
+                permission = session.query(Permission).filter(
+                    Permission.role_id == role,
+                    Permission.operation_id == operation,
+                    Permission.resource_id == resource
+                ).first()
+                return permission.resource_scope
         else:
             return False

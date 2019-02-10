@@ -1,4 +1,4 @@
-from app import session, app, logger, g_response
+from app import  app, logger, g_response
 from app.Controllers import UserController, OrganisationController
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -29,7 +29,6 @@ class SignupController(object):
         except Exception as e:
             # rollback org
             logger.error(str(e))
-            session.rollback()
             return g_response("There was an issue creating the organisation", 500)
 
         if create_org_res.status_code != 201:
@@ -44,7 +43,6 @@ class SignupController(object):
         except Exception as e:
             # rollback org and user
             logger.error(str(e))
-            session.rollback()
             return g_response("There was an issue creating the user", 500)
 
         if create_user_res.status_code != 201:

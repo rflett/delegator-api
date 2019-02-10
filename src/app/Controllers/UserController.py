@@ -1,10 +1,9 @@
 import json
 import typing
-from app import session, logger, g_response
+from app import logger, g_response, session_scope
 from app.Controllers import AuthController, ValidationController
 from app.Models import User
 from app.Models.RBAC import Operation, Resource
-from dataclasses import dataclass
 from flask import request, Response
 from sqlalchemy import exists
 
@@ -17,10 +16,14 @@ def _user_exists(user_identifier: typing.Union[int, str]) -> bool:
     """
     if isinstance(user_identifier, str):
         logger.debug("user_identifier is a str so finding user by email")
-        return session.query(exists().where(User.email == user_identifier)).scalar()
+        with session_scope() as session:
+            ret = session.query(exists().where(User.email == user_identifier)).scalar()
+            return ret
     elif isinstance(user_identifier, int):
         logger.debug("user_identifier is an int so finding user by id")
-        return session.query(exists().where(User.id == user_identifier)).scalar()
+        with session_scope() as session:
+            ret = session.query(exists().where(User.id == user_identifier)).scalar()
+            return ret
 
 
 def _compare_user_orgs(user_resource: User, request_user: User) -> bool:
@@ -55,10 +58,14 @@ class UserController(object):
         if _user_exists(user_identifier):
             if isinstance(user_identifier, str):
                 logger.debug("user_identifier is a str so finding user by email")
-                return session.query(User).filter(User.email == user_identifier).first()
+                with session_scope() as session:
+                    ret = session.query(User).filter(User.email == user_identifier).first()
+                    return ret
             elif isinstance(user_identifier, int):
                 logger.debug("user_identifier is an int so finding user by id")
-                return session.query(User).filter(User.id == user_identifier).first()
+                with session_scope() as session:
+                    ret = session.query(User).filter(User.id == user_identifier).first()
+                    return ret
         else:
             logger.debug(f"User with identifier {user_identifier} does not exist.")
             raise ValueError(f"User with identifier {user_identifier} does not exist.")
@@ -73,7 +80,9 @@ class UserController(object):
         """
         if _user_exists(email):
             logger.debug(f"user {email} exists")
-            return session.query(User).filter(User.email == email).first()
+            with session_scope() as session:
+                ret = session.query(User).filter(User.email == email).first()
+                return ret
         else:
             logger.debug(f"User with email {email} does not exist.")
             raise ValueError(f"User with email {email} does not exist.")
@@ -88,7 +97,9 @@ class UserController(object):
         """
         if _user_exists(user_id):
             logger.debug(f"user with id {user_id} exists")
-            return session.query(User).filter(User.id == user_id).first()
+            with session_scope() as session:
+                ret = session.query(User).filter(User.id == user_id).first()
+                return ret
         else:
             logger.debug(f"User with id {user_id} does not exist.")
             raise ValueError(f"User with id {user_id} does not exist.")
@@ -108,30 +119,30 @@ class UserController(object):
             :param req_user:    The user making the request, if it was an authenticated request.
             :return:            Response
             """
-            user = User(
-                org_id=valid_user.org_id,
-                email=valid_user.email,
-                first_name=valid_user.first_name,
-                last_name=valid_user.last_name,
-                password=valid_user.password,
-                role=valid_user.role_name
-            )
-            session.add(user)
-            session.commit()
-            if req_user is not None:
-                req_user.log(
-                    operation=Operation.CREATE,
-                    resource=Resource.USER,
-                    resource_id=user.id
+            with session_scope() as session:
+                user = User(
+                    org_id=valid_user.org_id,
+                    email=valid_user.email,
+                    first_name=valid_user.first_name,
+                    last_name=valid_user.last_name,
+                    password=valid_user.password,
+                    role=valid_user.role_name
                 )
-            else:
-                user.log(
-                    operation=Operation.CREATE,
-                    resource=Resource.USER,
-                    resource_id=user.id
-                )
-            logger.debug(f"created user {user.as_dict()}")
-            return g_response("Successfully created user", 201)
+                session.add(user)
+                if req_user is not None:
+                    req_user.log(
+                        operation=Operation.CREATE,
+                        resource=Resource.USER,
+                        resource_id=user.id
+                    )
+                else:
+                    user.log(
+                        operation=Operation.CREATE,
+                        resource=Resource.USER,
+                        resource_id=user.id
+                    )
+                logger.debug(f"created user {user.as_dict()}")
+                return g_response("Successfully created user", 201)
 
         request_body = request.get_json()
 
@@ -139,23 +150,22 @@ class UserController(object):
         from app.Controllers import ValidationController
         valid_user = ValidationController.validate_create_user_request(request_body)
 
-        if require_auth:
+        # response is failure, User object is a pass
+        if isinstance(valid_user, Response):
+            return valid_user
 
-            # response is failure, User object is a pass
-            if isinstance(valid_user, Response):
-                return valid_user
-            else:
-                logger.debug("requiring auth to create user")
-                req_user = AuthController.authorize_request(
-                    request=request,
-                    operation=Operation.CREATE,
-                    resource=Resource.USER,
-                    resource_org_id=valid_user.org_id
-                )
-                if isinstance(req_user, Response):
-                    return req_user
-                elif isinstance(req_user, User):
-                    return create_user(valid_user, req_user=req_user)
+        if require_auth:
+            logger.debug("requiring auth to create user")
+            req_user = AuthController.authorize_request(
+                request=request,
+                operation=Operation.CREATE,
+                resource=Resource.USER,
+                resource_org_id=valid_user.org_id
+            )
+            if isinstance(req_user, Response):
+                return req_user
+            elif isinstance(req_user, User):
+                return create_user(valid_user, req_user=req_user)
         else:
             logger.debug("not requiring auth to create user")
             return create_user(valid_user)
@@ -187,18 +197,17 @@ class UserController(object):
             elif isinstance(req_user, User):
                 user_to_update = UserController.get_user_by_id(valid_user.id)
 
-                for prop, val in valid_user:
-                    user_to_update.__setattr__(prop, val)
+                with session_scope() as session:
+                    for prop, val in valid_user:
+                        user_to_update.__setattr__(prop, val)
 
-                session.commit()
-
-                req_user.log(
-                    operation=Operation.UPDATE,
-                    resource=Resource.USER,
-                    resource_id=user_to_update.id
-                )
-                logger.debug(f"updated user {user_to_update.as_dict()}")
-                return g_response(status=204)
+                    req_user.log(
+                        operation=Operation.UPDATE,
+                        resource=Resource.USER,
+                        resource_id=user_to_update.id
+                    )
+                    logger.debug(f"updated user {user_to_update.as_dict()}")
+                    return g_response(status=204)
 
     @staticmethod
     def user_get(user_identifier: typing.Union[int, str], request: request) -> Response:

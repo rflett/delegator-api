@@ -1,5 +1,5 @@
 import typing
-from app import session, logger
+from app import logger, session_scope
 from app.Models import User
 from app.Models.LogModels import UserAuthLog
 
@@ -21,6 +21,6 @@ class UserAuthLogController(object):
             action=action,
             action_detail=action_detail
         )
-        session.add(auth_log)
-        session.commit()
+        with session_scope() as session:
+            session.add(auth_log)
         logger.debug(f"logged {action} against user {user.id}")
