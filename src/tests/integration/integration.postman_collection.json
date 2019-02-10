@@ -1930,7 +1930,7 @@
 		{
 			"id": "5806d534-e18e-43e1-affa-2a49bb20188b",
 			"key": "host",
-			"value": "localhost:5000",
+			"value": "api:5000",
 			"type": "string"
 		}
 	]
