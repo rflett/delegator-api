@@ -2,6 +2,7 @@ stages:
   - lint
   # - unitTest
   - build
+  - integrationTest
   - deployStaging
 
 variables:
@@ -39,6 +40,25 @@ build:
     # tag and push latest
     - docker tag $AMZ_REGISTRY/api:$CI_COMMIT_SHA $AMZ_REGISTRY/api:latest
     - docker push $AMZ_REGISTRY/api:latest
+
+integrationTest:
+  stage: integrationTest
+  image: $GITLAB_REGISTRY/docker:latest
+  allow_failure: true
+  services:
+    - docker:dind
+  tags:
+    - docker
+  script:
+    # docker-login to ecr
+    - eval $(aws ecr get-login --no-include-email)
+
+    # start services
+    - docker run -d -p 5432:5432 --name postgres $AMZ_REGISTRY/postgres:latest
+    - docker run -d -p 5000:5000 --build-arg APP_ENV=Ci --name api --link postgres:postgres $AMZ_REGISTRY/api:latest
+
+    # run tests
+    - docker run -it --link api:api $GITLAB_REGISTRY/newman:latest newman run src/tests/integration.postman_collection.json
 
 deployStaging:
   stage: deployStaging
