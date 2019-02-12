@@ -5,6 +5,7 @@ from sqlalchemy import Column, String, DateTime
 USER = 'USER'
 ORGANISATION = 'ORGANISATION'
 TASK = 'TASK'
+ROLE = 'ROLE'
 
 
 class Resource(DBBase):

@@ -2,6 +2,7 @@ from app import app, g_response
 from functools import wraps
 from flask import Response, request
 from app.Controllers import AuthController, UserController, SignupController
+from app.Controllers.RBAC import RoleController
 
 
 def requires_jwt(f):
@@ -95,3 +96,13 @@ def get_user(identifier):
     :return:
     """
     return UserController.user_get(identifier, request)
+
+
+@app.route('/roles', methods=['GET'])
+@requires_jwt
+def get_roles():
+    """
+    Handles getting all roles
+    :return: Response
+    """
+    return RoleController.get_roles(request)

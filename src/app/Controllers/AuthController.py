@@ -364,6 +364,7 @@ class AuthController(object):
                 return False
 
         except Exception as e:
+            logger.debug('here')
             logger.error(str(e))
             logger.debug(f"decoding raised {e}, likely failed to decode jwt due to user secret/aud issue")
             AuthController.invalidate_jwt_token(token=token)
@@ -390,16 +391,15 @@ class AuthController(object):
         :param auth:    The Authorization header from the request.
         :return:        True if the token exists and is a JWT, or an unauthenticated response.
         """
-
         if auth is None:
             logger.debug('missing authorization header')
             return g_response("Missing Authorization header.", 401)
         elif not isinstance(auth, str):
             logger.debug(f"Expected Authorization header type str got {type(auth)}.")
             return g_response(f"Expected Authorization header type str got {type(auth)}.", 401)
-
         try:
             token = auth.replace('Bearer ', '')
+            logger.debug(token)
             jwt.decode(jwt=token, algorithms='HS256', verify=False)
 
         except Exception as e:

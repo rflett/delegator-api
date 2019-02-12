@@ -57,6 +57,7 @@ def session_scope():
         session.commit()
     except Exception as e:
         session.rollback()
+        logger.error(str(e))
         raise e
 
 
