@@ -48,5 +48,30 @@
                 "awslogs-stream-prefix": "postgres"
             }
         }
+    },
+    {
+        "name": "web",
+        "image": "292374005836.dkr.ecr.ap-southeast-2.amazonaws.com/web:latest",
+        "memory": 256,
+        "memoryReservation": 64,
+        "essential": true,
+        "portMappings": [
+            {
+                "hostPort": 80,
+                "containerPort": 80,
+                "protocol": "tcp"
+            }
+        ],
+        "links": [
+            "api:api"
+        ],
+        "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+                "awslogs-group": "web",
+                "awslogs-region": "ap-southeast-2",
+                "awslogs-stream-prefix": "web"
+            }
+        }
     }
 ]

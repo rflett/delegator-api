@@ -1,15 +1,15 @@
 version: '3.7'
 services:
-  api:
-    build:
-      context: ../src
-      dockerfile: Dockerfile
-      args:
-        APP_ENV: Ci
-    ports:
-      - 5000:5000
-    # volumes:
-    #   - ../src:/app
+  # api:
+  #   build:
+  #     context: ../src
+  #     dockerfile: Dockerfile
+  #     args:
+  #       FLASK_ENV: development
+  #       APP_ENV: Docker
+  #   command: pipenv run flask run --host 0.0.0.0 --reload
+  #   ports:
+  #     - 5000:5000
   # nginx:
   #   build:
   #     context: nginx/

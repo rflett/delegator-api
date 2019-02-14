@@ -246,3 +246,31 @@ class UserController(object):
         else:
             logger.debug(f"user with id {user_identifier} does not exist")
             return g_response("User does not exist.", 400)
+
+    @staticmethod
+    def user_get_all(request: request) -> Response:
+        """
+        Get all users
+        :param request:     The request object
+        :return:
+        """
+        from app.Controllers import AuthController
+        from app.Models import User
+
+        req_user = AuthController.authorize_request(
+            request=request,
+            operation=Operation.GET,
+            resource=Resource.USERS
+        )
+
+        if isinstance(req_user, Response):
+            return req_user
+        elif isinstance(req_user, User):
+
+            with session_scope() as session:
+                users_qry = session.query(User).filter(User.org_id == req_user.org_id).all()
+
+            users = [u.as_dict() for u in users_qry]
+
+            logger.debug(f"retrieved {len(users)} roles: {json.dumps(users)}")
+            return Response(json.dumps(users), status=200, headers={"Content-Type": "application/json"})

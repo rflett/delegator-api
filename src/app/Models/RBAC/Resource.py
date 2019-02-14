@@ -6,6 +6,7 @@ USER = 'USER'
 ORGANISATION = 'ORGANISATION'
 TASK = 'TASK'
 ROLE = 'ROLE'
+USERS = 'USERS'
 
 
 class Resource(DBBase):

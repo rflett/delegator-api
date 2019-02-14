@@ -88,6 +88,16 @@ def update_user():
     return UserController.user_update(request)
 
 
+@app.route('/users', methods=['GET'])
+@requires_jwt
+def get_users():
+    """
+    Handles getting all users
+    :return: Response
+    """
+    return UserController.user_get_all(request)
+
+
 @app.route('/users/<identifier>', methods=['GET'])
 @requires_jwt
 def get_user(identifier):
