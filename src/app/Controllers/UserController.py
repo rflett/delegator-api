@@ -8,24 +8,6 @@ from flask import request, Response
 from sqlalchemy import exists
 
 
-def _user_exists(user_identifier: typing.Union[int, str]) -> bool:
-    """
-    Checks to see if a user exists
-    :param user_identifier: The user id or email
-    :return:                True if the user exists or False
-    """
-    if isinstance(user_identifier, str):
-        logger.debug("user_identifier is a str so finding user by email")
-        with session_scope() as session:
-            ret = session.query(exists().where(User.email == user_identifier)).scalar()
-            return ret
-    elif isinstance(user_identifier, int):
-        logger.debug("user_identifier is an int so finding user by id")
-        with session_scope() as session:
-            ret = session.query(exists().where(User.id == user_identifier)).scalar()
-            return ret
-
-
 def _compare_user_orgs(user_resource: User, request_user: User) -> bool:
     """
     Checks to see if the user making the request belongs to the same organisation as the user they're
@@ -45,7 +27,17 @@ class UserController(object):
         :param user_identifier: The user id or email
         :return:                True if the user exists or False
         """
-        return _user_exists(user_identifier)
+        with session_scope() as session:
+            if isinstance(user_identifier, str):
+                logger.debug("user_identifier is a str so finding user by email")
+                ret = session.query(exists().where(User.email == user_identifier)).scalar()
+            elif isinstance(user_identifier, int):
+                logger.debug("user_identifier is an int so finding user by id")
+                ret = session.query(exists().where(User.id == user_identifier)).scalar()
+            else:
+                raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
+
+        return ret
 
     @staticmethod
     def get_user(user_identifier: typing.Union[str, int]) -> User:
@@ -55,20 +47,21 @@ class UserController(object):
         :raises ValueError:     If the user doesn't exist.
         :return:                The User
         """
-        if _user_exists(user_identifier):
+        with session_scope() as session:
             if isinstance(user_identifier, str):
-                logger.debug("user_identifier is a str so finding user by email")
-                with session_scope() as session:
-                    ret = session.query(User).filter(User.email == user_identifier).first()
-                    return ret
+                ret = session.query(User).filter(User.email == user_identifier).first()
+                logger.debug("user_identifier is a str so getting user by email")
             elif isinstance(user_identifier, int):
-                logger.debug("user_identifier is an int so finding user by id")
-                with session_scope() as session:
-                    ret = session.query(User).filter(User.id == user_identifier).first()
-                    return ret
-        else:
+                logger.debug("user_identifier is an int so getting user by id")
+                ret = session.query(User).filter(User.id == user_identifier).first()
+            else:
+                raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
+
+        if ret is None:
             logger.debug(f"User with identifier {user_identifier} does not exist.")
             raise ValueError(f"User with identifier {user_identifier} does not exist.")
+        else:
+            return ret
 
     @staticmethod
     def get_user_by_email(email: str) -> User:
@@ -78,14 +71,13 @@ class UserController(object):
         :raises ValueError:     If the user doesn't exist.
         :return:                The User
         """
-        if _user_exists(email):
-            logger.debug(f"user {email} exists")
-            with session_scope() as session:
-                ret = session.query(User).filter(User.email == email).first()
-                return ret
-        else:
+        with session_scope() as session:
+            ret = session.query(User).filter(User.email == email).first()
+        if ret is None:
             logger.debug(f"User with email {email} does not exist.")
             raise ValueError(f"User with email {email} does not exist.")
+        else:
+            return ret
 
     @staticmethod
     def get_user_by_id(user_id: int) -> User:
@@ -95,14 +87,13 @@ class UserController(object):
         :raises ValueError:     If the user doesn't exist.
         :return:                The User
         """
-        if _user_exists(user_id):
-            logger.debug(f"user with id {user_id} exists")
-            with session_scope() as session:
-                ret = session.query(User).filter(User.id == user_id).first()
-                return ret
-        else:
+        with session_scope() as session:
+            ret = session.query(User).filter(User.id == user_id).first()
+        if ret is None:
             logger.debug(f"User with id {user_id} does not exist.")
             raise ValueError(f"User with id {user_id} does not exist.")
+        else:
+            return ret
 
     @staticmethod
     def user_create(request: request, require_auth: bool = True) -> Response:

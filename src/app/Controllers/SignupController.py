@@ -13,7 +13,6 @@ class SignupController(object):
         :return:        Response
         """
         request_body = request.get_json()
-
         # check if org already exists
         if OrganisationController.org_exists(request_body.get('org_name')):
             logger.debug(f"organisation {request_body.get('org_name')} already exists")
@@ -27,7 +26,6 @@ class SignupController(object):
         try:
             create_org_res = OrganisationController.org_create(request, require_auth=False)
         except Exception as e:
-            # rollback org
             logger.error(str(e))
             return g_response("There was an issue creating the organisation", 500)
 
@@ -41,7 +39,6 @@ class SignupController(object):
         try:
             create_user_res = UserController.user_create(request, require_auth=False)
         except Exception as e:
-            # rollback org and user
             logger.error(str(e))
             return g_response("There was an issue creating the user", 500)
 
@@ -52,11 +49,13 @@ class SignupController(object):
         new_user = UserController.get_user_by_email(request_body.get('email'))
         new_user.log(
             operation=Operation.CREATE,
-            resource=Resource.ORGANISATION
+            resource=Resource.ORGANISATION,
+            resource_id=new_org.id
         )
         new_user.log(
             operation=Operation.CREATE,
-            resource=Resource.USER
+            resource=Resource.USER,
+            resource_id=new_user.id
         )
 
         return g_response("Successfully signed up.", 200)

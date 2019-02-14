@@ -92,19 +92,18 @@ def _failed_login_attempt(email: str) -> Response:
     # check if it's failed before
     logger.debug(f"attempted to login with non existing email {email}")
     with session_scope() as session:
-        failed_email = session.query(exists().where(LoginBadEmail.email == email)).scalar()
-    if failed_email:
+        failed_email = session.query(LoginBadEmail).filter(LoginBadEmail.email == email).first()
+
+    if failed_email is not None:
         # it's failed before so increment
-        with session_scope() as session:
-            failure_entry = session.query(LoginBadEmail).filter(LoginBadEmail.email == email).first()
-            logger.debug(f"email {email} has failed to log in "
-                         f"{failure_entry.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
+        logger.debug(f"email {email} has failed to log in "
+                     f"{failed_email.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
 
         with session_scope() as session:
             # check if it has breached the limits
-            if failure_entry.failed_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
+            if failed_email.failed_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
                 # check timeout
-                diff = (datetime.datetime.utcnow() - failure_entry.failed_time).seconds
+                diff = (datetime.datetime.utcnow() - failed_email.failed_time).seconds
                 if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
                     logger.debug(f"email last failed {diff}s ago. "
                                  f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
@@ -113,12 +112,12 @@ def _failed_login_attempt(email: str) -> Response:
                     # reset
                     logger.debug(f"email last failed {diff}s ago. "
                                  f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
-                    session.delete(failure_entry)
+                    session.delete(failed_email)
                     return g_response("Email incorrect.", 401)
             else:
                 # increment
-                failure_entry.failed_attempts += 1
-                failure_entry.failed_time = datetime.datetime.utcnow()
+                failed_email.failed_attempts += 1
+                failed_email.failed_time = datetime.datetime.utcnow()
                 logger.debug(f"incorrect email attempt for user {email}")
                 return g_response("Email incorrect.", 401)
     else:

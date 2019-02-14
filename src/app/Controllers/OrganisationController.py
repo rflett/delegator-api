@@ -7,24 +7,6 @@ from flask import request, Response
 from sqlalchemy import exists
 
 
-def _org_exists(org_identifier: typing.Union[int, str]) -> bool:
-    """
-    Checks to see if an org exists
-    :param org_identifier:  The org id or name
-    :return:                True if the org exists or False
-    """
-    if isinstance(org_identifier, str):
-        logger.debug("org_identifier is a str so finding org by name")
-        with session_scope() as session:
-            ret = session.query(exists().where(Organisation.name == org_identifier)).scalar()
-            return ret
-    elif isinstance(org_identifier, int):
-        logger.debug("org_identifier is an int so finding org by id")
-        with session_scope() as session:
-            ret = session.query(exists().where(Organisation.id == org_identifier)).scalar()
-            return ret
-
-
 class OrganisationController(object):
     @staticmethod
     def org_exists(org_identifier: typing.Union[str, int]) -> bool:
@@ -33,7 +15,17 @@ class OrganisationController(object):
         :param org_identifier:  The org id or name
         :return:                True if the org exists or False
         """
-        return _org_exists(org_identifier)
+        with session_scope() as session:
+            if isinstance(org_identifier, str):
+                logger.debug("org_identifier is a str so finding org by name")
+                ret = session.query(exists().where(Organisation.name == org_identifier)).scalar()
+            elif isinstance(org_identifier, int):
+                logger.debug("org_identifier is an int so finding org by id")
+                ret = session.query(exists().where(Organisation.id == org_identifier)).scalar()
+            else:
+                raise ValueError(f"bad org_identifier, expected Union[str, int] got {type(org_identifier)}")
+
+        return ret
 
     @staticmethod
     def get_org_by_id(id: int) -> Organisation:
@@ -42,14 +34,13 @@ class OrganisationController(object):
         :param id:  The id of the organisation
         :return:    The Organisation object.
         """
-        # TODO this query causes the 'idle in transaction' issue
-        if _org_exists(id):
-            with session_scope() as session:
-                ret = session.query(Organisation).filter(Organisation.id == id).first()
-                return ret
-        else:
+        with session_scope() as session:
+            ret = session.query(Organisation).filter(Organisation.id == id).first()
+        if ret is None:
             logger.debug(f"org {id} does not exist")
             raise ValueError(f"Org with id {id} does not exist.")
+        else:
+            return ret
 
     @staticmethod
     def get_org_by_name(name: str) -> Organisation:
@@ -58,13 +49,13 @@ class OrganisationController(object):
         :param name:    The name of the organisation
         :return:        The Organisation object.
         """
-        if _org_exists(name):
-            with session_scope() as session:
-                ret = session.query(Organisation).filter(Organisation.name == name).first()
-                return ret
-        else:
+        with session_scope() as session:
+            ret = session.query(Organisation).filter(Organisation.name == name).first()
+        if ret is None:
             logger.debug(f"org {name} does not exist")
             raise ValueError(f"Org with name {name} does not exist.")
+        else:
+            return ret
 
     @staticmethod
     def org_create(request: request, require_auth: bool = True) -> Response:
