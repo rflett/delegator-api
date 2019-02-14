@@ -58,7 +58,7 @@ integrationTest:
     - docker run -d -p 5000:5000 -e APP_ENV=Ci --name api --link postgres:postgres $AMZ_REGISTRY/api:latest
 
     # run tests
-    - docker run --link api:api -v `pwd`/src/tests/integration:/newman $GITLAB_REGISTRY/docker:latest newman run /newman/integration.postman_collection.json
+    - docker run --link api:api -v `pwd`/src/tests/integration:/newman $AMZ_REGISTRY/newman:latest newman run /newman/integration.postman_collection.json
 
 # deployStaging:
 #   stage: deployStaging
