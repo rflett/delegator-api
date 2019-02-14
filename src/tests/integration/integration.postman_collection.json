@@ -2077,7 +2077,7 @@
 		{
 			"id": "13e78c71-8495-4e40-9b1a-8c5286c83a36",
 			"key": "host",
-			"value": "api",
+			"value": "api:5000",
 			"type": "string"
 		}
 	]
