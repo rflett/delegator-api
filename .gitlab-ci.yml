@@ -1,20 +1,20 @@
 stages:
-  # - lint
+  - lint
   # - unitTest
-  # - build
+  - build
   - integrationTest
-  # - deployStaging
+  - deployStaging
 
 variables:
   AMZ_REGISTRY: 292374005836.dkr.ecr.ap-southeast-2.amazonaws.com
   GITLAB_REGISTRY: registry.gitlab.com/rflett/containers
 
-# flake8:
-#   stage: lint
-#   allow_failure: true
-#   image: $GITLAB_REGISTRY/python:latest
-#   script:
-#     - flake8 src/
+flake8:
+  stage: lint
+  allow_failure: true
+  image: $GITLAB_REGISTRY/python:latest
+  script:
+    - flake8 src/
 
 # unitTest:
 #   stage: unitTest
@@ -24,22 +24,22 @@ variables:
 #     - pipenv install
 #     - pipenv run python -m pytest
 
-# build:
-#   stage: build
-#   image: $GITLAB_REGISTRY/docker:latest
-#   services:
-#     - docker:dind
-#   tags:
-#     - docker
-#   script:
-#     # docker-login to ecr
-#     - eval $(aws ecr get-login --no-include-email)
-#     # build, tag, and push commit
-#     - docker build -t $AMZ_REGISTRY/api:$CI_COMMIT_SHA src/
-#     - docker push $AMZ_REGISTRY/api:$CI_COMMIT_SHA
-#     # tag and push latest
-#     - docker tag $AMZ_REGISTRY/api:$CI_COMMIT_SHA $AMZ_REGISTRY/api:latest
-#     - docker push $AMZ_REGISTRY/api:latest
+build:
+  stage: build
+  image: $GITLAB_REGISTRY/docker:latest
+  services:
+    - docker:dind
+  tags:
+    - docker
+  script:
+    # docker-login to ecr
+    - eval $(aws ecr get-login --no-include-email)
+    # build, tag, and push commit
+    - docker build -t $AMZ_REGISTRY/api:$CI_COMMIT_SHA src/
+    - docker push $AMZ_REGISTRY/api:$CI_COMMIT_SHA
+    # tag and push latest
+    - docker tag $AMZ_REGISTRY/api:$CI_COMMIT_SHA $AMZ_REGISTRY/api:latest
+    - docker push $AMZ_REGISTRY/api:latest
 
 integrationTest:
   stage: integrationTest
@@ -60,10 +60,10 @@ integrationTest:
     # run tests
     - docker run --link api:api -v `pwd`/src/tests/integration:/newman $AMZ_REGISTRY/newman:latest newman run /newman/integration.postman_collection.json
 
-# deployStaging:
-#   stage: deployStaging
-#   image: $GITLAB_REGISTRY/python:latest
-#   tags:
-#     - docker
-#   script:
-#     - python deploy/deploy.py api staging
+deployStaging:
+  stage: deployStaging
+  image: $GITLAB_REGISTRY/python:latest
+  tags:
+    - docker
+  script:
+    - python deploy/deploy.py api staging

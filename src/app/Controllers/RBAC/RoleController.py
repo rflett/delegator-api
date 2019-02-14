@@ -2,7 +2,7 @@ import json
 import typing
 from app.Models.RBAC import Role, Operation, Resource
 from app.Models.RBAC.Permission import Permission
-from app import logger, session_scope, g_response
+from app import logger, session_scope
 from flask import request, Response
 
 
