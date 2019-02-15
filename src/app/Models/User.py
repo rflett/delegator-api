@@ -63,8 +63,8 @@ class User(DBBase):
     failed_login_time = Column('failed_login_time', DateTime, default=None)
     created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
 
-    org_r = relationship("Organisation")
-    role_r = relationship("Role")
+    orgs = relationship("Organisation")
+    roles = relationship("Role")
 
     def __init__(
             self,

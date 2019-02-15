@@ -19,8 +19,8 @@ class Task(DBBase):
     created_at = Column('created_at', DateTime(), default=datetime.datetime.utcnow)
     finished_at = Column('finished_at', DateTime())
 
-    org_r = relationship("Organisation")
-    user_r = relationship("User")
+    orgs = relationship("Organisation")
+    users = relationship("User")
 
     def __init__(
         self,

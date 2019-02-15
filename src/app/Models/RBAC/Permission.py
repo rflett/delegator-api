@@ -14,9 +14,9 @@ class Permission(DBBase):
     resource_scope = Column('resource_scope', String(), ForeignKey('rbac_resource_scopes.id'), primary_key=True)
     created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
 
-    operation_r = relationship("Operation")
-    resource_r = relationship("Resource")
-    resource_scope_r = relationship("ResourceScope")
+    operations = relationship("Operation")
+    resources = relationship("Resource")
+    resource_scopes = relationship("ResourceScope")
 
     def __init__(
             self,

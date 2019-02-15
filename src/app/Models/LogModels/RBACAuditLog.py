@@ -17,10 +17,10 @@ class RBACAuditLog(DBBase):
     resource_id = Column('resource_id', Integer(), default=None)
     created_at = Column('created_at', DateTime(), default=datetime.datetime.utcnow)
 
-    r_org = relationship("Organisation")
-    r_user = relationship("User")
-    r_operation = relationship("Operation")
-    r_resource = relationship("Resource")
+    orgs = relationship("Organisation")
+    users = relationship("User")
+    operations = relationship("Operation")
+    resources = relationship("Resource")
 
     def __init__(
         self,

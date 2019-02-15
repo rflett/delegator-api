@@ -3,7 +3,7 @@ import typing
 from app import logger, g_response, session_scope
 from app.Controllers import AuthController
 from app.Models import User
-from app.Models.RBAC import Operation, Resource
+from app.Models.RBAC import Operation, Resource, Role
 from flask import request, Response
 from sqlalchemy import exists
 
@@ -17,6 +17,60 @@ def _compare_user_orgs(user_resource: User, request_user: User) -> bool:
     :return:                True if the orgs are equal or false
     """
     return True if request_user.org_id == user_resource.org_id or request_user.role == 'ADMIN' else False
+
+
+def _make_user_dict(user: User, role: Role) -> dict:
+    """
+    Creates a dict of a user and the appropriate attributes. Probably not the best way to do this yet,
+    needs refactoring once I understand its use more.
+    :param user:    The user
+    :param role:    The user's role
+    :return:        A dict with the params merged
+    """
+    ret = {}
+
+    # prepend role attrs with role_
+    for k, v in role.as_dict().items():
+        if k not in ['id', 'rank']:
+            ret[f'role_{k}'] = v
+
+    # merge role with user
+    return {
+        **user.as_dict(),
+        **ret
+    }
+
+
+def _get_user_by_email(email: str) -> User:
+    """
+    Gets a user by their email address
+    :param email:          The user's email
+    :raises ValueError:     If the user doesn't exist.
+    :return:                The User
+    """
+    with session_scope() as session:
+        ret = session.query(User).filter(User.email == email).first()
+    if ret is None:
+        logger.debug(f"User with email {email} does not exist.")
+        raise ValueError(f"User with email {email} does not exist.")
+    else:
+        return ret
+
+
+def _get_user_by_id(user_id: int) -> User:
+    """
+    Gets a user by their id
+    :param user_id:         The user's id
+    :raises ValueError:     If the user doesn't exist.
+    :return:                The User
+    """
+    with session_scope() as session:
+        ret = session.query(User).filter(User.id == user_id).first()
+    if ret is None:
+        logger.debug(f"User with id {user_id} does not exist.")
+        raise ValueError(f"User with id {user_id} does not exist.")
+    else:
+        return ret
 
 
 class UserController(object):
@@ -47,53 +101,22 @@ class UserController(object):
         :raises ValueError:     If the user doesn't exist.
         :return:                The User
         """
-        with session_scope() as session:
-            if isinstance(user_identifier, str):
-                ret = session.query(User).filter(User.email == user_identifier).first()
-                logger.debug("user_identifier is a str so getting user by email")
-            elif isinstance(user_identifier, int):
-                logger.debug("user_identifier is an int so getting user by id")
-                ret = session.query(User).filter(User.id == user_identifier).first()
-            else:
-                raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
-
-        if ret is None:
-            logger.debug(f"User with identifier {user_identifier} does not exist.")
-            raise ValueError(f"User with identifier {user_identifier} does not exist.")
+        if isinstance(user_identifier, str):
+            logger.debug("user_identifier is a str so getting user by email")
+            return _get_user_by_email(user_identifier)
+        elif isinstance(user_identifier, int):
+            logger.debug("user_identifier is an int so getting user by id")
+            return _get_user_by_id(user_identifier)
         else:
-            return ret
+            raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
 
     @staticmethod
     def get_user_by_email(email: str) -> User:
-        """
-        Gets a user by their email address
-        :param email:          The user's email
-        :raises ValueError:     If the user doesn't exist.
-        :return:                The User
-        """
-        with session_scope() as session:
-            ret = session.query(User).filter(User.email == email).first()
-        if ret is None:
-            logger.debug(f"User with email {email} does not exist.")
-            raise ValueError(f"User with email {email} does not exist.")
-        else:
-            return ret
+        return _get_user_by_email(email)
 
     @staticmethod
     def get_user_by_id(user_id: int) -> User:
-        """
-        Gets a user by their id
-        :param user_id:              The user's id
-        :raises ValueError:     If the user doesn't exist.
-        :return:                The User
-        """
-        with session_scope() as session:
-            ret = session.query(User).filter(User.id == user_id).first()
-        if ret is None:
-            logger.debug(f"User with id {user_id} does not exist.")
-            raise ValueError(f"User with id {user_id} does not exist.")
-        else:
-            return ret
+        return _get_user_by_id(user_id)
 
     @staticmethod
     def user_create(request: request, require_auth: bool = True) -> Response:
@@ -268,9 +291,9 @@ class UserController(object):
         elif isinstance(req_user, User):
 
             with session_scope() as session:
-                users_qry = session.query(User).filter(User.org_id == req_user.org_id).all()
+                users_qry = session.query(User, Role).join(User.roles).filter(User.org_id == req_user.org_id).all()
 
-            users = [u.as_dict() for u in users_qry]
+            users = [_make_user_dict(u, r) for u, r in users_qry]
 
             logger.debug(f"retrieved {len(users)} roles: {json.dumps(users)}")
             return Response(json.dumps(users), status=200, headers={"Content-Type": "application/json"})

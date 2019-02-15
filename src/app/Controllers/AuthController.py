@@ -206,7 +206,8 @@ class AuthController(object):
                             return g_response("resource_org_id is None", 403)
                     elif user_permission_scope == ResourceScope.GLOBAL:
                         # they can do anything cos they're l33t
-                        logger.debug(f"user {auth_user.id} has {user_permission_scope} permissions")
+                        logger.debug(f"user {auth_user.id} has {user_permission_scope} permissions "
+                                     f"for {operation} {resource}")
                         return auth_user
 
                 else:
