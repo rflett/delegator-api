@@ -134,12 +134,6 @@ class AuthController(object):
     The AuthController manages functions regarding generating, decoding and validating
     JWT tokens, login/logout functionality, and validating Authorization headers.
     """
-    @dataclass
-    class ResourceObject:
-        """ A generic object which covers all resources """
-        org_id: int
-        user_id: int
-
     @staticmethod
     def authorize_request(
             request: request,
