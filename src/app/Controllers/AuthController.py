@@ -11,7 +11,6 @@ from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User, LoginBadEmail
 from app.Models.Enums import UserAuthLogAction
 from app.Models.RBAC import Role, ResourceScope
-from dataclasses import dataclass
 from flask import Response, request
 from sqlalchemy import exists
 

@@ -58,6 +58,7 @@ class User(DBBase):
     first_name = Column('first_name', String())
     last_name = Column('last_name', String())
     password = Column('password', String())
+    job_title = Column('job_title', String())
     role = Column('role', String(), ForeignKey('rbac_roles.id'))
     failed_login_attempts = Column('failed_login_attempts', Integer(), default=0)
     failed_login_time = Column('failed_login_time', DateTime, default=None)
@@ -73,6 +74,7 @@ class User(DBBase):
             first_name: str,
             last_name: str,
             password: str,
+            job_title: str,
             role: str
     ):
         self.org_id = org_id
@@ -80,6 +82,7 @@ class User(DBBase):
         self.first_name = first_name
         self.last_name = last_name
         self.password = _hash_password(password)
+        self.job_title = job_title
         self.role = role
 
     def can(self, operation: str, resource: str) -> typing.Union[bool, str]:
@@ -162,5 +165,6 @@ class User(DBBase):
             "email": self.email,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "role": self.role
+            "role": self.role,
+            "job_title": self.job_title
         }

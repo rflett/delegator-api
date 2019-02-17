@@ -79,6 +79,7 @@ class ValidationController(object):
             first_name: str
             last_name: str
             role_name: str
+            job_title: str
 
         # check email
         email = request_body.get('email')
@@ -139,6 +140,13 @@ class ValidationController(object):
         if not AuthController.role_exists(role_name):
             logger.debug(f"Role {role_name} does not exist")
             return g_response(f"Role {role_name} does not exist", 400)
+        job_title = request_body.get('job_title')
+        if not isinstance(job_title, str):
+            logger.debug(f"Bad job_title, expected str got {type(job_title)}.")
+            return g_response(f"Bad job_title, expected str got {type(job_title)}.", 400)
+        if len(job_title) == 0:
+            logger.debug(f"job_title is required.")
+            return g_response(f"job_title is required.", 400)
 
         return UserRequest(
             org_id=org_id,
@@ -146,7 +154,8 @@ class ValidationController(object):
             password=password,
             first_name=first_name,
             last_name=last_name,
-            role_name=role_name
+            role_name=role_name,
+            job_title=job_title
         )
 
     @staticmethod
@@ -167,6 +176,7 @@ class ValidationController(object):
             first_name: str
             last_name: str
             role_name: str
+            job_title: str
 
             def __iter__(self):
                 for attr, value in self.__dict__.items():
@@ -231,6 +241,13 @@ class ValidationController(object):
         if not AuthController.role_exists(role_name):
             logger.debug(f"Role {role_name} does not exist")
             return g_response(f"Role {role_name} does not exist", 400)
+        job_title = request_body.get('job_title')
+        if not isinstance(job_title, str):
+            logger.debug(f"Bad job_title, expected str got {type(job_title)}.")
+            return g_response(f"Bad job_title, expected str got {type(job_title)}.", 400)
+        if len(job_title) == 0:
+            logger.debug(f"job_title is required.")
+            return g_response(f"job_title is required.", 400)
 
         return UserRequest(
             id=id,
@@ -238,7 +255,8 @@ class ValidationController(object):
             email=email,
             first_name=first_name,
             last_name=last_name,
-            role_name=role_name
+            role_name=role_name,
+            job_title=job_title
         )
 
     @staticmethod

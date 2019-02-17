@@ -140,7 +140,8 @@ class UserController(object):
                     first_name=valid_user.first_name,
                     last_name=valid_user.last_name,
                     password=valid_user.password,
-                    role=valid_user.role_name
+                    role=valid_user.role_name,
+                    job_title=valid_user.job_title
                 )
                 session.add(user)
                 if req_user is not None:
