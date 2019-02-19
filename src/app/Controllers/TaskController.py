@@ -69,7 +69,7 @@ class TaskController(object):
             return req_user
         elif isinstance(req_user, User):
             with session_scope() as session:
-                task_tt_qry = session.query(TaskType).all()
+                task_tt_qry = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
 
             task_types = [tt.as_dict() for tt in task_tt_qry]
 
