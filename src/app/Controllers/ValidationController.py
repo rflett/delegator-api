@@ -62,6 +62,44 @@ class ValidationController(object):
         return True
 
     @staticmethod
+    def validate_create_task_type_request(request_body: dict) -> typing.Union[Response, dataclass]:
+        """
+        Validates a task type request body
+        :param request_body:    The request body from the create task type request
+        :return:                Response if the request body contains invalid values, or the TaskTypeRequest dataclass
+        """
+        from app.Controllers import OrganisationController, TaskController
+
+        @dataclass
+        class TaskTypeRequest:
+            """ A task type dataclass which represents the values in a create task type object. """
+            type: str
+            org_id: int
+
+        org_identifier = request_body.get('org_id')
+        # check org
+        if not isinstance(org_identifier, int):
+            return g_response(f"Bad org_id, expected int got {type(org_identifier)}.", 400)
+        # check that org exists
+        if not OrganisationController.org_exists(org_identifier):
+            logger.debug(f"org {org_identifier} doesn't exist")
+            return g_response(f"Org does not exist", 400)
+        # check type
+        task_type = request_body.get('type')
+        if not isinstance(request_body.get('type'), str):
+            logger.debug(f"Bad type, expected int|str got {type(task_type)}.")
+            return g_response(f"Bad type, expected int|str got {type(task_type)}.", 400)
+        # check task type doesn't exist already
+        if TaskController.task_type_exists(task_type, org_identifier):
+            logger.debug(f"user {task_type} already exists")
+            return g_response(f"Task type already exists.", 400)
+
+        return TaskTypeRequest(
+            type=task_type,
+            org_id=org_identifier
+        )
+
+    @staticmethod
     def validate_create_user_request(request_body: dict) -> typing.Union[Response, dataclass]:
         """
         Validates a user request body

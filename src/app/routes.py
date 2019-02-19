@@ -146,3 +146,13 @@ def get_task_types():
     :return: Response
     """
     return TaskController.get_task_types(request)
+
+
+@app.route('/tasks/types', methods=['POST'])
+@requires_jwt
+def create_task_types():
+    """
+    Handles getting the available task types
+    :return: Response
+    """
+    return TaskController.create_task_types(request)
