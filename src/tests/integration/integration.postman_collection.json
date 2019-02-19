@@ -134,7 +134,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"email\": \"ryan@sink.etemt.com\",\n\t\"password\": \"secret\"\n}\n"
+							"raw": "{\n\t\"email\": \"ryan@sink.etemt.com\",\n\t\"password\": \"secret\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/login",
@@ -537,6 +537,62 @@
 							"path": [
 								"tasks",
 								"statuses"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Task Type (Patient Transport)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"Patient Transport2\",\n\t\"org_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
 							]
 						}
 					},
@@ -1448,6 +1504,118 @@
 							"path": [
 								"tasks",
 								"statuses"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Task Type (Cleanup Aisle 3)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"Cleanup Aisle 3\",\n\t\"org_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Task Type in another Org",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"Move Equipment\",\n\t\"org_id\": 2\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
 							]
 						}
 					},
@@ -2409,6 +2577,62 @@
 					"response": []
 				},
 				{
+					"name": "Create Task Type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"Forbidden Task\",\n\t\"org_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get Task Types",
 					"event": [
 						{
@@ -2667,7 +2891,7 @@
 	],
 	"variable": [
 		{
-			"id": "3bd85c4f-de7f-4f6f-b16d-c38cbb6bd979",
+			"id": "0c31077f-3a3f-4184-922a-3d5783c91aba",
 			"key": "host",
 			"value": "api",
 			"type": "string"
