@@ -1,7 +1,7 @@
 from app import app, g_response
 from functools import wraps
 from flask import Response, request
-from app.Controllers import AuthController, UserController, SignupController
+from app.Controllers import AuthController, UserController, SignupController, TaskController
 from app.Controllers.RBAC import RoleController
 
 
@@ -116,3 +116,33 @@ def get_roles():
     :return: Response
     """
     return RoleController.get_roles(request)
+
+
+@app.route('/tasks/priorities', methods=['GET'])
+@requires_jwt
+def get_task_priorities():
+    """
+    Handles getting the available task priorities
+    :return: Response
+    """
+    return TaskController.get_task_priorities(request)
+
+
+@app.route('/tasks/statuses', methods=['GET'])
+@requires_jwt
+def get_task_statuses():
+    """
+    Handles getting the available task statuses
+    :return: Response
+    """
+    return TaskController.get_task_statuses(request)
+
+
+@app.route('/tasks/types', methods=['GET'])
+@requires_jwt
+def get_task_types():
+    """
+    Handles getting the available task types
+    :return: Response
+    """
+    return TaskController.get_task_types(request)

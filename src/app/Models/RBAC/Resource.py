@@ -7,7 +7,9 @@ ORGANISATION = 'ORGANISATION'
 TASK = 'TASK'
 ROLE = 'ROLE'
 USERS = 'USERS'
-
+TASK_PRIORITY = 'TASK_PRIORITY'
+TASK_STATUS = 'TASK_STATUS'
+TASK_TYPE = 'TASK_TYPE'
 
 class Resource(DBBase):
     __tablename__ = "rbac_resources"

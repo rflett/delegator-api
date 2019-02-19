@@ -4,6 +4,7 @@ from app.Controllers.OrganisationController import OrganisationController
 from app.Controllers.ValidationController import ValidationController
 from app.Controllers.BlacklistedTokenController import BlacklistedTokenController
 from app.Controllers.SignupController import SignupController
+from app.Controllers.TaskController import TaskController
 
 __all__ = [
     AuthController,
@@ -11,5 +12,6 @@ __all__ = [
     OrganisationController,
     ValidationController,
     BlacklistedTokenController,
-    SignupController
+    SignupController,
+    TaskController
 ]
