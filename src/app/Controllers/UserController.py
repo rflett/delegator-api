@@ -144,20 +144,20 @@ class UserController(object):
                     job_title=valid_user.job_title
                 )
                 session.add(user)
-                if req_user is not None:
-                    req_user.log(
-                        operation=Operation.CREATE,
-                        resource=Resource.USER,
-                        resource_id=user.id
-                    )
-                else:
-                    user.log(
-                        operation=Operation.CREATE,
-                        resource=Resource.USER,
-                        resource_id=user.id
-                    )
-                logger.debug(f"created user {user.as_dict()}")
-                return g_response("Successfully created user", 201)
+            if req_user is not None:
+                req_user.log(
+                    operation=Operation.CREATE,
+                    resource=Resource.USER,
+                    resource_id=user.id
+                )
+            else:
+                user.log(
+                    operation=Operation.CREATE,
+                    resource=Resource.USER,
+                    resource_id=user.id
+                )
+            logger.debug(f"created user {user.as_dict()}")
+            return g_response("Successfully created user", 201)
 
         request_body = request.get_json()
 
