@@ -1,6 +1,6 @@
 import datetime
 from app import DBBase
-from app.Models import Organisation, User, TaskPriority, TaskStatus  # noqa
+from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
 from sqlalchemy import Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -10,7 +10,7 @@ class Task(DBBase):
 
     id = Column('id', Integer(), primary_key=True)
     org_id = Column('org_id', Integer(), ForeignKey('organisations.id'))
-    type = Column('type', String())
+    type = Column('type', Integer(), ForeignKey('task_types.id'))
     description = Column('description', String())
     status = Column('status', String(), ForeignKey('task_statuses.status'))
     time_estimate = Column('time_estimate', Integer(), default=0)
@@ -23,12 +23,13 @@ class Task(DBBase):
     orgs = relationship("Organisation")
     users = relationship("User")
     task_statuses = relationship("TaskStatus")
+    task_types = relationship("TaskType")
     task_priorities = relationship("TaskPriority")
 
     def __init__(
         self,
         org_id: int,
-        type: str,
+        type: int,
         description: str,
         status: str,
         time_estimate: int,

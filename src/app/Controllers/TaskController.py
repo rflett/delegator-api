@@ -123,9 +123,10 @@ class TaskController(object):
                     org_id=valid_tt.org_id
                 )
                 session.add(task_type)
-                req_user.log(
-                    operation=Operation.CREATE,
-                    resource=Resource.TASK_TYPE
-                )
-                logger.debug(f"created task type {task_type.as_dict()}")
-                return g_response("Successfully created task type", 201)
+            req_user.log(
+                operation=Operation.CREATE,
+                resource=Resource.TASK_TYPE,
+                resource_id=task_type.id
+            )
+            logger.debug(f"created task type {task_type.as_dict()}")
+            return g_response("Successfully created task type", 201)

@@ -7,7 +7,8 @@ from sqlalchemy.orm import relationship
 class TaskType(DBBase):
     __tablename__ = "task_types"
 
-    type = Column('type', String(), primary_key=True)
+    id = Column('id', Integer(), primary_key=True)
+    type = Column('type', String())
     org_id = Column('org_id', Integer(), ForeignKey('organisations.id'))
 
     orgs = relationship("Organisation")
