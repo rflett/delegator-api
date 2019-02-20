@@ -2893,7 +2893,7 @@
 		{
 			"id": "0c31077f-3a3f-4184-922a-3d5783c91aba",
 			"key": "host",
-			"value": "api",
+			"value": "api:5000",
 			"type": "string"
 		}
 	]
