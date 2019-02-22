@@ -43,7 +43,7 @@ if __name__ == '__main__':
         family=args.service_name,
         networkMode='bridge',
         containerDefinitions=json.load(open('deploy/container_definitions.json')),
-        cpu='384',
+        cpu='512',
         memory='384',
         tags=tags
     )
