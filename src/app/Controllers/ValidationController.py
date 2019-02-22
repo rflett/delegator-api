@@ -197,7 +197,7 @@ class ValidationController(object):
         )
 
     @staticmethod
-    def validate_update_user_request(request_body: dict) -> typing.Union[Response, dataclass]:
+    def validate_update_user_request(user_id: int, request_body: dict) -> typing.Union[Response, dataclass]:
         """
         Validates a user request body
         :param request_body:    The request body from the update user request
@@ -208,7 +208,6 @@ class ValidationController(object):
         @dataclass
         class UserRequest:
             """ A user request dataclass which represents the values in a update user request object. """
-            id: int
             org_id: int
             email: str
             first_name: str
@@ -218,22 +217,20 @@ class ValidationController(object):
 
             def __iter__(self):
                 for attr, value in self.__dict__.items():
-                    if attr != 'id':
-                        yield attr, value
+                    yield attr, value
 
         # check id
-        id = request_body.get('id')
-        if not isinstance(id, int):
-            return g_response(f"Bad id, expected int got {type(id)}")
+        if not isinstance(user_id, int):
+            return g_response(f"Bad identifier, expected int got {type(user_id)}", 400)
+        # check user exists
+        if not UserController.user_exists(user_id):
+            logger.debug(f"user {user_id} doesn't exist")
+            return g_response(f"User doesn't exist.", 400)
         # check email
         email = request_body.get('email')
         email_check = ValidationController.validate_email(email)
         if isinstance(email_check, Response):
             return email_check
-        # check user does exist
-        if not UserController.user_exists(request_body.get('email')):
-            logger.debug(f"user {request_body.get('email')} doesn't exist")
-            return g_response(f"User doesn't exist.", 400)
         # check org
         org_identifier = request_body.get('org_id', request_body.get('org_name'))
         if not (isinstance(org_identifier, int) or isinstance(org_identifier, str)):
@@ -279,6 +276,7 @@ class ValidationController(object):
         if not AuthController.role_exists(role_name):
             logger.debug(f"Role {role_name} does not exist")
             return g_response(f"Role {role_name} does not exist", 400)
+        # check job title
         job_title = request_body.get('job_title')
         if not isinstance(job_title, str):
             logger.debug(f"Bad job_title, expected str got {type(job_title)}.")
@@ -288,7 +286,6 @@ class ValidationController(object):
             return g_response(f"job_title is required.", 400)
 
         return UserRequest(
-            id=id,
             org_id=org_id,
             email=email,
             first_name=first_name,

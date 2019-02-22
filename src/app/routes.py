@@ -78,16 +78,6 @@ def user_create():
     return UserController.user_create(request)
 
 
-@app.route('/users', methods=['PUT'])
-@requires_jwt
-def update_user():
-    """
-    Handles updating a user
-    :return: Response
-    """
-    return UserController.user_update(request)
-
-
 @app.route('/users', methods=['GET'])
 @requires_jwt
 def get_users():
@@ -106,6 +96,16 @@ def get_user(identifier):
     :return:
     """
     return UserController.user_get(identifier, request)
+
+
+@app.route('/user/<user_id>', methods=['PUT'])
+@requires_jwt
+def update_user(user_id):
+    """
+    Handles updating a user
+    :return: Response
+    """
+    return UserController.user_update(user_id, request)
 
 
 @app.route('/roles', methods=['GET'])

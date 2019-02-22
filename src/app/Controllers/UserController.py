@@ -186,16 +186,23 @@ class UserController(object):
             return create_user(valid_user)
 
     @staticmethod
-    def user_update(request: request) -> Response:
+    def user_update(user_id: int, request: request) -> Response:
         """
         Updates a user, requires the full user object in the response body.
-        :param request: The request object
-        :return:        Response
+        :param user_id   The user id
+        :param request:     The request object
+        :return:            Response
         """
         from app.Controllers import ValidationController
 
         request_body = request.get_json()
-        valid_user = ValidationController.validate_update_user_request(request_body)
+
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return g_response(f"cannot cast `{user_id}` to int", 400)
+
+        valid_user = ValidationController.validate_update_user_request(user_id, request_body)
 
         if isinstance(valid_user, Response):
             return valid_user
@@ -205,12 +212,12 @@ class UserController(object):
                 operation=Operation.UPDATE,
                 resource=Resource.USER,
                 resource_org_id=valid_user.org_id,
-                resource_user_id=valid_user.id
+                resource_user_id=user_id
             )
             if isinstance(req_user, Response):
                 return req_user
             elif isinstance(req_user, User):
-                user_to_update = UserController.get_user_by_id(valid_user.id)
+                user_to_update = UserController.get_user_by_id(user_id)
 
                 with session_scope():
                     for prop, val in valid_user:
@@ -219,7 +226,7 @@ class UserController(object):
                     req_user.log(
                         operation=Operation.UPDATE,
                         resource=Resource.USER,
-                        resource_id=user_to_update.id
+                        resource_id=user_id
                     )
                     logger.debug(f"updated user {user_to_update.as_dict()}")
                     return g_response(status=204)
