@@ -1,7 +1,7 @@
 [
     {
         "name": "api",
-        "image": "008492826001 .dkr.ecr.ap-southeast-2.amazonaws.com/api:latest",
+        "image": "008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest",
         "memory": 128,
         "memoryReservation": 64,
         "essential": true,
@@ -29,7 +29,7 @@
     },
     {
         "name": "postgres",
-        "image": "008492826001 .dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest",
+        "image": "008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest",
         "memory": 256,
         "memoryReservation": 128,
         "essential": true,
