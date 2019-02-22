@@ -1,9 +1,9 @@
 [
     {
         "name": "api",
-        "image": "292374005836.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest",
-        "memory": 256,
-        "memoryReservation": 128,
+        "image": "008492826001 .dkr.ecr.ap-southeast-2.amazonaws.com/api:latest",
+        "memory": 128,
+        "memoryReservation": 64,
         "essential": true,
         "portMappings": [
             {
@@ -29,9 +29,9 @@
     },
     {
         "name": "postgres",
-        "image": "292374005836.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest",
-        "memory": 512,
-        "memoryReservation": 256,
+        "image": "008492826001 .dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest",
+        "memory": 256,
+        "memoryReservation": 128,
         "essential": true,
         "portMappings": [
             {
@@ -46,31 +46,6 @@
                 "awslogs-group": "postgres",
                 "awslogs-region": "ap-southeast-2",
                 "awslogs-stream-prefix": "postgres"
-            }
-        }
-    },
-    {
-        "name": "web",
-        "image": "292374005836.dkr.ecr.ap-southeast-2.amazonaws.com/web:latest",
-        "memory": 256,
-        "memoryReservation": 64,
-        "essential": true,
-        "portMappings": [
-            {
-                "hostPort": 80,
-                "containerPort": 80,
-                "protocol": "tcp"
-            }
-        ],
-        "links": [
-            "api:api"
-        ],
-        "logConfiguration": {
-            "logDriver": "awslogs",
-            "options": {
-                "awslogs-group": "web",
-                "awslogs-region": "ap-southeast-2",
-                "awslogs-stream-prefix": "web"
             }
         }
     }

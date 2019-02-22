@@ -1,7 +1,7 @@
 # common settings
 class Config(object):
-    DB_USER = "etemt"
-    DB_PASS = "etemt"
+    DB_USER = "backburner"
+    DB_PASS = "backburner"
     LOG_LEVEL = "DEBUG"
     SIGNUP_ROLE = "ADMIN"
     TOKEN_TTL_IN_MINUTES = 60

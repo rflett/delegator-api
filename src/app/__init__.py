@@ -38,10 +38,10 @@ if getenv('APP_ENV') == 'Scott':
         ]
     )
     db_ip = api_staging.get('Reservations')[0].get('Instances')[0].get('PublicIpAddress')
-    engine = create_engine(f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{db_ip}/etemt")
+    engine = create_engine(f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{db_ip}/backburner")
 else:
     engine = create_engine(
-        f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{app.config['DB_HOST']}/etemt")
+        f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{app.config['DB_HOST']}/backburner")
 
 # database session and base
 DBSession = sessionmaker(bind=engine)

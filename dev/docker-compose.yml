@@ -27,7 +27,7 @@ services:
   pg_hero:
     image: ankane/pghero:latest
     environment:
-      DATABASE_URL: postgres://etemt:etemt@postgres/etemt
+      DATABASE_URL: postgres://backburner:backburner@postgres/backburner
     ports:
       - 8080:8080
     depends_on:

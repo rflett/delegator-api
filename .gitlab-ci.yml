@@ -6,7 +6,7 @@ stages:
   - deployStaging
 
 variables:
-  AMZ_REGISTRY: 292374005836.dkr.ecr.ap-southeast-2.amazonaws.com
+  AMZ_REGISTRY: 008492826001 .dkr.ecr.ap-southeast-2.amazonaws.com
   GITLAB_REGISTRY: registry.gitlab.com/rflett/containers
 
 flake8:
