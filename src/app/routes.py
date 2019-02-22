@@ -88,7 +88,7 @@ def get_users():
     return UserController.user_get_all(request)
 
 
-@app.route('/users/<identifier>', methods=['GET'])
+@app.route('/user/<identifier>', methods=['GET'])
 @requires_jwt
 def get_user(identifier):
     """
