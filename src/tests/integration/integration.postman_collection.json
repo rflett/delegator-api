@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "bfb2b55d-953e-4c6e-a5bd-61f1e263401e",
+		"_postman_id": "fc51e90a-eea8-4793-ad5f-011ab665a4e9",
 		"name": "Integration Testing",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -335,12 +335,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/users/{{user_id}}",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"{{user_id}}"
 							]
 						}
@@ -662,6 +662,16 @@
 								],
 								"type": "text/javascript"
 							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "3294a4c4-eeb3-42d5-81e6-36f5bb09c087",
+								"exec": [
+									"pm.environment.set(\"user_id\", 2);"
+								],
+								"type": "text/javascript"
+							}
 						}
 					],
 					"request": {
@@ -684,15 +694,16 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 1,\n\t\"id\": 2,\n\t\"email\": \"james@sink.backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"W. Turner\",\n\t\"role_name\": \"MANAGER\",\n\t\"job_title\": \"Promoted from Scrub\"\n}"
+							"raw": "{\n\t\"org_id\": 1,\n\t\"email\": \"james@sink.backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"W. Turner\",\n\t\"role_name\": \"MANAGER\",\n\t\"job_title\": \"Promoted from Scrub\"\n}"
 						},
 						"url": {
-							"raw": "{{host}}/users",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users"
+								"user",
+								"{{user_id}}"
 							]
 						}
 					},
@@ -1149,12 +1160,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/users/{{user_id}}",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"{{user_id}}"
 							]
 						}
@@ -1237,12 +1248,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/users/{{user_id}}",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"{{user_id}}"
 							]
 						}
@@ -1298,12 +1309,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/users/{{user_id}}",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"{{user_id}}"
 							]
 						}
@@ -1685,6 +1696,16 @@
 								],
 								"type": "text/javascript"
 							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "5cf430c7-7336-4350-bc23-ac65500dade7",
+								"exec": [
+									"pm.environment.set(\"user_id\", 3);"
+								],
+								"type": "text/javascript"
+							}
 						}
 					],
 					"request": {
@@ -1707,15 +1728,16 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 1,\n\t\"id\": 3,\n\t\"email\": \"luke@sink.backburner.com\",\n\t\"first_name\": \"Lukass\",\n\t\"last_name\": \"Meeko\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"PROMOTED!!\"\n}"
+							"raw": "{\n\t\"org_id\": 1,\n\t\"email\": \"luke@sink.backburner.com\",\n\t\"first_name\": \"Lukass\",\n\t\"last_name\": \"Meeko\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"PROMOTED!!\"\n}"
 						},
 						"url": {
-							"raw": "{{host}}/users",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users"
+								"user",
+								"{{user_id}}"
 							]
 						}
 					},
@@ -1737,6 +1759,16 @@
 									"     pm.response.to.be.json;",
 									"});",
 									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "4a538ccb-e7b6-4180-b442-506018e6ab1a",
+								"exec": [
+									"pm.environment.set(\"user_id\", 4);"
 								],
 								"type": "text/javascript"
 							}
@@ -1762,15 +1794,16 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 2,\n\t\"id\": 4,\n\t\"email\": \"ryan-eta@sink.backburner.com\",\n\t\"first_name\": \"Rizza\",\n\t\"last_name\": \"Dizza\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"Sikunt\"\n}"
+							"raw": "{\n\t\"org_id\": 2,\n\t\"email\": \"ryan-eta@sink.backburner.com\",\n\t\"first_name\": \"Rizza\",\n\t\"last_name\": \"Dizza\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"Sikunt\"\n}"
 						},
 						"url": {
-							"raw": "{{host}}/users",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users"
+								"user",
+								"{{user_id}}"
 							]
 						}
 					},
@@ -2101,12 +2134,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/users/{{user_id}}",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"{{user_id}}"
 							]
 						}
@@ -2161,12 +2194,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/users/{{user_id}}",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"{{user_id}}"
 							]
 						}
@@ -2221,12 +2254,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/users/{{user_id}}",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"{{user_id}}"
 							]
 						}
@@ -2309,12 +2342,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/users/{{user_id}}",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"{{user_id}}"
 							]
 						}
@@ -2369,12 +2402,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/users/{{user_id}}",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users",
+								"user",
 								"{{user_id}}"
 							]
 						}
@@ -2696,6 +2729,16 @@
 								],
 								"type": "text/javascript"
 							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "ae899045-8728-40a4-bc31-0f3ab6f92ff6",
+								"exec": [
+									"pm.environment.set(\"user_id\", 3);"
+								],
+								"type": "text/javascript"
+							}
 						}
 					],
 					"request": {
@@ -2718,15 +2761,16 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 1,\n\t\"id\": 3,\n\t\"email\": \"luke@sink.backburner.com\",\n\t\"first_name\": \"Lukass\",\n\t\"last_name\": \"Meeko\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"Radiographer\"\n}"
+							"raw": "{\n\t\"org_id\": 1,\n\t\"email\": \"luke@sink.backburner.com\",\n\t\"first_name\": \"Lukass\",\n\t\"last_name\": \"Meeko\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"Radiographer\"\n}"
 						},
 						"url": {
-							"raw": "{{host}}/users",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users"
+								"user",
+								"{{user_id}}"
 							]
 						}
 					},
@@ -2748,6 +2792,16 @@
 									"     pm.response.to.be.json;\r",
 									"});\r",
 									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "152e8f4d-8022-46c6-be8b-23c2d544d8c4",
+								"exec": [
+									"pm.environment.set(\"user_id\", 4);"
 								],
 								"type": "text/javascript"
 							}
@@ -2773,15 +2827,16 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 2,\n\t\"id\": 4,\n\t\"email\": \"ryan-eta@sink.backburner.com\",\n\t\"first_name\": \"Rizza\",\n\t\"last_name\": \"Dizza\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"ED Manager\"\n}"
+							"raw": "{\n\t\"org_id\": 2,\n\t\"email\": \"ryan-eta@sink.backburner.com\",\n\t\"first_name\": \"Rizza\",\n\t\"last_name\": \"Dizza\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"ED Manager\"\n}"
 						},
 						"url": {
-							"raw": "{{host}}/users",
+							"raw": "{{host}}/user/{{user_id}}",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users"
+								"user",
+								"{{user_id}}"
 							]
 						}
 					},
