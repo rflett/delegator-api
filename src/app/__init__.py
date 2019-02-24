@@ -1,4 +1,5 @@
 import json
+import logging
 import typing
 from contextlib import contextmanager
 from flask import Flask, Response
@@ -21,6 +22,12 @@ log_handler = SysLogHandler()
 log_handler.setLevel(app.config['LOG_LEVEL'])
 app.logger.addHandler(log_handler)
 logger = app.logger
+
+# gunicorn logging
+if __name__ != '__main__':
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
 
 # db conf
 if getenv('APP_ENV') == 'Scott':

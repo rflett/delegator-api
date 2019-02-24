@@ -223,13 +223,13 @@ class UserController(object):
                     for prop, val in valid_user:
                         user_to_update.__setattr__(prop, val)
 
-                    req_user.log(
-                        operation=Operation.UPDATE,
-                        resource=Resource.USER,
-                        resource_id=user_id
-                    )
-                    logger.debug(f"updated user {user_to_update.as_dict()}")
-                    return g_response(status=204)
+                req_user.log(
+                    operation=Operation.UPDATE,
+                    resource=Resource.USER,
+                    resource_id=user_id
+                )
+                logger.debug(f"updated user {user_to_update.as_dict()}")
+                return g_response(status=204)
 
     @staticmethod
     def user_get(user_identifier: typing.Union[int, str], request: request) -> Response:
