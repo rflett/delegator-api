@@ -212,7 +212,7 @@ class ValidationController(object):
             email: str
             first_name: str
             last_name: str
-            role_name: str
+            role: str
             job_title: str
 
             def __iter__(self):
@@ -290,7 +290,7 @@ class ValidationController(object):
             email=email,
             first_name=first_name,
             last_name=last_name,
-            role_name=role_name,
+            role=role_name,
             job_title=job_title
         )
 
