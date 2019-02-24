@@ -1,5 +1,8 @@
 FROM python:3.7-alpine
 
+ARG COMMIT_SHA=local
+ENV COMMIT_SHA=${COMMIT_SHA}
+
 ARG FLASK_ENV=production
 ENV FLASK_ENV=${FLASK_ENV}
 

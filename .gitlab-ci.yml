@@ -35,7 +35,7 @@ build:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
     # build, tag, and push commit
-    - docker build -t $AMZ_REGISTRY/api:$CI_COMMIT_SHA src/
+    - docker build --build-arg COMMIT_SHA=$CI_COMMIT_SHA -t $AMZ_REGISTRY/api:$CI_COMMIT_SHA src/
     - docker push $AMZ_REGISTRY/api:$CI_COMMIT_SHA
     # tag and push latest
     - docker tag $AMZ_REGISTRY/api:$CI_COMMIT_SHA $AMZ_REGISTRY/api:latest

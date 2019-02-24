@@ -1,7 +1,7 @@
 from app import app, g_response
 from functools import wraps
 from flask import Response, request
-from app.Controllers import AuthController, UserController, SignupController, TaskController
+from app.Controllers import AuthController, UserController, SignupController, TaskController, VersionController
 from app.Controllers.RBAC import RoleController
 
 
@@ -29,6 +29,15 @@ def health():
     :return: OK Response"
     """
     return g_response("yeet")
+
+
+@app.route('/v', methods=['GET'])
+def version_info():
+    """
+    Version endpoint, returns application info
+    :return: Response
+    """
+    return VersionController.get_version_details()
 
 
 @app.route('/login', methods=['POST'])
