@@ -5,6 +5,7 @@ from app.Models.TaskPriority import TaskPriority
 from app.Models.TaskStatus import TaskStatus
 from app.Models.TaskType import TaskType
 from app.Models.User import User
+from app.Models.ActiveUser import ActiveUser
 
 
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     TaskPriority,
     TaskStatus,
     TaskType,
-    User
+    User,
+    ActiveUser
 ]

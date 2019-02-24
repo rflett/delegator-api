@@ -6,6 +6,7 @@ from app.Controllers.BlacklistedTokenController import BlacklistedTokenControlle
 from app.Controllers.SignupController import SignupController
 from app.Controllers.TaskController import TaskController
 from app.Controllers.VersionController import VersionController
+from app.Controllers.ActiveUserController import ActiveUserController
 
 __all__ = [
     AuthController,
@@ -15,5 +16,6 @@ __all__ = [
     BlacklistedTokenController,
     SignupController,
     TaskController,
-    VersionController
+    VersionController,
+    ActiveUserController
 ]

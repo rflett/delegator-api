@@ -1,7 +1,8 @@
 from app import app, g_response
 from functools import wraps
 from flask import Response, request
-from app.Controllers import AuthController, UserController, SignupController, TaskController, VersionController
+from app.Controllers import AuthController, UserController, SignupController, TaskController, VersionController\
+    , ActiveUserController
 from app.Controllers.RBAC import RoleController
 
 
@@ -38,6 +39,15 @@ def version_info():
     :return: Response
     """
     return VersionController.get_version_details()
+
+
+@app.route('/user_active', methods=['POST'])
+def user_active():
+    """
+    Marks a user as active
+    :return: Response
+    """
+    return ActiveUserController.user_is_active(request=request)
 
 
 @app.route('/login', methods=['POST'])

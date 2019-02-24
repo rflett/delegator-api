@@ -3,8 +3,9 @@ import datetime
 import hashlib
 import os
 import typing
-from app import DBBase
+from app import DBBase, session_scope
 from app.Controllers.RBAC.RoleController import RoleController
+from app.Models import ActiveUser
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -154,6 +155,20 @@ class User(DBBase):
         :return: None
         """
         self.password = _hash_password(password)
+
+    def is_active(self) -> None:
+        """
+        Sets user as active in the active user table
+        :return: None
+        """
+        with session_scope() as session:
+            active_user = ActiveUser(
+                user_id=self.id,
+                first_name=self.first_name,
+                last_name=self.last_name,
+                last_active=datetime.datetime.utcnow()
+            )
+            session.add(active_user)
 
     def as_dict(self) -> dict:
         """

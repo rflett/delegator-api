@@ -217,7 +217,7 @@ class AuthController(object):
         :param req: The request data as a dict
         :return:    Response
         """
-        from app.Controllers import ValidationController, UserController
+        from app.Controllers import ValidationController, UserController, ActiveUserController
 
         email = req.get('email')
         password = req.get('password')
@@ -272,6 +272,7 @@ class AuthController(object):
                 logger.info(f"user {user.id} logged in")
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
+                ActiveUserController.user_is_active(user=user)
                 return g_response(
                     "Welcome.",
                     status=200,
@@ -293,7 +294,7 @@ class AuthController(object):
         :param headers: The request headers as a dict.
         :return:        Response
         """
-        from app.Controllers import AuthController, UserController
+        from app.Controllers import AuthController, UserController, ActiveUserController
         from app.Controllers.LogControllers import UserAuthLogController
 
         auth = headers.get('Authorization', None)
@@ -303,6 +304,7 @@ class AuthController(object):
             return g_response('Invalid token.', 401)
         else:
             user = UserController.get_user_by_id(payload.get('claims').get('user_id'))
+            ActiveUserController.user_is_inactive(user=user)
             AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
             UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
             logger.info(f"user {user.id} logged out")
