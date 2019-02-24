@@ -8,7 +8,7 @@ import uuid
 from app import logger, app, g_response, session_scope
 from app.Controllers import ValidationController
 from app.Controllers.LogControllers import UserAuthLogController
-from app.Models import User, LoginBadEmail
+from app.Models import User, FailedLogin
 from app.Models.Enums import UserAuthLogAction
 from app.Models.RBAC import Role, ResourceScope
 from flask import Response, request
@@ -74,11 +74,11 @@ def _clear_failed_logins(email: str) -> None:
     :return:        None
     """
     with session_scope() as session:
-        failed_email = session.query(exists().where(LoginBadEmail.email == email)).scalar()
+        failed_email = session.query(exists().where(FailedLogin.email == email)).scalar()
 
     with session_scope() as session:
         if failed_email:
-            session.query(LoginBadEmail).filter(LoginBadEmail.email == email).delete()
+            session.query(FailedLogin).filter(FailedLogin.email == email).delete()
 
 
 def _failed_login_attempt(email: str) -> Response:
@@ -92,7 +92,7 @@ def _failed_login_attempt(email: str) -> Response:
     # check if it's failed before
     logger.info(f"attempted to login with non existing email {email}")
     with session_scope() as session:
-        failed_email = session.query(LoginBadEmail).filter(LoginBadEmail.email == email).first()
+        failed_email = session.query(FailedLogin).filter(FailedLogin.email == email).first()
 
     if failed_email is not None:
         # it's failed before so increment
@@ -125,7 +125,7 @@ def _failed_login_attempt(email: str) -> Response:
         with session_scope() as session:
             # hasn't failed before, so create it
             logger.info(f"first login failure for email {email}")
-            new_failure = LoginBadEmail(email=email)
+            new_failure = FailedLogin(email=email)
             session.add(new_failure)
         return g_response("Email incorrect.", 401)
 
@@ -240,7 +240,7 @@ class AuthController(object):
                 user = session.merge(UserController.get_user_by_email(email))
                 _clear_failed_logins(user.email)
         else:
-            # bad email attempt
+            # failed email attempt
             return _failed_login_attempt(email)
 
         # check login attempts
