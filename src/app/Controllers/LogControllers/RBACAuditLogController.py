@@ -18,5 +18,5 @@ class RBACAuditLogController(object):
         )
         with session_scope() as session:
             session.add(audit_log)
-        logger.debug(f"logged op {kwargs.get('operation')} on res {kwargs.get('resource')} "
-                     f"with id {kwargs.get('resource_id')} against user {user.id}")
+        logger.info(f"user id {user.id} did {kwargs.get('operation')} on {kwargs.get('resource')} with "
+                    f"and id of {kwargs.get('resource_id')}")

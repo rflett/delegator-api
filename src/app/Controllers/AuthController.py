@@ -30,8 +30,9 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
     # get user id
     if isinstance(payload, dict):
         user_id = payload.get('claims').get('user_id')
-        logger.debug(f"Got user ID {user_id}")
+        logger.info(f"found user id {user_id} in the request JWT")
     else:
+        logger.info("missing payload from the bearer token")
         return g_response("Missing payload from Bearer token", 401)
 
     # get User object
@@ -53,7 +54,7 @@ def _generate_jwt_token(user: User) -> str:
     """
     payload = user.claims()
     if payload is None:
-        logger.debug(f"Claims payload was None")
+        logger.info("user claims is empty")
         payload = {}
     return jwt.encode(
         payload={
@@ -89,13 +90,13 @@ def _failed_login_attempt(email: str) -> Response:
     :return:        A Flask Response
     """
     # check if it's failed before
-    logger.debug(f"attempted to login with non existing email {email}")
+    logger.info(f"attempted to login with non existing email {email}")
     with session_scope() as session:
         failed_email = session.query(LoginBadEmail).filter(LoginBadEmail.email == email).first()
 
     if failed_email is not None:
         # it's failed before so increment
-        logger.debug(f"email {email} has failed to log in "
+        logger.info(f"email {email} has failed to log in "
                      f"{failed_email.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
 
         with session_scope() as session:
@@ -104,12 +105,12 @@ def _failed_login_attempt(email: str) -> Response:
                 # check timeout
                 diff = (datetime.datetime.utcnow() - failed_email.failed_time).seconds
                 if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
-                    logger.debug(f"email last failed {diff}s ago. "
+                    logger.info(f"email last failed {diff}s ago. "
                                  f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
                     return g_response("Too many incorrect attempts.", 401)
                 else:
                     # reset
-                    logger.debug(f"email last failed {diff}s ago. "
+                    logger.info(f"email last failed {diff}s ago. "
                                  f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
                     session.delete(failed_email)
                     return g_response("Email incorrect.", 401)
@@ -117,15 +118,16 @@ def _failed_login_attempt(email: str) -> Response:
                 # increment
                 failed_email.failed_attempts += 1
                 failed_email.failed_time = datetime.datetime.utcnow()
-                logger.debug(f"incorrect email attempt for user {email}")
+                logger.info(f"incorrect email attempt for user {email}, "
+                            f"total failed attempts: {failed_email.failed_attempts}")
                 return g_response("Email incorrect.", 401)
     else:
         with session_scope() as session:
             # hasn't failed before, so create it
-            logger.debug(f"first login failure for email {email}")
+            logger.info(f"first login failure for email {email}")
             new_failure = LoginBadEmail(email=email)
             session.add(new_failure)
-            return g_response("Email incorrect.", 401)
+        return g_response("Email incorrect.", 401)
 
 
 class AuthController(object):
@@ -151,14 +153,14 @@ class AuthController(object):
         :param resource_user_id:    If the resource has a user_id, this is it
         :return:                    The User object if they have authority, or a Response if the don't
         """
-        logger.debug(f'authorizing request {json.dumps(request.get_json())}')
+        logger.info(f'authorizing request {json.dumps(request.get_json())}')
         auth_user = _get_user_from_request(request)
         if isinstance(auth_user, Response):
             return auth_user
         else:
             user_permission_scope = auth_user.can(operation, resource)
             if user_permission_scope is False:
-                logger.debug(f"user id {auth_user.id} cannot perform {operation} on {resource}")
+                logger.info(f"user id {auth_user.id} cannot perform {operation} on {resource}")
                 return g_response(f"No permissions to {operation} {resource}", 403)
             else:
                 if isinstance(user_permission_scope, str):
@@ -167,12 +169,12 @@ class AuthController(object):
                         if resource_user_id is not None and resource_org_id is not None:
                             # check ids match
                             if auth_user.id == resource_user_id and auth_user.org_id == resource_org_id:
-                                logger.debug(f"user {auth_user.id} has {user_permission_scope} permissions, "
+                                logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
                                              f"and can {operation} {resource}")
                                 return auth_user
                             else:
                                 # they don't own this resource
-                                logger.debug(f"No permissions to {operation} {resource}, "
+                                logger.info(f"No permissions to {operation} {resource}, "
                                              f"because user {auth_user.id} != resource_user_id {resource_user_id} "
                                              f"or user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
                                 return g_response(f"No permissions to {operation} {resource}, "
@@ -185,12 +187,12 @@ class AuthController(object):
                         if resource_org_id is not None:
                             # check org id matches
                             if auth_user.org_id == resource_org_id:
-                                logger.debug(f"user {auth_user.id} has {user_permission_scope} permissions, "
+                                logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
                                              f"and can {operation} {resource}")
                                 return auth_user
                             else:
                                 # this resource belongs to a different organisation
-                                logger.debug(f"No permissions to {operation} {resource}, because "
+                                logger.info(f"No permissions to {operation} {resource}, because "
                                              f"user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
                                 return g_response(f"No permissions to {operation} {resource}, "
                                                   f"because user {auth_user.id} is in org {auth_user.org_id} but "
@@ -199,7 +201,7 @@ class AuthController(object):
                             return g_response("resource_org_id is None", 403)
                     elif user_permission_scope == ResourceScope.GLOBAL:
                         # they can do anything cos they're l33t
-                        logger.debug(f"user {auth_user.id} has {user_permission_scope} permissions "
+                        logger.info(f"user {auth_user.id} has {user_permission_scope} permissions "
                                      f"for {operation} {resource}")
                         return auth_user
 
@@ -220,7 +222,7 @@ class AuthController(object):
         email = req.get('email')
         password = req.get('password')
 
-        logger.debug(f"login requested for {json.dumps(req)}")
+        logger.info(f"login requested for {json.dumps(req)}")
 
         # validate email
         email_validate_res = ValidationController.validate_email(email)
@@ -243,19 +245,19 @@ class AuthController(object):
 
         # check login attempts
         if user.failed_login_attempts > 0:
-            logger.debug(f"user {user.id} has failed to log in "
+            logger.info(f"user {user.id} has failed to log in "
                          f"{user.failed_login_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
             if user.failed_login_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
                 # check timeout
                 diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
                 if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
-                    logger.debug(f"user last failed {diff}s ago. "
+                    logger.info(f"user last failed {diff}s ago. "
                                  f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
                     return g_response("Too many incorrect password attempts.", 401)
                 else:
                     with session_scope() as session:
                         # reset
-                        logger.debug(f"user last failed {diff}s ago. "
+                        logger.info(f"user last failed {diff}s ago. "
                                      f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
                         user.failed_login_attempts = 0
                         user.failed_login_time = None
@@ -267,7 +269,7 @@ class AuthController(object):
                     user=user,
                     action=UserAuthLogAction.LOGIN
                 )
-                logger.debug(f"user {user.id} logged in")
+                logger.info(f"user {user.id} logged in")
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
                 return g_response(
@@ -278,7 +280,7 @@ class AuthController(object):
                     }
                 )
             else:
-                logger.debug(f"incorrect password attempt for user {user.id}")
+                logger.info(f"incorrect password attempt for user {user.id}")
                 user.failed_login_attempts += 1
                 user.failed_login_time = datetime.datetime.utcnow()
                 return g_response("Password incorrect.", 401)
@@ -303,7 +305,7 @@ class AuthController(object):
             user = UserController.get_user_by_id(payload.get('claims').get('user_id'))
             AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
             UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
-            logger.debug(f"user {user.id} logged out")
+            logger.info(f"user {user.id} logged out")
             return g_response('Logged out')
 
     @staticmethod
@@ -314,13 +316,13 @@ class AuthController(object):
             return check_email
         else:
             with session_scope():
-                logger.debug(f"received password reset for {request_body.get('email')}")
+                logger.info(f"received password reset for {request_body.get('email')}")
                 user = UserController.get_user_by_email(request_body.get('email'))
                 new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])
                 user.reset_password(new_password)
                 UserAuthLogController.log(user, 'reset_password')
-                logger.debug(json.dumps(user.as_dict()))
-                logger.debug(f"password successfully reset for {request_body.get('email')}")
+                logger.info(json.dumps(user.as_dict()))
+                logger.info(f"password successfully reset for {request_body.get('email')}")
                 return g_response(f"Password reset successfully, new password is {new_password}")
 
     @staticmethod
@@ -337,7 +339,7 @@ class AuthController(object):
         from app.Controllers import BlacklistedTokenController
         try:
             suspect_jwt = jwt.decode(jwt=token, algorithms='HS256', verify=False)
-            logger.debug(f"received suspect jwt {suspect_jwt}")
+            logger.info(f"received suspect jwt {suspect_jwt}")
 
             # check if aud:jti is blacklisted
             blacklist_id = f"{suspect_jwt.get('aud')}:{suspect_jwt.get('jti')}"
@@ -349,17 +351,17 @@ class AuthController(object):
             if user_id is not None:
                 from app.Controllers import UserController
                 user = UserController.get_user_by_id(user_id)
-                logger.debug(f"found user {user.id} in jwt claim. attempting to decode jwt.")
+                logger.info(f"found user {user.id} in jwt claim. attempting to decode jwt.")
                 return jwt.decode(jwt=token, key=user.jwt_secret(), audience=user.jwt_aud(), algorithms='HS256')
             else:
-                logger.debug(f"user {suspect_jwt.get('claims').get('user_id')} does not exist")
+                logger.info(f"user {suspect_jwt.get('claims').get('user_id')} does not exist")
                 AuthController.invalidate_jwt_token(token=token)
                 return False
 
         except Exception as e:
-            logger.debug('here')
+            logger.info('here')
             logger.error(str(e))
-            logger.debug(f"decoding raised {e}, likely failed to decode jwt due to user secret/aud issue")
+            logger.info(f"decoding raised {e}, likely failed to decode jwt due to user secret/aud issue")
             AuthController.invalidate_jwt_token(token=token)
 
     @staticmethod
@@ -372,7 +374,7 @@ class AuthController(object):
         from app.Controllers import BlacklistedTokenController
         payload = jwt.decode(jwt=token, algorithms='HS256', verify=False)
         if payload.get('jti') is None:
-            logger.debug(f"no jti in token")
+            logger.info(f"no jti in token")
             pass
         blacklist_id = f"{payload.get('aud')}:{payload.get('jti')}"
         BlacklistedTokenController.blacklist_token(blacklist_id, payload.get('exp'))
@@ -385,14 +387,14 @@ class AuthController(object):
         :return:        True if the token exists and is a JWT, or an unauthenticated response.
         """
         if auth is None:
-            logger.debug('missing authorization header')
+            logger.info('missing authorization header')
             return g_response("Missing Authorization header.", 401)
         elif not isinstance(auth, str):
-            logger.debug(f"Expected Authorization header type str got {type(auth)}.")
+            logger.info(f"Expected Authorization header type str got {type(auth)}.")
             return g_response(f"Expected Authorization header type str got {type(auth)}.", 401)
         try:
             token = auth.replace('Bearer ', '')
-            logger.debug(token)
+            logger.info(token)
             jwt.decode(jwt=token, algorithms='HS256', verify=False)
 
         except Exception as e:

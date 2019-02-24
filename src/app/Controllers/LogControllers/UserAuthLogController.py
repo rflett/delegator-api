@@ -23,4 +23,4 @@ class UserAuthLogController(object):
         )
         with session_scope() as session:
             session.add(auth_log)
-        logger.debug(f"logged {action} against user {user.id}")
+        logger.info(f"user id {user.id} has performed an action {action} ({action_detail})")

@@ -15,12 +15,12 @@ class SignupController(object):
         request_body = request.get_json()
         # check if org already exists
         if OrganisationController.org_exists(request_body.get('org_name')):
-            logger.debug(f"organisation {request_body.get('org_name')} already exists")
+            logger.info(f"organisation {request_body.get('org_name')} already exists")
             return g_response("Organisation already exists.", 400)
 
         # check if user already exists
         if UserController.user_exists(request_body.get('email')):
-            logger.debug(f"user {request_body.get('email')} already exists")
+            logger.info(f"user {request_body.get('email')} already exists")
             return g_response("User already exists.", 400)
 
         try:

@@ -24,10 +24,10 @@ class BlacklistedTokenController(object):
         :return:                True if blacklisted or False
         """
         if id_exists(blacklist_id):
-            logger.debug(f"token pair {blacklist_id} is blacklisted")
+            logger.info(f"token pair {blacklist_id} is blacklisted")
             return True
         else:
-            logger.debug(f"token pair {blacklist_id} is not blacklisted")
+            logger.info(f"token pair {blacklist_id} is not blacklisted")
             return False
 
     @staticmethod
@@ -42,4 +42,4 @@ class BlacklistedTokenController(object):
             with session_scope() as session:
                 session.add(token)
         else:
-            logger.debug(f"blacklist token id {blacklist_id} already blacklisted")
+            logger.info(f"blacklist token id {blacklist_id} already blacklisted")

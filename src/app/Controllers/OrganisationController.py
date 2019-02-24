@@ -17,10 +17,10 @@ class OrganisationController(object):
         """
         with session_scope() as session:
             if isinstance(org_identifier, str):
-                logger.debug("org_identifier is a str so finding org by name")
+                logger.info("org_identifier is a str so finding org by name")
                 ret = session.query(exists().where(Organisation.name == org_identifier)).scalar()
             elif isinstance(org_identifier, int):
-                logger.debug("org_identifier is an int so finding org by id")
+                logger.info("org_identifier is an int so finding org by id")
                 ret = session.query(exists().where(Organisation.id == org_identifier)).scalar()
             else:
                 raise ValueError(f"bad org_identifier, expected Union[str, int] got {type(org_identifier)}")
@@ -37,7 +37,7 @@ class OrganisationController(object):
         with session_scope() as session:
             ret = session.query(Organisation).filter(Organisation.id == id).first()
         if ret is None:
-            logger.debug(f"org {id} does not exist")
+            logger.info(f"org {id} does not exist")
             raise ValueError(f"Org with id {id} does not exist.")
         else:
             return ret
@@ -52,7 +52,7 @@ class OrganisationController(object):
         with session_scope() as session:
             ret = session.query(Organisation).filter(Organisation.name == name).first()
         if ret is None:
-            logger.debug(f"org {name} does not exist")
+            logger.info(f"org {name} does not exist")
             raise ValueError(f"Org with name {name} does not exist.")
         else:
             return ret
@@ -84,7 +84,7 @@ class OrganisationController(object):
                         resource=Resource.ORGANISATION,
                         resource_id=organisation.id
                     )
-                logger.debug(f"created organisation {organisation.as_dict()}")
+                logger.info(f"created organisation {organisation.as_dict()}")
                 return g_response("Successfully created the organisation", 201)
 
         request_body = request.get_json()
@@ -97,7 +97,7 @@ class OrganisationController(object):
             return valid_org
 
         if require_auth:
-            logger.debug("requiring auth to create org")
+            logger.info("requiring auth to create org")
             req_user = AuthController.authorize_request(
                 request=request,
                 operation=Operation.CREATE,
@@ -109,5 +109,5 @@ class OrganisationController(object):
             elif isinstance(req_user, User):
                 return create_org(request_body, req_user=req_user)
         else:
-            logger.debug("not requiring auth to create org")
+            logger.info("not requiring auth to create org")
             return create_org(valid_org)

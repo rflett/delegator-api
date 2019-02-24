@@ -16,15 +16,15 @@ def _check_password_reqs(password: str) -> typing.Union[str, bool]:
     min_caps = 1
     special_chars = r' !#$%&\'()*+,-./:;<=>?@[\]^_`{|}~'
     if len(password) < min_length:
-        logger.debug(f"password length less than {min_length}.")
+        logger.info(f"password length less than {min_length}.")
         return f"Password length less than {min_length}."
     if len([char for char in password if char in special_chars]) < min_special_chars:
-        logger.debug(f"password requires more than {min_special_chars} special character(s).")
+        logger.info(f"password requires more than {min_special_chars} special character(s).")
         return f"Password requires more than {min_special_chars} special character(s)."
     if sum(1 for c in password if c.isupper()) < min_caps:
-        logger.debug(f"password requires more than {min_caps} capital letter(s).")
+        logger.info(f"password requires more than {min_caps} capital letter(s).")
         return f"Password requires more than {min_caps} capital letter(s)."
-    logger.debug(f"password meets requirements")
+    logger.info(f"password meets requirements")
     return True
 
 
@@ -39,10 +39,10 @@ class ValidationController(object):
         :return:        True if the email is valid, or a Flask Response.
         """
         if not isinstance(email, str):
-            logger.debug(f"bad email expected str got {type(email)}")
+            logger.info(f"bad email expected str got {type(email)}")
             return g_response(f"Bad email expected str got {type(email)}", 400)
         if validate_email(email) is False:
-            logger.debug("email is invalid")
+            logger.info("email is invalid")
             return g_response("Invalid email", 400)
         return True
 
@@ -54,7 +54,7 @@ class ValidationController(object):
         :return:            True if password is valid, or a Flask Response
         """
         if not isinstance(password, str):
-            logger.debug(f"bad email expected str got {type(password)}")
+            logger.info(f"bad email expected str got {type(password)}")
             return g_response(f"Bad email expected str got {type(password)}", 400)
         # password_check = _check_password_reqs(password)
         # if isinstance(password_check, str):
@@ -82,16 +82,16 @@ class ValidationController(object):
             return g_response(f"Bad org_id, expected int got {type(org_identifier)}.", 400)
         # check that org exists
         if not OrganisationController.org_exists(org_identifier):
-            logger.debug(f"org {org_identifier} doesn't exist")
+            logger.info(f"org {org_identifier} doesn't exist")
             return g_response(f"Org does not exist", 400)
         # check type
         task_type = request_body.get('type')
         if not isinstance(request_body.get('type'), str):
-            logger.debug(f"Bad type, expected int|str got {type(task_type)}.")
+            logger.info(f"Bad type, expected int|str got {type(task_type)}.")
             return g_response(f"Bad type, expected int|str got {type(task_type)}.", 400)
         # check task type doesn't exist already
         if TaskController.task_type_exists(task_type, org_identifier):
-            logger.debug(f"user {task_type} already exists")
+            logger.info(f"user {task_type} already exists")
             return g_response(f"Task type already exists.", 400)
 
         return TaskTypeRequest(
@@ -126,16 +126,16 @@ class ValidationController(object):
             return email_check
         # check user doesn't already exist
         if UserController.user_exists(request_body.get('email')):
-            logger.debug(f"user {request_body.get('email')} already exists")
+            logger.info(f"user {request_body.get('email')} already exists")
             return g_response(f"User already exists.", 400)
         # check org
         org_identifier = request_body.get('org_id', request_body.get('org_name'))
         if not (isinstance(org_identifier, int) or isinstance(org_identifier, str)):
-            logger.debug(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+            logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
             return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
         # check that org exists
         if not OrganisationController.org_exists(org_identifier):
-            logger.debug(f"org {org_identifier} doesn't exist")
+            logger.info(f"org {org_identifier} doesn't exist")
             return g_response(f"Org does not exist", 400)
         # get org_id
         if isinstance(org_identifier, str):
@@ -144,7 +144,7 @@ class ValidationController(object):
             org_id = org_identifier
         else:
             # should never be here??
-            logger.debug("Expected org_id to be set but it isn't.")
+            logger.info("Expected org_id to be set but it isn't.")
             return g_response(f"Expected org_id to be set but it isn't.", 400)
         # check password
         password = request_body.get('password')
@@ -154,36 +154,36 @@ class ValidationController(object):
         # check firstname
         first_name = request_body.get('first_name')
         if not isinstance(first_name, str):
-            logger.debug(f"Bad first_name, expected str got {type(first_name)}.")
+            logger.info(f"Bad first_name, expected str got {type(first_name)}.")
             return g_response(f"Bad first_name, expected str got {type(first_name)}.", 400)
         if len(first_name) == 0:
-            logger.debug(f"first_name is required.")
+            logger.info(f"first_name is required.")
             return g_response(f"first_name is required.", 400)
         # check last_name
         last_name = request_body.get('last_name')
         if not isinstance(last_name, str):
-            logger.debug(f"Bad last_name, expected str got {type(last_name)}.")
+            logger.info(f"Bad last_name, expected str got {type(last_name)}.")
             return g_response(f"Bad last_name, expected str got {type(last_name)}.", 400)
         if len(last_name) == 0:
-            logger.debug(f"last_name is required.")
+            logger.info(f"last_name is required.")
             return g_response(f"last_name is required.", 400)
         # check role
         role_name = request_body.get('role_name')
         if not isinstance(role_name, str):
-            logger.debug(f"Bad role_name, expected str got {type(role_name)}.")
+            logger.info(f"Bad role_name, expected str got {type(role_name)}.")
             return g_response(f"Bad role_name, expected str got {type(role_name)}.", 400)
         if len(role_name) == 0:
-            logger.debug(f"role_name is required.")
+            logger.info(f"role_name is required.")
             return g_response(f"role_name is required.", 400)
         if not AuthController.role_exists(role_name):
-            logger.debug(f"Role {role_name} does not exist")
+            logger.info(f"Role {role_name} does not exist")
             return g_response(f"Role {role_name} does not exist", 400)
         job_title = request_body.get('job_title')
         if not isinstance(job_title, str):
-            logger.debug(f"Bad job_title, expected str got {type(job_title)}.")
+            logger.info(f"Bad job_title, expected str got {type(job_title)}.")
             return g_response(f"Bad job_title, expected str got {type(job_title)}.", 400)
         if len(job_title) == 0:
-            logger.debug(f"job_title is required.")
+            logger.info(f"job_title is required.")
             return g_response(f"job_title is required.", 400)
 
         return UserRequest(
@@ -224,7 +224,7 @@ class ValidationController(object):
             return g_response(f"Bad identifier, expected int got {type(user_id)}", 400)
         # check user exists
         if not UserController.user_exists(user_id):
-            logger.debug(f"user {user_id} doesn't exist")
+            logger.info(f"user {user_id} doesn't exist")
             return g_response(f"User doesn't exist.", 400)
         # check email
         email = request_body.get('email')
@@ -234,11 +234,11 @@ class ValidationController(object):
         # check org
         org_identifier = request_body.get('org_id', request_body.get('org_name'))
         if not (isinstance(org_identifier, int) or isinstance(org_identifier, str)):
-            logger.debug(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+            logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
             return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
         # check that org exists
         if not OrganisationController.org_exists(org_identifier):
-            logger.debug(f"org {org_identifier} doesn't exist")
+            logger.info(f"org {org_identifier} doesn't exist")
             return g_response(f"Org does not exist", 400)
         # get org_id
         if isinstance(org_identifier, str):
@@ -247,42 +247,42 @@ class ValidationController(object):
             org_id = org_identifier
         else:
             # should never be here??
-            logger.debug("Expected org_id to be set but it isn't.")
+            logger.info("Expected org_id to be set but it isn't.")
             return g_response(f"Expected org_id to be set but it isn't.", 400)
         # check firstname
         first_name = request_body.get('first_name')
         if not isinstance(first_name, str):
-            logger.debug(f"Bad first_name, expected str got {type(first_name)}.")
+            logger.info(f"Bad first_name, expected str got {type(first_name)}.")
             return g_response(f"Bad first_name, expected str got {type(first_name)}.", 400)
         if len(first_name) == 0:
-            logger.debug(f"first_name is required.")
+            logger.info(f"first_name is required.")
             return g_response(f"first_name is required.", 400)
         # check last_name
         last_name = request_body.get('last_name')
         if not isinstance(last_name, str):
-            logger.debug(f"Bad last_name, expected str got {type(last_name)}.")
+            logger.info(f"Bad last_name, expected str got {type(last_name)}.")
             return g_response(f"Bad last_name, expected str got {type(last_name)}.", 400)
         if len(last_name) == 0:
-            logger.debug(f"last_name is required.")
+            logger.info(f"last_name is required.")
             return g_response(f"last_name is required.", 400)
         # check role
         role_name = request_body.get('role_name')
         if not isinstance(role_name, str):
-            logger.debug(f"Bad role_name, expected str got {type(role_name)}.")
+            logger.info(f"Bad role_name, expected str got {type(role_name)}.")
             return g_response(f"Bad role_name, expected str got {type(role_name)}.", 400)
         if len(role_name) == 0:
-            logger.debug(f"role_name is required.")
+            logger.info(f"role_name is required.")
             return g_response(f"role_name is required.", 400)
         if not AuthController.role_exists(role_name):
-            logger.debug(f"Role {role_name} does not exist")
+            logger.info(f"Role {role_name} does not exist")
             return g_response(f"Role {role_name} does not exist", 400)
         # check job title
         job_title = request_body.get('job_title')
         if not isinstance(job_title, str):
-            logger.debug(f"Bad job_title, expected str got {type(job_title)}.")
+            logger.info(f"Bad job_title, expected str got {type(job_title)}.")
             return g_response(f"Bad job_title, expected str got {type(job_title)}.", 400)
         if len(job_title) == 0:
-            logger.debug(f"job_title is required.")
+            logger.info(f"job_title is required.")
             return g_response(f"job_title is required.", 400)
 
         return UserRequest(
@@ -299,7 +299,7 @@ class ValidationController(object):
         from app.Controllers import UserController
         # check they exist
         if not UserController.user_exists(user_id):
-            logger.debug(f"user with id {user_id} does not exist")
+            logger.info(f"user with id {user_id} does not exist")
             return g_response("User does not exist.", 400)
         return user_id
 
@@ -321,13 +321,13 @@ class ValidationController(object):
         # check organisation name
         org_name = request_body.get('name', request_body.get('org_name'))
         if OrganisationController.org_exists(org_name):
-            logger.debug(f"organisation {org_name} already exists")
+            logger.info(f"organisation {org_name} already exists")
             return g_response("Organisation already exists", 400)
         if not isinstance(org_name, str):
-            logger.debug(f"bad org_name, exepected str got {type(org_name)}")
+            logger.info(f"bad org_name, exepected str got {type(org_name)}")
             return g_response(f"Bad org_name, expected str got {type(org_name)}.", 400)
         if len(org_name) == 0:
-            logger.debug(f"org_name is required")
+            logger.info(f"org_name is required")
             return g_response(f"org_name is required.", 400)
 
         return OrgRequest(

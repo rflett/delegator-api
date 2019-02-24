@@ -15,6 +15,13 @@ def _get_role(role_id: str) -> Role:
 class RoleController(object):
     @staticmethod
     def get_roles(request: request) -> Response:
+        """
+        Returns a list of roles. Any use can call this route, but only roles that have a rank
+        greater than theirs will be returned. For example, and admin would be rank 1 so can get all roles,
+        but a middle level role can only get roles with less permissions than them.
+        :param request: The request
+        :return:        A list of roles
+        """
         from app.Controllers import AuthController
         from app.Models import User
         from app.Models.RBAC import Role
@@ -35,39 +42,8 @@ class RoleController(object):
 
             roles = [r.as_dict() for r in roles_qry]
 
-            logger.debug(f"retrieved {len(roles)} roles: {json.dumps(roles)}")
+            logger.info(f"got {len(roles)} roles: {json.dumps(roles)}")
             return Response(json.dumps(roles), status=200, headers={"Content-Type": "application/json"})
-
-    @staticmethod
-    def list_roles() -> list:
-        """
-        Gets all roles from the database, returns them as a list of dicts like:
-            {
-                "id": "ADMIN",
-                "rank": 1,
-                "name": "Admin",
-                "description": "This role can do anything"
-            }
-        :return: List of roles.
-        """
-        with session_scope() as session:
-            roles_qry = session.query(Role).all()
-
-        roles = []
-
-        # get dict for each role and just get the id, name and desc
-        for r in roles_qry:
-            qry_role_dict = r.__dict__
-            return_role_dict = {
-                'id': qry_role_dict.get('id'),
-                'name': qry_role_dict.get('name'),
-                'description': qry_role_dict.get('description')
-            }
-            roles.append(return_role_dict)
-
-        logger.debug(f"retrieved {len(roles)} roles: {json.dumps(roles)}")
-
-        return roles
 
     @staticmethod
     def role_can(role: str, operation: str, resource: str) -> typing.Union[bool, str]:
@@ -96,4 +72,5 @@ class RoleController(object):
                 ).first()
                 return permission.resource_scope
         else:
+            logger.info(f"permission with role:{role}, operation:{operation}, resource:{resource} does not exist")
             return False

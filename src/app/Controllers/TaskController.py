@@ -44,7 +44,7 @@ class TaskController(object):
 
             task_priorities = [tp.as_dict() for tp in task_pr_qry]
 
-            logger.debug(f"retrieved {len(task_priorities)} task_priorities: {json.dumps(task_priorities)}")
+            logger.info(f"retrieved {len(task_priorities)} task_priorities: {json.dumps(task_priorities)}")
             return Response(json.dumps(task_priorities), status=200, headers={"Content-Type": "application/json"})
 
     @staticmethod
@@ -67,7 +67,7 @@ class TaskController(object):
 
             task_statuses = [ts.as_dict() for ts in task_st_qry]
 
-            logger.debug(f"retrieved {len(task_statuses)} task statuses: {json.dumps(task_statuses)}")
+            logger.info(f"retrieved {len(task_statuses)} task statuses: {json.dumps(task_statuses)}")
             return Response(json.dumps(task_statuses), status=200, headers={"Content-Type": "application/json"})
 
     @staticmethod
@@ -90,7 +90,7 @@ class TaskController(object):
 
             task_types = [tt.as_dict() for tt in task_tt_qry]
 
-            logger.debug(f"retrieved {len(task_types)} task types: {json.dumps(task_types)}")
+            logger.info(f"retrieved {len(task_types)} task types: {json.dumps(task_types)}")
             return Response(json.dumps(task_types), status=200, headers={"Content-Type": "application/json"})
 
     @staticmethod
@@ -128,5 +128,5 @@ class TaskController(object):
                 resource=Resource.TASK_TYPE,
                 resource_id=task_type.id
             )
-            logger.debug(f"created task type {task_type.as_dict()}")
+            logger.info(f"created task type {task_type.as_dict()}")
             return g_response("Successfully created task type", 201)

@@ -51,7 +51,7 @@ def _get_user_by_email(email: str) -> User:
     with session_scope() as session:
         ret = session.query(User).filter(User.email == email).first()
     if ret is None:
-        logger.debug(f"User with email {email} does not exist.")
+        logger.info(f"User with email {email} does not exist.")
         raise ValueError(f"User with email {email} does not exist.")
     else:
         return ret
@@ -67,7 +67,7 @@ def _get_user_by_id(user_id: int) -> User:
     with session_scope() as session:
         ret = session.query(User).filter(User.id == user_id).first()
     if ret is None:
-        logger.debug(f"User with id {user_id} does not exist.")
+        logger.info(f"User with id {user_id} does not exist.")
         raise ValueError(f"User with id {user_id} does not exist.")
     else:
         return ret
@@ -83,10 +83,10 @@ class UserController(object):
         """
         with session_scope() as session:
             if isinstance(user_identifier, str):
-                logger.debug("user_identifier is a str so finding user by email")
+                logger.info("user_identifier is a str so finding user by email")
                 ret = session.query(exists().where(User.email == user_identifier)).scalar()
             elif isinstance(user_identifier, int):
-                logger.debug("user_identifier is an int so finding user by id")
+                logger.info("user_identifier is an int so finding user by id")
                 ret = session.query(exists().where(User.id == user_identifier)).scalar()
             else:
                 raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
@@ -102,10 +102,10 @@ class UserController(object):
         :return:                The User
         """
         if isinstance(user_identifier, str):
-            logger.debug("user_identifier is a str so getting user by email")
+            logger.info("user_identifier is a str so getting user by email")
             return _get_user_by_email(user_identifier)
         elif isinstance(user_identifier, int):
-            logger.debug("user_identifier is an int so getting user by id")
+            logger.info("user_identifier is an int so getting user by id")
             return _get_user_by_id(user_identifier)
         else:
             raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
@@ -156,7 +156,7 @@ class UserController(object):
                     resource=Resource.USER,
                     resource_id=user.id
                 )
-            logger.debug(f"created user {user.as_dict()}")
+            logger.info(f"created user {user.as_dict()}")
             return g_response("Successfully created user", 201)
 
         request_body = request.get_json()
@@ -170,7 +170,7 @@ class UserController(object):
             return valid_user
 
         if require_auth:
-            logger.debug("requiring auth to create user")
+            logger.info("requiring auth to create user")
             req_user = AuthController.authorize_request(
                 request=request,
                 operation=Operation.CREATE,
@@ -182,7 +182,7 @@ class UserController(object):
             elif isinstance(req_user, User):
                 return create_user(valid_user, req_user=req_user)
         else:
-            logger.debug("not requiring auth to create user")
+            logger.info("not requiring auth to create user")
             return create_user(valid_user)
 
     @staticmethod
@@ -228,7 +228,7 @@ class UserController(object):
                     resource=Resource.USER,
                     resource_id=user_id
                 )
-                logger.debug(f"updated user {user_to_update.as_dict()}")
+                logger.info(f"updated user {user_to_update.as_dict()}")
                 return g_response(status=204)
 
     @staticmethod
@@ -244,7 +244,7 @@ class UserController(object):
         # is the identifier an email or user_id?
         try:
             user_identifier = int(user_identifier)
-            logger.debug("user_identifier is an id")
+            logger.info("user_identifier is an id")
         except ValueError as e:  # noqa
             from app.Controllers import ValidationController
             validate_identifier = ValidationController.validate_email(user_identifier)
@@ -252,7 +252,7 @@ class UserController(object):
                 return validate_identifier
             else:
                 user_identifier = str(user_identifier)
-            logger.debug("user_identifier is an email")
+            logger.info("user_identifier is an email")
 
         # if user exists check if permissions are good and then return the user
         if UserController.user_exists(user_identifier):
@@ -272,10 +272,10 @@ class UserController(object):
                     resource=Resource.USER,
                     resource_id=user.id
                 )
-                logger.debug(f"got user {user.as_dict()}")
+                logger.info(f"got user {user.as_dict()}")
                 return Response(json.dumps(user.as_dict()), headers={'Content-Type': 'application/json'})
         else:
-            logger.debug(f"user with id {user_identifier} does not exist")
+            logger.info(f"user with id {user_identifier} does not exist")
             return g_response("User does not exist.", 400)
 
     @staticmethod
@@ -303,5 +303,5 @@ class UserController(object):
 
             users = [_make_user_dict(u, r) for u, r in users_qry]
 
-            logger.debug(f"retrieved {len(users)} roles: {json.dumps(users)}")
+            logger.info(f"retrieved {len(users)} roles: {json.dumps(users)}")
             return Response(json.dumps(users), status=200, headers={"Content-Type": "application/json"})
