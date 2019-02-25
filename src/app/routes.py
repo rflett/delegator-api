@@ -41,25 +41,6 @@ def version_info():
     return VersionController.get_version_details()
 
 
-@app.route('/user_active', methods=['POST'])
-def user_active():
-    """
-    Marks a user as active
-    :return: Response
-    """
-    return ActiveUserController.user_is_active(req=request)
-
-
-@app.route('/active_users', methods=['GET'])
-@requires_jwt
-def active_users():
-    """
-    Returns all active users from that persons org
-    :return: Response
-    """
-    return ActiveUserController.get_active_users()
-
-
 @app.route('/login', methods=['POST'])
 def login():
     """
@@ -115,6 +96,25 @@ def get_users():
     :return: Response
     """
     return UserController.user_get_all(request)
+
+
+@app.route('/users/active', methods=['GET'])
+@requires_jwt
+def active_users():
+    """
+    Returns all active users from that persons org
+    :return: Response
+    """
+    return ActiveUserController.get_active_users()
+
+
+@app.route('/user/active', methods=['POST'])
+def user_active():
+    """
+    Marks a user as active
+    :return: Response
+    """
+    return ActiveUserController.user_is_active(req=request)
 
 
 @app.route('/user/<identifier>', methods=['GET'])
