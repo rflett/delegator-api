@@ -4,7 +4,7 @@ from sqlalchemy import Integer, String, DateTime, Column
 
 
 class FailedLogin(DBBase):
-    __tablename__ = "failed_login"
+    __tablename__ = "user_failed_logins"
 
     email = Column('email', String(), primary_key=True)
     failed_attempts = Column('failed_attempts', Integer(), default=1)
