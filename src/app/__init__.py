@@ -24,7 +24,7 @@ app.logger.addHandler(log_handler)
 logger = app.logger
 
 # gunicorn logging
-if __name__ != '__main__':
+if getenv('APP_ENV', 'Local') != 'Local':
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers
     app.logger.setLevel(gunicorn_logger.level)
