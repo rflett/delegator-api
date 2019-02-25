@@ -1,8 +1,10 @@
 import datetime
+import json
 import typing
 from app import session_scope, logger, g_response
 from app.Controllers import AuthController
 from app.Models import User, ActiveUser
+from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 
 
@@ -96,3 +98,29 @@ class ActiveUserController(object):
             session.query(ActiveUser).filter(ActiveUser.user_id == user.id).delete()
 
         return g_response(status=204)
+
+    @staticmethod
+    def get_active_users() -> Response:
+        """
+        Returns all active users for an organisation
+        :return: Active users
+        """
+        from app.Controllers import AuthController
+
+        req_user = AuthController.authorize_request(
+            request=request,
+            operation=Operation.GET,
+            resource=Resource.ACTIVE_USERS
+        )
+
+        if isinstance(req_user, Response):
+            return req_user
+        elif isinstance(req_user, User):
+
+            with session_scope() as session:
+                active_users_qry = session.query(ActiveUser).filter(ActiveUser.org_id == req_user.org_id).all()
+
+            active_users = [au.as_dict() for au in active_users_qry]
+
+            logger.info(f"retrieved {len(active_users)} active users: {json.dumps(active_users)}")
+            return Response(json.dumps(active_users), status=200, headers={"Content-Type": "application/json"})

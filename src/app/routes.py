@@ -50,6 +50,16 @@ def user_active():
     return ActiveUserController.user_is_active(req=request)
 
 
+@app.route('/active_users', methods=['GET'])
+@requires_jwt
+def active_users():
+    """
+    Returns all active users from that persons org
+    :return: Response
+    """
+    return ActiveUserController.get_active_users()
+
+
 @app.route('/login', methods=['POST'])
 def login():
     """

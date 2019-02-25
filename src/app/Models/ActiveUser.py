@@ -40,5 +40,5 @@ class ActiveUser(DBBase):
             "org_id": self.org_id,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "last_active": self.last_active
+            "last_active": str(self.last_active)
         }
