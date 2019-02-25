@@ -44,6 +44,8 @@ build:
 integrationTest:
   stage: integrationTest
   image: $GITLAB_REGISTRY/docker:latest
+  only:
+    - master
   allow_failure: true
   services:
     - docker:dind
@@ -63,6 +65,8 @@ integrationTest:
 deployStaging:
   stage: deployStaging
   image: $GITLAB_REGISTRY/python:latest
+  only:
+    - master
   tags:
     - docker
   script:
