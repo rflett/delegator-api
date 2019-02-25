@@ -47,7 +47,7 @@ def user_active():
     Marks a user as active
     :return: Response
     """
-    return ActiveUserController.user_is_active(request=request)
+    return ActiveUserController.user_is_active(req=request)
 
 
 @app.route('/login', methods=['POST'])
