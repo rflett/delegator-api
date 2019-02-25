@@ -16,6 +16,9 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
 
     # get auth from request
     auth = req.headers.get('Authorization', None)
+    if auth is None:
+        return g_response("Missing Authorization header")
+
     payload = AuthController.validate_jwt(auth.replace('Bearer ', ''))
 
     # get user id
@@ -38,17 +41,17 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
 class ActiveUserController(object):
 
     @staticmethod
-    def user_is_active(user: typing.Optional[User], request: typing.Optional[request]) -> typing.Optional[Response]:
+    def user_is_active(user: User = None, req: request = None) -> Response:
         """
         Marks a user as active if they are not active already. If they're already active then update them.
         A cron job should come through and remove active users that have
         :param user:
-        :param request:
+        :param req:
         :return: Response or None
         """
         if user is None:
-            if request is not None:
-                user = _get_user_from_request(request)
+            if req is not None:
+                user = _get_user_from_request(req)
                 if isinstance(user, Response):
                     return user
             else:
@@ -61,6 +64,7 @@ class ActiveUserController(object):
                 # user is not active, so create
                 active_user = ActiveUser(
                     user_id=user.id,
+                    org_id=user.org_id,
                     first_name=user.first_name,
                     last_name=user.last_name,
                     last_active=datetime.datetime.utcnow()
@@ -72,16 +76,16 @@ class ActiveUserController(object):
             return g_response(status=204)
 
     @staticmethod
-    def user_is_inactive(user: typing.Optional[User], request: typing.Optional[request]) -> typing.Optional[Response]:
+    def user_is_inactive(user: User = None, req: request = None) -> Response:
         """
         Mark user as inactive by deleting their record in the active users table
         :param user:
-        :param request:
+        :param req:
         :return: Response or None
         """
         if user is None:
-            if request is not None:
-                user = _get_user_from_request(request)
+            if req is not None:
+                user = _get_user_from_request(req)
                 if isinstance(user, Response):
                     return user
             else:
@@ -90,3 +94,5 @@ class ActiveUserController(object):
 
         with session_scope() as session:
             session.query(ActiveUser).filter(ActiveUser.user_id == user.id).delete()
+
+        return g_response(status=204)
