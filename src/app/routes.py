@@ -1,8 +1,8 @@
 from app import app, g_response
 from functools import wraps
 from flask import Response, request
-from app.Controllers import AuthController, UserController, SignupController, TaskController, VersionController\
-    , ActiveUserController
+from app.Controllers import AuthController, UserController, SignupController, TaskController, VersionController, \
+    ActiveUserController
 from app.Controllers.RBAC import RoleController
 
 

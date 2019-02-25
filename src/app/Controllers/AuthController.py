@@ -97,7 +97,7 @@ def _failed_login_attempt(email: str) -> Response:
     if failed_email is not None:
         # it's failed before so increment
         logger.info(f"email {email} has failed to log in "
-                     f"{failed_email.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
+                    f"{failed_email.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
 
         with session_scope() as session:
             # check if it has breached the limits
@@ -106,12 +106,12 @@ def _failed_login_attempt(email: str) -> Response:
                 diff = (datetime.datetime.utcnow() - failed_email.failed_time).seconds
                 if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
                     logger.info(f"email last failed {diff}s ago. "
-                                 f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
+                                f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
                     return g_response("Too many incorrect attempts.", 401)
                 else:
                     # reset
                     logger.info(f"email last failed {diff}s ago. "
-                                 f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
+                                f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
                     session.delete(failed_email)
                     return g_response("Email incorrect.", 401)
             else:
@@ -170,13 +170,13 @@ class AuthController(object):
                             # check ids match
                             if auth_user.id == resource_user_id and auth_user.org_id == resource_org_id:
                                 logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
-                                             f"and can {operation} {resource}")
+                                            f"and can {operation} {resource}")
                                 return auth_user
                             else:
                                 # they don't own this resource
                                 logger.info(f"No permissions to {operation} {resource}, "
-                                             f"because user {auth_user.id} != resource_user_id {resource_user_id} "
-                                             f"or user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
+                                            f"because user {auth_user.id} != resource_user_id {resource_user_id} "
+                                            f"or user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
                                 return g_response(f"No permissions to {operation} {resource}, "
                                                   f"because user {auth_user.id} does not own it.", 403)
                         else:
@@ -188,12 +188,12 @@ class AuthController(object):
                             # check org id matches
                             if auth_user.org_id == resource_org_id:
                                 logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
-                                             f"and can {operation} {resource}")
+                                            f"and can {operation} {resource}")
                                 return auth_user
                             else:
                                 # this resource belongs to a different organisation
                                 logger.info(f"No permissions to {operation} {resource}, because "
-                                             f"user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
+                                            f"user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
                                 return g_response(f"No permissions to {operation} {resource}, "
                                                   f"because user {auth_user.id} is in org {auth_user.org_id} but "
                                                   f"the resource belongs to org {resource_org_id}.", 403)
@@ -202,7 +202,7 @@ class AuthController(object):
                     elif user_permission_scope == ResourceScope.GLOBAL:
                         # they can do anything cos they're l33t
                         logger.info(f"user {auth_user.id} has {user_permission_scope} permissions "
-                                     f"for {operation} {resource}")
+                                    f"for {operation} {resource}")
                         return auth_user
 
                 else:
@@ -246,19 +246,19 @@ class AuthController(object):
         # check login attempts
         if user.failed_login_attempts > 0:
             logger.info(f"user {user.id} has failed to log in "
-                         f"{user.failed_login_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
+                        f"{user.failed_login_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
             if user.failed_login_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
                 # check timeout
                 diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
                 if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
                     logger.info(f"user last failed {diff}s ago. "
-                                 f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
+                                f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
                     return g_response("Too many incorrect password attempts.", 401)
                 else:
                     with session_scope() as session:
                         # reset
                         logger.info(f"user last failed {diff}s ago. "
-                                     f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
+                                    f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
                         user.failed_login_attempts = 0
                         user.failed_login_time = None
 
