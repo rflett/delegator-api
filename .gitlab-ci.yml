@@ -27,6 +27,8 @@ flake8:
 build:
   stage: build
   image: $GITLAB_REGISTRY/docker:latest
+  only:
+    - master
   services:
     - docker:dind
   tags:
