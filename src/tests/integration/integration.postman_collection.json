@@ -4876,7 +4876,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"firstnameisanint@sink.backburner.com\",\n\t\"first_name\": 1,\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"firstnameisanint@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": 1,\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -4931,7 +4931,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"firstnameisabool@sink.backburner.com\",\n\t\"first_name\": true,\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"firstnameisabool@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": true,\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -4986,7 +4986,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"fnisempty@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"fnisempty@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5041,7 +5041,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"firstnamemissing@sink.backburner.com\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"firstnamemissing@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5096,7 +5096,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"lnisanint@sink.backburner.com\",\n\t\"last_name\": 1,\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"lnisanint@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": 1,\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5151,7 +5151,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"lsibool@sink.backburner.com\",\n\t\"last_name\": true,\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"lsibool@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": true,\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5206,7 +5206,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"lnisquotes@sink.backburner.com\",\n\t\"last_name\": \"\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"lnisquotes@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5261,7 +5261,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"lnmissing@sink.backburner.com\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"lnmissing@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5316,7 +5316,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"roleanint@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": 1,\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"roleanint@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": 1,\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5371,7 +5371,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"roleisbool@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": true,\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"roleisbool@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": true,\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5426,7 +5426,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"roleisquotes@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"roleisquotes@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5481,7 +5481,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"rolemissing@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"rolemissing@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5536,7 +5536,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"rolenotexist@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"ROLETHATDOESNTEXIST\",\n\t\"job_title\": \"l33t developer\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"rolenotexist@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"ROLETHATDOESNTEXIST\",\n\t\"job_title\": \"l33t developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5591,7 +5591,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"jobtitleint@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": 1,\n\t\"job_title\": 1\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"jobtitleint@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": 1\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5646,7 +5646,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"jobtitlebool@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": 1,\n\t\"job_title\": true\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"jobtitlebool@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": true\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5701,7 +5701,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"jobisquotes@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": 1,\n\t\"job_title\": \"\"\n}"
+							"raw": "{\n\t\"org_name\": \"create-user\",\n\t\"email\": \"jobisquotes@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -5710,6 +5710,1794 @@
 							],
 							"path": [
 								"users"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Update User",
+			"item": [
+				{
+					"name": "Signup (update-user-org)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "6b10c2a9-c7f8-4953-b8a3-64d188a70e03",
+								"exec": [
+									"pm.test(\"signup is ok\", function() {",
+									"    pm.response.to.have.status(200);",
+									"    pm.response.to.be.json;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"update-user@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"Ryan\",\n\t\"last_name\": \"Flett\",\n\t\"job_title\": \"Nurse Unit Manager\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/signup",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Signup (existing-user-org)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "6b10c2a9-c7f8-4953-b8a3-64d188a70e03",
+								"exec": [
+									"pm.test(\"signup is ok\", function() {",
+									"    pm.response.to.have.status(200);",
+									"    pm.response.to.be.json;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"existing-user\",\n\t\"email\": \"existing-user@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"Ryan\",\n\t\"last_name\": \"Flett\",\n\t\"job_title\": \"Nurse Unit Manager\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/signup",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "cbd11473-6df8-4648-adda-2d86b6e11777",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"token in header\", function()  {\r",
+									"    pm.response.to.have.header(\"Authorization\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"set token\", function() {\r",
+									"    const jwt = postman.getResponseHeader(\"Authorization\");\r",
+									"    pm.environment.set(\"token\", jwt);\r",
+									"    pm.expect(pm.environment.get(\"token\")).to.equal(jwt); \r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"email\": \"update-user@sink.backburner.com\",\n\t\"password\": \"secret\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Set user_id",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "a997de87-9019-479f-956a-a9ab01a5df2c",
+								"exec": [
+									"pm.environment.set(\"user_id\", \"update-user@sink.backburner.com\");"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "2a442e9d-e958-48e9-aa44-abe36e745630",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"var Ajv = require('ajv'),\r",
+									"    ajv = new Ajv({logger: console}),\r",
+									"    schema = {\r",
+									"        \"properties\": {\r",
+									"            \"org_id\": {\r",
+									"                \"type\": \"integer\"\r",
+									"            },\r",
+									"            \"id\": {\r",
+									"                \"type\": \"integer\"\r",
+									"            },\r",
+									"            \"email\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"first_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"last_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            },\r",
+									"            \"role_name\": {\r",
+									"                \"type\": \"string\"\r",
+									"            }\r",
+									"        }\r",
+									"    };\r",
+									"\r",
+									"pm.test('Schema is valid', function() {\r",
+									"    pm.expect(ajv.validate(schema, responseBody)).to.be.true;\r",
+									"});\r",
+									"\r",
+									"var jsonData = pm.response.json();\r",
+									"var update_user_id = jsonData.id;\r",
+									"\r",
+									"pm.environment.set(\"user_id\", update_user_id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "email not a string (int)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": 1,\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "email not a string (bool)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": true,\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "email missing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "email invalid",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "email already exists",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"existing-user@sink.backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "org missing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"email\": \"orgmissing@sink.backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "org doesn't exist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"orgnotexist\",\n\t\"email\": \"orgnotexist@sink.backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "org not str or int",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": true,\n\t\"email\": \"orgwrongtype@sink.backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "firstname not string (int)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"firstnameisanint@sink.backburner.com\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "firstname not string (bool)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"firstnameisabool@sink.backburner.com\",\n\t\"first_name\": true,\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "firstname str but empty (\"\")",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"fnisempty@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "firstname missing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"firstnamemissing@sink.backburner.com\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "lastname not string (int)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"lnisanint@sink.backburner.com\",\n\t\"last_name\": 1,\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "lastname not string (bool)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"lsibool@sink.backburner.com\",\n\t\"last_name\": true,\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "lastname str but empty (\"\")",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"lnisquotes@sink.backburner.com\",\n\t\"last_name\": \"\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "lastname missing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"lnmissing@sink.backburner.com\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "role not str (int)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"roleanint@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": 1,\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "role not str (bool)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"roleisbool@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": true,\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "role str but empty (\"\")",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"roleisquotes@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "role missing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"rolemissing@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "role doesnt exist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"rolenotexist@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"ROLETHATDOESNTEXIST\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "job_title not str (int)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"jobtitleint@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": 1\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "job_title not str (bool)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"jobtitlebool@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": true\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "job_title str but empty (\"\")",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"jobisquotes@sink.backburner.com\",\n\t\"last_name\": \"James\",\n\t\"first_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user_id not int (str)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "04da634c-d990-4192-953e-62623b2dea88",
+								"exec": [
+									"pm.environment.set(\"user_id\", \"update-user@sink.backburner.com\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"update-user@sink.backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user_id not str (bool)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "04da634c-d990-4192-953e-62623b2dea88",
+								"exec": [
+									"pm.environment.set(\"user_id\", true);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"update-user@sink.backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "user does not exist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a3cd547e-6273-42f1-a9d2-128fcad2976d",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "04da634c-d990-4192-953e-62623b2dea88",
+								"exec": [
+									"pm.environment.set(\"user_id\", 9999999999999999999999999);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"update-user\",\n\t\"email\": \"update-user@sink.backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"l33t developer\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/{{user_id}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"{{user_id}}"
 							]
 						}
 					},
