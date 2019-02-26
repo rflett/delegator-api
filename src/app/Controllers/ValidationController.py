@@ -54,8 +54,8 @@ class ValidationController(object):
         :return:            True if password is valid, or a Flask Response
         """
         if not isinstance(password, str):
-            logger.info(f"bad email expected str got {type(password)}")
-            return g_response(f"Bad email expected str got {type(password)}", 400)
+            logger.info(f"bad password expected str got {type(password)}")
+            return g_response(f"Bad password expected str got {type(password)}", 400)
         # password_check = _check_password_reqs(password)
         # if isinstance(password_check, str):
         #     return g_response(password_check, 400)
@@ -130,7 +130,10 @@ class ValidationController(object):
             return g_response(f"User already exists.", 400)
         # check org
         org_identifier = request_body.get('org_id', request_body.get('org_name'))
-        if not (isinstance(org_identifier, int) or isinstance(org_identifier, str)):
+        if isinstance(org_identifier, bool):
+            logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+            return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
+        if not isinstance(org_identifier, (int, str)):
             logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
             return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
         # check that org exists
