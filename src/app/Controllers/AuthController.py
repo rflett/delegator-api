@@ -273,10 +273,12 @@ class AuthController(object):
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
                 ActiveUserController.user_is_active(user=user)
-                return g_response(
-                    "Welcome.",
+                logged_in_user_dict = UserController.get_full_user_as_dict(user.id)
+                return Response(
+                    json.dumps(logged_in_user_dict),
                     status=200,
                     headers={
+                        'Content-Type': 'application/json',
                         'Authorization': f"Bearer {_generate_jwt_token(user)}"
                     }
                 )
