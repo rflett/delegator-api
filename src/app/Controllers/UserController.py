@@ -2,7 +2,7 @@ import json
 import typing
 from app import logger, g_response, session_scope
 from app.Controllers import AuthController
-from app.Models import User
+from app.Models import User, Organisation
 from app.Models.RBAC import Operation, Resource, Role
 from flask import request, Response
 from sqlalchemy import exists
@@ -19,7 +19,7 @@ def _compare_user_orgs(user_resource: User, request_user: User) -> bool:
     return True if request_user.org_id == user_resource.org_id or request_user.role == 'ADMIN' else False
 
 
-def _make_user_dict(user: User, role: Role) -> dict:
+def _make_user_dict(user: User, role: Role, org: Organisation) -> dict:
     """
     Creates a dict of a user and the appropriate attributes. Probably not the best way to do this yet,
     needs refactoring once I understand its use more.
@@ -27,18 +27,25 @@ def _make_user_dict(user: User, role: Role) -> dict:
     :param role:    The user's role
     :return:        A dict with the params merged
     """
-    ret = {}
+    extras = {}
 
     # prepend role attrs with role_
     for k, v in role.as_dict().items():
+        # key exclusions
         if k not in ['id', 'rank']:
-            ret[f'role_{k}'] = v
+            extras[f'role_{k}'] = v
 
-    # merge role with user
-    return {
+    # prepend org attrs with org_
+    for k, v in org.as_dict().items():
+        # key exclusions
+        if k not in ['id', 'jwt_aud', 'jwt_secret']:
+            extras[f'org_{k}'] = v
+
+    # merge role with user, with return dict sorted
+    return dict(sorted({
         **user.as_dict(),
-        **ret
-    }
+        **extras
+    }.items()))
 
 
 def _get_user_by_email(email: str) -> User:
@@ -299,9 +306,34 @@ class UserController(object):
         elif isinstance(req_user, User):
 
             with session_scope() as session:
-                users_qry = session.query(User, Role).join(User.roles).filter(User.org_id == req_user.org_id).all()
+                users_qry = session.query(User, Role, Organisation) \
+                    .join(User.roles) \
+                    .join(User.orgs) \
+                    .filter(User.org_id == req_user.org_id) \
+                    .all()
 
-            users = [_make_user_dict(u, r) for u, r in users_qry]
+            users = [_make_user_dict(u, r, o) for u, r, o in users_qry]
 
             logger.info(f"retrieved {len(users)} roles: {json.dumps(users)}")
             return Response(json.dumps(users), status=200, headers={"Content-Type": "application/json"})
+
+    @staticmethod
+    def get_full_user_as_dict(user_id: int) -> typing.Union[dict, Response]:
+        """
+        Returns a full user object with all of its FK's joined.
+        :param user_id: The user id
+        :return:        A user
+        """
+        with session_scope() as session:
+            user_qry = session.query(User, Role, Organisation)\
+                            .join(User.roles)\
+                            .join(User.orgs)\
+                            .filter(User.id == user_id)\
+                            .all()
+            if user_qry is not None:
+                user_dict = {}
+                for u, r, o in user_qry:
+                    user_dict = _make_user_dict(u, r, o)
+                return user_dict
+            else:
+                return g_response("Couldn't find user with id {user_id}", 400)
