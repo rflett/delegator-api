@@ -78,6 +78,8 @@ class ValidationController(object):
 
         org_identifier = request_body.get('org_id')
         # check org
+        if isinstance(org_identifier, bool):
+            return g_response(f"Bad org_id, expected int got {type(org_identifier)}.", 400)
         if not isinstance(org_identifier, int):
             return g_response(f"Bad org_id, expected int got {type(org_identifier)}.", 400)
         # check that org exists
@@ -87,8 +89,11 @@ class ValidationController(object):
         # check type
         task_type = request_body.get('type')
         if not isinstance(request_body.get('type'), str):
-            logger.info(f"Bad type, expected int|str got {type(task_type)}.")
-            return g_response(f"Bad type, expected int|str got {type(task_type)}.", 400)
+            logger.info(f"Bad type, expected str got {type(task_type)}.")
+            return g_response(f"Bad type, expected str got {type(task_type)}.", 400)
+        if len(task_type) == 0:
+            logger.info(f"Task type is required to have length > 0")
+            return g_response(f"Task type cannot be empty", 400)
         # check task type doesn't exist already
         if TaskController.task_type_exists(task_type, org_identifier):
             logger.info(f"user {task_type} already exists")
