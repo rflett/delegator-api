@@ -7504,6 +7504,621 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Create Task Types",
+			"item": [
+				{
+					"name": "Signup (create-task-type-org)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "6b10c2a9-c7f8-4953-b8a3-64d188a70e03",
+								"exec": [
+									"pm.test(\"signup is ok\", function() {",
+									"    pm.response.to.have.status(200);",
+									"    pm.response.to.be.json;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_name\": \"create-task-type\",\n\t\"email\": \"create-task-type@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"Ryan\",\n\t\"last_name\": \"Flett\",\n\t\"job_title\": \"Nurse Unit Manager\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/signup",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "cbd11473-6df8-4648-adda-2d86b6e11777",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"token in header\", function()  {\r",
+									"    pm.response.to.have.header(\"Authorization\");\r",
+									"});\r",
+									"\r",
+									"pm.test(\"set token\", function() {\r",
+									"    const jwt = postman.getResponseHeader(\"Authorization\");\r",
+									"    pm.environment.set(\"token\", jwt);\r",
+									"    pm.expect(pm.environment.get(\"token\")).to.equal(jwt); \r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"var jsonData = pm.response.json();\r",
+									"var org_id = jsonData.org_id;\r",
+									"pm.environment.set(\"org_id\", org_id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"email\": \"create-task-type@sink.backburner.com\",\n\t\"password\": \"secret\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Existing task type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"existing-task-type\",\n\t\"org_id\": {{org_id}}\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "org not int (str)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"A task type\",\n\t\"org_id\": \"hello\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "org not int (bool)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"A task type\",\n\t\"org_id\": true\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "org missing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"A task type\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "org doesnt exist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"A task type\",\n\t\"org_id\": 9999999999999999\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "task type not str (int)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": 1,\n\t\"org_id\": {{org_id}}\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "task type not str (bool)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": true,\n\t\"org_id\": {{org_id}}\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "task type empty str (\"\")",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"\",\n\t\"org_id\": {{org_id}}\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "task type exists",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"existing-task-type\",\n\t\"org_id\": {{org_id}}\n}"
+						},
+						"url": {
+							"raw": "{{host}}/tasks/types",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"tasks",
+								"types"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
