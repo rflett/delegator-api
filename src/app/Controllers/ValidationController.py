@@ -243,7 +243,10 @@ class ValidationController(object):
                 return g_response(f"Email already exists.", 400)
         # check org
         org_identifier = request_body.get('org_id', request_body.get('org_name'))
-        if not (isinstance(org_identifier, int) or isinstance(org_identifier, str)):
+        if isinstance(org_identifier, bool):
+            logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+            return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
+        if not isinstance(org_identifier, (int, str)):
             logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
             return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
         # check that org exists
