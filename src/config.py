@@ -11,6 +11,7 @@ class Config(object):
 
 class Ci(Config):
     DB_HOST = "postgres"
+    FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
 
 
 class Scott(Config):
@@ -19,6 +20,7 @@ class Scott(Config):
 
 class Local(Config):
     DB_HOST = "localhost"
+    FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
 
 
 class Staging(Config):

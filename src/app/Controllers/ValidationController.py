@@ -54,8 +54,8 @@ class ValidationController(object):
         :return:            True if password is valid, or a Flask Response
         """
         if not isinstance(password, str):
-            logger.info(f"bad email expected str got {type(password)}")
-            return g_response(f"Bad email expected str got {type(password)}", 400)
+            logger.info(f"bad password expected str got {type(password)}")
+            return g_response(f"Bad password expected str got {type(password)}", 400)
         # password_check = _check_password_reqs(password)
         # if isinstance(password_check, str):
         #     return g_response(password_check, 400)
@@ -78,6 +78,8 @@ class ValidationController(object):
 
         org_identifier = request_body.get('org_id')
         # check org
+        if isinstance(org_identifier, bool):
+            return g_response(f"Bad org_id, expected int got {type(org_identifier)}.", 400)
         if not isinstance(org_identifier, int):
             return g_response(f"Bad org_id, expected int got {type(org_identifier)}.", 400)
         # check that org exists
@@ -87,8 +89,11 @@ class ValidationController(object):
         # check type
         task_type = request_body.get('type')
         if not isinstance(request_body.get('type'), str):
-            logger.info(f"Bad type, expected int|str got {type(task_type)}.")
-            return g_response(f"Bad type, expected int|str got {type(task_type)}.", 400)
+            logger.info(f"Bad type, expected str got {type(task_type)}.")
+            return g_response(f"Bad type, expected str got {type(task_type)}.", 400)
+        if len(task_type) == 0:
+            logger.info(f"Task type is required to have length > 0")
+            return g_response(f"Task type cannot be empty", 400)
         # check task type doesn't exist already
         if TaskController.task_type_exists(task_type, org_identifier):
             logger.info(f"user {task_type} already exists")
@@ -130,7 +135,10 @@ class ValidationController(object):
             return g_response(f"User already exists.", 400)
         # check org
         org_identifier = request_body.get('org_id', request_body.get('org_name'))
-        if not (isinstance(org_identifier, int) or isinstance(org_identifier, str)):
+        if isinstance(org_identifier, bool):
+            logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+            return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
+        if not isinstance(org_identifier, (int, str)):
             logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
             return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
         # check that org exists
@@ -231,9 +239,19 @@ class ValidationController(object):
         email_check = ValidationController.validate_email(email)
         if isinstance(email_check, Response):
             return email_check
+        # check email doesn't exist if it's not the same as before
+        user = UserController.get_user_by_id(user_id)
+        if email != user.email:
+            # emails don't match, so check that it doesn't exist
+            if UserController.user_exists(email):
+                logger.info(f"email {email} already in use")
+                return g_response(f"Email already exists.", 400)
         # check org
         org_identifier = request_body.get('org_id', request_body.get('org_name'))
-        if not (isinstance(org_identifier, int) or isinstance(org_identifier, str)):
+        if isinstance(org_identifier, bool):
+            logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+            return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
+        if not isinstance(org_identifier, (int, str)):
             logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
             return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
         # check that org exists
