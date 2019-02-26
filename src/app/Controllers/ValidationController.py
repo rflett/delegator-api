@@ -105,10 +105,14 @@ class ValidationController(object):
         )
 
     @staticmethod
-    def validate_create_user_request(request_body: dict) -> typing.Union[Response, dataclass]:
+    def validate_create_user_request(request_body: dict, from_signup = False) -> typing.Union[Response, dataclass]:
         """
         Validates a user request body
         :param request_body:    The request body from the create user request
+        :param from_signup:     Indicates that this validation request came from the signup page, so
+                                we should ignore org and role checks. The organisation won't be created yet, this is
+                                pre-creation validation. The role will not be provided because the default role
+                                will be given.
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
         from app.Controllers import UserController, OrganisationController, AuthController
@@ -116,12 +120,12 @@ class ValidationController(object):
         @dataclass
         class UserRequest:
             """ A user request dataclass which represents the values in a create user request object. """
-            org_id: int
+            org_id: typing.Optional[int]
             email: str
             password: str
             first_name: str
             last_name: str
-            role_name: str
+            role_name: typing.Optional[str]
             job_title: str
 
         # check email
@@ -133,27 +137,28 @@ class ValidationController(object):
         if UserController.user_exists(request_body.get('email')):
             logger.info(f"user {request_body.get('email')} already exists")
             return g_response(f"User already exists.", 400)
-        # check org
-        org_identifier = request_body.get('org_id', request_body.get('org_name'))
-        if isinstance(org_identifier, bool):
-            logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
-            return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
-        if not isinstance(org_identifier, (int, str)):
-            logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
-            return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
-        # check that org exists
-        if not OrganisationController.org_exists(org_identifier):
-            logger.info(f"org {org_identifier} doesn't exist")
-            return g_response(f"Org does not exist", 400)
-        # get org_id
-        if isinstance(org_identifier, str):
-            org_id = OrganisationController.get_org_by_name(org_identifier).id
-        elif isinstance(org_identifier, int):
-            org_id = org_identifier
-        else:
-            # should never be here??
-            logger.info("Expected org_id to be set but it isn't.")
-            return g_response(f"Expected org_id to be set but it isn't.", 400)
+        if not from_signup:
+            # check org
+            org_identifier = request_body.get('org_id', request_body.get('org_name'))
+            if isinstance(org_identifier, bool):
+                logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+                return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
+            if not isinstance(org_identifier, (int, str)):
+                logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+                return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
+            # check that org exists
+            if not OrganisationController.org_exists(org_identifier):
+                logger.info(f"org {org_identifier} doesn't exist")
+                return g_response(f"Org does not exist", 400)
+            # get org_id
+            if isinstance(org_identifier, str):
+                org_id = OrganisationController.get_org_by_name(org_identifier).id
+            elif isinstance(org_identifier, int):
+                org_id = org_identifier
+            else:
+                # should never be here??
+                logger.info("Expected org_id to be set but it isn't.")
+                return g_response(f"Expected org_id to be set but it isn't.", 400)
         # check password
         password = request_body.get('password')
         password_check = ValidationController.validate_password(password)
@@ -176,16 +181,17 @@ class ValidationController(object):
             logger.info(f"last_name is required.")
             return g_response(f"last_name is required.", 400)
         # check role
-        role_name = request_body.get('role_name')
-        if not isinstance(role_name, str):
-            logger.info(f"Bad role_name, expected str got {type(role_name)}.")
-            return g_response(f"Bad role_name, expected str got {type(role_name)}.", 400)
-        if len(role_name) == 0:
-            logger.info(f"role_name is required.")
-            return g_response(f"role_name is required.", 400)
-        if not AuthController.role_exists(role_name):
-            logger.info(f"Role {role_name} does not exist")
-            return g_response(f"Role {role_name} does not exist", 400)
+        if not from_signup:
+            role_name = request_body.get('role_name')
+            if not isinstance(role_name, str):
+                logger.info(f"Bad role_name, expected str got {type(role_name)}.")
+                return g_response(f"Bad role_name, expected str got {type(role_name)}.", 400)
+            if len(role_name) == 0:
+                logger.info(f"role_name is required.")
+                return g_response(f"role_name is required.", 400)
+            if not AuthController.role_exists(role_name):
+                logger.info(f"Role {role_name} does not exist")
+                return g_response(f"Role {role_name} does not exist", 400)
         job_title = request_body.get('job_title')
         if not isinstance(job_title, str):
             logger.info(f"Bad job_title, expected str got {type(job_title)}.")
@@ -195,12 +201,12 @@ class ValidationController(object):
             return g_response(f"job_title is required.", 400)
 
         return UserRequest(
-            org_id=org_id,
+            org_id=None if from_signup else org_id,
             email=email,
             password=password,
             first_name=first_name,
             last_name=last_name,
-            role_name=role_name,
+            role_name=None if from_signup else role_name,
             job_title=job_title
         )
 
