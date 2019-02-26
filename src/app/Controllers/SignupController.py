@@ -1,5 +1,5 @@
 from app import app, logger, g_response
-from app.Controllers import UserController, OrganisationController
+from app.Controllers import UserController, OrganisationController, ValidationController
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 
@@ -22,6 +22,16 @@ class SignupController(object):
         if UserController.user_exists(request_body.get('email')):
             logger.info(f"user {request_body.get('email')} already exists")
             return g_response("User already exists.", 400)
+
+        # validate org
+        valid_org = ValidationController.validate_create_org_request(request_body)
+        if isinstance(valid_org, Response):
+            return valid_org
+
+        # validate user
+        valid_user = ValidationController.validate_create_user_request(request_body, from_signup=True)
+        if isinstance(valid_user, Response):
+            return valid_user
 
         try:
             create_org_res = OrganisationController.org_create(request, require_auth=False)
