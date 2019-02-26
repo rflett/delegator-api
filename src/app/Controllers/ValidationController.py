@@ -234,6 +234,13 @@ class ValidationController(object):
         email_check = ValidationController.validate_email(email)
         if isinstance(email_check, Response):
             return email_check
+        # check email doesn't exist if it's not the same as before
+        user = UserController.get_user_by_id(user_id)
+        if email != user.email:
+            # emails don't match, so check that it doesn't exist
+            if UserController.user_exists(email):
+                logger.info(f"email {email} already in use")
+                return g_response(f"Email already exists.", 400)
         # check org
         org_identifier = request_body.get('org_id', request_body.get('org_name'))
         if not (isinstance(org_identifier, int) or isinstance(org_identifier, str)):
