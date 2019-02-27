@@ -105,7 +105,7 @@ class ValidationController(object):
         )
 
     @staticmethod
-    def validate_create_user_request(request_body: dict, from_signup = False) -> typing.Union[Response, dataclass]:
+    def validate_create_user_request(request_body: dict, from_signup=False) -> typing.Union[Response, dataclass]:
         """
         Validates a user request body
         :param request_body:    The request body from the create user request
