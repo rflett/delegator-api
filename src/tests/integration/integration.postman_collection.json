@@ -7516,7 +7516,7 @@
 								"id": "fed51681-1030-43df-9387-5a58d297a618",
 								"exec": [
 									"pm.test(\"response is ok\", function () {\r",
-									"    pm.response.to.have.status(201);\r",
+									"    pm.response.to.have.status(400);\r",
 									"});\r",
 									"\r",
 									"pm.test(\"response must be valid and have a body\", function () {\r",
