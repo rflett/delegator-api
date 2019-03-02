@@ -275,11 +275,13 @@ class AuthController(object):
                 ActiveUserController.user_is_active(user=user)
                 logged_in_user_dict = UserController.get_full_user_as_dict(user.id)
                 return Response(
-                    json.dumps(logged_in_user_dict),
+                    json.dumps({
+                        **logged_in_user_dict,
+                        **{"jwt": _generate_jwt_token(user)}
+                    }),
                     status=200,
                     headers={
-                        'Content-Type': 'application/json',
-                        'Authorization': f"Bearer {_generate_jwt_token(user)}"
+                        'Content-Type': 'application/json'
                     }
                 )
             else:
