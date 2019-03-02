@@ -1,11 +1,22 @@
 import datetime
 import json
 import typing
-from app import session_scope, logger, g_response
+from app import session_scope, logger, g_response, app
 from app.Controllers import AuthController
 from app.Models import User, ActiveUser
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
+
+
+def _purge_inactive_users() -> None:
+    """
+    Removes users which have been inactive for longer than the threshold.
+    :return: None
+    """
+    with session_scope() as session:
+        inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=app.config['INACTIVE_USER_TTL'])
+        delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
+        logger.info(f"purged {delete_inactive} users who have not been active since {inactive_cutoff}")
 
 
 def _get_user_from_request(req: request) -> typing.Union[User, Response]:
@@ -116,6 +127,8 @@ class ActiveUserController(object):
         if isinstance(req_user, Response):
             return req_user
         elif isinstance(req_user, User):
+            # remove inactive users
+            _purge_inactive_users()
 
             with session_scope() as session:
                 active_users_qry = session.query(ActiveUser).filter(ActiveUser.org_id == req_user.org_id).all()
