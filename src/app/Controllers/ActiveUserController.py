@@ -1,11 +1,22 @@
 import datetime
 import json
 import typing
-from app import session_scope, logger, g_response
+from app import session_scope, logger, g_response, app
 from app.Controllers import AuthController
 from app.Models import User, ActiveUser
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
+
+
+def _purge_inactive_users() -> None:
+    """
+    Removes users which have been inactive for longer than the threshold.
+    :return: None
+    """
+    with session_scope() as session:
+        inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=app.config['INACTIVE_USER_TTL'])
+        delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
+        logger.info(f"purged {delete_inactive} users who have not been active since {inactive_cutoff}")
 
 
 def _get_user_from_request(req: request) -> typing.Union[User, Response]:
@@ -43,23 +54,13 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
 class ActiveUserController(object):
 
     @staticmethod
-    def user_is_active(user: User = None, req: request = None) -> Response:
+    def user_is_active(user: User) -> Response:
         """
         Marks a user as active if they are not active already. If they're already active then update them.
         A cron job should come through and remove active users that have
         :param user:
-        :param req:
         :return: Response or None
         """
-        if user is None:
-            if req is not None:
-                user = _get_user_from_request(req)
-                if isinstance(user, Response):
-                    return user
-            else:
-                # request and user are none so..
-                return g_response("missing both user and request, require at least one", 400)
-
         with session_scope() as session:
             already_active = session.query(ActiveUser).filter(ActiveUser.user_id == user.id).first()
             if already_active is None:
@@ -78,22 +79,12 @@ class ActiveUserController(object):
             return g_response(status=204)
 
     @staticmethod
-    def user_is_inactive(user: User = None, req: request = None) -> Response:
+    def user_is_inactive(user: User) -> Response:
         """
         Mark user as inactive by deleting their record in the active users table
         :param user:
-        :param req:
         :return: Response or None
         """
-        if user is None:
-            if req is not None:
-                user = _get_user_from_request(req)
-                if isinstance(user, Response):
-                    return user
-            else:
-                # request and user are none so..
-                return g_response("missing both user and request, require at least one", 400)
-
         with session_scope() as session:
             session.query(ActiveUser).filter(ActiveUser.user_id == user.id).delete()
 
@@ -116,6 +107,8 @@ class ActiveUserController(object):
         if isinstance(req_user, Response):
             return req_user
         elif isinstance(req_user, User):
+            # remove inactive users
+            _purge_inactive_users()
 
             with session_scope() as session:
                 active_users_qry = session.query(ActiveUser).filter(ActiveUser.org_id == req_user.org_id).all()

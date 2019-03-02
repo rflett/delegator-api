@@ -108,15 +108,6 @@ def active_users():
     return ActiveUserController.get_active_users()
 
 
-@app.route('/user/active', methods=['POST'])
-def user_active():
-    """
-    Marks a user as active
-    :return: Response
-    """
-    return ActiveUserController.user_is_active(req=request)
-
-
 @app.route('/user/<identifier>', methods=['GET'])
 @requires_jwt
 def get_user(identifier):
@@ -135,6 +126,16 @@ def update_user(user_id):
     :return: Response
     """
     return UserController.user_update(user_id, request)
+
+
+@app.route('/user/pages', methods=['GET'])
+@requires_jwt
+def user_pages():
+    """
+    Returns the pages a user can access
+    :return: Response
+    """
+    return UserController.user_pages(request)
 
 
 @app.route('/roles', methods=['GET'])

@@ -158,6 +158,11 @@ class AuthController(object):
         if isinstance(auth_user, Response):
             return auth_user
         else:
+            # mark user as active
+            from app.Controllers import ActiveUserController
+            ActiveUserController.user_is_active(auth_user)
+
+            # deal with permissions
             user_permission_scope = auth_user.can(operation, resource)
             if user_permission_scope is False:
                 logger.info(f"user id {auth_user.id} cannot perform {operation} on {resource}")
