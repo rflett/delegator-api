@@ -149,57 +149,6 @@
 					"response": []
 				},
 				{
-					"name": "User Active",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "6b10c2a9-c7f8-4953-b8a3-64d188a70e03",
-								"exec": [
-									"pm.test(\"signup is ok\", function() {",
-									"    pm.response.to.have.status(204);",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"name": "Content-Type",
-								"type": "text",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"value": "{{token}}",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": ""
-						},
-						"url": {
-							"raw": "{{host}}/user/active",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"user",
-								"active"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "Create User (Manager)",
 					"event": [
 						{
@@ -1176,57 +1125,6 @@
 							],
 							"path": [
 								"users"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "User Active",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "6b10c2a9-c7f8-4953-b8a3-64d188a70e03",
-								"exec": [
-									"pm.test(\"signup is ok\", function() {",
-									"    pm.response.to.have.status(204);",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"name": "Content-Type",
-								"type": "text",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"type": "text",
-								"value": "{{token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": ""
-						},
-						"url": {
-							"raw": "{{host}}/user/active",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"user",
-								"active"
 							]
 						}
 					},
@@ -2842,57 +2740,6 @@
 							],
 							"path": [
 								"users",
-								"active"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "User Active",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "6b10c2a9-c7f8-4953-b8a3-64d188a70e03",
-								"exec": [
-									"pm.test(\"signup is ok\", function() {",
-									"    pm.response.to.have.status(204);",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"name": "Content-Type",
-								"type": "text",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"type": "text",
-								"value": "{{token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": ""
-						},
-						"url": {
-							"raw": "{{host}}/user/active",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"user",
 								"active"
 							]
 						}

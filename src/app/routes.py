@@ -108,15 +108,6 @@ def active_users():
     return ActiveUserController.get_active_users()
 
 
-@app.route('/user/active', methods=['POST'])
-def user_active():
-    """
-    Marks a user as active
-    :return: Response
-    """
-    return ActiveUserController.user_is_active(req=request)
-
-
 @app.route('/user/<identifier>', methods=['GET'])
 @requires_jwt
 def get_user(identifier):
