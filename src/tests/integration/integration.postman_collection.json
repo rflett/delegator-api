@@ -134,7 +134,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"email\": \"james@backburner.com\",\n\t\"password\": \"password1\"\n}"
+							"raw": "{\n\t\"email\": \"ryan@sink.backburner.com\",\n\t\"password\": \"secret\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/login",
