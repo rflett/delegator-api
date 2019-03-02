@@ -3,7 +3,7 @@ import typing
 from app import logger, g_response, session_scope
 from app.Controllers import AuthController
 from app.Models import User, Organisation
-from app.Models.RBAC import Operation, Resource, Role
+from app.Models.RBAC import Operation, Resource, Role, Permission
 from flask import request, Response
 from sqlalchemy import exists
 
@@ -337,3 +337,35 @@ class UserController(object):
                 return user_dict
             else:
                 return g_response("Couldn't find user with id {user_id}", 400)
+
+    @staticmethod
+    def user_pages(_request: request) -> Response:
+        """
+        Returns the pages a user can access
+        :param _request: The request
+        :return: A response with a list of pages
+        """
+        from app.Controllers import AuthController
+
+        req_user = AuthController.authorize_request(
+            request=_request,
+            operation=Operation.GET,
+            resource=Resource.PAGES
+        )
+
+        if isinstance(req_user, Response):
+            return req_user
+        elif isinstance(req_user, User):
+            with session_scope() as session:
+                pages_qry = session.query(Permission.resource_id).filter(
+                    Permission.role_id == req_user.role,
+                    Permission.resource_id.like("%_PAGE")
+                ).all()
+
+                ret = []
+                for permission in pages_qry:
+                    for page in permission:
+                        # strip _PAGE
+                        ret.append(page.split('_PAGE')[0])
+
+                return Response(json.dumps(sorted(ret)), status=200, headers={"Content-Type": "application/json"})

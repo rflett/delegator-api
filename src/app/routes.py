@@ -128,6 +128,16 @@ def update_user(user_id):
     return UserController.user_update(user_id, request)
 
 
+@app.route('/user/pages', methods=['GET'])
+@requires_jwt
+def user_pages():
+    """
+    Returns the pages a user can access
+    :return: Response
+    """
+    return UserController.user_pages(request)
+
+
 @app.route('/roles', methods=['GET'])
 @requires_jwt
 def get_roles():
