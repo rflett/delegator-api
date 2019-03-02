@@ -55,22 +55,14 @@ class RoleController(object):
         :param resource:    The resource that will be affected
         :return: True or False
         """
-        # check permission exists
         with session_scope() as session:
-            exists = session.query(session.query(Permission).filter(
+            permission = session.query(Permission).filter(
                 Permission.role_id == role,
                 Permission.operation_id == operation,
                 Permission.resource_id == resource
-            ).exists()).scalar()
-
-        if exists:
-            with session_scope() as session:
-                permission = session.query(Permission).filter(
-                    Permission.role_id == role,
-                    Permission.operation_id == operation,
-                    Permission.resource_id == resource
-                ).first()
+            ).first()
+            if permission is None:
+                logger.info(f"permission with role:{role}, operation:{operation}, resource:{resource} does not exist")
+                return False
+            else:
                 return permission.resource_scope
-        else:
-            logger.info(f"permission with role:{role}, operation:{operation}, resource:{resource} does not exist")
-            return False
