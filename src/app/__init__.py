@@ -119,9 +119,7 @@ def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) ->
     :return:        A Flask Response
     """
     return j_response(
-        json.dumps({
-            "msg": msg
-        }),
+        {"msg": msg},
         status=status,
         **kwargs
     )
