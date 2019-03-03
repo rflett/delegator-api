@@ -6,12 +6,6 @@ from app import logger, session_scope
 from flask import request, Response
 
 
-def _get_role(role_id: str) -> Role:
-    with session_scope() as session:
-        role = session.query(Role).filter(Role.id == role_id).first()
-        return role
-
-
 class RoleController(object):
     @staticmethod
     def get_roles(request: request) -> Response:
@@ -35,10 +29,14 @@ class RoleController(object):
         if isinstance(req_user, Response):
             return req_user
         elif isinstance(req_user, User):
-            user_role = _get_role(req_user.role)
-
             with session_scope() as session:
-                roles_qry = session.query(Role).filter(Role.rank >= user_role.rank).all()
+                roles_qry = session.query(Role)\
+                    .filter(Role.rank >=
+                            session.query(Role.rank)
+                            .join(User.roles)
+                            .filter(Role.id == req_user.role)
+                            )\
+                    .all()
 
             roles = [r.as_dict() for r in roles_qry]
 
