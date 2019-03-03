@@ -1,9 +1,10 @@
 import json
 import typing
-from app.Models.RBAC import Role, Operation, Resource
+from app.Models.RBAC import Operation, Resource
 from app.Models.RBAC.Permission import Permission
 from app import logger, session_scope, j_response
 from flask import request, Response
+from sqlalchemy import and_
 
 
 class RoleController(object):
@@ -34,7 +35,7 @@ class RoleController(object):
                     .filter(Role.rank >=
                             session.query(Role.rank)
                             .join(User.roles)
-                            .filter(Role.id == req_user.role)
+                            .filter(and_(User.id == req_user.id, Role.id == req_user.role))
                             )\
                     .all()
 
