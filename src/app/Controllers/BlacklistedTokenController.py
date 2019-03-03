@@ -31,7 +31,7 @@ class BlacklistedTokenController(object):
             return False
 
     @staticmethod
-    def blacklist_token(blacklist_id: str, exp: int):
+    def blacklist_token(blacklist_id: str, exp: int) -> None:
         """
         Blacklist a token if it isn't already blacklisted.
         :param blacklist_id:    The aud:jti combination the is a blacklist_id

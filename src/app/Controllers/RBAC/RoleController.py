@@ -2,14 +2,8 @@ import json
 import typing
 from app.Models.RBAC import Role, Operation, Resource
 from app.Models.RBAC.Permission import Permission
-from app import logger, session_scope
+from app import logger, session_scope, j_response
 from flask import request, Response
-
-
-def _get_role(role_id: str) -> Role:
-    with session_scope() as session:
-        role = session.query(Role).filter(Role.id == role_id).first()
-        return role
 
 
 class RoleController(object):
@@ -35,15 +29,19 @@ class RoleController(object):
         if isinstance(req_user, Response):
             return req_user
         elif isinstance(req_user, User):
-            user_role = _get_role(req_user.role)
-
             with session_scope() as session:
-                roles_qry = session.query(Role).filter(Role.rank >= user_role.rank).all()
+                roles_qry = session.query(Role)\
+                    .filter(Role.rank >=
+                            session.query(Role.rank)
+                            .join(User.roles)
+                            .filter(Role.id == req_user.role)
+                            )\
+                    .all()
 
             roles = [r.as_dict() for r in roles_qry]
 
             logger.info(f"got {len(roles)} roles: {json.dumps(roles)}")
-            return Response(json.dumps(roles), status=200, headers={"Content-Type": "application/json"})
+            return j_response(roles)
 
     @staticmethod
     def role_can(role: str, operation: str, resource: str) -> typing.Union[bool, str]:
