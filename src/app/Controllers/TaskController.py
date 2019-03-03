@@ -1,5 +1,5 @@
 import json
-from app import logger, session_scope, g_response
+from app import logger, session_scope, g_response, j_response
 from app.Models import TaskType
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -45,7 +45,7 @@ class TaskController(object):
             task_priorities = [tp.as_dict() for tp in task_pr_qry]
 
             logger.info(f"retrieved {len(task_priorities)} task_priorities: {json.dumps(task_priorities)}")
-            return Response(json.dumps(task_priorities), status=200, headers={"Content-Type": "application/json"})
+            return j_response(task_priorities)
 
     @staticmethod
     def get_task_statuses(request: request) -> Response:
@@ -68,7 +68,7 @@ class TaskController(object):
             task_statuses = [ts.as_dict() for ts in task_st_qry]
 
             logger.info(f"retrieved {len(task_statuses)} task statuses: {json.dumps(task_statuses)}")
-            return Response(json.dumps(task_statuses), status=200, headers={"Content-Type": "application/json"})
+            return j_response(task_statuses)
 
     @staticmethod
     def get_task_types(request: request) -> Response:
@@ -91,7 +91,7 @@ class TaskController(object):
             task_types = [tt.as_dict() for tt in task_tt_qry]
 
             logger.info(f"retrieved {len(task_types)} task types: {json.dumps(task_types)}")
-            return Response(json.dumps(task_types), status=200, headers={"Content-Type": "application/json"})
+            return j_response(task_types)
 
     @staticmethod
     def create_task_types(request: request) -> Response:

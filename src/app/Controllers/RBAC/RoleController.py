@@ -2,7 +2,7 @@ import json
 import typing
 from app.Models.RBAC import Role, Operation, Resource
 from app.Models.RBAC.Permission import Permission
-from app import logger, session_scope
+from app import logger, session_scope, j_response
 from flask import request, Response
 
 
@@ -41,7 +41,7 @@ class RoleController(object):
             roles = [r.as_dict() for r in roles_qry]
 
             logger.info(f"got {len(roles)} roles: {json.dumps(roles)}")
-            return Response(json.dumps(roles), status=200, headers={"Content-Type": "application/json"})
+            return j_response(roles)
 
     @staticmethod
     def role_can(role: str, operation: str, resource: str) -> typing.Union[bool, str]:

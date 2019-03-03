@@ -73,15 +73,15 @@ def shutdown_session(exception=None):
     session.close()
 
 
-# generic response object
-def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) -> Response:
+# json response object
+def j_response(body: typing.Optional[typing.Union[dict, list]] = None, status: int = 200, **kwargs) -> Response:
     """
-    Just a Flask Response but gives one place to define a consistent response to use for generic responses
-    throughout the application.
-    :param msg:     The message to send as part of the "msg" key
+    Just a Flask Response but it provides a nice wrapper for returning generic json responses, so that they
+    easily remain consistent.
+    :param body:    The dict to send as a json body
     :param status:  The HTTP status for the Response
-    :param kwargs:  Other Flask Response object kwargs (such as headers, status etc.)
-    :return:        A Flask Response
+    :param kwargs:  Other Flask Response object kwargs (like headers etc.)
+    :return:        A flask response
     """
     # default headers
     headers = {'Content-Type': 'application/json'}
@@ -93,12 +93,36 @@ def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) ->
             **kwargs.pop('headers')
         }
 
-    return Response(
+    if body is None:
+        return Response(
+            status=204,
+            headers=headers,
+            **kwargs
+        )
+    else:
+        return Response(
+            json.dumps(body),
+            status=status,
+            headers=headers,
+            **kwargs
+        )
+
+
+# generic response object
+def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) -> Response:
+    """
+    Just a Flask Response but gives one place to define a consistent response to use for generic responses
+    throughout the application.
+    :param msg:     The message to send as part of the "msg" key
+    :param status:  The HTTP status for the Response
+    :param kwargs:  Other Flask Response object kwargs (such as headers, status etc.)
+    :return:        A Flask Response
+    """
+    return j_response(
         json.dumps({
             "msg": msg
         }),
         status=status,
-        headers=headers,
         **kwargs
     )
 

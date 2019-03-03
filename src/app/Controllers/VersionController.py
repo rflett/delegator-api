@@ -1,5 +1,4 @@
-import json
-from app import g_response
+from app import j_response
 from flask import Response
 from os import environ
 
@@ -15,4 +14,4 @@ class VersionController(object):
         ret = {
             "commit_sha": environ.get('COMMIT_SHA')
         }
-        return g_response(json.dumps(ret))
+        return j_response(ret)

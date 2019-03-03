@@ -1,7 +1,7 @@
 import datetime
 import json
 import typing
-from app import session_scope, logger, g_response, app
+from app import session_scope, logger, g_response, app, j_response
 from app.Controllers import AuthController
 from app.Models import User, ActiveUser
 from app.Models.RBAC import Operation, Resource
@@ -116,4 +116,4 @@ class ActiveUserController(object):
             active_users = [au.as_dict() for au in active_users_qry]
 
             logger.info(f"retrieved {len(active_users)} active users: {json.dumps(active_users)}")
-            return Response(json.dumps(active_users), status=200, headers={"Content-Type": "application/json"})
+            return j_response(active_users)

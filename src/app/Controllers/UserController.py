@@ -1,6 +1,6 @@
 import json
 import typing
-from app import logger, g_response, session_scope
+from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthController
 from app.Models import User, Organisation
 from app.Models.RBAC import Operation, Resource, Role, Permission
@@ -280,7 +280,7 @@ class UserController(object):
                     resource_id=user.id
                 )
                 logger.info(f"got user {user.as_dict()}")
-                return Response(json.dumps(user.as_dict()), headers={'Content-Type': 'application/json'})
+                return j_response(user.as_dict())
         else:
             logger.info(f"user with id {user_identifier} does not exist")
             return g_response("User does not exist.", 400)
@@ -314,8 +314,8 @@ class UserController(object):
 
             users = [_make_user_dict(u, r, o) for u, r, o in users_qry]
 
-            logger.info(f"retrieved {len(users)} roles: {json.dumps(users)}")
-            return Response(json.dumps(users), status=200, headers={"Content-Type": "application/json"})
+            logger.info(f"retrieved {len(users)} users: {json.dumps(users)}")
+            return j_response(users)
 
     @staticmethod
     def get_full_user_as_dict(user_id: int) -> typing.Union[dict, Response]:
@@ -368,4 +368,4 @@ class UserController(object):
                         # strip _PAGE
                         ret.append(page.split('_PAGE')[0])
 
-                return Response(json.dumps(sorted(ret)), status=200, headers={"Content-Type": "application/json"})
+                return j_response(sorted(ret))
