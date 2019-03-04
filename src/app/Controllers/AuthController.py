@@ -350,7 +350,6 @@ class AuthController(object):
         from app.Controllers import BlacklistedTokenController
         try:
             suspect_jwt = jwt.decode(jwt=token, algorithms='HS256', verify=False)
-            logger.info(f"received suspect jwt {suspect_jwt}")
 
             # check if aud:jti is blacklisted
             blacklist_id = f"{suspect_jwt.get('aud')}:{suspect_jwt.get('jti')}"
@@ -370,7 +369,6 @@ class AuthController(object):
                 return False
 
         except Exception as e:
-            logger.info('here')
             logger.error(str(e))
             logger.info(f"decoding raised {e}, likely failed to decode jwt due to user secret/aud issue")
             AuthController.invalidate_jwt_token(token=token)
@@ -405,7 +403,6 @@ class AuthController(object):
             return g_response(f"Expected Authorization header type str got {type(auth)}.", 401)
         try:
             token = auth.replace('Bearer ', '')
-            logger.info(token)
             jwt.decode(jwt=token, algorithms='HS256', verify=False)
 
         except Exception as e:
