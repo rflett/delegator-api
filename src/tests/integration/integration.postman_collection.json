@@ -7475,7 +7475,7 @@
 									"\r",
 									"var jwt = jsonData.jwt;\r",
 									"pm.environment.set(\"token\", \"Bearer \" + jwt);\r",
-									""
+									"pm.environment.set(\"org_id\", jsonData.org_id);"
 								],
 								"type": "text/javascript"
 							}
