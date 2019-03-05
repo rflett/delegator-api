@@ -12,9 +12,6 @@
                 "protocol": "tcp"
             }
         ],
-        "links": [
-            "postgres:postgres"
-        ],
         "environment" : [
             { "name" : "APP_ENV", "value" : "Staging" }
         ],
@@ -24,28 +21,6 @@
                 "awslogs-group": "api",
                 "awslogs-region": "ap-southeast-2",
                 "awslogs-stream-prefix": "api"
-            }
-        }
-    },
-    {
-        "name": "postgres",
-        "image": "008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest",
-        "memory": 256,
-        "memoryReservation": 128,
-        "essential": true,
-        "portMappings": [
-            {
-                "hostPort": 5432,
-                "containerPort": 5432,
-                "protocol": "tcp"
-            }
-        ],
-        "logConfiguration": {
-            "logDriver": "awslogs",
-            "options": {
-                "awslogs-group": "postgres",
-                "awslogs-region": "ap-southeast-2",
-                "awslogs-stream-prefix": "postgres"
             }
         }
     }
