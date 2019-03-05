@@ -17,6 +17,7 @@ USERS_PAGE = 'USERS_PAGE'
 REPORTS_PAGE = 'REPORTS_PAGE'
 REPORTS = 'REPORTS'
 
+
 class Resource(DBBase):
     __tablename__ = "rbac_resources"
 
