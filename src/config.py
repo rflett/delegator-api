@@ -15,14 +15,10 @@ class Ci(Config):
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
 
 
-class Scott(Config):
-    SCOTT = "AWESOME"  # can't be empty lol
-
-
 class Local(Config):
     DB_HOST = "localhost"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
 
 
 class Staging(Config):
-    DB_HOST = "postgres"
+    DB_HOST = "127.0.0.1"

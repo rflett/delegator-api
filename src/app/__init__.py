@@ -30,25 +30,8 @@ if getenv('APP_ENV', 'Local') != 'Local':
     app.logger.setLevel(gunicorn_logger.level)
 
 # db conf
-if getenv('APP_ENV') == 'Scott':
-    import boto3
-    # scott's access token, don't do this
-    ec2 = boto3.client('ec2')
-    api_staging = ec2.describe_instances(
-        Filters=[
-            {
-                'Name': 'tag:Name',
-                'Values': [
-                    'api-staging',
-                ]
-            },
-        ]
-    )
-    db_ip = api_staging.get('Reservations')[0].get('Instances')[0].get('PublicIpAddress')
-    engine = create_engine(f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{db_ip}/backburner")
-else:
-    engine = create_engine(
-        f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{app.config['DB_HOST']}/backburner")
+engine = create_engine(
+    f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{app.config['DB_HOST']}/backburner")
 
 # database session and base
 DBSession = sessionmaker(bind=engine)
