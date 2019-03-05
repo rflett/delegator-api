@@ -1,29 +1,39 @@
 version: '3.7'
 services:
   # api:
-  #   build:
-  #     context: ../src
-  #     dockerfile: Dockerfile
-  #     args:
-  #       FLASK_ENV: development
-  #       APP_ENV: Docker
-  #   command: pipenv run flask run --host 0.0.0.0 --reload
-  #   ports:
-  #     - 5000:5000
-  # nginx:
-  #   build:
-  #     context: nginx/
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - 80:80
-  #     - 443:443
+    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest
+    # build:
+    #   context: ../src
+    #   dockerfile: Dockerfile
+    #   args:
+    #     FLASK_ENV: development
+    #     APP_ENV: Ci
+    # depends_on:
+    #   - postgres
+    #   - redis
+    # environment:
+    #   APP_ENV: Ci
+    # ports:
+    #   - 5000:5000
+
+  reporting-cruncher:
+    image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/reporting-cruncher:latest
+    depends_on:
+      - redis
+    environment:
+      APP_ENV: Ci
+    ports:
+      - 5005:5005
+
   postgres:
+    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
     build:
       context: ../../containers/postgres
       dockerfile: Dockerfile
     command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track='all'
     ports:
       - 5432:5432
+
   pg_hero:
     image: ankane/pghero:latest
     environment:
@@ -32,3 +42,8 @@ services:
       - 8080:8080
     depends_on:
       - postgres
+
+  redis:
+    image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/reporting-cache:latest
+    ports:
+      - 6379:6379

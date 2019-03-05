@@ -1,5 +1,6 @@
 import json
 import logging
+import redis
 import typing
 from contextlib import contextmanager
 from flask import Flask, Response
@@ -28,6 +29,9 @@ if getenv('APP_ENV', 'Local') != 'Local':
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers
     app.logger.setLevel(gunicorn_logger.level)
+
+# redis conf
+r_cache = redis.Redis(host=app.config['REDIS_HOST'], port=6379, db=0, charset="utf-8", decode_responses=True)
 
 # db conf
 engine = create_engine(
