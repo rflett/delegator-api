@@ -13,6 +13,8 @@ flake8:
   stage: lint
   allow_failure: true
   image: $GITLAB_REGISTRY/python:latest
+  only:
+    - develop
   script:
     - flake8 src/
 
@@ -46,8 +48,7 @@ build:
 integrationTest:
   stage: integrationTest
   image: $GITLAB_REGISTRY/docker:latest
-  only:
-    - master
+  when: manual
   allow_failure: true
   services:
     - docker:dind

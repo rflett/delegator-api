@@ -41,7 +41,7 @@ if __name__ == '__main__':
     # register a new task definition
     register_res = ecs.register_task_definition(
         family=args.service_name,
-        networkMode='bridge',
+        networkMode='host',
         containerDefinitions=json.load(open('deploy/container_definitions.json')),
         cpu='256',
         memory='384',
