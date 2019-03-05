@@ -12,13 +12,16 @@ class Config(object):
 
 class Ci(Config):
     DB_HOST = "postgres"
+    REDIS_HOST = "redis"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
 
 
 class Local(Config):
     DB_HOST = "localhost"
+    REDIS_HOST = "localhost"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
 
 
 class Staging(Config):
     DB_HOST = "127.0.0.1"
+    REDIS_HOST = "127.0.0.1"
