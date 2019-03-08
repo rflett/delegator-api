@@ -3,8 +3,26 @@ import boto3
 import json
 import random
 import string
+import typing
 
 ecs = boto3.client('ecs')
+sd = boto3.client('servicediscovery')
+
+# settings
+sd_namespace_id = 'ns-hbsymg3dzxrg2tsn'
+container_port = 5000
+desired_count = 1
+min_health_pc = 0
+max_health_pc = 200
+
+
+def get_sd_service_arn(service_name: str) -> typing.Optional[str]:
+    """ Return the service ARN for a SD service """
+    existing_services = sd.list_services().get('Services')
+    for existing_svc in existing_services:
+        if existing_svc.get('Name') == service_name:
+            return existing_svc.get('Arn')
+    return None
 
 
 def service_exists(service: str, env: str) -> bool:
@@ -43,19 +61,41 @@ if __name__ == '__main__':
         family=args.service_name,
         networkMode='host',
         containerDefinitions=json.load(open('deploy/container_definitions.json')),
-        cpu='256',
-        memory='384',
         tags=tags
     )
+
+    # service discovery
+    sd_service_name = f"{args.service_name}-{args.environment}"
+    sd_service_arn = get_sd_service_arn(sd_service_name)
+
+    if sd_service_arn is None:
+        # create sd service
+        sd.create_service(
+            Name=sd_service_name,
+            NamespaceId=sd_namespace_id,
+            Description=sd_service_name,
+            DnsConfig={
+                'NamespaceId': sd_namespace_id,
+                'RoutingPolicy': 'WEIGHTED',
+                'DnsRecords': [
+                    {
+                        'Type': 'A',
+                        'TTL': 60
+                    }
+                ]
+            }
+        )
+        # get new service id
+        sd_service_arn = get_sd_service_arn(sd_service_name)
 
     # common keyword args between create and update service functions
     common_service_kwargs = {
         'cluster': args.environment,
-        'desiredCount': 1,
+        'desiredCount': desired_count,
         'taskDefinition': args.service_name,
         'deploymentConfiguration': {
-            'maximumPercent': 200,
-            'minimumHealthyPercent': 0
+            'maximumPercent': max_health_pc,
+            'minimumHealthyPercent': min_health_pc
         }
     }
 
@@ -81,5 +121,13 @@ if __name__ == '__main__':
             schedulingStrategy='REPLICA',
             deploymentController={
                 'type': 'ECS'
-            }
+            },
+            serviceRegistries=[
+                {
+                    'registryArn': sd_service_arn,
+                    'port': container_port,
+                    'containerName': args.service_name,
+                    'containerPort': container_port
+                }
+            ]
         )
