@@ -2,8 +2,8 @@
     {
         "name": "api",
         "image": "008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest",
-        "memory": 384,
-        "memoryReservation": 256,
+        "memory": 512,
+        "memoryReservation": 64,
         "essential": true,
         "portMappings": [
             {
