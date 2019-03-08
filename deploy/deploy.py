@@ -32,7 +32,7 @@ def service_exists(service: str, env: str) -> bool:
         services=[service]
     )
     for _service in services.get('services'):
-        if _service.get('serviceName') == service:
+        if _service.get('status') == 'ACTIVE' and _service.get('serviceName') == service:
             return True
     return False
 
@@ -79,10 +79,13 @@ if __name__ == '__main__':
                 'RoutingPolicy': 'WEIGHTED',
                 'DnsRecords': [
                     {
-                        'Type': 'A',
-                        'TTL': 60
+                        'Type': 'SRV',
+                        'TTL': 10
                     }
                 ]
+            },
+            HealthCheckCustomConfig={
+                'FailureThreshold': 1
             }
         )
         # get new service id
@@ -125,7 +128,6 @@ if __name__ == '__main__':
             serviceRegistries=[
                 {
                     'registryArn': sd_service_arn,
-                    'port': container_port,
                     'containerName': args.service_name,
                     'containerPort': container_port
                 }
