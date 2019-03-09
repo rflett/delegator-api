@@ -35,7 +35,7 @@ r_cache = redis.Redis(host=app.config['REDIS_HOST'], port=6379, db=0, charset="u
 
 # db conf
 engine = create_engine(
-    f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{app.config['DB_HOST']}/backburner")
+    f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{app.config['DB_HOST']}:5432/backburner")
 
 # database session and base
 DBSession = sessionmaker(bind=engine)
