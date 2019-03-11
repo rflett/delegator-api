@@ -16,7 +16,6 @@ class TaskStatus(DBBase):
         self.status = status
         self.label = label
 
-
     def as_dict(self) -> dict:
         """
         :return: dict repr of a TaskStatus object

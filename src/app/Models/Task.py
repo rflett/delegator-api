@@ -1,7 +1,5 @@
 import datetime
-import typing
-from app import DBBase, session_scope
-from app.Controllers import TaskController
+from app import DBBase
 from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
 from sqlalchemy import Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship
@@ -24,7 +22,8 @@ class Task(DBBase):
     finished_at = Column('finished_at', DateTime())
 
     orgs = relationship("Organisation")
-    users = relationship("User")
+    assignees = relationship("User", foreign_keys=[assignee])
+    created_bys = relationship("User", foreign_keys=[created_by])
     task_statuses = relationship("TaskStatus")
     task_types = relationship("TaskType")
     task_priorities = relationship("TaskPriority")
@@ -54,14 +53,6 @@ class Task(DBBase):
         self.created_by = created_by
         self.created_at = created_at
         self.finished_at = finished_at
-
-    def assign(self, user: User) -> None:
-        """
-        Assigns the task to a user
-        :param user:
-        :return:
-        """
-        Task
 
     def as_dict(self) -> dict:
         """

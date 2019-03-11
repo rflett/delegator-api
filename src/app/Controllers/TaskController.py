@@ -33,18 +33,18 @@ class TaskController(object):
         :return:                True if the task status exists or false
         """
         with session_scope() as session:
-            ret = session.query(exists().where(TaskStatus.status == task_status).scalar())
+            ret = session.query(exists().where(TaskStatus.status == task_status)).scalar()
         return ret
 
     @staticmethod
-    def task_priority_exists(task_priority: str) -> bool:
+    def task_priority_exists(task_priority: int) -> bool:
         """
         Checks to see if a task type exists.
         :param task_priority:       The task priority
         :return:                    True if the task priority exists or false
         """
         with session_scope() as session:
-            ret = session.query(exists().where(TaskPriority.priority == task_priority).scalar())
+            ret = session.query(exists().where(TaskPriority.priority == task_priority)).scalar()
         return ret
 
     @staticmethod
@@ -134,7 +134,7 @@ class TaskController(object):
             request=request,
             operation=Operation.CREATE,
             resource=Resource.TASK_TYPE,
-            resource_org_id=valid_tt.org_id
+            resource_org_id=valid_tt.get('org_id')
         )
 
         if isinstance(req_user, Response):
@@ -142,8 +142,8 @@ class TaskController(object):
         elif isinstance(req_user, User):
             with session_scope() as session:
                 task_type = TaskType(
-                    type=valid_tt.type,
-                    org_id=valid_tt.org_id
+                    type=valid_tt.get('type'),
+                    org_id=valid_tt.get('org_id')
                 )
                 session.add(task_type)
             req_user.log(
@@ -161,26 +161,26 @@ class TaskController(object):
         :param request: The request
         :return:        A response
         """
-        def create_task(valid_task: Task, req_user: User) -> Response:
+        def create_task(valid_task: dict, req_user: User) -> Response:
             """
             Creates the task
-            :param valid_task:  The validated task object
+            :param valid_task:  The validated task dict
             :param req_user:    The user making the request
             :return:            Response
             """
             with session_scope() as session:
                 task = Task(
-                    org_id=valid_task.org_id,
-                    type=valid_task.task_type,
-                    description=valid_task.description,
-                    status=valid_task.status,
-                    time_estimate=valid_task.time_estimate,
-                    due_time=valid_task.due_time,
-                    assignee=valid_task.assignee,
-                    priority=valid_task.priority,
+                    org_id=valid_task.get('org_id'),
+                    type=valid_task.get('type'),
+                    description=valid_task.get('description'),
+                    status=valid_task.get('status'),
+                    time_estimate=valid_task.get('time_estimate'),
+                    due_time=valid_task.get('due_time'),
+                    assignee=valid_task.get('assignee'),
+                    priority=valid_task.get('priority'),
                     created_by=req_user.id,
-                    created_at=valid_task.created_at,
-                    finished_at=valid_task.finished_at
+                    created_at=valid_task.get('created_at'),
+                    finished_at=valid_task.get('finished_at')
                 )
                 session.add(task)
 
@@ -213,20 +213,25 @@ class TaskController(object):
             request=request,
             operation=Operation.CREATE,
             resource=Resource.TASK,
-            resource_org_id=valid_task.org_id
+            resource_org_id=valid_task.get('org_id')
         )
 
+        # no auth
         if isinstance(req_user, Response):
             return req_user
-        elif isinstance(req_user, User):
-            # optionally authorize assigning if an assignee was set
-            if valid_task.assignee is not None:
-                req_user = AuthController.authorize_request(
-                    request=request,
-                    operation=Operation.ASSIGN,
-                    resource=valid_task.org_id,
-                    resource_user_id=valid_task.assignee
-                )
-            if isinstance(req_user, Response):
-                return req_user
-            return create_task(valid_task, req_user=req_user)
+
+        # optionally authorize assigning if an assignee was set
+        if valid_task.get('assignee') is not None:
+            req_user = AuthController.authorize_request(
+                request=request,
+                operation=Operation.ASSIGN,
+                resource=Resource.TASK,
+                resource_org_id=valid_task.get('org_id'),
+                resource_user_id=valid_task.get('assignee')
+            )
+
+        # no auth
+        if isinstance(req_user, Response):
+            return req_user
+
+        return create_task(valid_task, req_user=req_user)

@@ -66,7 +66,7 @@ class OrganisationController(object):
         :return:                A response
         """
 
-        def create_org(valid_org: Organisation, req_user: User = None) -> Response:
+        def create_org(valid_org: dict, req_user: User = None) -> Response:
             """
             Creates the organisation
             :param valid_org:  The validated organisation object
@@ -75,17 +75,17 @@ class OrganisationController(object):
             """
             with session_scope() as session:
                 organisation = Organisation(
-                    name=valid_org.org_name
+                    name=valid_org.get('org_name')
                 )
                 session.add(organisation)
-                if isinstance(req_user, User):
-                    req_user.log(
-                        operation=Operation.CREATE,
-                        resource=Resource.ORGANISATION,
-                        resource_id=organisation.id
-                    )
-                logger.info(f"created organisation {organisation.as_dict()}")
-                return g_response("Successfully created the organisation", 201)
+            if isinstance(req_user, User):
+                req_user.log(
+                    operation=Operation.CREATE,
+                    resource=Resource.ORGANISATION,
+                    resource_id=organisation.id
+                )
+            logger.info(f"created organisation {organisation.as_dict()}")
+            return g_response("Successfully created the organisation", 201)
 
         request_body = request.get_json()
 
@@ -102,7 +102,7 @@ class OrganisationController(object):
                 request=request,
                 operation=Operation.CREATE,
                 resource=Resource.ORGANISATION,
-                resource_org_id=valid_org.org_id
+                resource_org_id=valid_org.get('org_id')
             )
             if isinstance(req_user, Response):
                 return req_user
