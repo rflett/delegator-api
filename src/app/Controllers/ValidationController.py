@@ -193,12 +193,13 @@ class ValidationController(object):
                 logger.info(f"Role {role_name} does not exist")
                 return g_response(f"Role {role_name} does not exist", 400)
         job_title = request_body.get('job_title')
-        if not isinstance(job_title, str):
-            logger.info(f"Bad job_title, expected str got {type(job_title)}.")
-            return g_response(f"Bad job_title, expected str got {type(job_title)}.", 400)
-        if len(job_title) == 0:
-            logger.info(f"job_title is required.")
-            return g_response(f"job_title is required.", 400)
+        if job_title is not None:
+            if not isinstance(job_title, str):
+                logger.info(f"Bad job_title, expected str got {type(job_title)}.")
+                return g_response(f"Bad job_title, expected str got {type(job_title)}.", 400)
+            if len(job_title) == 0:
+                logger.info(f"job_title is required.")
+                return g_response(f"job_title is required.", 400)
 
         return UserRequest(
             org_id=None if from_signup else org_id,

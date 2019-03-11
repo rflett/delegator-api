@@ -3,26 +3,13 @@ import boto3
 import json
 import random
 import string
-import typing
 
 ecs = boto3.client('ecs')
-sd = boto3.client('servicediscovery')
 
 # settings
-sd_namespace_id = 'ns-hbsymg3dzxrg2tsn'
-container_port = 5000
 desired_count = 1
 min_health_pc = 0
 max_health_pc = 200
-
-
-def get_sd_service_arn(service_name: str) -> typing.Optional[str]:
-    """ Return the service ARN for a SD service """
-    existing_services = sd.list_services().get('Services')
-    for existing_svc in existing_services:
-        if existing_svc.get('Name') == service_name:
-            return existing_svc.get('Arn')
-    return None
 
 
 def service_exists(service: str, env: str) -> bool:
@@ -32,7 +19,7 @@ def service_exists(service: str, env: str) -> bool:
         services=[service]
     )
     for _service in services.get('services'):
-        if _service.get('serviceName') == service:
+        if _service.get('status') == 'ACTIVE' and _service.get('serviceName') == service:
             return True
     return False
 
@@ -63,30 +50,6 @@ if __name__ == '__main__':
         containerDefinitions=json.load(open('deploy/container_definitions.json')),
         tags=tags
     )
-
-    # service discovery
-    sd_service_name = f"{args.service_name}-{args.environment}"
-    sd_service_arn = get_sd_service_arn(sd_service_name)
-
-    if sd_service_arn is None:
-        # create sd service
-        sd.create_service(
-            Name=sd_service_name,
-            NamespaceId=sd_namespace_id,
-            Description=sd_service_name,
-            DnsConfig={
-                'NamespaceId': sd_namespace_id,
-                'RoutingPolicy': 'WEIGHTED',
-                'DnsRecords': [
-                    {
-                        'Type': 'A',
-                        'TTL': 60
-                    }
-                ]
-            }
-        )
-        # get new service id
-        sd_service_arn = get_sd_service_arn(sd_service_name)
 
     # common keyword args between create and update service functions
     common_service_kwargs = {
@@ -121,13 +84,5 @@ if __name__ == '__main__':
             schedulingStrategy='REPLICA',
             deploymentController={
                 'type': 'ECS'
-            },
-            serviceRegistries=[
-                {
-                    'registryArn': sd_service_arn,
-                    'port': container_port,
-                    'containerName': args.service_name,
-                    'containerPort': container_port
-                }
-            ]
+            }
         )
