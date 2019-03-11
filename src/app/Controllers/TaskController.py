@@ -1,6 +1,7 @@
 import json
 from app import logger, session_scope, g_response, j_response
-from app.Models import TaskType
+from app.Controllers import AuthController
+from app.Models import TaskType, User, Task, TaskStatus, TaskPriority
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 from sqlalchemy import exists, and_
@@ -22,6 +23,28 @@ class TaskController(object):
                     TaskType.org_id == org_identifier
                 )
             )).scalar()
+        return ret
+
+    @staticmethod
+    def task_status_exists(task_status: str) -> bool:
+        """
+        Checks to see if a task type exists.
+        :param task_status:     The task status
+        :return:                True if the task status exists or false
+        """
+        with session_scope() as session:
+            ret = session.query(exists().where(TaskStatus.status == task_status).scalar())
+        return ret
+
+    @staticmethod
+    def task_priority_exists(task_priority: str) -> bool:
+        """
+        Checks to see if a task type exists.
+        :param task_priority:       The task priority
+        :return:                    True if the task priority exists or false
+        """
+        with session_scope() as session:
+            ret = session.query(exists().where(TaskPriority.priority == task_priority).scalar())
         return ret
 
     @staticmethod
