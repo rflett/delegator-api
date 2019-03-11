@@ -197,9 +197,9 @@ class ValidationController(object):
             if not isinstance(job_title, str):
                 logger.info(f"Bad job_title, expected str got {type(job_title)}.")
                 return g_response(f"Bad job_title, expected str got {type(job_title)}.", 400)
-            if len(job_title) == 0:
-                logger.info(f"job_title is required.")
-                return g_response(f"job_title is required.", 400)
+            if len(job_title.strip()) == 0:
+                logger.info(f"job_title length is 0.")
+                return g_response(f"job_title length is 0.", 400)
 
         return UserRequest(
             org_id=None if from_signup else org_id,
