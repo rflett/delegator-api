@@ -1,3 +1,5 @@
+import datetime
+import dateutil.parser
 import typing
 from app import logger, g_response
 from dataclasses import dataclass
@@ -357,4 +359,131 @@ class ValidationController(object):
 
         return OrgRequest(
             org_name=org_name
+        )
+
+    @staticmethod
+    def validate_create_task_request(request_body: dict) -> typing.Union[Response, dataclass]:
+        """
+        Validates a task request body
+        :param request_body:    The request body from the create task request
+        :return:                Response if the request body contains invalid values, or the TaskRequest dataclass
+        """
+        from app.Controllers import OrganisationController, TaskController, UserController
+
+        @dataclass
+        class TaskRequest:
+            """ A task request dataclass which represents the values in a create user request object """
+            org_id: int
+            type: int
+            description: str
+            status: str
+            time_estimate: int
+            due_time: datetime
+            assignee: int
+            priority: int
+
+        # check org
+        org_identifier = request_body.get('org_id', request_body.get('org_name'))
+        if isinstance(org_identifier, bool):
+            logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+            return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
+        if not isinstance(org_identifier, (int, str)):
+            logger.info(f"Bad org_id, expected int|str got {type(org_identifier)}.")
+            return g_response(f"Bad org_id, expected int|str got {type(org_identifier)}.", 400)
+        # check that org exists
+        if not OrganisationController.org_exists(org_identifier):
+            logger.info(f"org {org_identifier} doesn't exist")
+            return g_response(f"Org does not exist", 400)
+        # get org_id
+        if isinstance(org_identifier, str):
+            org_id = OrganisationController.get_org_by_name(org_identifier).id
+        elif isinstance(org_identifier, int):
+            org_id = org_identifier
+        else:
+            # should never be here??
+            logger.info("Expected org_id to be set but it isn't.")
+            return g_response(f"Expected org_id to be set but it isn't.", 400)
+        # check type
+        task_type = request_body.get('type')
+        if isinstance(task_type, bool):
+            logger.info(f"Bad task_type, expected int got {type(task_type)}.")
+            return g_response(f"Bad task_type, expected int got {type(task_type)}.", 400)
+        if not isinstance(task_type, (int, str)):
+            logger.info(f"Bad task_type, expected int got {type(task_type)}.")
+            return g_response(f"Bad task_type, expected int got {type(task_type)}.", 400)
+        # check task type exists
+        if not TaskController.task_type_exists(task_type, org_id):
+            logger.info(f"task type {task_type} does not exist")
+            return g_response(f"Task type does not exist", 400)
+        # check description
+        description = request_body.get('description')
+        if description is not None:
+            if not isinstance(description, str):
+                logger.info(f"Bad description, expected str got {type(description)}.")
+                return g_response(f"Bad description, expected str got {type(description)}.", 400)
+            if len(description.strip()) == 0:
+                logger.info(f"description length is 0")
+                return g_response(f"description length is 0.", 400)
+        # check status
+        status = request_body.get('type')
+        if not isinstance(status, str):
+            logger.info(f"Bad status, expected str got {type(status)}.")
+            return g_response(f"Bad status, expected str got {type(status)}.", 400)
+        if len(status.strip()) == 0:
+            logger.info(f"status length is 0")
+            return g_response(f"status length is 0.", 400)
+        if not TaskController.task_status_exists(status):
+            logger.info(f"task status {status} does not exist")
+            return g_response(f"Task status does not exist", 400)
+        # check estimate
+        estimate = request_body.get('estimate')
+        if estimate is not None:
+            if not isinstance(estimate, int):
+                logger.info(f"Bad estimate, expected int got {type(estimate)}.")
+                return g_response(f"Bad estimate, expected int got {type(estimate)}.", 400)
+            if estimate < 0:
+                logger.info(f"Estimate must be positive.")
+                return g_response(f"Estimate must be positive.", 400)
+        # check due time
+        due_time_str = request_body.get('due_time')
+        if due_time_str is not None:
+            try:
+                due_time = dateutil.parser.parse(due_time_str)
+            except ValueError as e:
+                logger.error(str(e))
+                return g_response(f'Could not parse due_time to date.')
+            finally:
+                due_time = None
+        else:
+            due_time = None
+        # check assignee
+        assignee = request_body.get('assignee')
+        if assignee is not None:
+            if not isinstance(assignee, int):
+                logger.info(f"Bad assignee, expected int got {type(assignee)}.")
+                return g_response(f"Bad assignee, expected int got {type(assignee)}.", 400)
+            if not UserController.user_exists(assignee):
+                logger.info(f"Assignee {assignee} does not exist")
+                return g_response(f"Assignee does not exist", 400)
+        # check priority
+        priority = request_body.get('priority')
+        if isinstance(priority, bool):
+            logger.info(f"Bad priority, expected int got {type(priority)}.")
+            return g_response(f"Bad priority, expected int got {type(priority)}.", 400)
+        if not isinstance(priority, (int, str)):
+            logger.info(f"Bad priority, expected int got {type(priority)}.")
+            return g_response(f"Bad priority, expected int got {type(priority)}.", 400)
+        if not TaskController.task_priority_exists(priority):
+                logger.info(f"Priority {priority} does not exist")
+                return g_response(f"Priority does not exist", 400)
+
+        return TaskRequest(
+            org_id=org_id,
+            type=task_type,
+            description=description,
+            status=status,
+            time_estimate=estimate,
+            due_time=due_time,
+            assignee=assignee,
+            priority=priority
         )
