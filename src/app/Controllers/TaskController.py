@@ -1,3 +1,4 @@
+import datetime
 import json
 import typing
 from app import logger, session_scope, g_response, j_response
@@ -6,6 +7,50 @@ from app.Models import TaskType, User, Task, TaskStatus, TaskPriority
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 from sqlalchemy import exists, and_
+from sqlalchemy.orm import aliased
+
+
+def _make_task_dict(
+    t: Task,
+    ta: typing.Optional[User],
+    tcb: User,
+    ts: TaskStatus,
+    tt: TaskType,
+    tp: TaskPriority
+) -> dict:
+    """
+    Creates a nice dict of a task
+    :param t:   The task
+    :param ta:  The task assignee
+    :param tcb: The task created by
+    :param ts:  The task status
+    :param tt:  The task type
+    :param tp:  The task priority
+    :return:    A dict
+    """
+    extras = {
+        'assignee': ta.as_dict() if ta is not None else None,
+        'created_by': tcb.as_dict(),
+        'status': ts.as_dict(),
+        'type': tt.as_dict(),
+        'priority': tp.as_dict()
+    }
+
+    task_dict = t.as_dict()
+
+    # remove extras from base task
+    for k in extras:
+        task_dict.pop(k)
+
+    # convert datetimes to str
+    for k, v in task_dict.items():
+        if isinstance(v, datetime.datetime):
+            task_dict[k] = v.strftime("%Y-%m-%dT%H:%M:%S%z")
+
+    return dict(sorted({
+        **task_dict,
+        **extras
+    }.items()))
 
 
 class TaskController(object):
@@ -329,3 +374,41 @@ class TaskController(object):
 
         logger.info(f"updated task {task_to_update.as_dict()}")
         return g_response(status=204)
+
+    @staticmethod
+    def task_get_all(request: request) -> Response:
+        """
+        Get all users
+        :param request:     The request object
+        :return:
+        """
+        from app.Controllers import AuthController
+        from app.Models import Task
+
+        req_user = AuthController.authorize_request(
+            request=request,
+            operation=Operation.GET,
+            resource=Resource.TASK
+        )
+
+        # no auth
+        if isinstance(req_user, Response):
+            return req_user
+
+        with session_scope() as session:
+            task_assignee, task_created_by = aliased(User), aliased(User)
+
+            tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority)\
+                .outerjoin(task_assignee, task_assignee.id == Task.assignee)\
+                .join(task_created_by, task_created_by.id == Task.created_by)\
+                .join(Task.created_bys)\
+                .join(Task.task_statuses)\
+                .join(Task.task_types)\
+                .join(Task.task_priorities)\
+                .filter(Task.org_id == req_user.org_id)\
+                .all()
+
+        tasks = [_make_task_dict(t, ta, tcb, ts, tt, tp) for t, ta, tcb, ts, tt, tp in tasks_qry]
+
+        logger.info(f"retrieved {len(tasks)} users: {json.dumps(tasks)}")
+        return j_response(tasks)
