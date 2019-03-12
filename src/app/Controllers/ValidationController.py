@@ -136,6 +136,25 @@ def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None,
     return job_title
 
 
+def _check_task_id(task_id: int) -> Response:
+    """
+    Check user
+    :param task_id:      The task identifier
+    :return:                The task identifier or a response
+    """
+    from app.Controllers import TaskController
+    if isinstance(task_id, bool):
+        logger.info(f"Bad task id, expected int got {type(task_id)}.")
+        return g_response(f"Bad task id, expected int got {type(task_id)}.", 400)
+    if not isinstance(task_id, int):
+        logger.info(f"Bad task id, expected int got {type(task_id)}.")
+        return g_response(f"Bad task id, expected int got {type(task_id)}.", 400)
+    if not TaskController.task_exists(task_id):
+        logger.info(f"task {task_id} doesn't exist")
+        return g_response(f"task does not exist", 400)
+    return task_id
+
+
 def _check_task_type(
         task_type_id: int,
         org_id: int,
@@ -469,6 +488,40 @@ class ValidationController(object):
         :param request_body:    The request body from the create task request
         :return:                Response if the request body contains invalid values, or the TaskRequest dataclass
         """
+        org_id = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
+        if isinstance(org_id, Response):
+            return org_id
+
+        ret = {
+            'org_id': org_id,
+            'type': _check_task_type(task_type_id=request_body.get('type_id'), org_id=org_id, should_exist=True),
+            'description': _check_task_description(request_body.get('description')),
+            'status': _check_task_status(request_body.get('status'), should_exist=True),
+            'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
+            'due_time': _check_task_due_time(request_body.get('due_time')),
+            'assignee': _check_task_assignee(request_body.get('assignee')),
+            'priority': _check_task_priority(request_body.get('priority'))
+        }
+
+        # return a response if any ret values are response objects
+        for k, v in ret.items():
+            if isinstance(v, Response):
+                return v
+
+        return ret
+
+    @staticmethod
+    def validate_update_task_request(task_id: int, request_body: dict) -> typing.Union[Response, dict]:
+        """
+        Validates a user request body
+        :param task_id:         The task id
+        :param request_body:    The request body from the update user request
+        :return:                Response if the request body contains invalid values, or the UserRequest dataclass
+        """
+        check_task = _check_task_id(task_id)
+        if isinstance(check_task, Response):
+            return check_task
+
         org_id = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
         if isinstance(org_id, Response):
             return org_id

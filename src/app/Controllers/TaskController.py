@@ -10,6 +10,32 @@ from sqlalchemy import exists, and_
 
 class TaskController(object):
     @staticmethod
+    def get_task_by_id(task_id: int) -> Task:
+        """
+        Gets a task by its id
+        :param task_id:         The tasks's id
+        :raises ValueError:     If the task doesn't exist.
+        :return:                The Task
+        """
+        with session_scope() as session:
+            ret = session.query(Task).filter(Task.id == task_id).first()
+        if ret is None:
+            logger.info(f"Task with id {task_id} does not exist.")
+            raise ValueError(f"Task with id {task_id} does not exist.")
+        else:
+            return ret
+
+    @staticmethod
+    def task_exists(task_id: int) -> bool:
+        """
+        Checks to see if a task type exists.
+        :param task_id:       The task id or type
+        :return:              True if the task type exists or false
+        """
+        with session_scope() as session:
+            return session.query(exists().where(Task.id == task_id)).scalar()
+
+    @staticmethod
     def task_type_exists(task_type_identifier: typing.Union[str, int], org_identifier: int) -> bool:
         """
         Checks to see if a task type exists.
@@ -225,7 +251,6 @@ class TaskController(object):
             resource=Resource.TASK,
             resource_org_id=valid_task.get('org_id')
         )
-
         # no auth
         if isinstance(req_user, Response):
             return req_user
@@ -239,9 +264,68 @@ class TaskController(object):
                 resource_org_id=valid_task.get('org_id'),
                 resource_user_id=valid_task.get('assignee')
             )
+            # no auth
+            if isinstance(req_user, Response):
+                return req_user
 
+        return create_task(valid_task, req_user=req_user)
+
+    @staticmethod
+    def task_update(task_id: int, request: request) -> Response:
+        """
+        Updates a task. Requires the full task object in the request.
+        :param task_id: The task ID
+        :param request:
+        :return:
+        """
+        from app.Controllers import ValidationController, TaskController
+        request_body = request.get_json()
+
+        try:
+            task_id = int(task_id)
+        except ValueError:
+            return g_response(f"cannot cast `{task_id}` to int", 400)
+
+        valid_task = ValidationController.validate_update_task_request(task_id, request_body)
+
+        if isinstance(valid_task, Response):
+            return valid_task
+
+        req_user = AuthController.authorize_request(
+            request=request,
+            operation=Operation.UPDATE,
+            resource=Resource.TASK,
+            resource_org_id=valid_task.get('org_id'),
+        )
         # no auth
         if isinstance(req_user, Response):
             return req_user
 
-        return create_task(valid_task, req_user=req_user)
+        # optionally authorize assigning if an assignee was set
+        if valid_task.get('assignee') is not None:
+            req_user = AuthController.authorize_request(
+                request=request,
+                operation=Operation.ASSIGN,
+                resource=Resource.TASK,
+                resource_org_id=valid_task.get('org_id'),
+                resource_user_id=valid_task.get('assignee')
+            )
+            # no auth
+            if isinstance(req_user, Response):
+                return req_user
+
+        # update the task
+        task_to_update = TaskController.get_task_by_id(task_id)
+
+        with session_scope():
+            for k, v in valid_task.items():
+                task_to_update.__setattr__(k, v)
+
+            req_user.log(
+                operation=Operation.UPDATE,
+                resource=Resource.TASK,
+                resource_id=task_id
+            )
+
+        logger.info(f"updated task {task_to_update.as_dict()}")
+        return g_response(status=204)

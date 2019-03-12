@@ -127,6 +127,12 @@ def create_task():
     return TaskController.task_create(request)
 
 
+@app.route('/task/<task_id>', methods=['PUT'])
+@requires_jwt
+def update_task(task_id):
+    return TaskController.task_update(task_id, request)
+
+
 @app.route('/reporting/all', methods=['GET'])
 @requires_jwt
 def get_all_reports():
