@@ -121,6 +121,12 @@ def create_task_types():
     return TaskController.create_task_types(request)
 
 
+@app.route('/tasks', methods=['POST'])
+@requires_jwt
+def create_task():
+    return TaskController.task_create(request)
+
+
 @app.route('/reporting/all', methods=['GET'])
 @requires_jwt
 def get_all_reports():

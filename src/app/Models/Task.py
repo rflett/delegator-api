@@ -14,14 +14,16 @@ class Task(DBBase):
     description = Column('description', String())
     status = Column('status', String(), ForeignKey('task_statuses.status'))
     time_estimate = Column('time_estimate', Integer(), default=0)
-    assignee = Column('assignee', Integer(), ForeignKey('users.id'))
+    due_time = Column('due_time', DateTime())
+    assignee = Column('assignee', Integer(), ForeignKey('users.id'), default=None)
     priority = Column('priority', Integer(), ForeignKey('task_priorities.priority'), default=1)
     created_by = Column('created_by', Integer(), ForeignKey('users.id'))
     created_at = Column('created_at', DateTime(), default=datetime.datetime.utcnow)
     finished_at = Column('finished_at', DateTime())
 
     orgs = relationship("Organisation")
-    users = relationship("User")
+    assignees = relationship("User", foreign_keys=[assignee])
+    created_bys = relationship("User", foreign_keys=[created_by])
     task_statuses = relationship("TaskStatus")
     task_types = relationship("TaskType")
     task_priorities = relationship("TaskPriority")
@@ -33,6 +35,7 @@ class Task(DBBase):
         description: str,
         status: str,
         time_estimate: int,
+        due_time: datetime,
         assignee: int,
         priority: int,
         created_by: int,
@@ -44,6 +47,7 @@ class Task(DBBase):
         self.description = description
         self.status = status
         self.time_estimate = time_estimate
+        self.due_time = due_time
         self.assignee = assignee
         self.priority = priority
         self.created_by = created_by
@@ -60,6 +64,7 @@ class Task(DBBase):
             "description": self.description,
             "status": self.status,
             "time_estimate": self.time_estimate,
+            "due_time": self.due_time,
             "assignee": self.assignee,
             "priority": self.priority,
             "created_by": self.created_by,

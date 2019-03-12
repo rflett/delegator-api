@@ -6,7 +6,7 @@ from app.Models.TaskStatus import TaskStatus
 from app.Models.TaskType import TaskType
 from app.Models.User import User
 from app.Models.ActiveUser import ActiveUser
-
+from app.Models.Task import Task
 
 __all__ = [
     BlacklistedToken,
@@ -16,5 +16,6 @@ __all__ = [
     TaskStatus,
     TaskType,
     User,
-    ActiveUser
+    ActiveUser,
+    Task
 ]

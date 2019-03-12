@@ -7,6 +7,7 @@ CREATE = 'CREATE'
 DELETE = 'DELETE'
 UPDATE = 'UPDATE'
 GET = 'GET'
+ASSIGN = 'ASSIGN'
 
 
 class Operation(DBBase):

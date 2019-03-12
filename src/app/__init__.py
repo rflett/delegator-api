@@ -31,7 +31,7 @@ if getenv('APP_ENV', 'Local') != 'Local':
     app.logger.setLevel(gunicorn_logger.level)
 
 # redis conf
-r_cache = redis.Redis(host=app.config['REDIS_HOST'], port=6379, db=0, charset="utf-8", decode_responses=True)
+r_cache = redis.Redis(host=app.config['R_CACHE_HOST'], port=6379, db=0, charset="utf-8", decode_responses=True)
 
 # db conf
 engine = create_engine(

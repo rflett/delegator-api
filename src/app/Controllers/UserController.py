@@ -133,22 +133,22 @@ class UserController(object):
         :param require_auth:    If request needs to have authorization (e.g. not if signing up)
         :return:                Response
         """
-        def create_user(valid_user: User, req_user: User = None) -> Response:
+        def create_user(valid_user: dict, req_user: User = None) -> Response:
             """
             Creates the user
-            :param valid_user:  The validated user object
+            :param valid_user:  The validated user dict
             :param req_user:    The user making the request, if it was an authenticated request.
             :return:            Response
             """
             with session_scope() as session:
                 user = User(
-                    org_id=valid_user.org_id,
-                    email=valid_user.email,
-                    first_name=valid_user.first_name,
-                    last_name=valid_user.last_name,
-                    password=valid_user.password,
-                    role=valid_user.role_name,
-                    job_title=valid_user.job_title
+                    org_id=valid_user.get('org_id'),
+                    email=valid_user.get('email'),
+                    first_name=valid_user.get('first_name'),
+                    last_name=valid_user.get('last_name'),
+                    password=valid_user.get('password'),
+                    role=valid_user.get('role'),
+                    job_title=valid_user.get('job_title')
                 )
                 session.add(user)
             if req_user is not None:
@@ -182,7 +182,7 @@ class UserController(object):
                 request=request,
                 operation=Operation.CREATE,
                 resource=Resource.USER,
-                resource_org_id=valid_user.org_id
+                resource_org_id=valid_user.get('org_id')
             )
             if isinstance(req_user, Response):
                 return req_user
@@ -218,7 +218,7 @@ class UserController(object):
                 request=request,
                 operation=Operation.UPDATE,
                 resource=Resource.USER,
-                resource_org_id=valid_user.org_id,
+                resource_org_id=valid_user.get('org_id'),
                 resource_user_id=user_id
             )
             if isinstance(req_user, Response):
@@ -227,8 +227,8 @@ class UserController(object):
                 user_to_update = UserController.get_user_by_id(user_id)
 
                 with session_scope():
-                    for prop, val in valid_user:
-                        user_to_update.__setattr__(prop, val)
+                    for k, v in valid_user.items():
+                        user_to_update.__setattr__(k, v)
 
                 req_user.log(
                     operation=Operation.UPDATE,
