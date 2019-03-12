@@ -137,10 +137,43 @@ def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None,
 
 
 def _check_task_type(
+        task_type_id: int,
+        org_id: int,
+        should_exist: typing.Optional[bool] = None
+) -> typing.Union[int, Response]:
+    """
+    Check user
+    :param task_type_id:       The task type identifier
+    :param should_exist:    Whether to check if it exists or not
+    :return:                The user identifier or a response
+    """
+    from app.Controllers import TaskController
+    if isinstance(task_type_id, bool):
+        logger.info(f"Bad task_type, expected int got {type(task_type_id)}.")
+        return g_response(f"Bad task_type, expected int got {type(task_type_id)}.", 400)
+    if not isinstance(task_type_id, int):
+        logger.info(f"Bad task_type, expected int got {type(task_type_id)}.")
+        return g_response(f"Bad task_type, expected int got {type(task_type_id)}.", 400)
+
+    # optionally check if it exists or not
+    if should_exist is not None:
+        task_exists = TaskController.task_type_exists(task_type_id, org_id)
+        if should_exist:
+            if not task_exists:
+                logger.info(f"task type id {task_type_id} in org {org_id} doesn't exist")
+                return g_response(f"task type does not exist", 400)
+        elif not should_exist:
+            if task_exists:
+                logger.info(f"task type id {task_type_id} in org {org_id} already exists")
+                return g_response("task type already exists", 400)
+    return task_type_id
+
+
+def _check_task_type_name(
         task_type: str,
         org_id: int,
         should_exist: typing.Optional[bool] = None
-) -> typing.Union[str, Response]:
+) -> typing.Union[str, int, Response]:
     """
     Check user
     :param task_type:       The task type identifier
@@ -151,21 +184,18 @@ def _check_task_type(
     if not isinstance(task_type, str):
         logger.info(f"Bad task_type, expected str got {type(task_type)}.")
         return g_response(f"Bad task_type, expected str got {type(task_type)}.", 400)
-    if len(task_type.strip()) == 0:
-        logger.info(f"status length is 0")
-        return g_response(f"status length is 0.", 400)
 
     # optionally check if it exists or not
     if should_exist is not None:
         task_exists = TaskController.task_type_exists(task_type, org_id)
         if should_exist:
             if not task_exists:
-                logger.info(f"task {task_type} doesn't exist")
-                return g_response(f"task does not exist", 400)
+                logger.info(f"task type id {task_type} in org {org_id} doesn't exist")
+                return g_response(f"task type does not exist", 400)
         elif not should_exist:
             if task_exists:
-                logger.info(f"task {task_type} already exists")
-                return g_response("task already exists", 400)
+                logger.info(f"task type id {task_type} in org {org_id} already exists")
+                return g_response("task type already exists", 400)
     return task_type
 
 
@@ -192,12 +222,12 @@ def _check_task_status(
         task_exists = TaskController.task_status_exists(task_status)
         if should_exist:
             if not task_exists:
-                logger.info(f"task {task_status} doesn't exist")
-                return g_response(f"task does not exist", 400)
+                logger.info(f"task status {task_status} doesn't exist")
+                return g_response(f"task status {task_status} does not exist", 400)
         elif not should_exist:
             if task_exists:
-                logger.info(f"task {task_status} already exists")
-                return g_response("task already exists", 400)
+                logger.info(f"task status {task_status} already exists")
+                return g_response(f"task status {task_status} already exists", 400)
     return task_status.strip()
 
 
@@ -213,25 +243,29 @@ def _check_task_description(description: typing.Optional[str]) -> typing.Union[N
     return description
 
 
-def _check_task_estimate(estimate: typing.Optional[int]) -> typing.Union[None, int, Response]:
-    if estimate is not None:
-        if not isinstance(estimate, int):
-            logger.info(f"Bad estimate, expected int got {type(estimate)}.")
-            return g_response(f"Bad estimate, expected int got {type(estimate)}.", 400)
-        if estimate < 0:
+def _check_task_estimate(time_estimate: typing.Optional[int]) -> typing.Union[None, int, Response]:
+    if time_estimate is not None:
+        if not isinstance(time_estimate, int):
+            logger.info(f"Bad estimate, expected int got {type(time_estimate)}.")
+            return g_response(f"Bad estimate, expected int got {type(time_estimate)}.", 400)
+        if time_estimate < 0:
             logger.info(f"Estimate must be positive.")
             return g_response(f"Estimate must be positive.", 400)
-    return estimate
+    return time_estimate
 
 
 def _check_task_due_time(due_time: typing.Optional[int]) -> typing.Union[None, datetime.datetime, Response]:
     if due_time is not None:
         try:
             due_time_parsed = dateutil.parser.parse(due_time)
+            # check due time is not in the past
+            if due_time_parsed < datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc):
+                logger.info(f"due_time is in the past")
+                return g_response("Due time is in the past.", 400)
             return due_time_parsed
         except ValueError as e:
             logger.error(str(e))
-            return g_response(f'Could not parse due_time to date.')
+            return g_response(f'Could not parse due_time to date.', 400)
     return None
 
 
@@ -305,7 +339,7 @@ class ValidationController(object):
         if isinstance(org_id, Response):
             return org_id
 
-        task_type = _check_task_type(request_body.get('type'), org_id)
+        task_type = _check_task_type_name(request_body.get('type'), org_id, should_exist=False)
         if isinstance(task_type, Response):
             return task_type
 
@@ -441,10 +475,10 @@ class ValidationController(object):
 
         ret = {
             'org_id': org_id,
-            'type': _check_task_type(task_type=request_body.get('type'), org_id=org_id, should_exist=True),
+            'type': _check_task_type(task_type_id=request_body.get('type_id'), org_id=org_id, should_exist=True),
             'description': _check_task_description(request_body.get('description')),
             'status': _check_task_status(request_body.get('status'), should_exist=True),
-            'estimate': _check_task_estimate(request_body.get('estimate')),
+            'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
             'due_time': _check_task_due_time(request_body.get('due_time')),
             'assignee': _check_task_assignee(request_body.get('assignee')),
             'priority': _check_task_priority(request_body.get('priority'))

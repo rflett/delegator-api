@@ -159,7 +159,7 @@ class AuthController(object):
             return auth_user
         else:
             # mark user as active
-            from app.Controllers import ActiveUserController
+            from app.Controllers import ActiveUserController, UserController
             ActiveUserController.user_is_active(auth_user)
 
             # deal with permissions
@@ -192,6 +192,17 @@ class AuthController(object):
                         if resource_org_id is not None:
                             # check org id matches
                             if auth_user.org_id == resource_org_id:
+                                # optionally check resource_user_id is in same org
+                                if resource_user_id is not None:
+                                    resource_user = UserController.get_user_by_id(resource_user_id)
+                                    if auth_user.org_id != resource_user.org_id:
+                                        logger.info(f"No permissions to {operation} {resource}, "
+                                                    f"because {auth_user.org_id} != {resource_user.org_id} "
+                                                    f"however, {auth_user.org_id} == {resource_org_id}")
+                                        return g_response(f"No permissions to {operation} {resource}, "
+                                                          f"because user {auth_user.id} is not "
+                                                          f"in the same org as the {resource_user_id}", 403)
+
                                 logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
                                             f"and can {operation} {resource}")
                                 return auth_user

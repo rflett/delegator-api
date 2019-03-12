@@ -1,4 +1,5 @@
 import json
+import typing
 from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
 from app.Models import TaskType, User, Task, TaskStatus, TaskPriority
@@ -9,21 +10,30 @@ from sqlalchemy import exists, and_
 
 class TaskController(object):
     @staticmethod
-    def task_type_exists(task_type: str, org_identifier: int) -> bool:
+    def task_type_exists(task_type_identifier: typing.Union[str, int], org_identifier: int) -> bool:
         """
         Checks to see if a task type exists.
-        :param task_type:       The task type
+        :param task_type_identifier:       The task id or type
         :param org_identifier:  The org id
         :return:                True if the task type exists or false
         """
         with session_scope() as session:
-            ret = session.query(exists().where(
-                and_(
-                    TaskType.type == task_type,
-                    TaskType.org_id == org_identifier
-                )
-            )).scalar()
-        return ret
+            if isinstance(task_type_identifier, int):
+                logger.info(f"task type identifer is an int so finding by id")
+                return session.query(exists().where(
+                    and_(
+                        TaskType.id == task_type_identifier,
+                        TaskType.org_id == org_identifier
+                    )
+                )).scalar()
+            elif isinstance(task_type_identifier, str):
+                logger.info(f"task type identifer is a str so finding by type")
+                return session.query(exists().where(
+                    and_(
+                        TaskType.type == task_type_identifier,
+                        TaskType.org_id == org_identifier
+                    )
+                )).scalar()
 
     @staticmethod
     def task_status_exists(task_status: str) -> bool:
