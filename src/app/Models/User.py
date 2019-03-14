@@ -3,9 +3,8 @@ import datetime
 import hashlib
 import os
 import typing
-from app import DBBase, session_scope
+from app import DBBase
 from app.Controllers.RBAC.RoleController import RoleController
-from app.Models import ActiveUser
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
