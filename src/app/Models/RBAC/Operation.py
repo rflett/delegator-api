@@ -8,6 +8,7 @@ DELETE = 'DELETE'
 UPDATE = 'UPDATE'
 GET = 'GET'
 ASSIGN = 'ASSIGN'
+DROP = 'DROP'
 
 
 class Operation(DBBase):

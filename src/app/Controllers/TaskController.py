@@ -4,6 +4,7 @@ import typing
 from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
 from app.Models import TaskType, User, Task, TaskStatus, TaskPriority
+from app.Models.Enums import TaskStatuses
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 from sqlalchemy import exists, and_
@@ -54,6 +55,21 @@ def _make_task_dict(
 
 
 class TaskController(object):
+    @staticmethod
+    def get_assignee(task_id: int) -> typing.Union[None, int]:
+        """
+        Gets the assignee for a task
+        :param task_id:     The id of the task
+        :return:            The assignee's user id, or None
+        """
+        with session_scope() as session:
+            ret = session.query(Task.assignee).filter(Task.id == task_id).first()
+        if ret is None:
+            logger.info(f"No-one is assigned to task with id {task_id}")
+            raise ValueError(f"No-one is assigned to task with id {task_id}")
+        else:
+            return ret
+
     @staticmethod
     def get_task_by_id(task_id: int) -> Task:
         """
@@ -444,5 +460,40 @@ class TaskController(object):
 
         with session_scope():
             task_to_assign.assignee = valid_assignment.get('assignee')
+
+        return g_response(status=204)
+
+    @staticmethod
+    def drop_task(request: request) -> Response:
+        """
+        Assigns a user to task
+        :param request:
+        :return:
+        """
+        from app.Controllers import ValidationController, TaskController
+        request_body = request.get_json()
+
+        valid_task_drop = ValidationController.validate_drop_task(request_body)
+
+        # invalid
+        if isinstance(valid_task_drop, Response):
+            return valid_task_drop
+
+        req_user = AuthController.authorize_request(
+            request=request,
+            operation=Operation.DROP,
+            resource=Resource.TASK,
+            resource_org_id=valid_task_drop.get('org_id'),
+            resource_user_id=valid_task_drop.get('assignee')
+        )
+
+        if isinstance(req_user, Response):
+            return req_user
+
+        task_to_drop = TaskController.get_task_by_id(valid_task_drop.get('task_id'))
+
+        with session_scope():
+            task_to_drop.assignee = None
+            task_to_drop.status = TaskStatuses.READY
 
         return g_response(status=204)

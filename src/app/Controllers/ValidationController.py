@@ -563,3 +563,32 @@ class ValidationController(object):
                 return v
 
         return ret
+
+    @staticmethod
+    def validate_drop_task(request_body: dict) -> typing.Union[Response, dict]:
+        """
+        Validates the assign task request
+        :param request_body:    The request body from the update task request
+        :return:                Response if invalid, else a complex dict
+        """
+        from app.Controllers import TaskController
+
+        org_id = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
+        if isinstance(org_id, Response):
+            return org_id
+
+        task_id = _check_task_id(request_body.get('task_id'))
+        if isinstance(task_id, Response):
+            return task_id
+
+        try:
+            assignee = TaskController.get_assignee(task_id)
+        except ValueError as e:
+            logger.warning(str(e))
+            return g_response("Can't drop task because it is not assigned to anyone.")
+
+        return {
+            'org_id': org_id,
+            'task_id': task_id,
+            'assignee': assignee
+        }

@@ -59,6 +59,7 @@ class Task(DBBase):
         :return: dict repr of a Task object
         """
         return {
+            "id": self.id,
             "org_id": self.org_id,
             "type": self.type,
             "description": self.description,

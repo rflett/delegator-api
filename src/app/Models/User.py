@@ -156,20 +156,6 @@ class User(DBBase):
         """
         self.password = _hash_password(password)
 
-    def is_active(self) -> None:
-        """
-        Sets user as active in the active user table
-        :return: None
-        """
-        with session_scope() as session:
-            active_user = ActiveUser(
-                user_id=self.id,
-                first_name=self.first_name,
-                last_name=self.last_name,
-                last_active=datetime.datetime.utcnow()
-            )
-            session.add(active_user)
-
     def as_dict(self) -> dict:
         """
         :return: The dict repr of a User object

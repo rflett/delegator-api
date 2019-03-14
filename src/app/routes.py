@@ -145,6 +145,12 @@ def assign_task():
     return TaskController.assign_task(request)
 
 
+@app.route('/task/drop', methods=['POST'])
+@requires_jwt
+def drop_task():
+    return TaskController.drop_task(request)
+
+
 @app.route('/reporting/all', methods=['GET'])
 @requires_jwt
 def get_all_reports():
