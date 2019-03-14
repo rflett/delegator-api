@@ -568,21 +568,21 @@ class ValidationController(object):
         return ret
 
     @staticmethod
-    def validate_drop_task(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_drop_task(task_id: int) -> typing.Union[Response, dict]:
         """
         Validates the assign task request
-        :param request_body:    The request body from the update task request
-        :return:                Response if invalid, else a complex dict
+        :param task_id:    The id of the task to drop
+        :return:           Response if invalid, else a complex dict
         """
         from app.Controllers import TaskController
 
-        org_id = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
-        if isinstance(org_id, Response):
-            return org_id
-
-        task_id = _check_task_id(request_body.get('task_id'))
+        task_id = _check_task_id(task_id)
         if isinstance(task_id, Response):
             return task_id
+
+        org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
+        if isinstance(org_id, Response):
+            return org_id
 
         try:
             assignee = TaskController.get_assignee(task_id)

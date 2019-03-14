@@ -63,12 +63,12 @@ class TaskController(object):
         :return:            The assignee's user id, or None
         """
         with session_scope() as session:
-            ret = session.query(Task.assignee).filter(Task.id == task_id).first()
+            ret = session.query(Task).filter(Task.id == task_id).first()
         if ret is None:
             logger.info(f"No-one is assigned to task with id {task_id}")
             raise ValueError(f"No-one is assigned to task with id {task_id}")
         else:
-            return ret
+            return ret.assignee
 
     @staticmethod
     def get_task_by_id(task_id: int) -> Task:
@@ -464,23 +464,27 @@ class TaskController(object):
         return g_response(status=204)
 
     @staticmethod
-    def drop_task(request: request) -> Response:
+    def drop_task(task_id, _request: request) -> Response:
         """
         Assigns a user to task
-        :param request:
+        :param _request:
         :return:
         """
         from app.Controllers import ValidationController, TaskController
-        request_body = request.get_json()
 
-        valid_task_drop = ValidationController.validate_drop_task(request_body)
+        try:
+            task_id = int(task_id)
+        except ValueError:
+            return g_response(f"cannot cast `{task_id}` to int", 400)
+
+        valid_task_drop = ValidationController.validate_drop_task(task_id)
 
         # invalid
         if isinstance(valid_task_drop, Response):
             return valid_task_drop
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request=_request,
             operation=Operation.DROP,
             resource=Resource.TASK,
             resource_org_id=valid_task_drop.get('org_id'),

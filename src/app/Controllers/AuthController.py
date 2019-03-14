@@ -153,7 +153,7 @@ class AuthController(object):
         :param resource_user_id:    If the resource has a user_id, this is it
         :return:                    The User object if they have authority, or a Response if the don't
         """
-        logger.info(f'authorizing request {json.dumps(request.get_json())}')
+        # logger.info(f'authorizing request {json.dumps(request.get_json())}')
         auth_user = _get_user_from_request(request)
         if isinstance(auth_user, Response):
             return auth_user
