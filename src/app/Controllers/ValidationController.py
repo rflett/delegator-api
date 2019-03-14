@@ -203,6 +203,9 @@ def _check_task_type_name(
     if not isinstance(task_type, str):
         logger.info(f"Bad task_type, expected str got {type(task_type)}.")
         return g_response(f"Bad task_type, expected str got {type(task_type)}.", 400)
+    if len(task_type.strip()) == 0:
+        logger.info(f"task_type length is 0")
+        return g_response(f"task_type length is 0.", 400)
 
     # optionally check if it exists or not
     if should_exist is not None:
