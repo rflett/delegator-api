@@ -136,7 +136,7 @@ def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None,
     return job_title
 
 
-def _check_task_id(task_id: int) -> Response:
+def _check_task_id(task_id: int) -> typing.Union[Response, int]:
     """
     Check user
     :param task_id:      The task identifier
@@ -535,6 +535,26 @@ class ValidationController(object):
             'due_time': _check_task_due_time(request_body.get('due_time')),
             'assignee': _check_task_assignee(request_body.get('assignee')),
             'priority': _check_task_priority(request_body.get('priority'))
+        }
+
+        # return a response if any ret values are response objects
+        for k, v in ret.items():
+            if isinstance(v, Response):
+                return v
+
+        return ret
+
+    @staticmethod
+    def validate_assign_task(request_body: dict) -> typing.Union[Response, dict]:
+        """
+        Validates the assign task request
+        :param request_body:    The request body from the update task request
+        :return:                Response if invalid, else a complex dict
+        """
+        ret = {
+            'org_id': _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True),
+            'task_id': _check_task_id(request_body.get('task_id')),
+            'assignee': _check_task_assignee(request_body.get('assignee'))
         }
 
         # return a response if any ret values are response objects

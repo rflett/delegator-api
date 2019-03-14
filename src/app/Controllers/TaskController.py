@@ -412,3 +412,37 @@ class TaskController(object):
 
         logger.info(f"retrieved {len(tasks)} users: {json.dumps(tasks)}")
         return j_response(tasks)
+
+    @staticmethod
+    def assign_task(request: request) -> Response:
+        """
+        Assigns a user to task
+        :param request:
+        :return:
+        """
+        from app.Controllers import ValidationController, TaskController
+        request_body = request.get_json()
+
+        valid_assignment = ValidationController.validate_assign_task(request_body)
+
+        # invalid
+        if isinstance(valid_assignment, Response):
+            return valid_assignment
+
+        req_user = AuthController.authorize_request(
+            request=request,
+            operation=Operation.ASSIGN,
+            resource=Resource.TASK,
+            resource_org_id=valid_assignment.get('org_id'),
+            resource_user_id=valid_assignment.get('assignee')
+        )
+
+        if isinstance(req_user, Response):
+            return req_user
+
+        task_to_assign = TaskController.get_task_by_id(valid_assignment.get('task_id'))
+
+        with session_scope():
+            task_to_assign.assignee = valid_assignment.get('assignee')
+
+        return g_response(status=204)
