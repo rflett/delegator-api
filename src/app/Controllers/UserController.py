@@ -266,7 +266,7 @@ class UserController(object):
             user = UserController.get_user(user_identifier)
             req_user = AuthController.authorize_request(
                 request=request,
-                operation=Operation.UPDATE,
+                operation=Operation.GET,
                 resource=Resource.USER,
                 resource_user_id=user.id,
                 resource_org_id=user.org_id
