@@ -130,6 +130,72 @@ def _failed_login_attempt(email: str) -> Response:
         return g_response("Email incorrect.", 401)
 
 
+def _authorize_self(
+        auth_user: User,
+        user_permission_scope: str,
+        operation: str,
+        resource: str,
+        resource_user_id: int,
+        resource_org_id: int
+) -> typing.Union[User, Response]:
+    """ This user can only perform actions on resources it owns """
+    if resource_user_id is not None and resource_org_id is not None:
+        # check ids match
+        if auth_user.id == resource_user_id and auth_user.org_id == resource_org_id:
+            logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
+                        f"and can {operation} {resource}")
+            return auth_user
+        else:
+            # they don't own this resource
+            logger.info(f"No permissions to {operation} {resource}, "
+                        f"because user {auth_user.id} != resource_user_id {resource_user_id} "
+                        f"or user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
+            return g_response(f"No permissions to {operation} {resource}, "
+                              f"because user {auth_user.id} does not own it.", 403)
+    else:
+        logger.warning(f"resource_org_id is None, resource_user_id is None")
+        return g_response("resource_org_id is None, resource_user_id is None", 403)
+
+
+def _authorize_org(
+        auth_user: User,
+        user_permission_scope: str,
+        operation: str,
+        resource: str,
+        resource_user_id: int,
+        resource_org_id: int
+) -> typing.Union[User, Response]:
+    """ this user can perform operations on resources in its organisation """
+    from app.Controllers import UserController
+
+    if resource_org_id is not None:
+        # check org id matches
+        if auth_user.org_id == resource_org_id:
+            # optionally check resource_user_id is in same org
+            if resource_user_id is not None:
+                resource_user = UserController.get_user_by_id(resource_user_id)
+                if auth_user.org_id != resource_user.org_id:
+                    logger.info(f"No permissions to {operation} {resource}, "
+                                f"because {auth_user.org_id} != {resource_user.org_id} "
+                                f"however, {auth_user.org_id} == {resource_org_id}")
+                    return g_response(f"No permissions to {operation} {resource}, "
+                                      f"because user {auth_user.id} is not "
+                                      f"in the same org as the {resource_user_id}", 403)
+
+            logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
+                        f"and can {operation} {resource}")
+            return auth_user
+        else:
+            # this resource belongs to a different organisation
+            logger.info(f"No permissions to {operation} {resource}, because "
+                        f"user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
+            return g_response(f"No permissions to {operation} {resource}, "
+                              f"because user {auth_user.id} is in org {auth_user.org_id} but "
+                              f"the resource belongs to org {resource_org_id}.", 403)
+    else:
+        return g_response("resource_org_id is None", 403)
+
+
 class AuthController(object):
     """
     The AuthController manages functions regarding generating, decoding and validating
@@ -159,8 +225,7 @@ class AuthController(object):
             return auth_user
         else:
             # mark user as active
-            from app.Controllers import ActiveUserController, UserController
-            ActiveUserController.user_is_active(auth_user)
+            auth_user.is_active()
 
             # deal with permissions
             user_permission_scope = auth_user.can(operation, resource)
@@ -168,62 +233,33 @@ class AuthController(object):
                 logger.info(f"user id {auth_user.id} cannot perform {operation} on {resource}")
                 return g_response(f"No permissions to {operation} {resource}", 403)
             else:
-                if isinstance(user_permission_scope, str):
-                    if user_permission_scope == ResourceScope.SELF:
-                        # this user can only perform actions on resources it owns
-                        if resource_user_id is not None and resource_org_id is not None:
-                            # check ids match
-                            if auth_user.id == resource_user_id and auth_user.org_id == resource_org_id:
-                                logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
-                                            f"and can {operation} {resource}")
-                                return auth_user
-                            else:
-                                # they don't own this resource
-                                logger.info(f"No permissions to {operation} {resource}, "
-                                            f"because user {auth_user.id} != resource_user_id {resource_user_id} "
-                                            f"or user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
-                                return g_response(f"No permissions to {operation} {resource}, "
-                                                  f"because user {auth_user.id} does not own it.", 403)
-                        else:
-                            logger.warning(f"resource_org_id is None, resource_user_id is None")
-                            return g_response("resource_org_id is None, resource_user_id is None", 403)
-                    elif user_permission_scope == ResourceScope.ORG:
-                        # this user can perform operations on resources in its organisation
-                        if resource_org_id is not None:
-                            # check org id matches
-                            if auth_user.org_id == resource_org_id:
-                                # optionally check resource_user_id is in same org
-                                if resource_user_id is not None:
-                                    resource_user = UserController.get_user_by_id(resource_user_id)
-                                    if auth_user.org_id != resource_user.org_id:
-                                        logger.info(f"No permissions to {operation} {resource}, "
-                                                    f"because {auth_user.org_id} != {resource_user.org_id} "
-                                                    f"however, {auth_user.org_id} == {resource_org_id}")
-                                        return g_response(f"No permissions to {operation} {resource}, "
-                                                          f"because user {auth_user.id} is not "
-                                                          f"in the same org as the {resource_user_id}", 403)
+                if user_permission_scope == ResourceScope.SELF:
+                    # this user can only perform actions on resources it owns
+                    return _authorize_self(
+                        auth_user=auth_user,
+                        user_permission_scope=user_permission_scope,
+                        operation=operation,
+                        resource=resource,
+                        resource_user_id=resource_user_id,
+                        resource_org_id=resource_org_id
+                    )
 
-                                logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
-                                            f"and can {operation} {resource}")
-                                return auth_user
-                            else:
-                                # this resource belongs to a different organisation
-                                logger.info(f"No permissions to {operation} {resource}, because "
-                                            f"user's org {auth_user.org_id} != resource_org_id {resource_org_id}")
-                                return g_response(f"No permissions to {operation} {resource}, "
-                                                  f"because user {auth_user.id} is in org {auth_user.org_id} but "
-                                                  f"the resource belongs to org {resource_org_id}.", 403)
-                        else:
-                            return g_response("resource_org_id is None", 403)
-                    elif user_permission_scope == ResourceScope.GLOBAL:
-                        # they can do anything cos they're l33t
-                        logger.info(f"user {auth_user.id} has {user_permission_scope} permissions "
-                                    f"for {operation} {resource}")
-                        return auth_user
+                elif user_permission_scope == ResourceScope.ORG:
+                    # this user can perform operations on resources in its organisation
+                    return _authorize_org(
+                        auth_user=auth_user,
+                        user_permission_scope=user_permission_scope,
+                        operation=operation,
+                        resource=resource,
+                        resource_user_id=resource_user_id,
+                        resource_org_id=resource_org_id
+                    )
 
-                else:
-                    logger.warning(f"user_permission_scope incorrect, expected str got {type(user_permission_scope)}")
-                    return g_response(f"No permissions to {operation} {resource}", 403)
+                elif user_permission_scope == ResourceScope.GLOBAL:
+                    # they can do anything cos they're l33t
+                    logger.info(f"user {auth_user.id} has {user_permission_scope} permissions "
+                                f"for {operation} {resource}")
+                    return auth_user
 
     @staticmethod
     def login(req: dict) -> Response:
@@ -271,14 +307,14 @@ class AuthController(object):
                                 f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
                     return g_response("Too many incorrect password attempts.", 401)
                 else:
-                    with session_scope() as session:
+                    with session_scope():
                         # reset
                         logger.info(f"user last failed {diff}s ago. "
                                     f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
                         user.failed_login_attempts = 0
                         user.failed_login_time = None
 
-        with session_scope() as session:
+        with session_scope():
             # check password
             if user.check_password(password):
                 UserAuthLogController.log(
@@ -288,7 +324,7 @@ class AuthController(object):
                 logger.info(f"user {user.id} logged in")
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
-                ActiveUserController.user_is_active(user=user)
+                user.is_active()
                 logged_in_user_dict = UserController.get_full_user_as_dict(user.id)
                 return Response(
                     json.dumps({
@@ -324,7 +360,7 @@ class AuthController(object):
             return g_response('Invalid token.', 401)
         else:
             user = UserController.get_user_by_id(payload.get('claims').get('user_id'))
-            ActiveUserController.user_is_inactive(user=user)
+            user.is_inactive()
             AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
             UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
             logger.info(f"user {user.id} logged out")
