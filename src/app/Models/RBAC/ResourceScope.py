@@ -1,5 +1,5 @@
 import datetime
-from app import DBBase
+from app import db
 from sqlalchemy import Column, String, DateTime
 
 SELF = 'SELF'
@@ -7,7 +7,7 @@ ORG = 'ORG'
 GLOBAL = 'GLOBAL'
 
 
-class ResourceScope(DBBase):
+class ResourceScope(db.Model):
     __tablename__ = "rbac_resource_scopes"
 
     id = Column('id', String(), primary_key=True)

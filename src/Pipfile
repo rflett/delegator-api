@@ -12,12 +12,12 @@ gunicorn = "*"
 pytest = "*"
 pip = "*"
 pyjwt = "*"
-sqlalchemy = "*"
 psycopg2 = "*"
 validate-email = "*"
 boto3 = "*"
 flask-cors = "*"
 redis = "*"
+flask-sqlalchemy = "*"
 
 [requires]
 python_version = "3.7"

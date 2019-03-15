@@ -1,7 +1,6 @@
 # common settings
 class Config(object):
-    DB_USER = "backburner"
-    DB_PASS = "backburner"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     LOG_LEVEL = "DEBUG"
     SIGNUP_ROLE = "ADMIN"
     TOKEN_TTL_IN_MINUTES = 60
@@ -11,17 +10,17 @@ class Config(object):
 
 
 class Ci(Config):
-    DB_HOST = "postgres"
+    SQLALCHEMY_DATABASE_URI = f"postgresql://backburner:backburner@postgres:5432/backburner"
     R_CACHE_HOST = "redis"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
 
 
 class Local(Config):
-    DB_HOST = "localhost"
+    SQLALCHEMY_DATABASE_URI = f"postgresql://backburner:backburner@localhost:5432/backburner"
     R_CACHE_HOST = "localhost"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
 
 
 class Staging(Config):
-    DB_HOST = "127.0.0.1"
+    SQLALCHEMY_DATABASE_URI = f"postgresql://backburner:backburner@127.0.0.1:5432/backburner"
     R_CACHE_HOST = "127.0.0.1"

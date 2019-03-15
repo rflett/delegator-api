@@ -7,9 +7,7 @@ from flask import Flask, Response
 from flask_cors import CORS
 from logging.handlers import SysLogHandler
 from os import getenv
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from flask_sqlalchemy import SQLAlchemy
 
 # flask conf
 app = Flask(__name__)
@@ -34,30 +32,24 @@ if getenv('APP_ENV', 'Local') != 'Local':
 r_cache = redis.Redis(host=app.config['R_CACHE_HOST'], port=6379, db=0, charset="utf-8", decode_responses=True)
 
 # db conf
-engine = create_engine(
-    f"postgresql://{app.config['DB_USER']}:{app.config['DB_PASS']}@{app.config['DB_HOST']}:5432/backburner")
-
-# database session and base
-DBSession = sessionmaker(bind=engine)
-DBBase = declarative_base()
-session = DBSession()
+db = SQLAlchemy(app)
 
 
 @contextmanager
 def session_scope():
     """Provide a transactional scope around a series of operations."""
     try:
-        yield session
-        session.commit()
+        yield db.session
+        db.session.commit()
     except Exception as e:
-        session.rollback()
+        db.session.rollback()
         logger.error(str(e))
         raise e
 
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
-    session.close()
+    db.session.close()
 
 
 # json response object

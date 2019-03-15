@@ -3,9 +3,8 @@ import datetime
 import hashlib
 import os
 import typing
-from app import DBBase, session_scope
+from app import db
 from app.Controllers.RBAC.RoleController import RoleController
-from app.Models import ActiveUser
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -50,7 +49,7 @@ def _get_jwt_aud(org_id: int) -> str:
     return user_org.jwt_aud
 
 
-class User(DBBase):
+class User(db.Model):
     __tablename__ = "users"
 
     id = Column('id', Integer(), primary_key=True)
@@ -158,17 +157,19 @@ class User(DBBase):
 
     def is_active(self) -> None:
         """
-        Sets user as active in the active user table
-        :return: None
+        Marks the user as active
+        :return:
         """
-        with session_scope() as session:
-            active_user = ActiveUser(
-                user_id=self.id,
-                first_name=self.first_name,
-                last_name=self.last_name,
-                last_active=datetime.datetime.utcnow()
-            )
-            session.add(active_user)
+        from app.Controllers import ActiveUserController
+        ActiveUserController.user_is_active(self)
+
+    def is_inactive(self) -> None:
+        """
+        Marks the user as inactive
+        :return:
+        """
+        from app.Controllers import ActiveUserController
+        ActiveUserController.user_is_inactive(self)
 
     def as_dict(self) -> dict:
         """

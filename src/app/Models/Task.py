@@ -1,11 +1,11 @@
 import datetime
-from app import DBBase
+from app import db
 from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
 from sqlalchemy import Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship
 
 
-class Task(DBBase):
+class Task(db.Model):
     __tablename__ = "tasks"
 
     id = Column('id', Integer(), primary_key=True)
@@ -59,6 +59,7 @@ class Task(DBBase):
         :return: dict repr of a Task object
         """
         return {
+            "id": self.id,
             "org_id": self.org_id,
             "type": self.type,
             "description": self.description,

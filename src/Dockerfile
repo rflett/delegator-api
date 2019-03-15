@@ -1,4 +1,4 @@
-FROM python:3.7-alpine
+FROM registry.gitlab.com/backburner/containers/python:latest
 
 ARG COMMIT_SHA=local
 ENV COMMIT_SHA=${COMMIT_SHA}
@@ -16,8 +16,7 @@ COPY api.py Pipfile config.py /api/
 COPY app /api/app
 WORKDIR /api
 
-RUN apk update && apk add postgresql-dev build-base
-RUN pip install pipenv && pipenv install
+RUN pipenv install
 
 EXPOSE 5000
 

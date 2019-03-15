@@ -16,7 +16,7 @@ class Reports(object):
         from app.Models import User
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.GET,
             resource=Resource.REPORTS_PAGE
         )

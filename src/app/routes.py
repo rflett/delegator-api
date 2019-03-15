@@ -127,6 +127,36 @@ def create_task():
     return TaskController.task_create(request)
 
 
+@app.route('/tasks', methods=['GET'])
+@requires_jwt
+def get_tasks():
+    return TaskController.task_get_all(request)
+
+
+@app.route('/task/<task_id>', methods=['PUT'])
+@requires_jwt
+def update_task(task_id):
+    return TaskController.task_update(task_id, request)
+
+
+@app.route('/task/<task_id>', methods=['GET'])
+@requires_jwt
+def get_task(task_id):
+    return TaskController.task_get(task_id, request)
+
+
+@app.route('/task/assign', methods=['POST'])
+@requires_jwt
+def assign_task():
+    return TaskController.assign_task(request)
+
+
+@app.route('/task/drop/<task_id>', methods=['POST'])
+@requires_jwt
+def drop_task(task_id):
+    return TaskController.drop_task(task_id, request)
+
+
 @app.route('/reporting/all', methods=['GET'])
 @requires_jwt
 def get_all_reports():

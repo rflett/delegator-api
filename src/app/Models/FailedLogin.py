@@ -1,9 +1,9 @@
 import datetime
-from app import DBBase
+from app import db
 from sqlalchemy import Integer, String, DateTime, Column
 
 
-class FailedLogin(DBBase):
+class FailedLogin(db.Model):
     __tablename__ = "user_failed_logins"
 
     email = Column('email', String(), primary_key=True)

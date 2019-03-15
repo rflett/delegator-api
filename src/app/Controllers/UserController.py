@@ -179,7 +179,7 @@ class UserController(object):
         if require_auth:
             logger.info("requiring auth to create user")
             req_user = AuthController.authorize_request(
-                request=request,
+                request_headers=request.headers,
                 operation=Operation.CREATE,
                 resource=Resource.USER,
                 resource_org_id=valid_user.get('org_id')
@@ -215,7 +215,7 @@ class UserController(object):
             return valid_user
         else:
             req_user = AuthController.authorize_request(
-                request=request,
+                request_headers=request.headers,
                 operation=Operation.UPDATE,
                 resource=Resource.USER,
                 resource_org_id=valid_user.get('org_id'),
@@ -265,8 +265,8 @@ class UserController(object):
         if UserController.user_exists(user_identifier):
             user = UserController.get_user(user_identifier)
             req_user = AuthController.authorize_request(
-                request=request,
-                operation=Operation.UPDATE,
+                request_headers=request.headers,
+                operation=Operation.GET,
                 resource=Resource.USER,
                 resource_user_id=user.id,
                 resource_org_id=user.org_id
@@ -296,7 +296,7 @@ class UserController(object):
         from app.Models import User
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.GET,
             resource=Resource.USERS
         )
@@ -348,7 +348,7 @@ class UserController(object):
         from app.Controllers import AuthController
 
         req_user = AuthController.authorize_request(
-            request=_request,
+            request_headers=_request.headers,
             operation=Operation.GET,
             resource=Resource.PAGES
         )

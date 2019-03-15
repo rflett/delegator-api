@@ -1,9 +1,9 @@
 import datetime
-from app import DBBase
+from app import db
 from sqlalchemy import Column, String, DateTime, Integer
 
 
-class Role(DBBase):
+class Role(db.Model):
     __tablename__ = "rbac_roles"
 
     id = Column('id', String(), primary_key=True)

@@ -99,7 +99,7 @@ class OrganisationController(object):
         if require_auth:
             logger.info("requiring auth to create org")
             req_user = AuthController.authorize_request(
-                request=request,
+                request_headers=request.headers,
                 operation=Operation.CREATE,
                 resource=Resource.ORGANISATION,
                 resource_org_id=valid_org.get('org_id')
