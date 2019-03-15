@@ -54,7 +54,7 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
 class ActiveUserController(object):
 
     @staticmethod
-    def user_is_active(user: User) -> Response:
+    def user_is_active(user: User) -> None:
         """
         Marks a user as active if they are not active already. If they're already active then update them.
         A cron job should come through and remove active users that have
@@ -76,10 +76,9 @@ class ActiveUserController(object):
             else:
                 # user is active, so update
                 already_active.last_active = datetime.datetime.utcnow()
-            return g_response(status=204)
 
     @staticmethod
-    def user_is_inactive(user: User) -> Response:
+    def user_is_inactive(user: User) -> None:
         """
         Mark user as inactive by deleting their record in the active users table
         :param user:
@@ -87,8 +86,6 @@ class ActiveUserController(object):
         """
         with session_scope() as session:
             session.query(ActiveUser).filter(ActiveUser.user_id == user.id).delete()
-
-        return g_response(status=204)
 
     @staticmethod
     def get_active_users() -> Response:

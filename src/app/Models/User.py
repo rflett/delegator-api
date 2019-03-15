@@ -155,6 +155,22 @@ class User(DBBase):
         """
         self.password = _hash_password(password)
 
+    def is_active(self) -> None:
+        """
+        Marks the user as active
+        :return:
+        """
+        from app.Controllers import ActiveUserController
+        ActiveUserController.user_is_active(self)
+
+    def is_inactive(self) -> None:
+        """
+        Marks the user as inactive
+        :return:
+        """
+        from app.Controllers import ActiveUserController
+        ActiveUserController.user_is_inactive(self)
+
     def as_dict(self) -> dict:
         """
         :return: The dict repr of a User object
