@@ -1,9 +1,9 @@
 import datetime
-from app import DBBase
+from app import db
 from sqlalchemy import Column, String, DateTime
 
 
-class BlacklistedToken(DBBase):
+class BlacklistedToken(db.Model):
     __tablename__ = "blacklisted_tokens"
 
     id = Column('id', String(), primary_key=True)

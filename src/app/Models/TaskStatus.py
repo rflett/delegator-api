@@ -1,8 +1,8 @@
-from app import DBBase
+from app import db
 from sqlalchemy import String, Column
 
 
-class TaskStatus(DBBase):
+class TaskStatus(db.Model):
     __tablename__ = "task_statuses"
 
     status = Column('status', String(), primary_key=True)

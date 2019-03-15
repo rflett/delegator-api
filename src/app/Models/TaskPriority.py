@@ -1,8 +1,8 @@
-from app import DBBase
+from app import db
 from sqlalchemy import Integer, String, Column
 
 
-class TaskPriority(DBBase):
+class TaskPriority(db.Model):
     __tablename__ = "task_priorities"
 
     priority = Column('priority', Integer(), primary_key=True)

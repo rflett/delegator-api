@@ -1,11 +1,11 @@
 import datetime
-from app import DBBase
+from app import db
 from app.Models.RBAC import Operation, Resource, ResourceScope # noqa
 from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
 
-class Permission(DBBase):
+class Permission(db.Model):
     __tablename__ = "rbac_permissions"
 
     role_id = Column('role_id', String(), primary_key=True)

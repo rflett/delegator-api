@@ -1,5 +1,5 @@
 import datetime
-from app import DBBase
+from app import db
 from sqlalchemy import Column, String, DateTime
 
 
@@ -11,7 +11,7 @@ ASSIGN = 'ASSIGN'
 DROP = 'DROP'
 
 
-class Operation(DBBase):
+class Operation(db.Model):
     __tablename__ = "rbac_operations"
 
     id = Column('id', String(), primary_key=True)

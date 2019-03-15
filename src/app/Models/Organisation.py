@@ -2,11 +2,11 @@ import binascii
 import datetime
 import hashlib
 import uuid
-from app import DBBase
+from app import db
 from sqlalchemy import Column, String, Integer, DateTime
 
 
-class Organisation(DBBase):
+class Organisation(db.Model):
     __tablename__ = "organisations"
 
     id = Column('id', Integer(), primary_key=True)

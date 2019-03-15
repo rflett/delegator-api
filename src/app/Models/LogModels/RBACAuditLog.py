@@ -1,12 +1,12 @@
 import datetime
-from app import DBBase
+from app import db
 from app.Models import Organisation, User   # noqa
 from app.Models.RBAC import Resource, Operation   # noqa
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
 
-class RBACAuditLog(DBBase):
+class RBACAuditLog(db.Model):
     __tablename__ = "rbac_audit_log"
 
     id = Column('id', Integer(), primary_key=True, autoincrement=True)

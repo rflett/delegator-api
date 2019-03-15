@@ -3,7 +3,7 @@ import datetime
 import hashlib
 import os
 import typing
-from app import DBBase
+from app import db
 from app.Controllers.RBAC.RoleController import RoleController
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
@@ -49,7 +49,7 @@ def _get_jwt_aud(org_id: int) -> str:
     return user_org.jwt_aud
 
 
-class User(DBBase):
+class User(db.Model):
     __tablename__ = "users"
 
     id = Column('id', Integer(), primary_key=True)

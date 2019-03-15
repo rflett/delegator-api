@@ -1,5 +1,5 @@
 import datetime
-from app import DBBase
+from app import db
 from sqlalchemy import Column, String, DateTime
 
 USER = 'USER'
@@ -18,7 +18,7 @@ REPORTS_PAGE = 'REPORTS_PAGE'
 REPORTS = 'REPORTS'
 
 
-class Resource(DBBase):
+class Resource(db.Model):
     __tablename__ = "rbac_resources"
 
     id = Column('id', String(), primary_key=True)

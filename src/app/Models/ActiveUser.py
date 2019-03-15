@@ -1,11 +1,11 @@
 import datetime
-from app import DBBase
+from app import db
 from app.Models import User, Organisation  # noqa
 from sqlalchemy import Integer, String, Column, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 
 
-class ActiveUser(DBBase):
+class ActiveUser(db.Model):
     __tablename__ = "users_active"
 
     user_id = Column('user_id', Integer(), ForeignKey('users.id'), primary_key=True)

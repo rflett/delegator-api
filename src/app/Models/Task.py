@@ -1,11 +1,11 @@
 import datetime
-from app import DBBase
+from app import db
 from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
 from sqlalchemy import Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship
 
 
-class Task(DBBase):
+class Task(db.Model):
     __tablename__ = "tasks"
 
     id = Column('id', Integer(), primary_key=True)
