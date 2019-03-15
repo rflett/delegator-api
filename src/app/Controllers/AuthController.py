@@ -11,20 +11,20 @@ from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User, FailedLogin
 from app.Models.Enums import UserAuthLogAction
 from app.Models.RBAC import Role, ResourceScope
-from flask import Response, request
+from flask import Response
 from sqlalchemy import exists
 
 
-def _get_user_from_request(req: request) -> typing.Union[User, Response]:
+def _get_user_from_request(request_headers: dict) -> typing.Union[User, Response]:
     """
     Get the user object that is claimed in the JWT payload.
-    :param req: The Flask request
-    :return:    A User object if a user is found, or a Flask Response
+    :param request_headers: The Flask request headers
+    :return:                A User object if a user is found, or a Flask Response
     """
     from app.Controllers import UserController
 
     # get auth from request
-    auth = req.headers.get('Authorization', None)
+    auth = request_headers.get('Authorization', None)
     payload = AuthController.validate_jwt(auth.replace('Bearer ', ''))
 
     # get user id
@@ -137,7 +137,7 @@ class AuthController(object):
     """
     @staticmethod
     def authorize_request(
-            request: request,
+            request_headers: dict,
             operation: str,
             resource: str,
             resource_org_id: typing.Optional[int] = None,
@@ -146,7 +146,7 @@ class AuthController(object):
         """
         Checks to see if the user in the request has authorization to perform the request operation on a
         particular resource.
-        :param request:             The request object
+        :param request_headers:     The request headers
         :param operation:           The operation to perform
         :param resource:            The resource to affect
         :param resource_org_id:     If the resource has an org_id, this is it
@@ -154,7 +154,7 @@ class AuthController(object):
         :return:                    The User object if they have authority, or a Response if the don't
         """
         # logger.info(f'authorizing request {json.dumps(request.get_json())}')
-        auth_user = _get_user_from_request(request)
+        auth_user = _get_user_from_request(request_headers)
         if isinstance(auth_user, Response):
             return auth_user
         else:

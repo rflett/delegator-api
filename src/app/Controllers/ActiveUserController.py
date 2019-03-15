@@ -99,7 +99,7 @@ class ActiveUserController(object):
         from app.Controllers import AuthController
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.GET,
             resource=Resource.ACTIVE_USERS
         )

@@ -150,7 +150,7 @@ class TaskController(object):
         from app.Models import TaskPriority
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.GET,
             resource=Resource.TASK_PRIORITY
         )
@@ -176,7 +176,7 @@ class TaskController(object):
         from app.Models import TaskStatus
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.GET,
             resource=Resource.TASK_STATUS
         )
@@ -202,7 +202,7 @@ class TaskController(object):
         from app.Models import TaskType
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.GET,
             resource=Resource.TASK_TYPE
         )
@@ -237,7 +237,7 @@ class TaskController(object):
             return valid_tt
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.CREATE,
             resource=Resource.TASK_TYPE,
             resource_org_id=valid_tt.get('org_id')
@@ -318,7 +318,7 @@ class TaskController(object):
             return valid_task
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.CREATE,
             resource=Resource.TASK,
             resource_org_id=valid_task.get('org_id')
@@ -331,7 +331,7 @@ class TaskController(object):
         # optionally authorize assigning if an assignee was set
         if valid_task.get('assignee') is not None:
             req_user = AuthController.authorize_request(
-                request=request,
+                request_headers=request.headers,
                 operation=Operation.ASSIGN,
                 resource=Resource.TASK,
                 resource_org_id=valid_task.get('org_id'),
@@ -366,7 +366,7 @@ class TaskController(object):
             return valid_task
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.UPDATE,
             resource=Resource.TASK,
             resource_org_id=valid_task.get('org_id'),
@@ -379,7 +379,7 @@ class TaskController(object):
         # optionally authorize assigning if an assignee was set
         if valid_task.get('assignee') is not None:
             req_user = AuthController.authorize_request(
-                request=request,
+                request_headers=request.headers,
                 operation=Operation.ASSIGN,
                 resource=Resource.TASK,
                 resource_org_id=valid_task.get('org_id'),
@@ -420,7 +420,7 @@ class TaskController(object):
         from app.Models import Task
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.GET,
             resource=Resource.TASK
         )
@@ -467,7 +467,7 @@ class TaskController(object):
             return valid_assignment
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.ASSIGN,
             resource=Resource.TASK,
             resource_org_id=valid_assignment.get('org_id'),
@@ -510,7 +510,7 @@ class TaskController(object):
             return valid_task_drop
 
         req_user = AuthController.authorize_request(
-            request=_request,
+            request_headers=_request.headers,
             operation=Operation.DROP,
             resource=Resource.TASK,
             resource_org_id=valid_task_drop.get('org_id'),
@@ -553,7 +553,7 @@ class TaskController(object):
         if TaskController.task_exists(task_id):
             task = TaskController.get_task_by_id(task_id)
             req_user = AuthController.authorize_request(
-                request=request,
+                request_headers=request.headers,
                 operation=Operation.GET,
                 resource=Resource.TASK,
                 resource_org_id=task.org_id

@@ -22,7 +22,7 @@ class RoleController(object):
         from app.Models.RBAC import Role
 
         req_user = AuthController.authorize_request(
-            request=request,
+            request_headers=request.headers,
             operation=Operation.GET,
             resource=Resource.ROLE
         )
