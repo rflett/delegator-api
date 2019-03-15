@@ -1,4 +1,4 @@
-FROM 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/python:latest
+FROM registry.gitlab.com/backburner/containers/python:latest
 
 ARG COMMIT_SHA=local
 ENV COMMIT_SHA=${COMMIT_SHA}
