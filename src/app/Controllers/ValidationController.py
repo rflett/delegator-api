@@ -188,37 +188,37 @@ def _check_task_type(
     return task_type_id
 
 
-def _check_task_type_name(
-        task_type: str,
+def _check_task_type_label(
+        label: str,
         org_id: int,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[str, int, Response]:
     """
     Check user
-    :param task_type:       The task type identifier
+    :param label:       The task type identifier
     :param should_exist:    Whether to check if it exists or not
     :return:                The user identifier or a response
     """
     from app.Controllers import TaskController
-    if not isinstance(task_type, str):
-        logger.info(f"Bad task_type, expected str got {type(task_type)}.")
-        return g_response(f"Bad task_type, expected str got {type(task_type)}.", 400)
-    if len(task_type.strip()) == 0:
-        logger.info(f"task_type length is 0")
-        return g_response(f"task_type length is 0.", 400)
+    if not isinstance(label, str):
+        logger.info(f"Bad task type label, expected str got {type(label)}.")
+        return g_response(f"Bad task type label, expected str got {type(label)}.", 400)
+    if len(label.strip()) == 0:
+        logger.info(f"Task type label length is 0")
+        return g_response(f"Task type label length is 0.", 400)
 
     # optionally check if it exists or not
     if should_exist is not None:
-        task_exists = TaskController.task_type_exists(task_type, org_id)
+        task_exists = TaskController.task_type_exists(label, org_id)
         if should_exist:
             if not task_exists:
-                logger.info(f"task type id {task_type} in org {org_id} doesn't exist")
+                logger.info(f"task type id {label} in org {org_id} doesn't exist")
                 return g_response(f"task type does not exist", 400)
         elif not should_exist:
             if task_exists:
-                logger.info(f"task type id {task_type} in org {org_id} already exists")
+                logger.info(f"task type id {label} in org {org_id} already exists")
                 return g_response("task type already exists", 400)
-    return task_type
+    return label
 
 
 def _check_task_status(
@@ -361,13 +361,13 @@ class ValidationController(object):
         if isinstance(org_id, Response):
             return org_id
 
-        task_type = _check_task_type_name(request_body.get('type'), org_id, should_exist=False)
-        if isinstance(task_type, Response):
-            return task_type
+        label = _check_task_type_label(request_body.get('type'), org_id, should_exist=False)
+        if isinstance(label, Response):
+            return label
 
         return {
             "org_id": org_id,
-            "type": task_type
+            "label": label
         }
 
     @staticmethod

@@ -117,7 +117,7 @@ class TaskController(object):
                 logger.info(f"task type identifer is a str so finding by type")
                 return session.query(exists().where(
                     and_(
-                        TaskType.type == task_type_identifier,
+                        TaskType.label == task_type_identifier,
                         TaskType.org_id == org_identifier
                     )
                 )).scalar()
