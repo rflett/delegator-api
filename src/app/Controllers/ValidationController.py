@@ -554,18 +554,27 @@ class ValidationController(object):
         :param request_body:    The request body from the update task request
         :return:                Response if invalid, else a complex dict
         """
-        ret = {
-            'org_id': _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True),
-            'task_id': _check_task_id(request_body.get('task_id')),
-            'assignee': _check_task_assignee(request_body.get('assignee'))
+        from app.Controllers import TaskController
+
+        task_id = _check_task_id(request_body.get('task_id'))
+        if isinstance(task_id, Response):
+            return task_id
+
+        assignee = _check_task_assignee(request_body.get('assignee'))
+        if isinstance(assignee, Response):
+            return assignee
+
+        try:
+            org_id = _check_org_id(TaskController.get_task_by_id(task_id), should_exist=True)
+        except ValueError as e:
+            logger.warning(str(e))
+            return g_response(f"Task with id {task_id} does not exist.", 400)
+
+        return {
+            'org_id': org_id,
+            'task_id': task_id,
+            'assignee':assignee
         }
-
-        # return a response if any ret values are response objects
-        for k, v in ret.items():
-            if isinstance(v, Response):
-                return v
-
-        return ret
 
     @staticmethod
     def validate_drop_task(task_id: int) -> typing.Union[Response, dict]:

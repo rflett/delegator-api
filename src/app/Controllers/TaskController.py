@@ -458,9 +458,8 @@ class TaskController(object):
         :return:
         """
         from app.Controllers import ValidationController, TaskController
-        request_body = request.get_json()
 
-        valid_assignment = ValidationController.validate_assign_task(request_body)
+        valid_assignment = ValidationController.validate_assign_task(request.get_json())
 
         # invalid assignment
         if isinstance(valid_assignment, Response):
