@@ -2,8 +2,6 @@ import datetime
 from app import db
 from app.Models import Organisation, User   # noqa
 from app.Models.RBAC import Resource, Operation   # noqa
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
 
 
 class RBACAuditLog(db.Model):

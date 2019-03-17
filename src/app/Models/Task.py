@@ -1,8 +1,6 @@
 import datetime
 from app import db
 from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
-from sqlalchemy import Integer, String, DateTime, Column, ForeignKey
-from sqlalchemy.orm import relationship
 
 
 class Task(db.Model):

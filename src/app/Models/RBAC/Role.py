@@ -1,6 +1,5 @@
 import datetime
 from app import db
-from sqlalchemy import Column, String, DateTime, Integer
 
 
 class Role(db.Model):
@@ -10,7 +9,7 @@ class Role(db.Model):
     rank = db.Column('rank', db.Integer)
     name = db.Column('name', db.String)
     description = db.Column('description', db.String, default=None)
-    created_at = db.Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
     def __init__(
             self,

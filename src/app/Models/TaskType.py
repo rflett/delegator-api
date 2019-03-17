@@ -1,5 +1,4 @@
 from app import db
-from app.Models import Organisation  # noqa
 
 
 class TaskType(db.Model):

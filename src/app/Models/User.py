@@ -5,8 +5,6 @@ import os
 import typing
 from app import db
 from app.Controllers.RBAC.RoleController import RoleController
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
 
 
 def _hash_password(password: str) -> str:
@@ -61,8 +59,8 @@ class User(db.Model):
     job_title = db.Column('job_title', db.String)
     role = db.Column('role', db.String, db.ForeignKey('rbac_roles.id'))
     failed_login_attempts = db.Column('failed_login_attempts', db.Integer, default=0)
-    failed_login_time = db.Column('failed_login_time', DateTime, default=None)
-    created_at = db.Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    failed_login_time = db.Column('failed_login_time', db.DateTime, default=None)
+    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
     orgs = db.relationship("Organisation")
     roles = db.relationship("Role")

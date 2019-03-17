@@ -1,6 +1,5 @@
 import datetime
 from app import db
-from sqlalchemy import Column, String, DateTime
 
 
 class BlacklistedToken(db.Model):
@@ -8,7 +7,7 @@ class BlacklistedToken(db.Model):
 
     id = db.Column('id', db.String, primary_key=True)
     exp = db.Column('exp', db.String)
-    created_at = db.Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
     def __init__(self, id: str, exp: int):
         self.id = id

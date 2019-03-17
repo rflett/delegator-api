@@ -269,7 +269,7 @@ class AuthController(object):
         :param req: The request data as a dict
         :return:    Response
         """
-        from app.Controllers import ValidationController, UserController, ActiveUserController
+        from app.Controllers import ValidationController, UserController
 
         email = req.get('email')
         password = req.get('password')
@@ -350,7 +350,7 @@ class AuthController(object):
         :param headers: The request headers as a dict.
         :return:        Response
         """
-        from app.Controllers import AuthController, UserController, ActiveUserController
+        from app.Controllers import AuthController, UserController
         from app.Controllers.LogControllers import UserAuthLogController
 
         auth = headers.get('Authorization', None)

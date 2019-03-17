@@ -1,5 +1,4 @@
 from app import db
-from sqlalchemy import String, Column
 
 
 class TaskStatus(db.Model):

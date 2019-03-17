@@ -1,5 +1,4 @@
 from app import db
-from sqlalchemy import Integer, String, Column
 
 
 class TaskPriority(db.Model):

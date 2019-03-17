@@ -2,8 +2,6 @@ import datetime
 import typing
 from app import db
 from app.Models import Organisation   # noqa
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
 
 
 class UserAuthLog(db.Model):

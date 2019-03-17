@@ -1,7 +1,6 @@
 import datetime
 from app import db
 from app.Models import User, Organisation  # noqa
-from sqlalchemy.orm import relationship
 
 
 class ActiveUser(db.Model):

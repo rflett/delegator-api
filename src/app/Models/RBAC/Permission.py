@@ -1,8 +1,6 @@
 import datetime
 from app import db
 from app.Models.RBAC import Operation, Resource, ResourceScope # noqa
-from sqlalchemy import Column, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
 
 
 class Permission(db.Model):
@@ -12,7 +10,7 @@ class Permission(db.Model):
     operation_id = db.Column('operation_id', db.String, db.ForeignKey('rbac_operations.id'), primary_key=True)
     resource_id = db.Column('resource_id', db.String, db.ForeignKey('rbac_resources.id'), primary_key=True)
     resource_scope = db.Column('resource_scope', db.String, db.ForeignKey('rbac_resource_scopes.id'), primary_key=True)
-    created_at = db.Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
     operations = db.relationship("Operation")
     resources = db.relationship("Resource")

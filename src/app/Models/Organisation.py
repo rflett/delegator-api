@@ -3,7 +3,6 @@ import datetime
 import hashlib
 import uuid
 from app import db
-from sqlalchemy import Column, String, Integer, DateTime
 
 
 class Organisation(db.Model):
@@ -13,7 +12,7 @@ class Organisation(db.Model):
     name = db.Column('name', db.String)
     jwt_aud = db.Column('jwt_aud', db.String)
     jwt_secret = db.Column('jwt_secret', db.String)
-    created_at = db.Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
     def __init__(self, name: str):
         self.name = name
