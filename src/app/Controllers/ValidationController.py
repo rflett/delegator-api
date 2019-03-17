@@ -573,7 +573,7 @@ class ValidationController(object):
         return {
             'org_id': org_id,
             'task_id': task_id,
-            'assignee':assignee
+            'assignee': assignee
         }
 
     @staticmethod

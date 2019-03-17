@@ -6,9 +6,9 @@ from sqlalchemy import Column, String, DateTime
 class BlacklistedToken(db.Model):
     __tablename__ = "blacklisted_tokens"
 
-    id = Column('id', String(), primary_key=True)
-    exp = Column('exp', String())
-    created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    id = db.Column('id', db.String, primary_key=True)
+    exp = db.Column('exp', db.String)
+    created_at = db.Column('created_at', DateTime, default=datetime.datetime.utcnow)
 
     def __init__(self, id: str, exp: int):
         self.id = id

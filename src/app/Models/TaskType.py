@@ -7,11 +7,11 @@ from sqlalchemy.orm import relationship
 class TaskType(db.Model):
     __tablename__ = "task_types"
 
-    id = Column('id', Integer(), primary_key=True)
-    label = Column('label', String())
-    org_id = Column('org_id', Integer(), ForeignKey('organisations.id'))
+    id = db.Column('id', db.Integer, primary_key=True)
+    label = db.Column('label', db.String)
+    org_id = db.Column('org_id', db.Integer, db.ForeignKey('organisations.id'))
 
-    orgs = relationship("Organisation")
+    orgs = db.relationship("Organisation")
 
     def __init__(self, type: str, org_id: int):
         self.label = type

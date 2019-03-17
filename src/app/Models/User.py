@@ -52,20 +52,20 @@ def _get_jwt_aud(org_id: int) -> str:
 class User(db.Model):
     __tablename__ = "users"
 
-    id = Column('id', Integer(), primary_key=True)
-    org_id = Column('org_id', Integer(), ForeignKey('organisations.id'))
-    email = Column('email', String())
-    first_name = Column('first_name', String())
-    last_name = Column('last_name', String())
-    password = Column('password', String())
-    job_title = Column('job_title', String())
-    role = Column('role', String(), ForeignKey('rbac_roles.id'))
-    failed_login_attempts = Column('failed_login_attempts', Integer(), default=0)
-    failed_login_time = Column('failed_login_time', DateTime, default=None)
-    created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    id = db.Column('id', db.Integer, primary_key=True)
+    org_id = db.Column('org_id', db.Integer, db.ForeignKey('organisations.id'))
+    email = db.Column('email', db.String)
+    first_name = db.Column('first_name', db.String)
+    last_name = db.Column('last_name', db.String)
+    password = db.Column('password', db.String)
+    job_title = db.Column('job_title', db.String)
+    role = db.Column('role', db.String, db.ForeignKey('rbac_roles.id'))
+    failed_login_attempts = db.Column('failed_login_attempts', db.Integer, default=0)
+    failed_login_time = db.Column('failed_login_time', DateTime, default=None)
+    created_at = db.Column('created_at', DateTime, default=datetime.datetime.utcnow)
 
-    orgs = relationship("Organisation")
-    roles = relationship("Role")
+    orgs = db.relationship("Organisation")
+    roles = db.relationship("Role")
 
     def __init__(
             self,
