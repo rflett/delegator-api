@@ -85,6 +85,12 @@ def update_user(user_id):
     return UserController.user_update(user_id, request)
 
 
+@app.route('/user/<user_id>', methods=['DELETE'])
+@requires_jwt
+def delete_user(user_id):
+    return UserController.user_delete(user_id, request)
+
+
 @app.route('/user/pages', methods=['GET'])
 @requires_jwt
 def user_pages():

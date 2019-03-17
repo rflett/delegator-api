@@ -1,4 +1,6 @@
 import json
+import random
+import string
 import typing
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthController
@@ -237,6 +239,55 @@ class UserController(object):
                 )
                 logger.info(f"updated user {user_to_update.as_dict()}")
                 return g_response(status=204)
+
+    @staticmethod
+    def user_delete(user_id: int, request: request) -> Response:
+        """
+        Updates a user, requires the full user object in the response body.
+        :param user_id   The user id
+        :param request:     The request object
+        :return:            Response
+        """
+        from app.Controllers import ValidationController
+
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return g_response(f"cannot cast `{user_id}` to int", 400)
+
+        valid_user = ValidationController.validate_delete_user_request(user_id, request.get_json())
+
+        # invalid request
+        if isinstance(valid_user, Response):
+            return valid_user
+
+        req_user = AuthController.authorize_request(
+            request_headers=request.headers,
+            operation=Operation.DELETE,
+            resource=Resource.USER,
+            resource_org_id=valid_user.get('org_id')
+        )
+
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        user_to_del = UserController.get_user_by_id(user_id)
+
+        with session_scope():
+            rand_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
+            user_to_del.first_name = rand_str
+            user_to_del.last_name = rand_str
+            user_to_del.email = f"{rand_str}@{rand_str}.com"
+            user_to_del.deleted = True
+
+        req_user.log(
+            operation=Operation.DELETE,
+            resource=Resource.USER,
+            resource_id=user_id
+        )
+        logger.info(f"deleted user {user_to_del.as_dict()}")
+        return g_response(status=204)
 
     @staticmethod
     def user_get(user_identifier: typing.Union[int, str], request: request) -> Response:

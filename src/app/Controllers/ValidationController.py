@@ -467,7 +467,7 @@ class ValidationController(object):
         from app.Controllers import UserController
         ret = {}
 
-        check_user = _check_user_id(user_id)
+        check_user = _check_user_id(user_id, should_exist=True)
         if isinstance(check_user, Response):
             return check_user
 
@@ -491,6 +491,31 @@ class ValidationController(object):
         ret['role'] = _check_user_role(request_body.get('role_name'))
         ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
         ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
+
+        # return a response if any ret values are response objects
+        for k, v in ret.items():
+            if isinstance(v, Response):
+                return v
+
+        return ret
+
+    @staticmethod
+    def validate_delete_user_request(user_id: int, request_body: dict) -> typing.Union[Response, dict]:
+        """
+        Validates a user request body
+        :param request_body:    The request body from the update user request
+        :return:                Response if the request body contains invalid values, or the UserRequest dataclass
+        """
+        from app.Controllers import UserController
+        ret = {}
+
+        check_user = _check_user_id(user_id, should_exist=True)
+        if isinstance(check_user, Response):
+            return check_user
+
+        user_org = UserController.get_user_by_id(user_id).org_id
+
+        ret['org_id'] = _check_org_id(user_org, should_exist=True)
 
         # return a response if any ret values are response objects
         for k, v in ret.items():
