@@ -631,7 +631,9 @@ class ValidationController(object):
             return assignee
 
         try:
-            org_id = _check_org_id(TaskController.get_task_by_id(task_id), should_exist=True)
+            org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
+            if isinstance(org_id, Response):
+                return org_id
         except ValueError as e:
             logger.warning(str(e))
             return g_response(f"Task with id {task_id} does not exist.", 400)
