@@ -285,12 +285,12 @@ def _check_task_estimate(time_estimate: typing.Optional[int]) -> typing.Union[No
     return time_estimate
 
 
-def _check_task_due_time(due_time: typing.Optional[int]) -> typing.Union[None, datetime.datetime, Response]:
-    if due_time is not None:
+def _check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[None, datetime.datetime, Response]:
+    if due_time_str is not None:
         try:
-            due_time_parsed = dateutil.parser.parse(due_time)
+            due_time_parsed = dateutil.parser.parse(due_time_str)
             # check due time is not in the past
-            if due_time_parsed < datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc):
+            if due_time_parsed < datetime.datetime.utcnow():
                 logger.info(f"due_time is in the past")
                 return g_response("Due time is in the past.", 400)
             return due_time_parsed
