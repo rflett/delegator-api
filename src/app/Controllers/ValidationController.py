@@ -137,6 +137,14 @@ def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None,
     return job_title
 
 
+def _check_user_disabled(disabled: typing.Optional[bool]) -> typing.Union[None, bool, Response]:
+    if disabled is not None:
+        if not isinstance(disabled, bool):
+            logger.info(f"Bad disabled, expected bool got {type(disabled)}.")
+            return g_response(f"Bad disabled, expected bool got {type(disabled)}.", 400)
+    return disabled
+
+
 def _check_task_id(task_id: int) -> typing.Union[Response, int]:
     """
     Check user
@@ -439,6 +447,9 @@ class ValidationController(object):
         # job title
         ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
 
+        # disabled flag
+        ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
+
         # return a response if any ret values are response objects
         for k, v in ret.items():
             if isinstance(v, Response):
@@ -479,6 +490,7 @@ class ValidationController(object):
         ret['last_name'] = _check_user_last_name(request_body.get('last_name'))
         ret['role'] = _check_user_role(request_body.get('role_name'))
         ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
+        ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
 
         # return a response if any ret values are response objects
         for k, v in ret.items():

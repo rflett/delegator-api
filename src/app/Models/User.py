@@ -58,6 +58,7 @@ class User(db.Model):
     password = db.Column('password', db.String)
     job_title = db.Column('job_title', db.String)
     role = db.Column('role', db.String, db.ForeignKey('rbac_roles.id'))
+    disabled = db.Column('disabled', db.Boolean, default=False)
     failed_login_attempts = db.Column('failed_login_attempts', db.Integer, default=0)
     failed_login_time = db.Column('failed_login_time', db.DateTime, default=None)
     created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
@@ -73,7 +74,8 @@ class User(db.Model):
             last_name: str,
             password: str,
             job_title: str,
-            role: str
+            role: str,
+            disabled: bool = False
     ):
         self.org_id = org_id
         self.email = email
@@ -82,6 +84,7 @@ class User(db.Model):
         self.password = _hash_password(password)
         self.job_title = job_title
         self.role = role
+        self.disabled = disabled
 
     def can(self, operation: str, resource: str) -> typing.Union[bool, str]:
         """
@@ -180,5 +183,6 @@ class User(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "role": self.role,
+            "disabled": self.disabled,
             "job_title": self.job_title
         }
