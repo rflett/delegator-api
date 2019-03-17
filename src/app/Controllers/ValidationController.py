@@ -2,6 +2,7 @@ import datetime
 import dateutil.parser
 import typing
 from app import logger, g_response, app
+from app.Models import TaskType
 from flask import Response
 from validate_email import validate_email
 
@@ -157,7 +158,7 @@ def _check_task_id(task_id: int) -> typing.Union[Response, int]:
 
 def _check_task_type(
         task_type_id: int,
-        org_id: int,
+        org_id: int = None,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[int, Response]:
     """
@@ -209,13 +210,13 @@ def _check_task_type_label(
 
     # optionally check if it exists or not
     if should_exist is not None:
-        task_exists = TaskController.task_type_exists(label, org_id)
+        task_type_exists = TaskController.task_type_exists(label, org_id)
         if should_exist:
-            if not task_exists:
+            if not task_type_exists:
                 logger.info(f"task type id {label} in org {org_id} doesn't exist")
                 return g_response(f"task type does not exist", 400)
         elif not should_exist:
-            if task_exists:
+            if task_type_exists:
                 logger.info(f"task type id {label} in org {org_id} already exists")
                 return g_response("task type already exists", 400)
     return label
@@ -357,18 +358,46 @@ class ValidationController(object):
         :param request_body:    The request body from the create task type request
         :return:                Response if the request body contains invalid values, or the TaskTypeRequest dataclass
         """
+        from app.Controllers import TaskController
+
         org_id = _check_org_id(request_body.get('org_id'), should_exist=True)
         if isinstance(org_id, Response):
             return org_id
 
-        label = _check_task_type_label(request_body.get('type'), org_id, should_exist=False)
+        label = _check_task_type_label(request_body.get('label'), org_id)
         if isinstance(label, Response):
             return label
 
+        disabled = None
+        if TaskController.task_type_exists(label, org_id):
+            # if it's enabled, return exists error, else re-enable it
+            if TaskController.task_type_enabled(label, org_id):
+                return g_response(f"Task type already exists.")
+            disabled = True
+
         return {
             "org_id": org_id,
-            "label": label
+            "label": label,
+            "disabled": disabled
         }
+
+    @staticmethod
+    def validate_disable_task_type_request(task_type_id: int) -> typing.Union[Response, TaskType]:
+        """ Validates the disable task request """
+        from app.Controllers import TaskController
+
+        type_id = _check_task_type(task_type_id=task_type_id)
+
+        if isinstance(type_id, Response):
+            return type_id
+
+        try:
+            task_type = TaskController.get_task_type_by_id(type_id)
+        except ValueError as e:
+            logger.warning(str(e))
+            return g_response(f"Task type does not exist.")
+
+        return task_type
 
     @staticmethod
     def validate_create_user_request(request_body: dict, from_signup=False) -> typing.Union[Response, dict]:

@@ -97,6 +97,34 @@ class TaskController(object):
             return session.query(exists().where(Task.id == task_id)).scalar()
 
     @staticmethod
+    def task_type_enabled(task_type_identifier: typing.Union[str, int], org_identifier: int) -> bool:
+        """
+        Checks to see if a task type is enabled.
+        :param task_type_identifier:       The task id or type
+        :param org_identifier:  The org id
+        :return:                True if the task type is enabled or false
+        """
+        with session_scope() as session:
+            if isinstance(task_type_identifier, int):
+                logger.info(f"task type identifer is an int so finding by id")
+                return session.query(exists().where(
+                    and_(
+                        TaskType.id == task_type_identifier,
+                        TaskType.org_id == org_identifier,
+                        TaskType.disabled is False
+                    )
+                )).scalar()
+            elif isinstance(task_type_identifier, str):
+                logger.info(f"task type identifer is a str so finding by type")
+                return session.query(exists().where(
+                    and_(
+                        TaskType.label == task_type_identifier,
+                        TaskType.org_id == org_identifier,
+                        TaskType.disabled == False  # noqa
+                    )
+                )).scalar()
+
+    @staticmethod
     def task_type_exists(task_type_identifier: typing.Union[str, int], org_identifier: int) -> bool:
         """
         Checks to see if a task type exists.
@@ -197,6 +225,17 @@ class TaskController(object):
         return j_response(task_statuses)
 
     @staticmethod
+    def get_task_type_by_id(task_type_id: int) -> TaskType:
+        """ Gets a task type by its id """
+        with session_scope() as session:
+            ret = session.query(TaskType).filter(TaskType.id == task_type_id).first()
+        if ret is None:
+            logger.info(f"Task Type with id {task_type_id} does not exist.")
+            raise ValueError(f"Task Type with id {task_type_id} does not exist.")
+        else:
+            return ret
+
+    @staticmethod
     def get_task_types(request: request) -> Response:
         from app.Controllers import AuthController
         from app.Models import TaskType
@@ -223,6 +262,44 @@ class TaskController(object):
         return j_response(task_types)
 
     @staticmethod
+    def disable_task_type(task_type_id: int, request: request) -> Response:
+        from app.Controllers import AuthController, ValidationController
+
+        try:
+            task_type_id = int(task_type_id)
+        except ValueError:
+            return g_response(f"cannot cast `{task_type_id}` to int", 400)
+
+        # validate
+        valid_dtt = ValidationController.validate_disable_task_type_request(task_type_id)
+
+        # invalid disable task type
+        if isinstance(valid_dtt, Response):
+            return valid_dtt
+
+        req_user = AuthController.authorize_request(
+            request_headers=request.headers,
+            operation=Operation.DISABLE,
+            resource=Resource.TASK_TYPE,
+            resource_org_id=valid_dtt.org_id
+        )
+
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        with session_scope():
+            valid_dtt.disabled = True
+
+        req_user.log(
+            operation=Operation.DISABLE,
+            resource=Resource.TASK_TYPE,
+            resource_id=valid_dtt.id
+        )
+        logger.info(f"disabled task type {valid_dtt.as_dict()}")
+        return g_response("Successfully disabled task type", 201)
+
+    @staticmethod
     def create_task_types(request: request) -> Response:
         from app.Controllers import AuthController, ValidationController
         from app.Models import TaskType
@@ -247,20 +324,45 @@ class TaskController(object):
         if isinstance(req_user, Response):
             return req_user
 
-        with session_scope() as session:
-            task_type = TaskType(
-                type=valid_tt.get('type'),
-                org_id=valid_tt.get('org_id')
+        if valid_tt.get('disabled') is None:
+            with session_scope() as session:
+                task_type = TaskType(
+                    type=valid_tt.get('label'),
+                    org_id=valid_tt.get('org_id')
+                )
+                session.add(task_type)
+            req_user.log(
+                operation=Operation.CREATE,
+                resource=Resource.TASK_TYPE,
+                resource_id=task_type.id
             )
-            session.add(task_type)
-
-        req_user.log(
-            operation=Operation.CREATE,
-            resource=Resource.TASK_TYPE,
-            resource_id=task_type.id
-        )
-        logger.info(f"created task type {task_type.as_dict()}")
-        return g_response("Successfully created task type", 201)
+            logger.info(f"created task type {task_type.as_dict()}")
+            return g_response("Successfully created task type", 201)
+        else:
+            with session_scope() as session:
+                req_user = AuthController.authorize_request(
+                    request_headers=request.headers,
+                    operation=Operation.ENABLE,
+                    resource=Resource.TASK_TYPE,
+                    resource_org_id=valid_tt.get('org_id')
+                )
+                # no perms
+                if isinstance(req_user, Response):
+                    return req_user
+                task_type = session.query(TaskType).filter(
+                    and_(
+                        TaskType.org_id == valid_tt.get('org_id'),
+                        TaskType.label == valid_tt.get('label')
+                    )
+                ).first()
+                task_type.disabled = False
+            req_user.log(
+                operation=Operation.ENABLE,
+                resource=Resource.TASK_TYPE,
+                resource_id=task_type.id
+            )
+            logger.info(f"enabled task type {task_type.as_dict()}")
+            return g_response("Successfully enabled task type", 201)
 
     @staticmethod
     def task_create(request: request) -> Response:

@@ -9,6 +9,8 @@ UPDATE = 'UPDATE'
 GET = 'GET'
 ASSIGN = 'ASSIGN'
 DROP = 'DROP'
+ENABLE = 'ENABLE'
+DISABLE = 'DISABLE'
 
 
 class Operation(db.Model):
