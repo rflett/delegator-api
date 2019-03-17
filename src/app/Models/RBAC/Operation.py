@@ -9,6 +9,7 @@ ASSIGN = 'ASSIGN'
 DROP = 'DROP'
 ENABLE = 'ENABLE'
 DISABLE = 'DISABLE'
+TRANSITION = 'TRANSITION'
 
 
 class Operation(db.Model):

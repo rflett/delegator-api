@@ -524,7 +524,7 @@ class TaskController(object):
         req_user = AuthController.authorize_request(
             request_headers=request.headers,
             operation=Operation.GET,
-            resource=Resource.TASK
+            resource=Resource.TASKS
         )
 
         # no perms
@@ -632,6 +632,45 @@ class TaskController(object):
             operation=Operation.DROP,
             resource=Resource.TASK,
             resource_id=task_id
+        )
+        return g_response(status=204)
+
+    @staticmethod
+    def transition_task(_request: request) -> Response:
+        """
+        Assigns a user to task
+        :param _request:
+        :return:
+        """
+        from app.Controllers import ValidationController, TaskController
+
+        valid_task_transition = ValidationController.validate_transition_task(request.get_json())
+
+        # invalid task drop request
+        if isinstance(valid_task_transition, Response):
+            return valid_task_transition
+
+        req_user = AuthController.authorize_request(
+            request_headers=_request.headers,
+            operation=Operation.TRANSITION,
+            resource=Resource.TASK,
+            resource_org_id=valid_task_transition.get('org_id'),
+            resource_user_id=valid_task_transition.get('assignee')
+        )
+
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        task_to_transition = TaskController.get_task_by_id(valid_task_transition.get('task_id'))
+
+        with session_scope():
+            task_to_transition.status = valid_task_transition.get('task_status')
+
+        req_user.log(
+            operation=Operation.TRANSITION,
+            resource=Resource.TASK,
+            resource_id=task_to_transition.id
         )
         return g_response(status=204)
 

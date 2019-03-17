@@ -163,6 +163,12 @@ def drop_task(task_id):
     return TaskController.drop_task(task_id, request)
 
 
+@app.route('/task/transition', methods=['POST'])
+@requires_jwt
+def transition_task():
+    return TaskController.transition_task(request)
+
+
 @app.route('/reporting/all', methods=['GET'])
 @requires_jwt
 def get_all_reports():

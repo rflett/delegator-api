@@ -633,3 +633,32 @@ class ValidationController(object):
             'task_id': task_id,
             'assignee': assignee
         }
+
+    @staticmethod
+    def validate_transition_task(request_body: dict) -> typing.Union[Response, dict]:
+        """ Validates the transition task request """
+        from app.Controllers import TaskController
+
+        task_id = _check_task_id(request_body.get('task_id'))
+        if isinstance(task_id, Response):
+            return task_id
+
+        org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
+        if isinstance(org_id, Response):
+            return org_id
+
+        try:
+            assignee = TaskController.get_assignee(task_id)
+        except ValueError:
+            assignee = None
+
+        task_status = _check_task_status(request_body.get('task_status'), should_exist=True)
+        if isinstance(task_status, Response):
+            return task_status
+
+        return {
+            'org_id': org_id,
+            'task_id': task_id,
+            'assignee': assignee,
+            'task_status': task_status
+        }
