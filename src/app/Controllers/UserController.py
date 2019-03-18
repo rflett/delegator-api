@@ -29,6 +29,7 @@ def _make_user_dict(user: User, role: Role, org: Organisation) -> dict:
     :param role:    The user's role
     :return:        A dict with the params merged
     """
+    from app.Controllers import SettingsController
     extras = {}
 
     # prepend role attrs with role_
@@ -42,6 +43,10 @@ def _make_user_dict(user: User, role: Role, org: Organisation) -> dict:
         # key exclusions
         if k not in ['id', 'jwt_aud', 'jwt_secret']:
             extras[f'org_{k}'] = v
+
+    # get settings
+    extras['settings'] = SettingsController.get_user_settings(user.id).as_dict()
+    print(extras)
 
     # merge role with user, with return dict sorted
     return dict(sorted({
@@ -135,6 +140,11 @@ class UserController(object):
         :param require_auth:    If request needs to have authorization (e.g. not if signing up)
         :return:                Response
         """
+        async def create_user_settings(user_id) -> None:
+            from app.Controllers import SettingsController
+            from app.Models import UserSetting
+            SettingsController.set_user_settings(UserSetting(user_id=user_id))
+
         def create_user(valid_user: dict, req_user: User = None) -> Response:
             """
             Creates the user
@@ -153,6 +163,10 @@ class UserController(object):
                     job_title=valid_user.get('job_title')
                 )
                 session.add(user)
+
+            # create user settings
+            create_user_settings(user.id)
+
             if req_user is not None:
                 req_user.log(
                     operation=Operation.CREATE,

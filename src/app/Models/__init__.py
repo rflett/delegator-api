@@ -7,6 +7,8 @@ from app.Models.TaskType import TaskType
 from app.Models.User import User
 from app.Models.ActiveUser import ActiveUser
 from app.Models.Task import Task
+from app.Models.UserSetting import UserSetting
+from app.Models.OrgSetting import OrgSetting
 
 __all__ = [
     BlacklistedToken,
@@ -17,5 +19,7 @@ __all__ = [
     TaskType,
     User,
     ActiveUser,
-    Task
+    Task,
+    UserSetting,
+    OrgSetting
 ]

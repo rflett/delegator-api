@@ -1,5 +1,7 @@
+import boto3
 import json
 import logging
+import os
 import redis
 import typing
 from contextlib import contextmanager
@@ -8,6 +10,7 @@ from flask_cors import CORS
 from logging.handlers import SysLogHandler
 from os import getenv
 from flask_sqlalchemy import SQLAlchemy
+from boto3.dynamodb.conditions import Attr
 
 # flask conf
 app = Flask(__name__)
@@ -102,6 +105,19 @@ def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) ->
         status=status,
         **kwargs
     )
+
+
+# user and org settings
+dyn_db = boto3.resource('dynamodb')
+
+# temporarily using prod table for staging
+if os.getenv('APP_ENV', 'local').lower() == 'staging':
+    table_env = 'production'
+else:
+    table_env = 'staging'
+
+user_settings_table = dyn_db.Table(f"backburner-user-settings-{table_env}")
+org_settings_table = dyn_db.Table(f"backburner-organisation-settings-{table_env}")
 
 
 # routes

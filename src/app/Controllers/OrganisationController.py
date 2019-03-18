@@ -65,6 +65,10 @@ class OrganisationController(object):
         :param require_auth:    If request needs to have authoriziation (e.g. not if signing up)
         :return:                A response
         """
+        async def create_org_settings(org_id) -> None:
+            from app.Controllers import SettingsController
+            from app.Models import OrgSetting
+            SettingsController.set_org_settings(OrgSetting(org_id=org_id))
 
         def create_org(valid_org: dict, req_user: User = None) -> Response:
             """
@@ -73,11 +77,16 @@ class OrganisationController(object):
             :param req_user:   The user making the request
             :return:           Response
             """
+
             with session_scope() as session:
                 organisation = Organisation(
                     name=valid_org.get('org_name')
                 )
                 session.add(organisation)
+
+            # create org settings
+            create_org_settings(organisation.id)
+
             if isinstance(req_user, User):
                 req_user.log(
                     operation=Operation.CREATE,
@@ -106,8 +115,7 @@ class OrganisationController(object):
             )
             if isinstance(req_user, Response):
                 return req_user
-            elif isinstance(req_user, User):
-                return create_org(request_body, req_user=req_user)
+            return create_org(request_body, req_user=req_user)
         else:
             logger.info("not requiring auth to create org")
             return create_org(valid_org)

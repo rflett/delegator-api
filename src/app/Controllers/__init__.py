@@ -7,6 +7,7 @@ from app.Controllers.SignupController import SignupController
 from app.Controllers.TaskController import TaskController
 from app.Controllers.VersionController import VersionController
 from app.Controllers.ActiveUserController import ActiveUserController
+from app.Controllers.SettingsController import SettingsController
 
 __all__ = [
     AuthController,
@@ -17,5 +18,6 @@ __all__ = [
     SignupController,
     TaskController,
     VersionController,
-    ActiveUserController
+    ActiveUserController,
+    SettingsController
 ]
