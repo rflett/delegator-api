@@ -10,6 +10,7 @@ ARG APP_ENV=Staging
 ENV APP_ENV=${APP_ENV}
 
 ENV FLASK_APP=api.py
+ENV AWS_DEFAULT_REGION=ap-southeast-2
 
 RUN mkdir /api
 COPY api.py Pipfile config.py /api/
