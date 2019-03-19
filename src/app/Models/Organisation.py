@@ -3,17 +3,16 @@ import datetime
 import hashlib
 import uuid
 from app import db
-from sqlalchemy import Column, String, Integer, DateTime
 
 
 class Organisation(db.Model):
     __tablename__ = "organisations"
 
-    id = Column('id', Integer(), primary_key=True)
-    name = Column('name', String())
-    jwt_aud = Column('jwt_aud', String())
-    jwt_secret = Column('jwt_secret', String())
-    created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    id = db.Column('id', db.Integer, primary_key=True)
+    name = db.Column('name', db.String)
+    jwt_aud = db.Column('jwt_aud', db.String)
+    jwt_secret = db.Column('jwt_secret', db.String)
+    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
     def __init__(self, name: str):
         self.name = name

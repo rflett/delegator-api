@@ -1,0 +1,721 @@
+FORMAT: 1A
+HOST: api.backburner.online
+
+# BackBurner
+
+Overview of the BackBurner API.
+
+# Description Of Usual Server Responses:
+- 200 `OK` - the request was successful (some API calls may return 201 instead).
+- 201 `Created` - the request was successful and a resource was created.
+- 204 `No Content` - nothing returned
+- 400 `Bad Request` - the request could not be understood or was missing required parameters.
+- 401 `Unauthorized` - authentication failed or user doesn't have permissions for requested operation.
+- 403 `Forbidden` - access denied.
+- 405 `Method Not Allowed` - requested method is not supported for resource.
+
+
+## Signup [/signup]
+
+### Signup [POST]
+
++ Request (application/json)
+
+        {
+          "org_name": "BackBurner",
+          "email": "ryan@backburner.com.au",
+          "password": "xxxpasswordxxx",
+          "first_name": "Ryan",
+          "last_name": "Flett",
+          "job_title": "Developer"
+        }
+
++ Response 200 (application/json)
+    
+        {
+            "msg": "Successfully signed up."
+        }
+
+
+## Login [/login]
+
+### Login [POST]
+
++ Request (application/json)
+
+        {
+            "email": "ryan@backburner.com.au",
+            "password": "xxxpasswordxxx"
+        }
+
++ Response 200 (application/json)
+    
+        {
+          "deleted": false,
+          "disabled": false,
+          "email": "ryan@backburner.com.au",
+          "first_name": "Ryan",
+          "id": 1,
+          "job_title": "Developer",
+          "last_name": "Flett",
+          "org_id": 1,
+          "org_name": "BackBurner",
+          "role": "MANAGER",
+          "role_description": null,
+          "role_name": "Manager",
+          "jwt": "jwt.tok.en"
+        }
+
+
+## Logout [/logout]
+
+### Logout [POST]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+
+
++ Response 200 (application/json)
+
+        {
+            "msg": "Logged out."
+        }
+        
+
+## Reset Password [/reset_password]
+
+### Reset Password [POST]
+
++ Request (application/json)
+
+        {
+            "email": "ryan@backburner.com.au"
+        }
+        
++ Response 200 (application/json)
+
+        {
+            "msg": "Password reset successfully, new password is Sup3rS3cr3t"
+        }
+
+
+## Users [/users]
+
+### Create User [POST]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+            
+    + Body
+    
+            {
+              "org_name": "BackBurner",
+              "email": "james@backburner.com.au",
+              "password": "xxxsecretxxx",
+              "first_name": "James",
+              "last_name": "Turner",
+              "role_name": "USER",
+              "job_title": "Developer"
+            }
+        
++ Response 201 (application/json)
+
+        {
+            "msg": "Successfully created user"
+        }
+
+### Get Users [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            [
+              {
+                  "deleted": false,
+                  "disabled": false,
+                  "email": "ryan@backburner.com.au",
+                  "first_name": "Ryan",
+                  "id": 1,
+                  "job_title": "Developer",
+                  "last_name": "Flett",
+                  "org_id": 1,
+                  "org_name": "BackBurner",
+                  "role": "MANAGER",
+                  "role_description": null,
+                  "role_name": "Manager"
+              },
+              {
+                  "deleted": false,
+                  "disabled": false,
+                  "email": "james@backburner.com.au",
+                  "first_name": "James",
+                  "id": 2,
+                  "job_title": "Developer",
+                  "last_name": "Turner",
+                  "org_id": 1,
+                  "org_name": "BackBurner",
+                  "role": "USER",
+                  "role_description": null,
+                  "role_name": "User"
+              }
+            ]
+
+
+## User [/user/{id}]
+
++ Parameters
+    + id - A user id
+
+### Get User [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            {
+              "id": 1,
+              "org_id": 1,
+              "email": "ryan@backburner.com.au",
+              "first_name": "Ryan",
+              "last_name": "Flett",
+              "role": "MANAGER",
+              "disabled": false,
+              "job_title": "DevOps",
+              "deleted": false
+            }
+
+
+### Update User [PUT]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+            
+    + Body
+    
+            {
+              "org_id": 1,
+              "email": "james@backburner.com.au",
+              "first_name": "James",
+              "last_name": "W. Turner",
+              "role_name": "MANAGER",
+              "job_title": "Lead Developer",
+              "disabled": false
+            }
+        
++ Response 204 (application/json)
+
+
+## Delete User [DELETE]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 204 (application/json)
+
+
+## User Status [/users/active]
+
+### Get Active Users [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            [
+              {
+                  "user_id": 1,
+                  "org_id": 1,
+                  "first_name": "Ryan",
+                  "last_name": "Flett",
+                  "last_active": "2019-03-17 10:41:05.900357"
+              }
+            ]
+
+
+## User Pages [/user/pages]
+
+### Get User's Pages [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            [
+              "DASHBOARD",
+              "REPORTS",
+              "USERS"
+            ]
+
+
+## User Settings [/user/settings]
+
+### Get User's Settings [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            {
+              "user_id": 1,
+              "tz_offset": "+1000"
+            }
+
+### Update User's Settings [PUT]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+
+    + Body
+
+            {
+              "user_id": 1,
+              "tz_offset": "+0000"
+            }
+        
++ Response 204 (application/json)
+
+
+## Organisation Settings [/org/settings]
+
+### Get Organisation's Settings [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            {
+              "org_id": 1
+            }
+
+### Update Organisation's Settings [PUT]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+
+    + Body
+
+            {
+              "org_id": 1
+            }
+
++ Response 204 (application/json)
+
+
+## Roles [/roles]
+
+### Get Roles [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+
+    + Body
+    
+            [
+              {
+                  "id": "MANAGER",
+                  "rank": 2,
+                  "name": "Manager",
+                  "description": null
+              },
+              {
+                  "id": "STAFF",
+                  "rank": 3,
+                  "name": "Staff Member",
+                  "description": null
+              },
+              {
+                  "id": "USER",
+                  "rank": 4,
+                  "name": "User",
+                  "description": null
+              }
+            ]
+
+
+## Task [/task/{task_id}]
+
++ Parameters
+    + task_id - A task id
+
+### Update Task [PUT]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+            
+    + Body
+    
+            {
+              "org_id": 1,
+              "type_id": 1,
+              "description": "Hello World",
+              "status": "INPROGRESS",
+              "time_estimate": 300,
+              "due_time": "2019-03-17T21:00:00+10:00",
+              "assignee": 2,
+              "priority": 1
+            }
+            
++ Response 204 (application/json)
+
+### Get Task [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+            
+    + Body
+    
+            {
+              "assignee": {
+                  "id": 1,
+                  "org_id": 1,
+                  "email": "ryan@backburner.com.au",
+                  "first_name": "Ryan",
+                  "last_name": "Flett",
+                  "role": "MANAGER",
+                  "disabled": false,
+                  "job_title": "DevOps",
+                  "deleted": false
+              },
+              "created_at": "2019-03-17T10:44:45",
+              "created_by": {
+                  "id": 1,
+                  "org_id": 1,
+                  "email": "ryan@backburner.com.au",
+                  "first_name": "Ryan",
+                  "last_name": "Flett",
+                  "role": "MANAGER",
+                  "disabled": false,
+                  "job_title": "DevOps",
+                  "deleted": false
+              },
+              "description": "Hello World",
+              "due_time": "2019-03-25T20:00:00",
+              "finished_at": null,
+              "id": 1,
+              "org_id": 1,
+              "priority": {
+                  "priority": 2,
+                  "label": "High"
+              },
+              "status": {
+                  "status": "READY",
+                  "label": "Ready"
+              },
+              "time_estimate": 600,
+              "type": {
+                  "id": 1,
+                  "type": "TT1",
+                  "org_id": 1,
+                  "disabled": false
+              }
+            }
+    
++ Response 204 (application/json)
+
+
+## Tasks [/tasks]
+
+### Create Task [POST]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+            
+    + Body
+    
+            {
+              "org_id": 1,
+              "type_id": 1,
+              "description": "Hello World",
+              "status": "READY",
+              "time_estimate": 600,
+              "due_time": "2019-03-16T06:00:00+10:00",
+              "assignee": 2,
+              "priority": 2
+            }
+        
++ Response 201 (application/json)
+
+        {
+            "msg": "Successfully created task"
+        }
+
+### Get Tasks [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            [
+              {
+                  "assignee": {
+                      "id": 1,
+                      "org_id": 1,
+                      "email": "ryan@backburner.com.au",
+                      "first_name": "Ryan",
+                      "last_name": "Flett",
+                      "role": "MANAGER",
+                      "disabled": false,
+                      "job_title": "DevOps",
+                      "deleted": false
+                  },
+                  "created_at": "2019-03-17T10:44:45",
+                  "created_by": {
+                      "id": 1,
+                      "org_id": 1,
+                      "email": "ryan@backburner.com.au",
+                      "first_name": "Ryan",
+                      "last_name": "Flett",
+                      "role": "MANAGER",
+                      "disabled": false,
+                      "job_title": "DevOps",
+                      "deleted": false
+                  },
+                  "description": "Hello World",
+                  "due_time": "2019-03-25T20:00:00",
+                  "finished_at": null,
+                  "id": 1,
+                  "org_id": 1,
+                  "priority": {
+                      "priority": 2,
+                      "label": "High"
+                  },
+                  "status": {
+                      "status": "READY",
+                      "label": "Ready"
+                  },
+                  "time_estimate": 600,
+                  "type": {
+                      "id": 1,
+                      "type": "TT1",
+                      "org_id": 1,
+                      "disabled": false
+                  }
+              }
+            ]
+
+
+## Task Assigning [/task/assign]
+
+### Assign Task [POST]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+
+    + Body
+
+            {
+              "task_id": 1,
+              "assignee": 2
+            }
+        
++ Response 204 (application/json)
+
+
+## Task Dropping [/task/drop/{task_id}]
+
++ Parameters
+    + task_id - The task id
+
+### Drop Task [POST]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 204 (application/json)
+
+
+## Task Transitioning [/task/transition]
+
+### Transition Task [POST]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+
+    + Body
+
+            {
+              "task_id": 1,
+              "task_status": "INPROGRESS"
+            }
+
++ Response 204 (application/json)
+
+
+## Task Priorities [/tasks/priorities]
+
+### Get Priorities [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            [
+              {
+                  "priority": 2,
+                  "label": "High"
+              },
+              {
+                  "priority": 1,
+                  "label": "Medium"
+              },
+              {
+                  "priority": 0,
+                  "label": "Low"
+              }
+            ]
+
+
+## Task Statuses [/tasks/statuses]
+
+### Get Statuses [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            [
+              {
+                  "status": "READY",
+                  "label": "Ready"
+              },
+              {
+                  "status": "INPROGRESS",
+                  "label": "In Progress"
+              },
+              {
+                  "status": "OPEN",
+                  "label": "Open"
+              },
+              {
+                  "status": "CANCELLED",
+                  "label": "Cancelled"
+              },
+              {
+                  "status": "DELAYED",
+                  "label": "Delayed"
+              },
+              {
+                  "status": "COMPLETED",
+                  "label": "Completed"
+              }
+            ]
+
+
+## Task Types [/tasks/types]
+
+### Get Types [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            [
+              {
+                  "id": 1,
+                  "type": "TT1",
+                  "org_id": 1,
+                  "disabled": false
+              }
+            ]
+
+### Create Type [POST]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+            
+    + Body
+    
+            {
+              "label": "Task Type Label",
+              "org_id": "BackBurner"
+            }
+        
++ Response 201 (application/json)
+
+        {
+            "msg": "Successfully created task type"
+        }
+
+
+## Task Type Deletion [/tasks/types/{id}]
++ Parameters
+    + id - A task type id
+
+### Delete Task Type [DELETE]
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 204 (application/json)

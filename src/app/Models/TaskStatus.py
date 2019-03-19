@@ -1,12 +1,11 @@
 from app import db
-from sqlalchemy import String, Column
 
 
 class TaskStatus(db.Model):
     __tablename__ = "task_statuses"
 
-    status = Column('status', String(), primary_key=True)
-    label = Column('label', String(), default=None)
+    status = db.Column('status', db.String, primary_key=True)
+    label = db.Column('label', db.String, default=None)
 
     def __init__(
             self,

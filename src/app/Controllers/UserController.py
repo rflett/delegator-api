@@ -1,4 +1,6 @@
 import json
+import random
+import string
 import typing
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthController
@@ -27,6 +29,7 @@ def _make_user_dict(user: User, role: Role, org: Organisation) -> dict:
     :param role:    The user's role
     :return:        A dict with the params merged
     """
+    from app.Controllers import SettingsController
     extras = {}
 
     # prepend role attrs with role_
@@ -40,6 +43,10 @@ def _make_user_dict(user: User, role: Role, org: Organisation) -> dict:
         # key exclusions
         if k not in ['id', 'jwt_aud', 'jwt_secret']:
             extras[f'org_{k}'] = v
+
+    # get settings
+    extras['settings'] = SettingsController.get_user_settings(user.id).as_dict()
+    print(extras)
 
     # merge role with user, with return dict sorted
     return dict(sorted({
@@ -133,6 +140,11 @@ class UserController(object):
         :param require_auth:    If request needs to have authorization (e.g. not if signing up)
         :return:                Response
         """
+        def create_user_settings(user_id) -> None:
+            from app.Controllers import SettingsController
+            from app.Models import UserSetting
+            SettingsController.set_user_settings(UserSetting(user_id=user_id))
+
         def create_user(valid_user: dict, req_user: User = None) -> Response:
             """
             Creates the user
@@ -151,6 +163,10 @@ class UserController(object):
                     job_title=valid_user.get('job_title')
                 )
                 session.add(user)
+
+            # create user settings
+            create_user_settings(user.id)
+
             if req_user is not None:
                 req_user.log(
                     operation=Operation.CREATE,
@@ -239,6 +255,55 @@ class UserController(object):
                 return g_response(status=204)
 
     @staticmethod
+    def user_delete(user_id: int, request: request) -> Response:
+        """
+        Updates a user, requires the full user object in the response body.
+        :param user_id   The user id
+        :param request:     The request object
+        :return:            Response
+        """
+        from app.Controllers import ValidationController
+
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return g_response(f"cannot cast `{user_id}` to int", 400)
+
+        valid_user = ValidationController.validate_delete_user_request(user_id, request.get_json())
+
+        # invalid request
+        if isinstance(valid_user, Response):
+            return valid_user
+
+        req_user = AuthController.authorize_request(
+            request_headers=request.headers,
+            operation=Operation.DELETE,
+            resource=Resource.USER,
+            resource_org_id=valid_user.get('org_id')
+        )
+
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        user_to_del = UserController.get_user_by_id(user_id)
+
+        with session_scope():
+            rand_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
+            user_to_del.first_name = rand_str
+            user_to_del.last_name = rand_str
+            user_to_del.email = f"{rand_str}@{rand_str}.com"
+            user_to_del.deleted = True
+
+        req_user.log(
+            operation=Operation.DELETE,
+            resource=Resource.USER,
+            resource_id=user_id
+        )
+        logger.info(f"deleted user {user_to_del.as_dict()}")
+        return g_response(status=204)
+
+    @staticmethod
     def user_get(user_identifier: typing.Union[int, str], request: request) -> Response:
         """
         Get a single user.
@@ -313,7 +378,11 @@ class UserController(object):
                     .all()
 
             users = [_make_user_dict(u, r, o) for u, r, o in users_qry]
-
+            req_user.log(
+                operation=Operation.GET,
+                resource=Resource.USERS,
+                resource_id=None
+            )
             logger.info(f"retrieved {len(users)} users: {json.dumps(users)}")
             return j_response(users)
 
@@ -355,17 +424,75 @@ class UserController(object):
 
         if isinstance(req_user, Response):
             return req_user
-        elif isinstance(req_user, User):
-            with session_scope() as session:
-                pages_qry = session.query(Permission.resource_id).filter(
-                    Permission.role_id == req_user.role,
-                    Permission.resource_id.like("%_PAGE")
-                ).all()
 
-                ret = []
-                for permission in pages_qry:
-                    for page in permission:
-                        # strip _PAGE
-                        ret.append(page.split('_PAGE')[0])
+        with session_scope() as session:
+            pages_qry = session.query(Permission.resource_id).filter(
+                Permission.role_id == req_user.role,
+                Permission.resource_id.like("%_PAGE")
+            ).all()
 
-                return j_response(sorted(ret))
+            ret = []
+            for permission in pages_qry:
+                for page in permission:
+                    # strip _PAGE
+                    ret.append(page.split('_PAGE')[0])
+
+            req_user.log(
+                operation=Operation.GET,
+                resource=Resource.PAGES,
+                resource_id=None
+            )
+            return j_response(sorted(ret))
+
+    @staticmethod
+    def get_user_settings(_request: request) -> Response:
+        """ Returns the user's settings """
+        from app.Controllers import AuthController, SettingsController
+
+        req_user = AuthController.authorize_request(
+            request_headers=_request.headers,
+            operation=Operation.GET,
+            resource=Resource.USER_SETTINGS
+        )
+
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        req_user.log(
+            operation=Operation.GET,
+            resource=Resource.USER_SETTINGS,
+            resource_id=req_user.id
+        )
+        return j_response(SettingsController.get_user_settings(req_user.id).as_dict())
+
+    @staticmethod
+    def update_user_settings(_request: request) -> Response:
+        """ Returns the user's settings """
+        from app.Controllers import AuthController, ValidationController, SettingsController
+
+        valid_user_settings = ValidationController.validate_update_user_settings_request(_request.get_json())
+
+        # invalid
+        if isinstance(valid_user_settings, Response):
+            return valid_user_settings
+
+        req_user = AuthController.authorize_request(
+            request_headers=_request.headers,
+            operation=Operation.UPDATE,
+            resource=Resource.USER_SETTINGS,
+            resource_org_id=valid_user_settings.get('org_id'),
+            resource_user_id=valid_user_settings.get('user_id')
+        )
+
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        SettingsController.set_user_settings(valid_user_settings.get('user_settings'))
+        req_user.log(
+            operation=Operation.UPDATE,
+            resource=Resource.USER_SETTINGS,
+            resource_id=req_user.id
+        )
+        return g_response(status=204)

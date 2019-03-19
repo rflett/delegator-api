@@ -1,27 +1,33 @@
 from app import db
-from app.Models import Organisation  # noqa
-from sqlalchemy import String, Column, Integer, ForeignKey
-from sqlalchemy.orm import relationship
 
 
 class TaskType(db.Model):
     __tablename__ = "task_types"
 
-    id = Column('id', Integer(), primary_key=True)
-    type = Column('type', String())
-    org_id = Column('org_id', Integer(), ForeignKey('organisations.id'))
+    id = db.Column('id', db.Integer, primary_key=True)
+    label = db.Column('label', db.String)
+    org_id = db.Column('org_id', db.Integer, db.ForeignKey('organisations.id'))
+    disabled = db.Column('disabled', db.Boolean, default=False)
 
-    orgs = relationship("Organisation")
+    orgs = db.relationship("Organisation")
 
-    def __init__(self, type: str, org_id: int):
-        self.type = type
+    def __init__(
+            self,
+            type: str,
+            org_id: int,
+            disabled: bool = False
+    ):
+        self.label = type
         self.org_id = org_id
+        self.disabled = disabled
 
     def as_dict(self) -> dict:
         """
-        :return: dict repr of a TasktType object
+        :return: dict repr of a TaskType object
         """
         return {
-            "type": self.type,
-            "org_id": self.org_id
+            "id": self.id,
+            "type": self.label,
+            "org_id": self.org_id,
+            "disabled": self.disabled
         }

@@ -5,8 +5,6 @@ import os
 import typing
 from app import db
 from app.Controllers.RBAC.RoleController import RoleController
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
 
 
 def _hash_password(password: str) -> str:
@@ -52,20 +50,22 @@ def _get_jwt_aud(org_id: int) -> str:
 class User(db.Model):
     __tablename__ = "users"
 
-    id = Column('id', Integer(), primary_key=True)
-    org_id = Column('org_id', Integer(), ForeignKey('organisations.id'))
-    email = Column('email', String())
-    first_name = Column('first_name', String())
-    last_name = Column('last_name', String())
-    password = Column('password', String())
-    job_title = Column('job_title', String())
-    role = Column('role', String(), ForeignKey('rbac_roles.id'))
-    failed_login_attempts = Column('failed_login_attempts', Integer(), default=0)
-    failed_login_time = Column('failed_login_time', DateTime, default=None)
-    created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    id = db.Column('id', db.Integer, primary_key=True)
+    org_id = db.Column('org_id', db.Integer, db.ForeignKey('organisations.id'))
+    email = db.Column('email', db.String)
+    first_name = db.Column('first_name', db.String)
+    last_name = db.Column('last_name', db.String)
+    password = db.Column('password', db.String)
+    job_title = db.Column('job_title', db.String)
+    role = db.Column('role', db.String, db.ForeignKey('rbac_roles.id'))
+    disabled = db.Column('disabled', db.Boolean, default=False)
+    deleted = db.Column('deleted', db.Boolean, default=False)
+    failed_login_attempts = db.Column('failed_login_attempts', db.Integer, default=0)
+    failed_login_time = db.Column('failed_login_time', db.DateTime, default=None)
+    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
-    orgs = relationship("Organisation")
-    roles = relationship("Role")
+    orgs = db.relationship("Organisation")
+    roles = db.relationship("Role")
 
     def __init__(
             self,
@@ -75,7 +75,9 @@ class User(db.Model):
             last_name: str,
             password: str,
             job_title: str,
-            role: str
+            role: str,
+            disabled: bool = False,
+            deleted: bool = False
     ):
         self.org_id = org_id
         self.email = email
@@ -84,6 +86,8 @@ class User(db.Model):
         self.password = _hash_password(password)
         self.job_title = job_title
         self.role = role
+        self.disabled = disabled
+        self.deleted = deleted
 
     def can(self, operation: str, resource: str) -> typing.Union[bool, str]:
         """
@@ -182,5 +186,7 @@ class User(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "role": self.role,
-            "job_title": self.job_title
+            "disabled": self.disabled,
+            "job_title": self.job_title,
+            "deleted": self.deleted
         }

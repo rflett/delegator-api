@@ -1,7 +1,8 @@
 import datetime
-import dateutil.parser
+import dateutil
 import typing
 from app import logger, g_response, app
+from app.Models import TaskType
 from flask import Response
 from validate_email import validate_email
 
@@ -136,6 +137,14 @@ def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None,
     return job_title
 
 
+def _check_user_disabled(disabled: typing.Optional[bool]) -> typing.Union[None, bool, Response]:
+    if disabled is not None:
+        if not isinstance(disabled, bool):
+            logger.info(f"Bad disabled, expected bool got {type(disabled)}.")
+            return g_response(f"Bad disabled, expected bool got {type(disabled)}.", 400)
+    return disabled
+
+
 def _check_task_id(task_id: int) -> typing.Union[Response, int]:
     """
     Check user
@@ -157,7 +166,7 @@ def _check_task_id(task_id: int) -> typing.Union[Response, int]:
 
 def _check_task_type(
         task_type_id: int,
-        org_id: int,
+        org_id: int = None,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[int, Response]:
     """
@@ -188,37 +197,37 @@ def _check_task_type(
     return task_type_id
 
 
-def _check_task_type_name(
-        task_type: str,
+def _check_task_type_label(
+        label: str,
         org_id: int,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[str, int, Response]:
     """
     Check user
-    :param task_type:       The task type identifier
+    :param label:       The task type identifier
     :param should_exist:    Whether to check if it exists or not
     :return:                The user identifier or a response
     """
     from app.Controllers import TaskController
-    if not isinstance(task_type, str):
-        logger.info(f"Bad task_type, expected str got {type(task_type)}.")
-        return g_response(f"Bad task_type, expected str got {type(task_type)}.", 400)
-    if len(task_type.strip()) == 0:
-        logger.info(f"task_type length is 0")
-        return g_response(f"task_type length is 0.", 400)
+    if not isinstance(label, str):
+        logger.info(f"Bad task type label, expected str got {type(label)}.")
+        return g_response(f"Bad task type label, expected str got {type(label)}.", 400)
+    if len(label.strip()) == 0:
+        logger.info(f"Task type label length is 0")
+        return g_response(f"Task type label length is 0.", 400)
 
     # optionally check if it exists or not
     if should_exist is not None:
-        task_exists = TaskController.task_type_exists(task_type, org_id)
+        task_type_exists = TaskController.task_type_exists(label, org_id)
         if should_exist:
-            if not task_exists:
-                logger.info(f"task type id {task_type} in org {org_id} doesn't exist")
+            if not task_type_exists:
+                logger.info(f"task type id {label} in org {org_id} doesn't exist")
                 return g_response(f"task type does not exist", 400)
         elif not should_exist:
-            if task_exists:
-                logger.info(f"task type id {task_type} in org {org_id} already exists")
+            if task_type_exists:
+                logger.info(f"task type id {label} in org {org_id} already exists")
                 return g_response("task type already exists", 400)
-    return task_type
+    return label
 
 
 def _check_task_status(
@@ -276,12 +285,12 @@ def _check_task_estimate(time_estimate: typing.Optional[int]) -> typing.Union[No
     return time_estimate
 
 
-def _check_task_due_time(due_time: typing.Optional[int]) -> typing.Union[None, datetime.datetime, Response]:
-    if due_time is not None:
+def _check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[None, datetime.datetime, Response]:
+    if due_time_str is not None:
         try:
-            due_time_parsed = dateutil.parser.parse(due_time)
+            due_time_parsed = dateutil.parser.parse(due_time_str)
             # check due time is not in the past
-            if due_time_parsed < datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc):
+            if due_time_parsed < datetime.datetime.utcnow():
                 logger.info(f"due_time is in the past")
                 return g_response("Due time is in the past.", 400)
             return due_time_parsed
@@ -357,18 +366,46 @@ class ValidationController(object):
         :param request_body:    The request body from the create task type request
         :return:                Response if the request body contains invalid values, or the TaskTypeRequest dataclass
         """
+        from app.Controllers import TaskController
+
         org_id = _check_org_id(request_body.get('org_id'), should_exist=True)
         if isinstance(org_id, Response):
             return org_id
 
-        task_type = _check_task_type_name(request_body.get('type'), org_id, should_exist=False)
-        if isinstance(task_type, Response):
-            return task_type
+        label = _check_task_type_label(request_body.get('label'), org_id)
+        if isinstance(label, Response):
+            return label
+
+        disabled = None
+        if TaskController.task_type_exists(label, org_id):
+            # if it's enabled, return exists error, else re-enable it
+            if TaskController.task_type_enabled(label, org_id):
+                return g_response(f"Task type already exists.")
+            disabled = True
 
         return {
             "org_id": org_id,
-            "type": task_type
+            "label": label,
+            "disabled": disabled
         }
+
+    @staticmethod
+    def validate_disable_task_type_request(task_type_id: int) -> typing.Union[Response, TaskType]:
+        """ Validates the disable task request """
+        from app.Controllers import TaskController
+
+        type_id = _check_task_type(task_type_id=task_type_id)
+
+        if isinstance(type_id, Response):
+            return type_id
+
+        try:
+            task_type = TaskController.get_task_type_by_id(type_id)
+        except ValueError as e:
+            logger.warning(str(e))
+            return g_response(f"Task type does not exist.")
+
+        return task_type
 
     @staticmethod
     def validate_create_user_request(request_body: dict, from_signup=False) -> typing.Union[Response, dict]:
@@ -410,6 +447,9 @@ class ValidationController(object):
         # job title
         ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
 
+        # disabled flag
+        ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
+
         # return a response if any ret values are response objects
         for k, v in ret.items():
             if isinstance(v, Response):
@@ -427,7 +467,7 @@ class ValidationController(object):
         from app.Controllers import UserController
         ret = {}
 
-        check_user = _check_user_id(user_id)
+        check_user = _check_user_id(user_id, should_exist=True)
         if isinstance(check_user, Response):
             return check_user
 
@@ -450,6 +490,32 @@ class ValidationController(object):
         ret['last_name'] = _check_user_last_name(request_body.get('last_name'))
         ret['role'] = _check_user_role(request_body.get('role_name'))
         ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
+        ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
+
+        # return a response if any ret values are response objects
+        for k, v in ret.items():
+            if isinstance(v, Response):
+                return v
+
+        return ret
+
+    @staticmethod
+    def validate_delete_user_request(user_id: int, request_body: dict) -> typing.Union[Response, dict]:
+        """
+        Validates a user request body
+        :param request_body:    The request body from the update user request
+        :return:                Response if the request body contains invalid values, or the UserRequest dataclass
+        """
+        from app.Controllers import UserController
+        ret = {}
+
+        check_user = _check_user_id(user_id, should_exist=True)
+        if isinstance(check_user, Response):
+            return check_user
+
+        user_org = UserController.get_user_by_id(user_id).org_id
+
+        ret['org_id'] = _check_org_id(user_org, should_exist=True)
 
         # return a response if any ret values are response objects
         for k, v in ret.items():
@@ -554,18 +620,29 @@ class ValidationController(object):
         :param request_body:    The request body from the update task request
         :return:                Response if invalid, else a complex dict
         """
-        ret = {
-            'org_id': _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True),
-            'task_id': _check_task_id(request_body.get('task_id')),
-            'assignee': _check_task_assignee(request_body.get('assignee'))
+        from app.Controllers import TaskController
+
+        task_id = _check_task_id(request_body.get('task_id'))
+        if isinstance(task_id, Response):
+            return task_id
+
+        assignee = _check_task_assignee(request_body.get('assignee'))
+        if isinstance(assignee, Response):
+            return assignee
+
+        try:
+            org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
+            if isinstance(org_id, Response):
+                return org_id
+        except ValueError as e:
+            logger.warning(str(e))
+            return g_response(f"Task with id {task_id} does not exist.", 400)
+
+        return {
+            'org_id': org_id,
+            'task_id': task_id,
+            'assignee': assignee
         }
-
-        # return a response if any ret values are response objects
-        for k, v in ret.items():
-            if isinstance(v, Response):
-                return v
-
-        return ret
 
     @staticmethod
     def validate_drop_task(task_id: int) -> typing.Union[Response, dict]:
@@ -594,4 +671,73 @@ class ValidationController(object):
             'org_id': org_id,
             'task_id': task_id,
             'assignee': assignee
+        }
+
+    @staticmethod
+    def validate_transition_task(request_body: dict) -> typing.Union[Response, dict]:
+        """ Validates the transition task request """
+        from app.Controllers import TaskController
+
+        task_id = _check_task_id(request_body.get('task_id'))
+        if isinstance(task_id, Response):
+            return task_id
+
+        org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
+        if isinstance(org_id, Response):
+            return org_id
+
+        try:
+            assignee = TaskController.get_assignee(task_id)
+        except ValueError:
+            assignee = None
+
+        task_status = _check_task_status(request_body.get('task_status'), should_exist=True)
+        if isinstance(task_status, Response):
+            return task_status
+
+        return {
+            'org_id': org_id,
+            'task_id': task_id,
+            'assignee': assignee,
+            'task_status': task_status
+        }
+
+    @staticmethod
+    def validate_update_user_settings_request(request_body: dict) -> typing.Union[Response, dict]:
+        """ Validates updating user settings """
+        from app.Controllers import UserController
+        from app.Models import UserSetting
+        from decimal import Decimal
+
+        user_id = _check_user_id(request_body.pop('user_id'), should_exist=True)
+        if isinstance(user_id, Response):
+            return user_id
+
+        user_setting_obj = UserSetting(user_id=Decimal(user_id))
+        for k, v in request_body.items():
+            user_setting_obj.__setattr__(k, v)
+
+        return {
+            "org_id": UserController.get_user_by_id(user_id).org_id,
+            "user_id": user_id,
+            "user_settings": user_setting_obj
+        }
+
+    @staticmethod
+    def validate_update_org_settings_request(request_body: dict) -> typing.Union[Response, dict]:
+        """ Validates updating org settings """
+        from app.Models import OrgSetting
+        from decimal import Decimal
+
+        org_id = _check_org_id(request_body.pop('org_id'), should_exist=True)
+        if isinstance(org_id, Response):
+            return org_id
+
+        org_setting_obj = OrgSetting(org_id=Decimal(org_id))
+        for k, v in request_body.items():
+            org_setting_obj.__setattr__(k, v)
+
+        return {
+            "org_id": org_id,
+            "org_settings": org_setting_obj
         }

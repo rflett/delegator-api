@@ -1,5 +1,5 @@
 import typing
-from app import session_scope, logger, g_response
+from app import session_scope, logger, g_response, j_response
 from app.Controllers import AuthController
 from app.Models import Organisation, User
 from app.Models.RBAC import Operation, Resource
@@ -65,6 +65,10 @@ class OrganisationController(object):
         :param require_auth:    If request needs to have authoriziation (e.g. not if signing up)
         :return:                A response
         """
+        def create_org_settings(org_id) -> None:
+            from app.Controllers import SettingsController
+            from app.Models import OrgSetting
+            SettingsController.set_org_settings(OrgSetting(org_id=org_id))
 
         def create_org(valid_org: dict, req_user: User = None) -> Response:
             """
@@ -73,11 +77,16 @@ class OrganisationController(object):
             :param req_user:   The user making the request
             :return:           Response
             """
+
             with session_scope() as session:
                 organisation = Organisation(
                     name=valid_org.get('org_name')
                 )
                 session.add(organisation)
+
+            # create org settings
+            create_org_settings(organisation.id)
+
             if isinstance(req_user, User):
                 req_user.log(
                     operation=Operation.CREATE,
@@ -106,8 +115,58 @@ class OrganisationController(object):
             )
             if isinstance(req_user, Response):
                 return req_user
-            elif isinstance(req_user, User):
-                return create_org(request_body, req_user=req_user)
+            return create_org(request_body, req_user=req_user)
         else:
             logger.info("not requiring auth to create org")
             return create_org(valid_org)
+
+    @staticmethod
+    def get_org_settings(_request: request) -> Response:
+        """ Returns the org's settings """
+        from app.Controllers import AuthController, SettingsController
+
+        req_user = AuthController.authorize_request(
+            request_headers=_request.headers,
+            operation=Operation.GET,
+            resource=Resource.ORG_SETTINGS
+        )
+
+        if isinstance(req_user, Response):
+            return req_user
+
+        req_user.log(
+            operation=Operation.CREATE,
+            resource=Resource.ORGANISATION,
+            resource_id=req_user.org_id
+        )
+        return j_response(SettingsController.get_org_settings(req_user.org_id).as_dict())
+
+    @staticmethod
+    def update_org_settings(_request: request) -> Response:
+        """ Returns the orgs's settings """
+        from app.Controllers import AuthController, ValidationController, SettingsController
+
+        valid_org_settings = ValidationController.validate_update_org_settings_request(_request.get_json())
+
+        # invalid
+        if isinstance(valid_org_settings, Response):
+            return valid_org_settings
+
+        req_user = AuthController.authorize_request(
+            request_headers=_request.headers,
+            operation=Operation.UPDATE,
+            resource=Resource.ORG_SETTINGS,
+            resource_org_id=valid_org_settings.get('org_id')
+        )
+
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        SettingsController.set_org_settings(valid_org_settings.get('org_settings'))
+        req_user.log(
+            operation=Operation.UPDATE,
+            resource=Resource.ORG_SETTINGS,
+            resource_id=valid_org_settings.get('org_id')
+        )
+        return g_response(status=204)

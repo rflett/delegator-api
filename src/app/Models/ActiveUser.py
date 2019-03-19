@@ -1,21 +1,19 @@
 import datetime
 from app import db
 from app.Models import User, Organisation  # noqa
-from sqlalchemy import Integer, String, Column, ForeignKey, DateTime
-from sqlalchemy.orm import relationship
 
 
 class ActiveUser(db.Model):
     __tablename__ = "users_active"
 
-    user_id = Column('user_id', Integer(), ForeignKey('users.id'), primary_key=True)
-    org_id = Column('org_id', Integer(), ForeignKey('organisations.id'))
-    first_name = Column('first_name', String())
-    last_name = Column('last_name', String())
-    last_active = Column('last_active', DateTime(), default=datetime.datetime.utcnow)
+    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    org_id = db.Column('org_id', db.Integer, db.ForeignKey('organisations.id'))
+    first_name = db.Column('first_name', db.String)
+    last_name = db.Column('last_name', db.String)
+    last_active = db.Column('last_active', db.DateTime, default=datetime.datetime.utcnow)
 
-    users = relationship("User")
-    organisations = relationship("Organisation")
+    users = db.relationship("User")
+    organisations = db.relationship("Organisation")
 
     def __init__(
         self,

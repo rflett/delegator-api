@@ -1,10 +1,10 @@
 import datetime
 from app import db
-from sqlalchemy import Column, String, DateTime
 
 USER = 'USER'
 ORGANISATION = 'ORGANISATION'
 TASK = 'TASK'
+TASKS = 'TASKS'
 ROLE = 'ROLE'
 USERS = 'USERS'
 TASK_PRIORITY = 'TASK_PRIORITY'
@@ -16,15 +16,17 @@ DASHBOARD_PAGE = 'DASHBOARD_PAGE'
 USERS_PAGE = 'USERS_PAGE'
 REPORTS_PAGE = 'REPORTS_PAGE'
 REPORTS = 'REPORTS'
+USER_SETTINGS = 'USER_SETTINGS'
+ORG_SETTINGS = 'ORG_SETTINGS'
 
 
 class Resource(db.Model):
     __tablename__ = "rbac_resources"
 
-    id = Column('id', String(), primary_key=True)
-    name = Column('name', String(), nullable=False)
-    description = Column('description', String())
-    created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    id = db.Column('id', db.String, primary_key=True)
+    name = db.Column('name', db.String, nullable=False)
+    description = db.Column('description', db.String)
+    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
     def __init__(
             self,

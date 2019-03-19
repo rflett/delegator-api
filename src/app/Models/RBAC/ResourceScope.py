@@ -1,6 +1,5 @@
 import datetime
 from app import db
-from sqlalchemy import Column, String, DateTime
 
 SELF = 'SELF'
 ORG = 'ORG'
@@ -10,10 +9,10 @@ GLOBAL = 'GLOBAL'
 class ResourceScope(db.Model):
     __tablename__ = "rbac_resource_scopes"
 
-    id = Column('id', String(), primary_key=True)
-    name = Column('name', String(), nullable=False)
-    description = Column('description', String())
-    created_at = Column('created_at', DateTime, default=datetime.datetime.utcnow)
+    id = db.Column('id', db.String, primary_key=True)
+    name = db.Column('name', db.String, nullable=False)
+    description = db.Column('description', db.String)
+    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
     def __init__(
             self,

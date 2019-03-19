@@ -2,25 +2,23 @@ import datetime
 from app import db
 from app.Models import Organisation, User   # noqa
 from app.Models.RBAC import Resource, Operation   # noqa
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
 
 
 class RBACAuditLog(db.Model):
     __tablename__ = "rbac_audit_log"
 
-    id = Column('id', Integer(), primary_key=True, autoincrement=True)
-    org_id = Column('org_id', Integer(), ForeignKey('organisations.id'))
-    user_id = Column('user_id', Integer(), ForeignKey('users.id'))
-    operation = Column('operation', String(), ForeignKey('rbac_operations.id'))
-    resource = Column('resource', String(), ForeignKey('rbac_resources.id'))
-    resource_id = Column('resource_id', Integer(), default=None)
-    created_at = Column('created_at', DateTime(), default=datetime.datetime.utcnow)
+    id = db.Column('id', db.Integer, primary_key=True, autoincrement=True)
+    org_id = db.Column('org_id', db.Integer, db.ForeignKey('organisations.id'))
+    user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'))
+    operation = db.Column('operation', db.String, db.ForeignKey('rbac_operations.id'))
+    resource = db.Column('resource', db.String, db.ForeignKey('rbac_resources.id'))
+    resource_id = db.Column('resource_id', db.Integer, default=None)
+    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
-    orgs = relationship("Organisation")
-    users = relationship("User")
-    operations = relationship("Operation")
-    resources = relationship("Resource")
+    orgs = db.relationship("Organisation")
+    users = db.relationship("User")
+    operations = db.relationship("Operation")
+    resources = db.relationship("Resource")
 
     def __init__(
         self,
