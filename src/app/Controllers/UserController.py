@@ -140,7 +140,7 @@ class UserController(object):
         :param require_auth:    If request needs to have authorization (e.g. not if signing up)
         :return:                Response
         """
-        async def create_user_settings(user_id) -> None:
+        def create_user_settings(user_id) -> None:
             from app.Controllers import SettingsController
             from app.Models import UserSetting
             SettingsController.set_user_settings(UserSetting(user_id=user_id))
@@ -378,7 +378,11 @@ class UserController(object):
                     .all()
 
             users = [_make_user_dict(u, r, o) for u, r, o in users_qry]
-
+            req_user.log(
+                operation=Operation.GET,
+                resource=Resource.USERS,
+                resource_id=None
+            )
             logger.info(f"retrieved {len(users)} users: {json.dumps(users)}")
             return j_response(users)
 
@@ -420,17 +424,75 @@ class UserController(object):
 
         if isinstance(req_user, Response):
             return req_user
-        elif isinstance(req_user, User):
-            with session_scope() as session:
-                pages_qry = session.query(Permission.resource_id).filter(
-                    Permission.role_id == req_user.role,
-                    Permission.resource_id.like("%_PAGE")
-                ).all()
 
-                ret = []
-                for permission in pages_qry:
-                    for page in permission:
-                        # strip _PAGE
-                        ret.append(page.split('_PAGE')[0])
+        with session_scope() as session:
+            pages_qry = session.query(Permission.resource_id).filter(
+                Permission.role_id == req_user.role,
+                Permission.resource_id.like("%_PAGE")
+            ).all()
 
-                return j_response(sorted(ret))
+            ret = []
+            for permission in pages_qry:
+                for page in permission:
+                    # strip _PAGE
+                    ret.append(page.split('_PAGE')[0])
+
+            req_user.log(
+                operation=Operation.GET,
+                resource=Resource.PAGES,
+                resource_id=None
+            )
+            return j_response(sorted(ret))
+
+    @staticmethod
+    def get_user_settings(_request: request) -> Response:
+        """ Returns the user's settings """
+        from app.Controllers import AuthController, SettingsController
+
+        req_user = AuthController.authorize_request(
+            request_headers=_request.headers,
+            operation=Operation.GET,
+            resource=Resource.USER_SETTINGS
+        )
+
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        req_user.log(
+            operation=Operation.GET,
+            resource=Resource.USER_SETTINGS,
+            resource_id=req_user.id
+        )
+        return j_response(SettingsController.get_user_settings(req_user.id).as_dict())
+
+    @staticmethod
+    def update_user_settings(_request: request) -> Response:
+        """ Returns the user's settings """
+        from app.Controllers import AuthController, ValidationController, SettingsController
+
+        valid_user_settings = ValidationController.validate_update_user_settings_request(_request.get_json())
+
+        # invalid
+        if isinstance(valid_user_settings, Response):
+            return valid_user_settings
+
+        req_user = AuthController.authorize_request(
+            request_headers=_request.headers,
+            operation=Operation.UPDATE,
+            resource=Resource.USER_SETTINGS,
+            resource_org_id=valid_user_settings.get('org_id'),
+            resource_user_id=valid_user_settings.get('user_id')
+        )
+
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        SettingsController.set_user_settings(valid_user_settings.get('user_settings'))
+        req_user.log(
+            operation=Operation.UPDATE,
+            resource=Resource.USER_SETTINGS,
+            resource_id=req_user.id
+        )
+        return g_response(status=204)

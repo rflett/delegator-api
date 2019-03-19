@@ -10,7 +10,6 @@ from flask_cors import CORS
 from logging.handlers import SysLogHandler
 from os import getenv
 from flask_sqlalchemy import SQLAlchemy
-from boto3.dynamodb.conditions import Attr
 
 # flask conf
 app = Flask(__name__)

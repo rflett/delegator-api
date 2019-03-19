@@ -1,8 +1,8 @@
 import datetime
-import dateutil.parser
+import dateutil
 import typing
 from app import logger, g_response, app
-from app.Models import TaskType
+from app.Models import TaskType, UserSetting, OrgSetting
 from flask import Response
 from validate_email import validate_email
 
@@ -700,4 +700,44 @@ class ValidationController(object):
             'task_id': task_id,
             'assignee': assignee,
             'task_status': task_status
+        }
+
+    @staticmethod
+    def validate_update_user_settings_request(request_body: dict) -> typing.Union[Response, dict]:
+        """ Validates updating user settings """
+        from app.Controllers import UserController
+        from app.Models import UserSetting
+        from decimal import Decimal
+
+        user_id = _check_user_id(request_body.pop('user_id'), should_exist=True)
+        if isinstance(user_id, Response):
+            return user_id
+
+        user_setting_obj = UserSetting(user_id=Decimal(user_id))
+        for k, v in request_body.items():
+            user_setting_obj.__setattr__(k, v)
+
+        return {
+            "org_id": UserController.get_user_by_id(user_id).org_id,
+            "user_id": user_id,
+            "user_settings": user_setting_obj
+        }
+
+    @staticmethod
+    def validate_update_org_settings_request(request_body: dict) -> typing.Union[Response, dict]:
+        """ Validates updating org settings """
+        from app.Models import OrgSetting
+        from decimal import Decimal
+
+        org_id = _check_org_id(request_body.pop('org_id'), should_exist=True)
+        if isinstance(org_id, Response):
+            return org_id
+
+        org_setting_obj = OrgSetting(org_id=Decimal(org_id))
+        for k, v in request_body.items():
+            org_setting_obj.__setattr__(k, v)
+
+        return {
+            "org_id": org_id,
+            "org_settings": org_setting_obj
         }
