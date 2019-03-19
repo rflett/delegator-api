@@ -2,7 +2,7 @@ import datetime
 import dateutil
 import typing
 from app import logger, g_response, app
-from app.Models import TaskType, UserSetting, OrgSetting
+from app.Models import TaskType
 from flask import Response
 from validate_email import validate_email
 
