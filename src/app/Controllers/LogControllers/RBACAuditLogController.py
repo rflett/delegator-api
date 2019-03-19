@@ -7,7 +7,7 @@ class RBACAuditLogController(object):
     @staticmethod
     def log(user: User, **kwargs) -> None:
         """
-        Logs an action that a user would perform.
+        Logs an action that a user has performed
         :param user:    The user to log the action against.
         :param kwargs:  operation, resource, optional(resource_id)
         """
@@ -18,5 +18,5 @@ class RBACAuditLogController(object):
         )
         with session_scope() as session:
             session.add(audit_log)
-        logger.info(f"user id {user.id} did {kwargs.get('operation')} on {kwargs.get('resource')} with "
-                    f"and id of {kwargs.get('resource_id')}")
+        logger.info(f"user with id {user.id} did {kwargs.get('operation')} on {kwargs.get('resource')} with "
+                    f"and id of {kwargs.get('resource_id', 'NONE')}")

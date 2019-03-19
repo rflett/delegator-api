@@ -1,7 +1,7 @@
 import datetime
 import json
 import typing
-from app import logger, session_scope, g_response, j_response
+from app import logger, session_scope, g_response, j_response, db
 from app.Controllers import AuthController
 from app.Models import TaskType, User, Task, TaskStatus, TaskPriority
 from app.Models.Enums import TaskStatuses
@@ -56,12 +56,8 @@ def _make_task_dict(
 
 class TaskController(object):
     @staticmethod
-    def get_assignee(task_id: int) -> typing.Union[None, int]:
-        """
-        Gets the assignee for a task
-        :param task_id:     The id of the task
-        :return:            The assignee's user id, or None
-        """
+    def get_assignee(task_id: int) -> typing.Union[int, None]:
+        """ Gets the assignee for a task """
         with session_scope() as session:
             ret = session.query(Task).filter(Task.id == task_id).first()
         if ret is None:
@@ -72,12 +68,7 @@ class TaskController(object):
 
     @staticmethod
     def get_task_by_id(task_id: int) -> Task:
-        """
-        Gets a task by its id
-        :param task_id:         The tasks's id
-        :raises ValueError:     If the task doesn't exist.
-        :return:                The Task
-        """
+        """ Gets a task by its id """
         with session_scope() as session:
             ret = session.query(Task).filter(Task.id == task_id).first()
         if ret is None:
@@ -88,22 +79,13 @@ class TaskController(object):
 
     @staticmethod
     def task_exists(task_id: int) -> bool:
-        """
-        Checks to see if a task type exists.
-        :param task_id:       The task id or type
-        :return:              True if the task type exists or false
-        """
+        """ Checks to see if a task type exists. """
         with session_scope() as session:
             return session.query(exists().where(Task.id == task_id)).scalar()
 
     @staticmethod
     def task_type_enabled(task_type_identifier: typing.Union[str, int], org_identifier: int) -> bool:
-        """
-        Checks to see if a task type is enabled.
-        :param task_type_identifier:       The task id or type
-        :param org_identifier:  The org id
-        :return:                True if the task type is enabled or false
-        """
+        """ Checks to see if a task type is enabled. """
         with session_scope() as session:
             if isinstance(task_type_identifier, int):
                 logger.info(f"task type identifer is an int so finding by id")
@@ -126,12 +108,7 @@ class TaskController(object):
 
     @staticmethod
     def task_type_exists(task_type_identifier: typing.Union[str, int], org_identifier: int) -> bool:
-        """
-        Checks to see if a task type exists.
-        :param task_type_identifier:       The task id or type
-        :param org_identifier:  The org id
-        :return:                True if the task type exists or false
-        """
+        """ Checks to see if a task type exists. """
         with session_scope() as session:
             if isinstance(task_type_identifier, int):
                 logger.info(f"task type identifer is an int so finding by id")
@@ -152,37 +129,29 @@ class TaskController(object):
 
     @staticmethod
     def task_status_exists(task_status: str) -> bool:
-        """
-        Checks to see if a task type exists.
-        :param task_status:     The task status
-        :return:                True if the task status exists or false
-        """
+        """ Checks to see if a task type exists. """
         with session_scope() as session:
             ret = session.query(exists().where(TaskStatus.status == task_status)).scalar()
         return ret
 
     @staticmethod
     def task_priority_exists(task_priority: int) -> bool:
-        """
-        Checks to see if a task type exists.
-        :param task_priority:       The task priority
-        :return:                    True if the task priority exists or false
-        """
+        """ Checks to see if a task type exists. """
         with session_scope() as session:
             ret = session.query(exists().where(TaskPriority.priority == task_priority)).scalar()
         return ret
 
     @staticmethod
-    def get_task_priorities(request: request) -> Response:
+    def get_task_priorities(req: request) -> Response:
+        """ Returns all task priorities """
         from app.Controllers import AuthController
         from app.Models import TaskPriority
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.GET,
-            resource=Resource.TASK_PRIORITY
+            resource=Resource.TASK_PRIORITIES
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
@@ -191,24 +160,24 @@ class TaskController(object):
             task_pr_qry = session.query(TaskPriority).all()
 
         task_priorities = [tp.as_dict() for tp in task_pr_qry]
-        logger.info(f"retrieved {len(task_priorities)} task_priorities: {json.dumps(task_priorities)}")
+        logger.debug(f"found {len(task_priorities)} task_priorities: {json.dumps(task_priorities)}")
         req_user.log(
             operation=Operation.GET,
-            resource=Resource.TASK_PRIORITY
+            resource=Resource.TASK_PRIORITIES
         )
         return j_response(task_priorities)
 
     @staticmethod
-    def get_task_statuses(request: request) -> Response:
+    def get_task_statuses(req: request) -> Response:
+        """ Returns all task statuses """
         from app.Controllers import AuthController
         from app.Models import TaskStatus
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.GET,
-            resource=Resource.TASK_STATUS
+            resource=Resource.TASK_STATUSES
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
@@ -217,10 +186,10 @@ class TaskController(object):
             task_st_qry = session.query(TaskStatus).all()
 
         task_statuses = [ts.as_dict() for ts in task_st_qry]
-        logger.info(f"retrieved {len(task_statuses)} task statuses: {json.dumps(task_statuses)}")
+        logger.debug(f"found {len(task_statuses)} task statuses: {json.dumps(task_statuses)}")
         req_user.log(
             operation=Operation.GET,
-            resource=Resource.TASK_STATUS
+            resource=Resource.TASK_STATUSES
         )
         return j_response(task_statuses)
 
@@ -236,16 +205,16 @@ class TaskController(object):
             return ret
 
     @staticmethod
-    def get_task_types(request: request) -> Response:
+    def get_task_types(req: request) -> Response:
+        """ Returns all task types """
         from app.Controllers import AuthController
         from app.Models import TaskType
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.GET,
-            resource=Resource.TASK_TYPE
+            resource=Resource.TASK_TYPES
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
@@ -254,15 +223,16 @@ class TaskController(object):
             task_tt_qry = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
 
         task_types = [tt.as_dict() for tt in task_tt_qry]
-        logger.info(f"retrieved {len(task_types)} task types: {json.dumps(task_types)}")
+        logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
         req_user.log(
             operation=Operation.GET,
-            resource=Resource.TASK_TYPE
+            resource=Resource.TASK_TYPES
         )
         return j_response(task_types)
 
     @staticmethod
-    def disable_task_type(task_type_id: int, request: request) -> Response:
+    def disable_task_type(task_type_id: int, req: request) -> Response:
+        """ Disables a task type """
         from app.Controllers import AuthController, ValidationController
 
         try:
@@ -272,18 +242,16 @@ class TaskController(object):
 
         # validate
         valid_dtt = ValidationController.validate_disable_task_type_request(task_type_id)
-
-        # invalid disable task type
+        # invalid
         if isinstance(valid_dtt, Response):
             return valid_dtt
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.DISABLE,
             resource=Resource.TASK_TYPE,
             resource_org_id=valid_dtt.org_id
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
@@ -300,26 +268,25 @@ class TaskController(object):
         return g_response("Successfully disabled task type", 201)
 
     @staticmethod
-    def create_task_types(request: request) -> Response:
+    def create_task_types(req: request) -> Response:
+        """ Create a task type """
         from app.Controllers import AuthController, ValidationController
         from app.Models import TaskType
 
-        request_body = request.get_json()
+        request_body = req.get_json()
 
         # validate task_type
         valid_tt = ValidationController.validate_create_task_type_request(request_body)
-
         # invalid task type
         if isinstance(valid_tt, Response):
             return valid_tt
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.CREATE,
             resource=Resource.TASK_TYPE,
             resource_org_id=valid_tt.get('org_id')
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
@@ -341,7 +308,7 @@ class TaskController(object):
         else:
             with session_scope() as session:
                 req_user = AuthController.authorize_request(
-                    request_headers=request.headers,
+                    request_headers=req.headers,
                     operation=Operation.ENABLE,
                     resource=Resource.TASK_TYPE,
                     resource_org_id=valid_tt.get('org_id')
@@ -365,10 +332,10 @@ class TaskController(object):
             return g_response("Successfully enabled task type", 201)
 
     @staticmethod
-    def task_create(request: request) -> Response:
+    def task_create(req: request) -> Response:
         """
         Creates a task
-        :param request: The request
+        :param req: The request
         :return:        A response
         """
         def create_task(valid_task: dict, req_user: User) -> Response:
@@ -409,23 +376,21 @@ class TaskController(object):
             logger.info(f"created task {task.as_dict()}")
             return g_response("Successfully created task", 201)
 
-        request_body = request.get_json()
+        request_body = req.get_json()
 
         # validate task
         from app.Controllers import ValidationController
         valid_task = ValidationController.validate_create_task_request(request_body)
-
-        # invalid task
+        # invalid
         if isinstance(valid_task, Response):
             return valid_task
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.CREATE,
             resource=Resource.TASK,
             resource_org_id=valid_task.get('org_id')
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
@@ -433,7 +398,7 @@ class TaskController(object):
         # optionally authorize assigning if an assignee was set
         if valid_task.get('assignee') is not None:
             req_user = AuthController.authorize_request(
-                request_headers=request.headers,
+                request_headers=req.headers,
                 operation=Operation.ASSIGN,
                 resource=Resource.TASK,
                 resource_org_id=valid_task.get('org_id'),
@@ -446,15 +411,10 @@ class TaskController(object):
         return create_task(valid_task, req_user=req_user)
 
     @staticmethod
-    def task_update(task_id: int, request: request) -> Response:
-        """
-        Updates a task. Requires the full task object in the request.
-        :param task_id: The task ID
-        :param request:
-        :return:
-        """
+    def task_update(task_id: int, req: request) -> Response:
+        """ Updates a task. Requires the full task object in the request. """
         from app.Controllers import ValidationController, TaskController
-        request_body = request.get_json()
+        request_body = req.get_json()
 
         try:
             task_id = int(task_id)
@@ -462,18 +422,16 @@ class TaskController(object):
             return g_response(f"cannot cast `{task_id}` to int", 400)
 
         valid_task = ValidationController.validate_update_task_request(task_id, request_body)
-
         # invalid task
         if isinstance(valid_task, Response):
             return valid_task
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.UPDATE,
             resource=Resource.TASK,
             resource_org_id=valid_task.get('org_id'),
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
@@ -481,7 +439,7 @@ class TaskController(object):
         # optionally authorize assigning if an assignee was set
         if valid_task.get('assignee') is not None:
             req_user = AuthController.authorize_request(
-                request_headers=request.headers,
+                request_headers=req.headers,
                 operation=Operation.ASSIGN,
                 resource=Resource.TASK,
                 resource_org_id=valid_task.get('org_id'),
@@ -512,28 +470,22 @@ class TaskController(object):
         return g_response(status=204)
 
     @staticmethod
-    def task_get_all(request: request) -> Response:
-        """
-        Get all users
-        :param request:     The request object
-        :return:
-        """
+    def task_get_all(req: request) -> Response:
+        """ Get all users """
         from app.Controllers import AuthController
         from app.Models import Task
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.GET,
             resource=Resource.TASKS
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
 
         with session_scope() as session:
             task_assignee, task_created_by = aliased(User), aliased(User)
-
             tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority)\
                 .outerjoin(task_assignee, task_assignee.id == Task.assignee)\
                 .join(task_created_by, task_created_by.id == Task.created_by)\
@@ -545,36 +497,31 @@ class TaskController(object):
                 .all()
 
         tasks = [_make_task_dict(t, ta, tcb, ts, tt, tp) for t, ta, tcb, ts, tt, tp in tasks_qry]
-        logger.info(f"retrieved {len(tasks)} users: {json.dumps(tasks)}")
+        logger.debug(f"found {len(tasks)} users: {json.dumps(tasks)}")
         req_user.log(
             operation=Operation.GET,
-            resource=Resource.TASK
+            resource=Resource.TASKS
         )
         return j_response(tasks)
 
     @staticmethod
-    def assign_task(request: request) -> Response:
-        """
-        Assigns a user to task
-        :param request:
-        :return:
-        """
+    def assign_task(req: request) -> Response:
+        """ Assigns a user to task """
         from app.Controllers import ValidationController, TaskController
 
-        valid_assignment = ValidationController.validate_assign_task(request.get_json())
-
+        valid_assignment = ValidationController.validate_assign_task(req.get_json())
         # invalid assignment
         if isinstance(valid_assignment, Response):
             return valid_assignment
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.ASSIGN,
             resource=Resource.TASK,
             resource_org_id=valid_assignment.get('org_id'),
             resource_user_id=valid_assignment.get('assignee')
         )
-
+        # no perms
         if isinstance(req_user, Response):
             return req_user
 
@@ -588,15 +535,12 @@ class TaskController(object):
             resource=Resource.TASK,
             resource_id=task_to_assign.id
         )
+        logger.info(f"assigned task {task_to_assign.id} to user {valid_assignment.get('assignee')}")
         return g_response(status=204)
 
     @staticmethod
     def drop_task(task_id, _request: request) -> Response:
-        """
-        Assigns a user to task
-        :param _request:
-        :return:
-        """
+        """ Drops a task, which sets it to READY and removes the assignee """
         from app.Controllers import ValidationController, TaskController
 
         try:
@@ -605,7 +549,6 @@ class TaskController(object):
             return g_response(f"cannot cast `{task_id}` to int", 400)
 
         valid_task_drop = ValidationController.validate_drop_task(task_id)
-
         # invalid task drop request
         if isinstance(valid_task_drop, Response):
             return valid_task_drop
@@ -617,7 +560,6 @@ class TaskController(object):
             resource_org_id=valid_task_drop.get('org_id'),
             resource_user_id=valid_task_drop.get('assignee')
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
@@ -633,19 +575,16 @@ class TaskController(object):
             resource=Resource.TASK,
             resource_id=task_id
         )
+        logger.info(f"user {req_user.id} dropped task {task_to_drop.id} "
+                    f"which was assigned to {valid_task_drop.get('assignee')}")
         return g_response(status=204)
 
     @staticmethod
     def transition_task(_request: request) -> Response:
-        """
-        Assigns a user to task
-        :param _request:
-        :return:
-        """
+        """ Transitions the status of a task """
         from app.Controllers import ValidationController, TaskController
 
         valid_task_transition = ValidationController.validate_transition_task(request.get_json())
-
         # invalid task drop request
         if isinstance(valid_task_transition, Response):
             return valid_task_transition
@@ -657,12 +596,12 @@ class TaskController(object):
             resource_org_id=valid_task_transition.get('org_id'),
             resource_user_id=valid_task_transition.get('assignee')
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
 
         task_to_transition = TaskController.get_task_by_id(valid_task_transition.get('task_id'))
+        old_status = task_to_transition.status
 
         with session_scope():
             task_to_transition.status = valid_task_transition.get('task_status')
@@ -672,16 +611,13 @@ class TaskController(object):
             resource=Resource.TASK,
             resource_id=task_to_transition.id
         )
+        logger.info(f"user {req_user.id} transitioned task {task_to_transition.id} "
+                    f"from {old_status} to {task_to_transition.status}")
         return g_response(status=204)
 
     @staticmethod
     def task_get(task_id: int, request: request) -> Response:
-        """
-        Get a single user.
-        :param task_id:     The task ID
-        :param request:     The request object
-        :return:
-        """
+        """ Get a single task. """
         from app.Controllers import TaskController
 
         try:
@@ -698,14 +634,12 @@ class TaskController(object):
                 resource=Resource.TASK,
                 resource_org_id=task.org_id
             )
-
             # no perms
             if isinstance(req_user, Response):
                 return req_user
 
             with session_scope() as session:
                 task_assignee, task_created_by = aliased(User), aliased(User)
-
                 tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority)\
                     .outerjoin(task_assignee, task_assignee.id == Task.assignee)\
                     .join(task_created_by, task_created_by.id == Task.created_by)\
@@ -717,7 +651,7 @@ class TaskController(object):
                     .first()
 
             task_as_dict = _make_task_dict(*tasks_qry)
-            logger.info(f"got task {task_as_dict}")
+            logger.debug(f"found task {task_as_dict}")
             req_user.log(
                 operation=Operation.GET,
                 resource=Resource.TASK,

@@ -9,10 +9,7 @@ from flask import request, Response
 
 
 def _purge_inactive_users() -> None:
-    """
-    Removes users which have been inactive for longer than the threshold.
-    :return: None
-    """
+    """ Removes users which have been inactive for longer than the threshold. """
     with session_scope() as session:
         inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=app.config['INACTIVE_USER_TTL'])
         delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
@@ -20,11 +17,7 @@ def _purge_inactive_users() -> None:
 
 
 def _get_user_from_request(req: request) -> typing.Union[User, Response]:
-    """
-    Get the user object that is claimed in the JWT payload.
-    :param req: The Flask request
-    :return:    A User object if a user is found, or a Flask Response
-    """
+    """ Get the user object that is claimed in the JWT payload. """
     from app.Controllers import UserController
 
     # get auth from request
@@ -39,15 +32,14 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
         user_id = payload.get('claims').get('user_id')
         logger.info(f"found user id {user_id} in the request JWT")
     else:
-        logger.info("missing payload from the bearer token")
-        return g_response("Missing payload from Bearer token", 401)
+        logger.info("Missing JWT token from Authorization header")
+        return g_response("Missing JWT token from Authorization header", 401)
 
     # get User object
     try:
         user = UserController.get_user_by_id(user_id)
         return user
-    except Exception as e:
-        logger.error(str(e))
+    except ValueError:
         return g_response('No user found in Bearer token.', 401)
 
 
@@ -57,9 +49,7 @@ class ActiveUserController(object):
     def user_is_active(user: User) -> None:
         """
         Marks a user as active if they are not active already. If they're already active then update them.
-        A cron job should come through and remove active users that have
-        :param user:
-        :return: Response or None
+        A cron job should come through and remove active users that have been inactive for the TTL.
         """
         with session_scope() as session:
             already_active = session.query(ActiveUser).filter(ActiveUser.user_id == user.id).first()
@@ -73,44 +63,43 @@ class ActiveUserController(object):
                     last_active=datetime.datetime.utcnow()
                 )
                 session.add(active_user)
+                logger.debug(f"user {user.id} was not active, but has now been marked as active")
             else:
                 # user is active, so update
                 already_active.last_active = datetime.datetime.utcnow()
+                logger.debug(f"user {user.id} was active, and has been marked as active again")
 
     @staticmethod
     def user_is_inactive(user: User) -> None:
-        """
-        Mark user as inactive by deleting their record in the active users table
-        :param user:
-        :return: Response or None
-        """
+        """ Mark user as inactive by deleting their record in the active users table """
         with session_scope() as session:
             session.query(ActiveUser).filter(ActiveUser.user_id == user.id).delete()
+            logger.debug(f"user {user.id} marked as inactive")
 
     @staticmethod
-    def get_active_users() -> Response:
-        """
-        Returns all active users for an organisation
-        :return: Active users
-        """
+    def get_active_users(req: request) -> Response:
+        """ Returns all active users for an organisation """
         from app.Controllers import AuthController
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.GET,
             resource=Resource.ACTIVE_USERS
         )
-
+        # no perms
         if isinstance(req_user, Response):
             return req_user
-        elif isinstance(req_user, User):
-            # remove inactive users
-            _purge_inactive_users()
 
-            with session_scope() as session:
-                active_users_qry = session.query(ActiveUser).filter(ActiveUser.org_id == req_user.org_id).all()
+        # remove inactive users
+        _purge_inactive_users()
 
-            active_users = [au.as_dict() for au in active_users_qry]
+        with session_scope() as session:
+            active_users_qry = session.query(ActiveUser).filter(ActiveUser.org_id == req_user.org_id).all()
 
-            logger.info(f"retrieved {len(active_users)} active users: {json.dumps(active_users)}")
-            return j_response(active_users)
+        active_users = [au.as_dict() for au in active_users_qry]
+        req_user.log(
+            operation=Operation.GET,
+            resource=Resource.ACTIVE_USERS
+        )
+        logger.debug(f"found {len(active_users)} active users: {json.dumps(active_users)}")
+        return j_response(active_users)

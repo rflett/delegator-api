@@ -6,13 +6,13 @@ from flask import request, Response
 
 class SignupController(object):
     @staticmethod
-    def signup(request: request) -> Response:
+    def signup(req: request) -> Response:
         """
         Signup a user, which effectively creates an organisation and a user against that organisation.
-        :param request: The request object
+        :param req: The request object
         :return:        Response
         """
-        request_body = request.get_json()
+        request_body = req.get_json()
         # check if org already exists
         if OrganisationController.org_exists(request_body.get('org_name')):
             logger.info(f"organisation {request_body.get('org_name')} already exists")
@@ -34,7 +34,7 @@ class SignupController(object):
             return valid_user
 
         try:
-            create_org_res = OrganisationController.org_create(request, require_auth=False)
+            create_org_res = OrganisationController.org_create(req, require_auth=False)
         except Exception as e:
             logger.error(str(e))
             return g_response("There was an issue creating the organisation", 500)
@@ -47,7 +47,7 @@ class SignupController(object):
         request_body['org_id'] = new_org.id
 
         try:
-            create_user_res = UserController.user_create(request, require_auth=False)
+            create_user_res = UserController.user_create(req, require_auth=False)
         except Exception as e:
             logger.error(str(e))
             return g_response("There was an issue creating the user", 500)
