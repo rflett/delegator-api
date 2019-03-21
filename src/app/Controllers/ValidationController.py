@@ -1,9 +1,10 @@
 import datetime
 import dateutil
 import typing
-from app import logger, g_response, app
-from app.Models import TaskType
+from app import logger, g_response, app, session_scope
+from app.Models import TaskType, TaskTypeEscalation
 from flask import Response
+from sqlalchemy import exists, and_
 from validate_email import validate_email
 
 
@@ -155,9 +156,8 @@ def _check_task_id(task_id: int) -> typing.Union[Response, int]:
     return task_id
 
 
-def _check_task_type(
+def _check_task_type_id(
         task_type_id: int,
-        org_id: int = None,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[int, Response]:
     """ Check a task type """
@@ -171,14 +171,14 @@ def _check_task_type(
 
     # optionally check if it exists or not
     if should_exist is not None:
-        task_exists = TaskController.task_type_exists(task_type_id, org_id)
+        task_exists = TaskController.task_type_exists(task_type_id)
         if should_exist:
             if not task_exists:
-                logger.info(f"task type id {task_type_id} in org {org_id} doesn't exist")
+                logger.info(f"task type id {task_type_id} doesn't exist")
                 return g_response(f"task type does not exist", 400)
         elif not should_exist:
             if task_exists:
-                logger.info(f"task type id {task_type_id} in org {org_id} already exists")
+                logger.info(f"task type id {task_type_id} in org already exists")
                 return g_response("task type already exists", 400)
     return task_type_id
 
@@ -307,6 +307,38 @@ def _check_task_priority(priority: int) -> typing.Union[int, Response]:
     return priority
 
 
+def _check_escalation_delay(delay: int) -> typing.Union[int, Response]:
+    """ Check escalation delay """
+    if isinstance(delay, bool):
+        logger.info(f"Bad priority, expected int got {type(delay)}.")
+        return g_response(f"Bad priority, expected int got {type(delay)}.", 400)
+    if not isinstance(delay, int):
+        logger.info(f"Bad priority, expected int got {type(delay)}.")
+        return g_response(f"Bad priority, expected int got {type(delay)}.", 400)
+    return delay
+
+
+def _check_escalation_display_order(order: int) -> typing.Union[int, Response]:
+    """ Check escalation display order """
+    if isinstance(order, bool):
+        logger.info(f"Bad priority, expected int got {type(order)}.")
+        return g_response(f"Bad priority, expected int got {type(order)}.", 400)
+    if not isinstance(order, int):
+        logger.info(f"Bad priority, expected int got {type(order)}.")
+        return g_response(f"Bad priority, expected int got {type(order)}.", 400)
+    return order
+
+
+def _check_escalation_(task_type_id: int, display_order: int) -> typing.Optional[Response]:
+    """ Checks to see if an escalation already exists """
+    with session_scope() as session:
+        return session.query(exists().where(
+            and_(
+                TaskTypeEscalation.task_type_id == task_type_id,
+                TaskTypeEscalation.display_order == display_order
+            ))).scalar()
+
+
 class ValidationController(object):
     @staticmethod
     def validate_email(email: str) -> typing.Union[bool, Response]:
@@ -375,7 +407,7 @@ class ValidationController(object):
         """ Validates the disable task request """
         from app.Controllers import TaskController
 
-        type_id = _check_task_type(task_type_id=task_type_id)
+        type_id = _check_task_type_id(task_type_id=task_type_id)
         if isinstance(type_id, Response):
             return type_id
 
@@ -515,7 +547,7 @@ class ValidationController(object):
 
         ret = {
             'org_id': org_id,
-            'type': _check_task_type(task_type_id=request_body.get('type_id'), org_id=org_id, should_exist=True),
+            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), should_exist=True),
             'description': _check_task_description(request_body.get('description')),
             'status': _check_task_status(request_body.get('status'), should_exist=True),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
@@ -549,7 +581,7 @@ class ValidationController(object):
 
         ret = {
             'org_id': org_id,
-            'type': _check_task_type(task_type_id=request_body.get('type_id'), org_id=org_id, should_exist=True),
+            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), should_exist=True),
             'description': _check_task_description(request_body.get('description')),
             'status': _check_task_status(request_body.get('status'), should_exist=True),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
@@ -694,3 +726,35 @@ class ValidationController(object):
             "org_id": org_id,
             "org_settings": org_setting_obj
         }
+
+    @staticmethod
+    def validate_create_task_type_escalation(request_body: dict) -> typing.Union[Response, dict]:
+        """ Validates creating a task type escalation """
+        from app.Controllers import TaskController
+
+        task_type_id = _check_task_type_id(request_body.get('task_type_id'), should_exist=True)
+        if isinstance(task_type_id, Response):
+            return task_type_id
+
+        display_order = _check_escalation_display_order(request_body.get('display_order'))
+        if isinstance(display_order, Response):
+            return display_order
+
+        if _check_escalation_(task_type_id, display_order):
+            return g_response(f"escalation already exists")
+
+        ret = {
+            "org_id":  TaskController.get_task_type_by_id(task_type_id).org_id,
+            "task_type_id": task_type_id,
+            "display_order": display_order,
+            "delay": _check_escalation_delay(request_body.get('delay')),
+            "from_priority": _check_task_priority(request_body.get('from_priority')),
+            "to_priority": _check_task_priority(request_body.get('to_priority'))
+        }
+
+        # return a response if any ret values are response objects
+        for k, v in ret.items():
+            if isinstance(v, Response):
+                return v
+
+        return ret

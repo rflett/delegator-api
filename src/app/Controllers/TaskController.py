@@ -3,7 +3,7 @@ import json
 import typing
 from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
-from app.Models import TaskType, User, Task, TaskStatus, TaskPriority
+from app.Models import TaskType, User, Task, TaskStatus, TaskPriority, TaskTypeEscalation
 from app.Models.Enums import TaskStatuses
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -52,6 +52,23 @@ def _make_task_dict(
         **task_dict,
         **extras
     }.items()))
+
+
+def _make_task_type_dict(
+        tt: TaskType
+) -> dict:
+    """ Creates a nice dict of a task type """
+    task_type_dict = tt.as_dict()
+
+    # get task type escalations
+    with session_scope() as session:
+        tte_qry = session.query(TaskTypeEscalation).filter(TaskTypeEscalation.task_type_id == tt.id).all()
+        escalation_policies = [escalation.as_dict() for escalation in tte_qry]
+
+    # sort by display order
+    task_type_dict['escalation_policies'] = list(sorted(escalation_policies, key=lambda i: i['display_order']))
+
+    return task_type_dict
 
 
 class TaskController(object):
@@ -106,7 +123,10 @@ class TaskController(object):
                 )).scalar()
 
     @staticmethod
-    def task_type_exists(task_type_identifier: typing.Union[str, int], org_identifier: int) -> bool:
+    def task_type_exists(
+            task_type_identifier: typing.Union[str, int],
+            org_identifier: typing.Optional[int] = None
+    ) -> bool:
         """ Checks to see if a task type exists. """
         with session_scope() as session:
             if isinstance(task_type_identifier, int):
@@ -219,7 +239,7 @@ class TaskController(object):
         with session_scope() as session:
             task_tt_qry = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
 
-        task_types = [tt.as_dict() for tt in task_tt_qry]
+        task_types = [_make_task_type_dict(tt) for tt in task_tt_qry]
         logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
         req_user.log(
             operation=Operation.GET,
@@ -659,3 +679,48 @@ class TaskController(object):
         else:
             logger.info(f"task with id {task_id} does not exist")
             return g_response("Task does not exist.", 400)
+
+    @staticmethod
+    def create_task_type_escalation(req: request) -> Response:
+        """ Creates an escalation """
+
+        def create_escalation(valid_escalation: dict, req_user: User) -> Response:
+            """ Creates the escalation """
+            with session_scope() as session:
+                escalation = TaskTypeEscalation(
+                    task_type_id=valid_escalation.get('task_type_id'),
+                    display_order=valid_escalation.get('display_order'),
+                    delay=valid_escalation.get('delay'),
+                    from_priority=valid_escalation.get('from_priority'),
+                    to_priority=valid_escalation.get('to_priority')
+                )
+                session.add(escalation)
+
+            req_user.log(
+                operation=Operation.CREATE,
+                resource=Resource.TASK_TYPE_ESCALATION,
+                resource_id=escalation.task_type_id
+            )
+            logger.info(f"created task type escalation {escalation.as_dict()}")
+            return g_response("Successfully created task type escalation", 201)
+
+        request_body = req.get_json()
+
+        # validate task
+        from app.Controllers import ValidationController
+        valid_escalation = ValidationController.validate_create_task_type_escalation(request_body)
+        # invalid
+        if isinstance(valid_escalation, Response):
+            return valid_escalation
+
+        req_user = AuthController.authorize_request(
+            request_headers=req.headers,
+            operation=Operation.CREATE,
+            resource=Resource.TASK_TYPE_ESCALATION,
+            resource_org_id=valid_escalation.get('org_id')
+        )
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        return create_escalation(valid_escalation, req_user)
