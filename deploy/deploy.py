@@ -45,11 +45,15 @@ if __name__ == '__main__':
     ]
 
     # register a new task definition
+    optionals = {}
+    if task_role_arn is not None:
+        optionals['taskRoleArn'] = task_role_arn
     register_res = ecs.register_task_definition(
         family=args.service_name,
         networkMode='host',
         containerDefinitions=json.load(open('deploy/container_definitions.json')),
-        tags=tags
+        tags=tags,
+        **optionals
     )
 
     # common keyword args between create and update service functions
@@ -62,8 +66,6 @@ if __name__ == '__main__':
             'minimumHealthyPercent': min_health_pc
         }
     }
-    if task_role_arn is not None:
-        common_service_kwargs['taskRoleArn'] = task_role_arn
 
     # update or create service
     if service_exists(args.service_name, args.environment):
