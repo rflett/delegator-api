@@ -136,7 +136,7 @@ class OrganisationController(object):
 
     @staticmethod
     def update_org_settings(_request: request) -> Response:
-        """ Returns the orgs's settings """
+        """ Returns the org's settings """
         from app.Controllers import AuthController, ValidationController, SettingsController
 
         valid_org_settings = ValidationController.validate_update_org_settings_request(_request.get_json())

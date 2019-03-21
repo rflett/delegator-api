@@ -1,7 +1,7 @@
 import datetime
 import json
 import typing
-from app import logger, session_scope, g_response, j_response, db
+from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
 from app.Models import TaskType, User, Task, TaskStatus, TaskPriority
 from app.Models.Enums import TaskStatuses
@@ -88,16 +88,15 @@ class TaskController(object):
         """ Checks to see if a task type is enabled. """
         with session_scope() as session:
             if isinstance(task_type_identifier, int):
-                logger.info(f"task type identifer is an int so finding by id")
+                logger.info(f"task type identifier is an int so finding by id")
                 return session.query(exists().where(
                     and_(
                         TaskType.id == task_type_identifier,
-                        TaskType.org_id == org_identifier,
-                        TaskType.disabled is False
+                        TaskType.disabled == False  # noqa
                     )
                 )).scalar()
             elif isinstance(task_type_identifier, str):
-                logger.info(f"task type identifer is a str so finding by type")
+                logger.info(f"task type identifier is a str so finding by type")
                 return session.query(exists().where(
                     and_(
                         TaskType.label == task_type_identifier,
@@ -111,15 +110,13 @@ class TaskController(object):
         """ Checks to see if a task type exists. """
         with session_scope() as session:
             if isinstance(task_type_identifier, int):
-                logger.info(f"task type identifer is an int so finding by id")
+                logger.info(f"task type identifier is an int so finding by id")
                 return session.query(exists().where(
-                    and_(
-                        TaskType.id == task_type_identifier,
-                        TaskType.org_id == org_identifier
+                        TaskType.id == task_type_identifier
                     )
-                )).scalar()
+                ).scalar()
             elif isinstance(task_type_identifier, str):
-                logger.info(f"task type identifer is a str so finding by type")
+                logger.info(f"task type identifier is a str so finding by type")
                 return session.query(exists().where(
                     and_(
                         TaskType.label == task_type_identifier,

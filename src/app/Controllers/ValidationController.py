@@ -8,11 +8,7 @@ from validate_email import validate_email
 
 
 def _check_password_reqs(password: str) -> typing.Union[str, bool]:
-    """
-    Ensures a password meets minimum security requirements.
-    :param password:    The password to check
-    :return:            A message if it does not meet the requirements, or True
-    """
+    """ Ensures a password meets minimum security requirements. """
     min_length = 6
     min_special_chars = 1
     min_caps = 1
@@ -34,12 +30,7 @@ def _check_org_id(
         identifier: typing.Union[str, int],
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[str, int, Response]:
-    """
-    Check org
-    :param identifier:      The org identifier
-    :param should_exist:    Whether to check if it exists or not
-    :return:                The identifier or a Response
-    """
+    """ Checks an org id """
     from app.Controllers import OrganisationController
     if isinstance(identifier, bool):
         return g_response(f"Bad org_id, expected int|str got {type(identifier)}.", 400)
@@ -69,13 +60,12 @@ def _check_user_id(
         identifier: typing.Union[str, int],
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[None, str, int, Response]:
-    """
-    Check user
-    :param identifier:      The user identifier
-    :param should_exist:    Whether to check if it exists or not
-    :return:                The user identifier or a response
-    """
+    """ Checks a user id """
     from app.Controllers import UserController
+    if isinstance(identifier, bool):
+        return g_response(f"Bad org_id, expected int|str got {type(identifier)}.", 400)
+    if not isinstance(identifier, (int, str)):
+        return g_response(f"Bad org_id, expected int|str got {type(identifier)}.", 400)
 
     # optionally check if it exists or not
     if should_exist is not None:
@@ -92,6 +82,7 @@ def _check_user_id(
 
 
 def _check_user_first_name(first_name: str) -> typing.Union[str, Response]:
+    """ Check a first name """
     if not isinstance(first_name, str):
         logger.info(f"Bad first_name, expected str got {type(first_name)}.")
         return g_response(f"Bad first_name, expected str got {type(first_name)}.", 400)
@@ -102,6 +93,7 @@ def _check_user_first_name(first_name: str) -> typing.Union[str, Response]:
 
 
 def _check_user_last_name(last_name: str) -> typing.Union[str, Response]:
+    """ Check a last name """
     if not isinstance(last_name, str):
         logger.info(f"Bad last_name, expected str got {type(last_name)}.")
         return g_response(f"Bad last_name, expected str got {type(last_name)}.", 400)
@@ -112,6 +104,7 @@ def _check_user_last_name(last_name: str) -> typing.Union[str, Response]:
 
 
 def _check_user_role(role: str) -> typing.Union[str, Response]:
+    """" Check a user role """
     from app.Controllers import AuthController
     if not isinstance(role, str):
         logger.info(f"Bad role, expected str got {type(role)}.")
@@ -126,6 +119,7 @@ def _check_user_role(role: str) -> typing.Union[str, Response]:
 
 
 def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None, str, Response]:
+    """ Check a job title """
     if job_title is not None:
         if not isinstance(job_title, str):
             logger.info(f"Bad job_title, expected str got {type(job_title)}.")
@@ -138,6 +132,7 @@ def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None,
 
 
 def _check_user_disabled(disabled: typing.Optional[bool]) -> typing.Union[None, bool, Response]:
+    """ Check the disabled value """
     if disabled is not None:
         if not isinstance(disabled, bool):
             logger.info(f"Bad disabled, expected bool got {type(disabled)}.")
@@ -146,11 +141,7 @@ def _check_user_disabled(disabled: typing.Optional[bool]) -> typing.Union[None, 
 
 
 def _check_task_id(task_id: int) -> typing.Union[Response, int]:
-    """
-    Check user
-    :param task_id:      The task identifier
-    :return:                The task identifier or a response
-    """
+    """ Checks a task id """
     from app.Controllers import TaskController
     if isinstance(task_id, bool):
         logger.info(f"Bad task id, expected int got {type(task_id)}.")
@@ -169,12 +160,7 @@ def _check_task_type(
         org_id: int = None,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[int, Response]:
-    """
-    Check user
-    :param task_type_id:       The task type identifier
-    :param should_exist:    Whether to check if it exists or not
-    :return:                The user identifier or a response
-    """
+    """ Check a task type """
     from app.Controllers import TaskController
     if isinstance(task_type_id, bool):
         logger.info(f"Bad task_type, expected int got {type(task_type_id)}.")
@@ -202,12 +188,7 @@ def _check_task_type_label(
         org_id: int,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[str, int, Response]:
-    """
-    Check user
-    :param label:       The task type identifier
-    :param should_exist:    Whether to check if it exists or not
-    :return:                The user identifier or a response
-    """
+    """ Checks a task type label """
     from app.Controllers import TaskController
     if not isinstance(label, str):
         logger.info(f"Bad task type label, expected str got {type(label)}.")
@@ -234,12 +215,7 @@ def _check_task_status(
         task_status: str,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[str, Response]:
-    """
-    Check user
-    :param task_status:         The task status identifier
-    :param should_exist:        Whether to check if it exists or not
-    :return:                    The user identifier or a response
-    """
+    """ Check a task status """
     from app.Controllers import TaskController
     if not isinstance(task_status, str):
         logger.info(f"Bad task_status, expected str got {type(task_status)}.")
@@ -263,6 +239,7 @@ def _check_task_status(
 
 
 def _check_task_description(description: typing.Optional[str]) -> typing.Union[None, str, Response]:
+    """ Check a task description """
     if description is not None:
         if not isinstance(description, str):
             logger.info(f"Bad description, expected str got {type(description)}.")
@@ -275,6 +252,7 @@ def _check_task_description(description: typing.Optional[str]) -> typing.Union[N
 
 
 def _check_task_estimate(time_estimate: typing.Optional[int]) -> typing.Union[None, int, Response]:
+    """ Check a task estimate - estimated seconds to complete """
     if time_estimate is not None:
         if not isinstance(time_estimate, int):
             logger.info(f"Bad estimate, expected int got {type(time_estimate)}.")
@@ -286,6 +264,7 @@ def _check_task_estimate(time_estimate: typing.Optional[int]) -> typing.Union[No
 
 
 def _check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[None, datetime.datetime, Response]:
+    """ Check the task due time """
     if due_time_str is not None:
         try:
             due_time_parsed = dateutil.parser.parse(due_time_str)
@@ -300,7 +279,8 @@ def _check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[Non
     return None
 
 
-def _check_task_assignee(assignee: int) -> typing.Union[int, Response]:
+def _check_task_assignee(assignee: typing.Optional[int]) -> typing.Union[int, Response]:
+    """ Check a task assignee """
     from app.Controllers import UserController
     if assignee is not None:
         if not isinstance(assignee, int):
@@ -313,6 +293,7 @@ def _check_task_assignee(assignee: int) -> typing.Union[int, Response]:
 
 
 def _check_task_priority(priority: int) -> typing.Union[int, Response]:
+    """ Check a task priority """
     from app.Controllers import TaskController
     if isinstance(priority, bool):
         logger.info(f"Bad priority, expected int got {type(priority)}.")
@@ -395,7 +376,6 @@ class ValidationController(object):
         from app.Controllers import TaskController
 
         type_id = _check_task_type(task_type_id=task_type_id)
-
         if isinstance(type_id, Response):
             return type_id
 
@@ -410,7 +390,7 @@ class ValidationController(object):
     @staticmethod
     def validate_create_user_request(request_body: dict, from_signup=False) -> typing.Union[Response, dict]:
         """
-        Validates a user request body
+        Validates a create user request body
         :param request_body:    The request body from the create user request
         :param from_signup:     Indicates that this validation request came from the signup page, so
                                 we should ignore org and role checks. The organisation won't be created yet, this is
@@ -440,14 +420,9 @@ class ValidationController(object):
             ret['org_id'] = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
             ret['role'] = _check_user_role(request_body.get('role_name'))
 
-        # check firstname/lastname
         ret['first_name'] = _check_user_first_name(request_body.get('first_name'))
         ret['last_name'] = _check_user_last_name(request_body.get('last_name'))
-
-        # job title
         ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
-
-        # disabled flag
         ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
 
         # return a response if any ret values are response objects
@@ -459,11 +434,7 @@ class ValidationController(object):
 
     @staticmethod
     def validate_update_user_request(user_id: int, request_body: dict) -> typing.Union[Response, dict]:
-        """
-        Validates a user request body
-        :param request_body:    The request body from the update user request
-        :return:                Response if the request body contains invalid values, or the UserRequest dataclass
-        """
+        """  Validates an update user request body """
         from app.Controllers import UserController
         ret = {}
 
@@ -500,54 +471,35 @@ class ValidationController(object):
         return ret
 
     @staticmethod
-    def validate_delete_user_request(user_id: int, request_body: dict) -> typing.Union[Response, dict]:
-        """
-        Validates a user request body
-        :param request_body:    The request body from the update user request
-        :return:                Response if the request body contains invalid values, or the UserRequest dataclass
-        """
+    def validate_delete_user_request(user_id: int) -> typing.Union[Response, dict]:
+        """ Validates a delete user request body """
         from app.Controllers import UserController
-        ret = {}
 
         check_user = _check_user_id(user_id, should_exist=True)
         if isinstance(check_user, Response):
             return check_user
 
-        user_org = UserController.get_user_by_id(user_id).org_id
+        try:
+            org_id = UserController.get_user_by_id(user_id).org_id
+        except ValueError as e:
+            logger.warning(str(e))
+            return g_response("user does not exist", 400)
 
-        ret['org_id'] = _check_org_id(user_org, should_exist=True)
-
-        # return a response if any ret values are response objects
-        for k, v in ret.items():
-            if isinstance(v, Response):
-                return v
-
-        return ret
+        return {
+            "org_id": org_id
+        }
 
     @staticmethod
     def validate_create_org_request(request_body: dict) -> typing.Union[Response, dict]:
-        """
-        Validates a user request body
-
-        :param request_body:    The request body from the create org request
-        :return:                Response if the request body contains invalid values, or the OrgRequest dataclass
-        """
-        from app.Controllers import OrganisationController
-
-        # check organisation name
+        """ Validates a create org request body """
         org_name = request_body.get('name', request_body.get('org_name'))
-        if OrganisationController.org_exists(org_name):
-            logger.info(f"organisation {org_name} already exists")
-            return g_response("Organisation already exists", 400)
-        if not isinstance(org_name, str):
-            logger.info(f"bad org_name, exepected str got {type(org_name)}")
-            return g_response(f"Bad org_name, expected str got {type(org_name)}.", 400)
-        if len(org_name) == 0:
-            logger.info(f"org_name is required")
-            return g_response(f"org_name is required.", 400)
+
+        org = _check_org_id(org_name, should_exist=False)
+        if isinstance(org, Response):
+            return org
 
         return {
-            'org_name': org_name
+            "org_name": org
         }
 
     @staticmethod
@@ -688,7 +640,8 @@ class ValidationController(object):
 
         try:
             assignee = TaskController.get_assignee(task_id)
-        except ValueError:
+        except ValueError as e:
+            logger.warning(str(e))
             assignee = None
 
         task_status = _check_task_status(request_body.get('task_status'), should_exist=True)

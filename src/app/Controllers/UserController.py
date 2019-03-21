@@ -1,6 +1,4 @@
 import json
-import random
-import string
 import typing
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthController
@@ -93,19 +91,17 @@ class UserController(object):
         """
         Checks to see if a user exists
         :param user_identifier: The user id or email
-        :return:                True if the user exists or False
+        :raises ValueError:     If the user doesn't exist.
         """
         with session_scope() as session:
             if isinstance(user_identifier, str):
                 logger.info("user_identifier is a str so finding user by email")
-                ret = session.query(exists().where(User.email == user_identifier)).scalar()
+                return session.query(exists().where(User.email == user_identifier)).scalar()
             elif isinstance(user_identifier, int):
                 logger.info("user_identifier is an int so finding user by id")
-                ret = session.query(exists().where(User.id == user_identifier)).scalar()
+                return session.query(exists().where(User.id == user_identifier)).scalar()
             else:
                 raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
-
-        return ret
 
     @staticmethod
     def get_user(user_identifier: typing.Union[str, int]) -> User:
@@ -113,7 +109,6 @@ class UserController(object):
         Gets a user by their id or email
         :param user_identifier: The user id or email
         :raises ValueError:     If the user doesn't exist.
-        :return:                The User
         """
         if isinstance(user_identifier, str):
             logger.info("user_identifier is a str so getting user by email")
@@ -133,42 +128,33 @@ class UserController(object):
         return _get_user_by_id(user_id)
 
     @staticmethod
-    def user_create(request: request, require_auth: bool = True) -> Response:
-        """
-        Creates a user from a request
-        :param request:         The request object
-        :param require_auth:    If request needs to have authorization (e.g. not if signing up)
-        :return:                Response
-        """
+    def user_create(req: request, require_auth: bool = True) -> Response:
+        """ Creates a user from a request """
         def create_user_settings(user_id) -> None:
+            """ Creates user settings for this user """
             from app.Controllers import SettingsController
             from app.Models import UserSetting
             SettingsController.set_user_settings(UserSetting(user_id=user_id))
 
-        def create_user(valid_user: dict, req_user: User = None) -> Response:
-            """
-            Creates the user
-            :param valid_user:  The validated user dict
-            :param req_user:    The user making the request, if it was an authenticated request.
-            :return:            Response
-            """
+        def create_user(user_to_create: dict, request_user: User = None) -> Response:
+            """ Creates the user """
             with session_scope() as session:
                 user = User(
-                    org_id=valid_user.get('org_id'),
-                    email=valid_user.get('email'),
-                    first_name=valid_user.get('first_name'),
-                    last_name=valid_user.get('last_name'),
-                    password=valid_user.get('password'),
-                    role=valid_user.get('role'),
-                    job_title=valid_user.get('job_title')
+                    org_id=user_to_create.get('org_id'),
+                    email=user_to_create.get('email'),
+                    first_name=user_to_create.get('first_name'),
+                    last_name=user_to_create.get('last_name'),
+                    password=user_to_create.get('password'),
+                    role=user_to_create.get('role'),
+                    job_title=user_to_create.get('job_title')
                 )
                 session.add(user)
 
             # create user settings
             create_user_settings(user.id)
 
-            if req_user is not None:
-                req_user.log(
+            if request_user is not None:
+                request_user.log(
                     operation=Operation.CREATE,
                     resource=Resource.USER,
                     resource_id=user.id
@@ -179,46 +165,45 @@ class UserController(object):
                     resource=Resource.USER,
                     resource_id=user.id
                 )
-            logger.info(f"created user {user.as_dict()}")
+            logger.info(f"user {req_user.id} created user {user.as_dict()}")
             return g_response("Successfully created user", 201)
 
-        request_body = request.get_json()
+        request_body = req.get_json()
 
         # validate user
         from app.Controllers import ValidationController
-        valid_user = ValidationController.validate_create_user_request(request_body)
 
-        # response is failure, User object is a pass
+        valid_user = ValidationController.validate_create_user_request(request_body)
+        # invalid
         if isinstance(valid_user, Response):
             return valid_user
 
         if require_auth:
             logger.info("requiring auth to create user")
             req_user = AuthController.authorize_request(
-                request_headers=request.headers,
+                request_headers=req.headers,
                 operation=Operation.CREATE,
                 resource=Resource.USER,
                 resource_org_id=valid_user.get('org_id')
             )
+            # no perms
             if isinstance(req_user, Response):
                 return req_user
-            elif isinstance(req_user, User):
-                return create_user(valid_user, req_user=req_user)
+
+            return create_user(
+                user_to_create=valid_user,
+                request_user=req_user
+            )
         else:
             logger.info("not requiring auth to create user")
             return create_user(valid_user)
 
     @staticmethod
-    def user_update(user_id: int, request: request) -> Response:
-        """
-        Updates a user, requires the full user object in the response body.
-        :param user_id   The user id
-        :param request:     The request object
-        :return:            Response
-        """
+    def user_update(user_id: int, req: request) -> Response:
+        """ Updates a user, requires the full user object in the response body.  """
         from app.Controllers import ValidationController
 
-        request_body = request.get_json()
+        request_body = req.get_json()
 
         try:
             user_id = int(user_id)
@@ -226,42 +211,38 @@ class UserController(object):
             return g_response(f"cannot cast `{user_id}` to int", 400)
 
         valid_user = ValidationController.validate_update_user_request(user_id, request_body)
-
+        # invalid
         if isinstance(valid_user, Response):
             return valid_user
-        else:
-            req_user = AuthController.authorize_request(
-                request_headers=request.headers,
-                operation=Operation.UPDATE,
-                resource=Resource.USER,
-                resource_org_id=valid_user.get('org_id'),
-                resource_user_id=user_id
-            )
-            if isinstance(req_user, Response):
-                return req_user
-            elif isinstance(req_user, User):
-                user_to_update = UserController.get_user_by_id(user_id)
 
-                with session_scope():
-                    for k, v in valid_user.items():
-                        user_to_update.__setattr__(k, v)
+        req_user = AuthController.authorize_request(
+            request_headers=req.headers,
+            operation=Operation.UPDATE,
+            resource=Resource.USER,
+            resource_org_id=valid_user.get('org_id'),
+            resource_user_id=user_id
+        )
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
 
-                req_user.log(
-                    operation=Operation.UPDATE,
-                    resource=Resource.USER,
-                    resource_id=user_id
-                )
-                logger.info(f"updated user {user_to_update.as_dict()}")
-                return g_response(status=204)
+        user_to_update = UserController.get_user_by_id(user_id)
+
+        with session_scope():
+            for k, v in valid_user.items():
+                user_to_update.__setattr__(k, v)
+
+        req_user.log(
+            operation=Operation.UPDATE,
+            resource=Resource.USER,
+            resource_id=user_id
+        )
+        logger.info(f"user {req_user.id} updated user {user_to_update.as_dict()}")
+        return g_response(status=204)
 
     @staticmethod
-    def user_delete(user_id: int, request: request) -> Response:
-        """
-        Updates a user, requires the full user object in the response body.
-        :param user_id   The user id
-        :param request:     The request object
-        :return:            Response
-        """
+    def user_delete(user_id: int, req: request) -> Response:
+        """ Deletes a user """
         from app.Controllers import ValidationController
 
         try:
@@ -269,130 +250,112 @@ class UserController(object):
         except ValueError:
             return g_response(f"cannot cast `{user_id}` to int", 400)
 
-        valid_user = ValidationController.validate_delete_user_request(user_id, request.get_json())
-
-        # invalid request
+        valid_user = ValidationController.validate_delete_user_request(user_id)
+        # invalid
         if isinstance(valid_user, Response):
             return valid_user
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.DELETE,
             resource=Resource.USER,
             resource_org_id=valid_user.get('org_id')
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
 
-        user_to_del = UserController.get_user_by_id(user_id)
-
         with session_scope():
-            rand_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
-            user_to_del.first_name = rand_str
-            user_to_del.last_name = rand_str
-            user_to_del.email = f"{rand_str}@{rand_str}.com"
-            user_to_del.deleted = True
+            user_to_del = UserController.get_user_by_id(user_id)
+            user_to_del.anonymize()
 
         req_user.log(
             operation=Operation.DELETE,
             resource=Resource.USER,
             resource_id=user_id
         )
-        logger.info(f"deleted user {user_to_del.as_dict()}")
+        logger.info(f"user {req_user.id} deleted user {user_to_del.as_dict()}")
         return g_response(status=204)
 
     @staticmethod
-    def user_get(user_identifier: typing.Union[int, str], request: request) -> Response:
-        """
-        Get a single user.
-        :param user_identifier:     The user ID
-        :param request:     The request object
-        :return:
-        """
+    def user_get(user_identifier: typing.Union[int, str], req: request) -> Response:
+        """ Get a single user by email or ID """
         from app.Controllers import UserController
 
         # is the identifier an email or user_id?
         try:
             user_identifier = int(user_identifier)
             logger.info("user_identifier is an id")
-        except ValueError as e:  # noqa
+        except ValueError:
             from app.Controllers import ValidationController
             validate_identifier = ValidationController.validate_email(user_identifier)
             if isinstance(validate_identifier, Response):
                 return validate_identifier
             else:
+                logger.info("user_identifier is an email")
                 user_identifier = str(user_identifier)
-            logger.info("user_identifier is an email")
 
-        # if user exists check if permissions are good and then return the user
         if UserController.user_exists(user_identifier):
             user = UserController.get_user(user_identifier)
             req_user = AuthController.authorize_request(
-                request_headers=request.headers,
+                request_headers=req.headers,
                 operation=Operation.GET,
                 resource=Resource.USER,
                 resource_user_id=user.id,
                 resource_org_id=user.org_id
             )
+            # no perms
             if isinstance(req_user, Response):
                 return req_user
-            elif isinstance(req_user, User):
-                req_user.log(
-                    operation=Operation.GET,
-                    resource=Resource.USER,
-                    resource_id=user.id
-                )
-                logger.info(f"got user {user.as_dict()}")
-                return j_response(user.as_dict())
+
+            req_user.log(
+                operation=Operation.GET,
+                resource=Resource.USER,
+                resource_id=user.id
+            )
+            logger.info(f"found user {user.as_dict()}")
+            return j_response(user.as_dict())
         else:
             logger.info(f"user with id {user_identifier} does not exist")
             return g_response("User does not exist.", 400)
 
     @staticmethod
-    def user_get_all(request: request) -> Response:
+    def user_get_all(req: request) -> Response:
         """
         Get all users
-        :param request:     The request object
+        :param req:     The request object
         :return:
         """
         from app.Controllers import AuthController
         from app.Models import User
 
         req_user = AuthController.authorize_request(
-            request_headers=request.headers,
+            request_headers=req.headers,
             operation=Operation.GET,
             resource=Resource.USERS
         )
-
+        # no perms
         if isinstance(req_user, Response):
             return req_user
-        elif isinstance(req_user, User):
 
-            with session_scope() as session:
-                users_qry = session.query(User, Role, Organisation) \
-                    .join(User.roles) \
-                    .join(User.orgs) \
-                    .filter(User.org_id == req_user.org_id) \
-                    .all()
+        with session_scope() as session:
+            users_qry = session.query(User, Role, Organisation) \
+                .join(User.roles) \
+                .join(User.orgs) \
+                .filter(User.org_id == req_user.org_id) \
+                .all()
 
-            users = [_make_user_dict(u, r, o) for u, r, o in users_qry]
-            req_user.log(
-                operation=Operation.GET,
-                resource=Resource.USERS,
-                resource_id=None
-            )
-            logger.info(f"retrieved {len(users)} users: {json.dumps(users)}")
-            return j_response(users)
+        users = [_make_user_dict(u, r, o) for u, r, o in users_qry]
+        req_user.log(
+            operation=Operation.GET,
+            resource=Resource.USERS
+        )
+        logger.info(f"found {len(users)} users: {json.dumps(users)}")
+        return j_response(users)
 
     @staticmethod
     def get_full_user_as_dict(user_id: int) -> typing.Union[dict, Response]:
-        """
-        Returns a full user object with all of its FK's joined.
-        :param user_id: The user id
-        :return:        A user
-        """
+        """ Returns a full user object with all of its FK's joined. """
         with session_scope() as session:
             user_qry = session.query(User, Role, Organisation)\
                             .join(User.roles)\
@@ -400,20 +363,13 @@ class UserController(object):
                             .filter(User.id == user_id)\
                             .all()
             if user_qry is not None:
-                user_dict = {}
-                for u, r, o in user_qry:
-                    user_dict = _make_user_dict(u, r, o)
-                return user_dict
+                return _make_user_dict(*user_qry)
             else:
-                return g_response("Couldn't find user with id {user_id}", 400)
+                return g_response(f"Couldn't find user with id {user_id}", 400)
 
     @staticmethod
     def user_pages(_request: request) -> Response:
-        """
-        Returns the pages a user can access
-        :param _request: The request
-        :return: A response with a list of pages
-        """
+        """ Returns the pages a user can access """
         from app.Controllers import AuthController
 
         req_user = AuthController.authorize_request(
@@ -421,7 +377,7 @@ class UserController(object):
             operation=Operation.GET,
             resource=Resource.PAGES
         )
-
+        # no perms
         if isinstance(req_user, Response):
             return req_user
 
@@ -431,18 +387,18 @@ class UserController(object):
                 Permission.resource_id.like("%_PAGE")
             ).all()
 
-            ret = []
+            pages = []
             for permission in pages_qry:
                 for page in permission:
                     # strip _PAGE
-                    ret.append(page.split('_PAGE')[0])
+                    pages.append(page.split('_PAGE')[0])
 
             req_user.log(
                 operation=Operation.GET,
-                resource=Resource.PAGES,
-                resource_id=None
+                resource=Resource.PAGES
             )
-            return j_response(sorted(ret))
+            logger.info(f"found {len(pages)} pages: {pages}")
+            return j_response(sorted(pages))
 
     @staticmethod
     def get_user_settings(_request: request) -> Response:
@@ -454,7 +410,6 @@ class UserController(object):
             operation=Operation.GET,
             resource=Resource.USER_SETTINGS
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
@@ -464,6 +419,7 @@ class UserController(object):
             resource=Resource.USER_SETTINGS,
             resource_id=req_user.id
         )
+        logger.info(f"got user settings for {req_user.id}")
         return j_response(SettingsController.get_user_settings(req_user.id).as_dict())
 
     @staticmethod
@@ -472,7 +428,6 @@ class UserController(object):
         from app.Controllers import AuthController, ValidationController, SettingsController
 
         valid_user_settings = ValidationController.validate_update_user_settings_request(_request.get_json())
-
         # invalid
         if isinstance(valid_user_settings, Response):
             return valid_user_settings
@@ -484,7 +439,6 @@ class UserController(object):
             resource_org_id=valid_user_settings.get('org_id'),
             resource_user_id=valid_user_settings.get('user_id')
         )
-
         # no perms
         if isinstance(req_user, Response):
             return req_user
@@ -495,4 +449,5 @@ class UserController(object):
             resource=Resource.USER_SETTINGS,
             resource_id=req_user.id
         )
+        logger.info(f"updated user {req_user.id} settings")
         return g_response(status=204)
