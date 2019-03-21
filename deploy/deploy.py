@@ -10,6 +10,7 @@ ecs = boto3.client('ecs')
 desired_count = 1
 min_health_pc = 0
 max_health_pc = 200
+task_role_arn = 'arn:aws:iam::008492826001:role/afterburner-api-container'
 
 
 def service_exists(service: str, env: str) -> bool:
@@ -61,6 +62,8 @@ if __name__ == '__main__':
             'minimumHealthyPercent': min_health_pc
         }
     }
+    if task_role_arn is not None:
+        common_service_kwargs['taskRoleArn'] = task_role_arn
 
     # update or create service
     if service_exists(args.service_name, args.environment):
