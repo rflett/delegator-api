@@ -137,7 +137,7 @@ def _check_user_disabled(disabled: typing.Optional[bool]) -> typing.Union[None, 
         if not isinstance(disabled, bool):
             logger.info(f"Bad disabled, expected bool got {type(disabled)}.")
             return g_response(f"Bad disabled, expected bool got {type(disabled)}.", 400)
-    return disabled
+    return False
 
 
 def _check_task_id(task_id: int) -> typing.Union[Response, int]:

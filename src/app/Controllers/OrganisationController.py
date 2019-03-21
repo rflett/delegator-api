@@ -4,7 +4,7 @@ from app.Controllers import AuthController
 from app.Models import Organisation, User
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
-from sqlalchemy import exists
+from sqlalchemy import exists, func
 
 
 class OrganisationController(object):
@@ -18,7 +18,9 @@ class OrganisationController(object):
         with session_scope() as session:
             if isinstance(org_identifier, str):
                 logger.info("org_identifier is a str so finding org by name")
-                ret = session.query(exists().where(Organisation.name == org_identifier)).scalar()
+                ret = session.query(exists().where(
+                    func.lower(Organisation.name) == func.lower(org_identifier)
+                )).scalar()
             elif isinstance(org_identifier, int):
                 logger.info("org_identifier is an int so finding org by id")
                 ret = session.query(exists().where(Organisation.id == org_identifier)).scalar()
@@ -135,17 +137,17 @@ class OrganisationController(object):
         return j_response(SettingsController.get_org_settings(req_user.org_id).as_dict())
 
     @staticmethod
-    def update_org_settings(_request: request) -> Response:
+    def update_org_settings(req: request) -> Response:
         """ Returns the org's settings """
         from app.Controllers import AuthController, ValidationController, SettingsController
 
-        valid_org_settings = ValidationController.validate_update_org_settings_request(_request.get_json())
+        valid_org_settings = ValidationController.validate_update_org_settings_request(req.get_json())
         # invalid
         if isinstance(valid_org_settings, Response):
             return valid_org_settings
 
         req_user = AuthController.authorize_request(
-            request_headers=_request.headers,
+            request_headers=req.headers,
             operation=Operation.UPDATE,
             resource=Resource.ORG_SETTINGS,
             resource_org_id=valid_org_settings.get('org_id')

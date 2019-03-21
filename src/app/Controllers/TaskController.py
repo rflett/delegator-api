@@ -7,7 +7,7 @@ from app.Models import TaskType, User, Task, TaskStatus, TaskPriority
 from app.Models.Enums import TaskStatuses
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
-from sqlalchemy import exists, and_
+from sqlalchemy import exists, and_, func
 from sqlalchemy.orm import aliased
 
 
@@ -119,7 +119,7 @@ class TaskController(object):
                 logger.info(f"task type identifier is a str so finding by type")
                 return session.query(exists().where(
                     and_(
-                        TaskType.label == task_type_identifier,
+                        func.lower(TaskType.label) == func.lower(task_type_identifier),
                         TaskType.org_id == org_identifier
                     )
                 )).scalar()
@@ -536,7 +536,7 @@ class TaskController(object):
         return g_response(status=204)
 
     @staticmethod
-    def drop_task(task_id, _request: request) -> Response:
+    def drop_task(task_id, req: request) -> Response:
         """ Drops a task, which sets it to READY and removes the assignee """
         from app.Controllers import ValidationController, TaskController
 
@@ -551,7 +551,7 @@ class TaskController(object):
             return valid_task_drop
 
         req_user = AuthController.authorize_request(
-            request_headers=_request.headers,
+            request_headers=req.headers,
             operation=Operation.DROP,
             resource=Resource.TASK,
             resource_org_id=valid_task_drop.get('org_id'),
@@ -577,7 +577,7 @@ class TaskController(object):
         return g_response(status=204)
 
     @staticmethod
-    def transition_task(_request: request) -> Response:
+    def transition_task(req: request) -> Response:
         """ Transitions the status of a task """
         from app.Controllers import ValidationController, TaskController
 
@@ -587,7 +587,7 @@ class TaskController(object):
             return valid_task_transition
 
         req_user = AuthController.authorize_request(
-            request_headers=_request.headers,
+            request_headers=req.headers,
             operation=Operation.TRANSITION,
             resource=Resource.TASK,
             resource_org_id=valid_task_transition.get('org_id'),
@@ -613,7 +613,7 @@ class TaskController(object):
         return g_response(status=204)
 
     @staticmethod
-    def task_get(task_id: int, request: request) -> Response:
+    def task_get(task_id: int, req: request) -> Response:
         """ Get a single task. """
         from app.Controllers import TaskController
 
@@ -626,7 +626,7 @@ class TaskController(object):
         if TaskController.task_exists(task_id):
             task = TaskController.get_task_by_id(task_id)
             req_user = AuthController.authorize_request(
-                request_headers=request.headers,
+                request_headers=req.headers,
                 operation=Operation.GET,
                 resource=Resource.TASK,
                 resource_org_id=task.org_id

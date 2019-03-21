@@ -680,7 +680,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"type\": \"Patient Transport2\",\n\t\"org_id\": 1\n}"
+							"raw": "{\n\t\"label\": \"Patient Transport2\",\n\t\"org_id\": 1\n}"
 						},
 						"url": {
 							"raw": "{{host}}/tasks/types",
@@ -1705,7 +1705,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"type\": \"Cleanup Aisle 3\",\n\t\"org_id\": 1\n}"
+							"raw": "{\n\t\"label\": \"Cleanup Aisle 3\",\n\t\"org_id\": 1\n}"
 						},
 						"url": {
 							"raw": "{{host}}/tasks/types",
@@ -1761,7 +1761,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"type\": \"Move Equipment\",\n\t\"org_id\": 2\n}"
+							"raw": "{\n\t\"label\": \"Move Equipment\",\n\t\"org_id\": 2\n}"
 						},
 						"url": {
 							"raw": "{{host}}/tasks/types",
@@ -2837,7 +2837,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"type\": \"Forbidden Task\",\n\t\"org_id\": 1\n}"
+							"raw": "{\n\t\"label\": \"Forbidden Task\",\n\t\"org_id\": 1\n}"
 						},
 						"url": {
 							"raw": "{{host}}/tasks/types",
@@ -3138,12 +3138,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/health",
+							"raw": "{{host}}/v",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"health"
+								"v"
 							]
 						}
 					},
@@ -3186,7 +3186,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_name\": \"test-login\",\n\t\"email\": \"test-login@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"Ryan\",\n\t\"last_name\": \"Flett\",\n\t\"job_title\": \"Nurse Unit Manager\"\n}"
+							"raw": "{\n\t\"org_name\": \"test-login\",\n\t\"email\": \"test-login@sink.backburner.com\",\n\t\"password\": \"secret\",\n\t\"first_name\": \"Ryan\",\n\t\"last_name\": \"Flett\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/signup",
@@ -7548,7 +7548,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"type\": \"existing-task-type\",\n\t\"org_id\": {{org_id}}\n}"
+							"raw": "{\n\t\"label\": \"existing-task-type\",\n\t\"org_id\": {{org_id}}\n}"
 						},
 						"url": {
 							"raw": "{{host}}/tasks/types",

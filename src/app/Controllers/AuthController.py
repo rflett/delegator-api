@@ -257,7 +257,7 @@ class AuthController(object):
         """
         from app.Controllers import ValidationController, UserController
         request_body = req.get_json()
-        email = request_body.get.get('email')
+        email = request_body.get('email')
         password = request_body.get('password')
         logger.info(f"login requested for {email}")
 

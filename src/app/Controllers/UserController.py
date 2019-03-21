@@ -5,7 +5,7 @@ from app.Controllers import AuthController
 from app.Models import User, Organisation
 from app.Models.RBAC import Operation, Resource, Role, Permission
 from flask import request, Response
-from sqlalchemy import exists
+from sqlalchemy import exists, func
 
 
 def _compare_user_orgs(user_resource: User, request_user: User) -> bool:
@@ -96,7 +96,7 @@ class UserController(object):
         with session_scope() as session:
             if isinstance(user_identifier, str):
                 logger.info("user_identifier is a str so finding user by email")
-                return session.query(exists().where(User.email == user_identifier)).scalar()
+                return session.query(exists().where(func.lower(User.email) == func.lower(user_identifier))).scalar()
             elif isinstance(user_identifier, int):
                 logger.info("user_identifier is an int so finding user by id")
                 return session.query(exists().where(User.id == user_identifier)).scalar()
@@ -159,13 +159,14 @@ class UserController(object):
                     resource=Resource.USER,
                     resource_id=user.id
                 )
+                logger.info(f"user {request_user.id} created user {user.as_dict()}")
             else:
                 user.log(
                     operation=Operation.CREATE,
                     resource=Resource.USER,
                     resource_id=user.id
                 )
-            logger.info(f"user {req_user.id} created user {user.as_dict()}")
+                logger.info(f"user {user.id} created user {user.as_dict()}")
             return g_response("Successfully created user", 201)
 
         request_body = req.get_json()
@@ -361,19 +362,19 @@ class UserController(object):
                             .join(User.roles)\
                             .join(User.orgs)\
                             .filter(User.id == user_id)\
-                            .all()
-            if user_qry is not None:
-                return _make_user_dict(*user_qry)
-            else:
-                return g_response(f"Couldn't find user with id {user_id}", 400)
+                            .first()
+        if user_qry is not None:
+            return _make_user_dict(*user_qry)
+        else:
+            return g_response(f"Couldn't find user with id {user_id}", 400)
 
     @staticmethod
-    def user_pages(_request: request) -> Response:
+    def user_pages(req: request) -> Response:
         """ Returns the pages a user can access """
         from app.Controllers import AuthController
 
         req_user = AuthController.authorize_request(
-            request_headers=_request.headers,
+            request_headers=req.headers,
             operation=Operation.GET,
             resource=Resource.PAGES
         )
@@ -401,12 +402,12 @@ class UserController(object):
             return j_response(sorted(pages))
 
     @staticmethod
-    def get_user_settings(_request: request) -> Response:
+    def get_user_settings(req: request) -> Response:
         """ Returns the user's settings """
         from app.Controllers import AuthController, SettingsController
 
         req_user = AuthController.authorize_request(
-            request_headers=_request.headers,
+            request_headers=req.headers,
             operation=Operation.GET,
             resource=Resource.USER_SETTINGS
         )
@@ -423,17 +424,17 @@ class UserController(object):
         return j_response(SettingsController.get_user_settings(req_user.id).as_dict())
 
     @staticmethod
-    def update_user_settings(_request: request) -> Response:
+    def update_user_settings(req: request) -> Response:
         """ Returns the user's settings """
         from app.Controllers import AuthController, ValidationController, SettingsController
 
-        valid_user_settings = ValidationController.validate_update_user_settings_request(_request.get_json())
+        valid_user_settings = ValidationController.validate_update_user_settings_request(req.get_json())
         # invalid
         if isinstance(valid_user_settings, Response):
             return valid_user_settings
 
         req_user = AuthController.authorize_request(
-            request_headers=_request.headers,
+            request_headers=req.headers,
             operation=Operation.UPDATE,
             resource=Resource.USER_SETTINGS,
             resource_org_id=valid_user_settings.get('org_id'),
