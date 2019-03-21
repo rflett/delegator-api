@@ -2,6 +2,7 @@
     {
         "name": "api",
         "image": "008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest",
+        "taskRoleArn": "arn:aws:iam::008492826001:role/afterburner-api-container",
         "memory": 512,
         "memoryReservation": 64,
         "essential": true,

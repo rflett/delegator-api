@@ -9,6 +9,109 @@
 			"name": "Users",
 			"item": [
 				{
+					"name": "Misc",
+					"item": [
+						{
+							"name": "Get Active Users",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "2f2d9d11-4430-468a-8726-a29c6c9d6698",
+										"exec": [
+											"pm.test(\"response is ok\", function () {\r",
+											"    pm.response.to.have.status(200);\r",
+											"});\r",
+											"\r",
+											"pm.test(\"response must be valid and have a body\", function () {\r",
+											"     pm.response.to.be.json;\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "{{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{host}}/users/active",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"users",
+										"active"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Pages",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "fed51681-1030-43df-9387-5a58d297a618",
+										"exec": [
+											"pm.test(\"response is ok\", function () {\r",
+											"    pm.response.to.have.status(200);\r",
+											"});\r",
+											"\r",
+											"pm.test(\"response must be valid and have a body\", function () {\r",
+											"     pm.response.to.be.json;\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "{{token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{host}}/user/pages",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"user",
+										"pages"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
 					"name": "Create User",
 					"event": [
 						{
@@ -340,53 +443,6 @@
 						}
 					},
 					"response": []
-				},
-				{
-					"name": "Get Active Users",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "2f2d9d11-4430-468a-8726-a29c6c9d6698",
-								"exec": [
-									"pm.test(\"response is ok\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.test(\"response must be valid and have a body\", function () {\r",
-									"     pm.response.to.be.json;\r",
-									"});\r",
-									""
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"type": "text",
-								"value": "{{token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": ""
-						},
-						"url": {
-							"raw": "{{host}}/users/active",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"users",
-								"active"
-							]
-						}
-					},
-					"response": []
 				}
 			]
 		},
@@ -696,43 +752,6 @@
 					"response": []
 				},
 				{
-					"name": "Get Task",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Content-Type",
-								"name": "Content-Type",
-								"type": "text",
-								"value": "application/json"
-							},
-							{
-								"key": "Authorization",
-								"type": "text",
-								"value": "{{token}}"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"INPROGRESS\",\n\t\"time_estimate\": 300,\n\t\"due_time\": \"2019-03-17T21:00:00+10:00\",\n\t\"assignee\": 2,\n\t\"priority\": 1\n}\n"
-						},
-						"url": {
-							"raw": "{{host}}/task/1",
-							"host": [
-								"{{host}}"
-							],
-							"path": [
-								"task",
-								"1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "Get Tasks",
 					"event": [
 						{
@@ -776,6 +795,43 @@
 							],
 							"path": [
 								"tasks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Task",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/task/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"task",
+								"1"
 							]
 						}
 					},
@@ -852,7 +908,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": \"BackBurner\",\n\t\"task_id\": 1,\n\t\"assignee\": 1\n}\n"
+							"raw": "{\n\t\"task_id\": 1,\n\t\"assignee\": 1\n}\n"
 						},
 						"url": {
 							"raw": "{{host}}/task/assign",
@@ -971,6 +1027,135 @@
 							"path": [
 								"task",
 								"transition"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Settings",
+			"item": [
+				{
+					"name": "Get User Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/user/settings",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"user_id\": 1,\n\t\"tz_offset\": \"+1000\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/user/settings",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Org Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/org/settings",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"org",
+								"settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Org Settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"org_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{host}}/org/settings",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"org",
+								"settings"
 							]
 						}
 					},
@@ -1145,56 +1330,6 @@
 					],
 					"path": [
 						"roles"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get Pages",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"id": "fed51681-1030-43df-9387-5a58d297a618",
-						"exec": [
-							"pm.test(\"response is ok\", function () {\r",
-							"    pm.response.to.have.status(200);\r",
-							"});\r",
-							"\r",
-							"pm.test(\"response must be valid and have a body\", function () {\r",
-							"     pm.response.to.be.json;\r",
-							"});\r",
-							""
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"type": "text",
-						"value": "{{token}}"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
-				"url": {
-					"raw": "{{host}}/user/pages",
-					"host": [
-						"{{host}}"
-					],
-					"path": [
-						"user",
-						"pages"
 					]
 				}
 			},

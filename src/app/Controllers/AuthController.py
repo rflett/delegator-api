@@ -11,7 +11,7 @@ from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User, FailedLogin
 from app.Models.Enums import UserAuthLogAction
 from app.Models.RBAC import Role, ResourceScope
-from flask import Response
+from flask import Response, request
 from sqlalchemy import exists
 
 
@@ -65,20 +65,6 @@ def _generate_jwt_token(user: User) -> str:
         key=user.jwt_secret(),
         algorithm='HS256'
     ).decode("utf-8")
-
-
-def _clear_failed_logins(email: str) -> None:
-    """
-    Removes an email address from the failed logins table
-    :param email:   The email to clear
-    :return:        None
-    """
-    with session_scope() as session:
-        failed_email = session.query(exists().where(FailedLogin.email == email)).scalar()
-
-    with session_scope() as session:
-        if failed_email:
-            session.query(FailedLogin).filter(FailedLogin.email == email).delete()
 
 
 def _failed_login_attempt(email: str) -> Response:
@@ -232,37 +218,37 @@ class AuthController(object):
             if user_permission_scope is False:
                 logger.info(f"user id {auth_user.id} cannot perform {operation} on {resource}")
                 return g_response(f"No permissions to {operation} {resource}", 403)
-            else:
-                if user_permission_scope == ResourceScope.SELF:
-                    # this user can only perform actions on resources it owns
-                    return _authorize_self(
-                        auth_user=auth_user,
-                        user_permission_scope=user_permission_scope,
-                        operation=operation,
-                        resource=resource,
-                        resource_user_id=resource_user_id,
-                        resource_org_id=resource_org_id
-                    )
 
-                elif user_permission_scope == ResourceScope.ORG:
-                    # this user can perform operations on resources in its organisation
-                    return _authorize_org(
-                        auth_user=auth_user,
-                        user_permission_scope=user_permission_scope,
-                        operation=operation,
-                        resource=resource,
-                        resource_user_id=resource_user_id,
-                        resource_org_id=resource_org_id
-                    )
+            elif user_permission_scope == ResourceScope.SELF:
+                # this user can only perform actions on resources it owns
+                return _authorize_self(
+                    auth_user=auth_user,
+                    user_permission_scope=user_permission_scope,
+                    operation=operation,
+                    resource=resource,
+                    resource_user_id=resource_user_id,
+                    resource_org_id=resource_org_id
+                )
 
-                elif user_permission_scope == ResourceScope.GLOBAL:
-                    # they can do anything cos they're l33t
-                    logger.info(f"user {auth_user.id} has {user_permission_scope} permissions "
-                                f"for {operation} {resource}")
-                    return auth_user
+            elif user_permission_scope == ResourceScope.ORG:
+                # this user can perform operations on resources in its organisation
+                return _authorize_org(
+                    auth_user=auth_user,
+                    user_permission_scope=user_permission_scope,
+                    operation=operation,
+                    resource=resource,
+                    resource_user_id=resource_user_id,
+                    resource_org_id=resource_org_id
+                )
+
+            elif user_permission_scope == ResourceScope.GLOBAL:
+                # they can do anything cos they're l33t
+                logger.info(f"user {auth_user.id} has {user_permission_scope} permissions "
+                            f"for {operation} {resource}")
+                return auth_user
 
     @staticmethod
-    def login(req: dict) -> Response:
+    def login(req: request) -> Response:
         """
         Logic for logging a user in. It will validate the request params and then return
         a JWT token with the user details.
@@ -270,11 +256,10 @@ class AuthController(object):
         :return:    Response
         """
         from app.Controllers import ValidationController, UserController
-
-        email = req.get('email')
-        password = req.get('password')
-
-        logger.info(f"login requested for {json.dumps(req)}")
+        request_body = req.get_json()
+        email = request_body.get('email')
+        password = request_body.get('password')
+        logger.info(f"login requested for {email}")
 
         # validate email
         email_validate_res = ValidationController.validate_email(email)
@@ -290,7 +275,7 @@ class AuthController(object):
         if UserController.user_exists(email):
             with session_scope() as session:
                 user = session.merge(UserController.get_user_by_email(email))
-                _clear_failed_logins(user.email)
+                user.clear_failed_logins()
         else:
             # failed email attempt
             return _failed_login_attempt(email)
@@ -327,7 +312,7 @@ class AuthController(object):
 
         with session_scope():
             # check password
-            if user.check_password(password):
+            if user.password_correct(password):
                 UserAuthLogController.log(
                     user=user,
                     action=UserAuthLogAction.LOGIN
@@ -378,21 +363,23 @@ class AuthController(object):
             return g_response('Logged out')
 
     @staticmethod
-    def reset_password(request_body: dict):
+    def reset_password(req: request):
         from app.Controllers import UserController
+        request_body = req.get_json()
         check_email = ValidationController.validate_email(request_body.get('email'))
+        # invalid
         if isinstance(check_email, Response):
             return check_email
-        else:
-            with session_scope():
-                logger.info(f"received password reset for {request_body.get('email')}")
-                user = UserController.get_user_by_email(request_body.get('email'))
-                new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])
-                user.reset_password(new_password)
-                UserAuthLogController.log(user, 'reset_password')
-                logger.info(json.dumps(user.as_dict()))
-                logger.info(f"password successfully reset for {request_body.get('email')}")
-                return g_response(f"Password reset successfully, new password is {new_password}")
+
+        with session_scope():
+            logger.info(f"received password reset for {request_body.get('email')}")
+            user = UserController.get_user_by_email(request_body.get('email'))
+            new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])
+            user.reset_password(new_password)
+            UserAuthLogController.log(user, 'reset_password')
+            logger.info(json.dumps(user.as_dict()))
+            logger.info(f"password successfully reset for {request_body.get('email')}")
+            return g_response(f"Password reset successfully, new password is {new_password}")
 
     @staticmethod
     def validate_jwt(token: str) -> typing.Union[bool, dict]:
@@ -459,23 +446,18 @@ class AuthController(object):
         elif not isinstance(auth, str):
             logger.info(f"Expected Authorization header type str got {type(auth)}.")
             return g_response(f"Expected Authorization header type str got {type(auth)}.", 401)
+
         try:
             token = auth.replace('Bearer ', '')
             jwt.decode(jwt=token, algorithms='HS256', verify=False)
-
+            return True
         except Exception as e:
             logger.error(str(e))
             return g_response("Invalid token.", 401)
 
-        return True
-
     @staticmethod
     def role_exists(role_name: str) -> User:
-        """
-        Checks to see if a role exists
-        :param role_name:   The role name
-        :return:            True if the role exists or False
-        """
+        """ Checks to see if a role exists """
         with session_scope() as session:
             ret = session.query(exists().where(Role.id == role_name)).scalar()
             return ret

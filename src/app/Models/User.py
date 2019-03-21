@@ -2,9 +2,13 @@ import binascii
 import datetime
 import hashlib
 import os
+import random
+import string
 import typing
-from app import db
+from app import db, session_scope, logger
 from app.Controllers.RBAC.RoleController import RoleController
+from app.Models import FailedLogin
+from sqlalchemy import exists
 
 
 def _hash_password(password: str) -> str:
@@ -45,6 +49,17 @@ def _get_jwt_aud(org_id: int) -> str:
     from app.Controllers import OrganisationController
     user_org = OrganisationController.get_org_by_id(org_id)
     return user_org.jwt_aud
+
+
+def _clear_failed_logins(email: str) -> None:
+    """ Removes an email address from the failed logins table """
+    with session_scope() as session:
+        failed_email = session.query(exists().where(FailedLogin.email == email)).scalar()
+
+        if failed_email:
+            session.query(FailedLogin).filter(FailedLogin.email == email).delete()
+
+        logger.info(f"cleared failed logins for {email}")
 
 
 class User(db.Model):
@@ -99,7 +114,7 @@ class User(db.Model):
         """
         return RoleController.role_can(self.role, operation, resource)
 
-    def check_password(self, password: str) -> bool:
+    def password_correct(self, password: str) -> bool:
         """
         Checks the provided password against the stored password. Hash the password like when
         it's stored and then compare.
@@ -174,6 +189,21 @@ class User(db.Model):
         """
         from app.Controllers import ActiveUserController
         ActiveUserController.user_is_inactive(self)
+
+    def clear_failed_logins(self) -> None:
+        """ Clears a user's failed login attempts """
+        _clear_failed_logins(self.email)
+
+    def anonymize(self) -> None:
+        """ Removes any PII from the user object """
+        def make_random() -> str:
+            return ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
+
+        self.first_name = make_random()
+        self.last_name = make_random()
+        self.email = f"{make_random()}@{make_random()}.com"
+        self.password = _hash_password(make_random())
+        self.deleted = True
 
     def as_dict(self) -> dict:
         """

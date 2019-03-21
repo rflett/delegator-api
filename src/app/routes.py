@@ -52,7 +52,7 @@ def version_info():
 @app.route('/login', methods=['POST'])
 @safe_exceptions
 def login():
-    return AuthController.login(request.get_json())
+    return AuthController.login(request)
 
 
 @app.route('/logout', methods=['POST'])
@@ -65,7 +65,7 @@ def logout():
 @app.route('/reset_password', methods=['POST'])
 @safe_exceptions
 def reset_password():
-    return AuthController.reset_password(request.get_json())
+    return AuthController.reset_password(request)
 
 
 @app.route('/signup', methods=['POST'])
@@ -92,7 +92,7 @@ def get_users():
 @requires_jwt
 @safe_exceptions
 def active_users():
-    return ActiveUserController.get_active_users()
+    return ActiveUserController.get_active_users(request)
 
 
 @app.route('/user/<identifier>', methods=['GET'])

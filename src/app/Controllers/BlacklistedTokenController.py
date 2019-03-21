@@ -7,7 +7,7 @@ def id_exists(blacklist_id: str) -> bool:
     """
     Checks database to see if token is blacklisted.
     :param blacklist_id:    The aud:jti combination the is a blacklist_id
-    :return:                True if blacklisted or False
+    :return:                True if blacklisted else False
     """
     with session_scope() as session:
         ret = session.query(exists().where(BlacklistedToken.id == blacklist_id)).scalar()
@@ -15,7 +15,6 @@ def id_exists(blacklist_id: str) -> bool:
 
 
 class BlacklistedTokenController(object):
-
     @staticmethod
     def is_token_blacklisted(blacklist_id: str) -> bool:
         """

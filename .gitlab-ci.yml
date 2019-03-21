@@ -14,7 +14,7 @@ flake8:
   allow_failure: true
   image: $GITLAB_REGISTRY/python:latest
   only:
-    - develop
+    - master
   script:
     - flake8 src/
 
@@ -50,6 +50,8 @@ integrationTest:
   image: $GITLAB_REGISTRY/docker:latest
   when: manual
   allow_failure: true
+  only:
+    - master
   services:
     - docker:dind
   tags:
@@ -60,10 +62,21 @@ integrationTest:
 
     # start services
     - docker run -d -p 5432:5432 --name postgres $AMZ_REGISTRY/postgres:latest
-    - docker run -d -p 5000:5000 -e APP_ENV=Ci --name api --link postgres:postgres $AMZ_REGISTRY/api:latest
+    - docker run -d
+        -p 5000:5000 
+        -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID 
+        -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY 
+        -e APP_ENV=Ci 
+        --name api 
+        --link postgres:postgres 
+        $AMZ_REGISTRY/api:latest
 
     # run tests
-    - docker run --link api:api -v `pwd`/src/tests/integration:/newman $AMZ_REGISTRY/newman:latest newman run /newman/integration.postman_collection.json
+    - docker run 
+      --link api:api 
+      -v `pwd`/src/tests/integration:/newman 
+      $AMZ_REGISTRY/newman:latest 
+      newman run /newman/integration.postman_collection.json
 
 deployStaging:
   stage: deployStaging
