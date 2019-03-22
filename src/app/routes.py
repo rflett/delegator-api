@@ -182,8 +182,8 @@ def disable_task_type(task_type_id):
 @app.route('/tasks/types/escalation', methods=['POST'])
 @requires_jwt
 @safe_exceptions
-def create_task_type_escalation():
-    return TaskController.create_task_type_escalation(request)
+def update_task_type_escalation():
+    return TaskController.upsert_task_escalations(request)
 
 
 @app.route('/tasks', methods=['POST'])

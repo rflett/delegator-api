@@ -329,14 +329,26 @@ def _check_escalation_display_order(order: int) -> typing.Union[int, Response]:
     return order
 
 
-def _check_escalation_(task_type_id: int, display_order: int) -> typing.Optional[Response]:
+def _check_escalation(
+        task_type_id: int,
+        display_order: int,
+        should_exist: bool
+) -> typing.Optional[Response]:
     """ Checks to see if an escalation already exists """
     with session_scope() as session:
-        return session.query(exists().where(
+        escalation_exists = session.query(exists().where(
             and_(
                 TaskTypeEscalation.task_type_id == task_type_id,
                 TaskTypeEscalation.display_order == display_order
             ))).scalar()
+        if should_exist:
+            if not escalation_exists:
+                logger.info(f"task type escalation {task_type_id}:{display_order} doesn't exist")
+                return g_response(f"task type escalation {task_type_id}:{display_order} does not exist", 400)
+        elif not should_exist:
+            if escalation_exists:
+                logger.info(f"task type escalation {task_type_id}:{display_order} already exists")
+                return g_response(f"task type escalation {task_type_id}:{display_order} already exists", 400)
 
 
 class ValidationController(object):
@@ -728,33 +740,61 @@ class ValidationController(object):
         }
 
     @staticmethod
-    def validate_create_task_type_escalation(request_body: dict) -> typing.Union[Response, dict]:
-        """ Validates creating a task type escalation """
+    def validate_upsert_task_escalation(escalations: typing.List[dict]) -> typing.Union[typing.List[dict], Response]:
         from app.Controllers import TaskController
 
-        task_type_id = _check_task_type_id(request_body.get('task_type_id'), should_exist=True)
-        if isinstance(task_type_id, Response):
-            return task_type_id
+        valid_escalations = []
 
-        display_order = _check_escalation_display_order(request_body.get('display_order'))
-        if isinstance(display_order, Response):
-            return display_order
+        for escalation in escalations:
+            task_type_id = _check_task_type_id(escalation.get('task_type_id'), should_exist=True)
+            if isinstance(task_type_id, Response):
+                return task_type_id
 
-        if _check_escalation_(task_type_id, display_order):
-            return g_response(f"escalation already exists")
+            display_order = _check_escalation_display_order(escalation.get('display_order'))
+            if isinstance(display_order, Response):
+                return display_order
 
-        ret = {
-            "org_id":  TaskController.get_task_type_by_id(task_type_id).org_id,
-            "task_type_id": task_type_id,
-            "display_order": display_order,
-            "delay": _check_escalation_delay(request_body.get('delay')),
-            "from_priority": _check_task_priority(request_body.get('from_priority')),
-            "to_priority": _check_task_priority(request_body.get('to_priority'))
-        }
+            ret = {
+                "org_id": TaskController.get_task_type_by_id(task_type_id).org_id,
+                "task_type_id": task_type_id,
+                "display_order": display_order,
+                "delay": _check_escalation_delay(escalation.get('delay')),
+                "from_priority": _check_task_priority(escalation.get('from_priority')),
+                "to_priority": _check_task_priority(escalation.get('to_priority'))
+            }
+            # return a response if any ret values are response objects
+            for k, v in ret.items():
+                if isinstance(v, Response):
+                    return v
 
-        # return a response if any ret values are response objects
-        for k, v in ret.items():
-            if isinstance(v, Response):
-                return v
+            with session_scope() as session:
+                escalation_exists = session.query(exists().where(
+                    and_(
+                        TaskTypeEscalation.task_type_id == task_type_id,
+                        TaskTypeEscalation.display_order == display_order
+                    ))).scalar()
 
-        return ret
+                if escalation_exists:
+                    # validate update
+                    check_escalation = _check_escalation(
+                        task_type_id=task_type_id,
+                        display_order=display_order,
+                        should_exist=True
+                    )
+                    if isinstance(check_escalation, Response):
+                        return check_escalation
+                    ret['action'] = 'update'
+                else:
+                    # validate create
+                    check_escalation = _check_escalation(
+                        task_type_id=task_type_id,
+                        display_order=display_order,
+                        should_exist=False
+                    )
+                    if isinstance(check_escalation, Response):
+                        return check_escalation
+                    ret['action'] = 'create'
+
+            valid_escalations.append(ret)
+
+        return valid_escalations

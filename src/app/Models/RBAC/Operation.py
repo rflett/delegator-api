@@ -10,6 +10,7 @@ DROP = 'DROP'
 ENABLE = 'ENABLE'
 DISABLE = 'DISABLE'
 TRANSITION = 'TRANSITION'
+UPSERT = 'UPSERT'
 
 
 class Operation(db.Model):
