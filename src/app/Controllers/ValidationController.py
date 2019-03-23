@@ -1,5 +1,6 @@
 import datetime
 import dateutil
+import time
 import typing
 from app import logger, g_response, app, session_scope
 from app.Models import TaskType, TaskTypeEscalation
@@ -349,6 +350,17 @@ def _check_escalation(
             if escalation_exists:
                 logger.info(f"task type escalation {task_type_id}:{display_order} already exists")
                 return g_response(f"task type escalation {task_type_id}:{display_order} already exists", 400)
+
+
+def _check_task_delayed_until(delayed_until: int) -> typing.Union[int, Response]:
+    """ Check escalation display order """
+    if isinstance(delayed_until, bool):
+        logger.info(f"Bad delayed_until, expected int got {type(delayed_until)}.")
+        return g_response(f"Bad delayed_until, expected int got {type(delayed_until)}.", 400)
+    if not isinstance(delayed_until, int):
+        logger.info(f"Bad delayed_until, expected int got {type(delayed_until)}.")
+        return g_response(f"Bad delayed_until, expected int got {type(delayed_until)}.", 400)
+    return delayed_until
 
 
 class ValidationController(object):
@@ -796,3 +808,33 @@ class ValidationController(object):
             valid_escalations.append(ret)
 
         return valid_escalations
+
+    @staticmethod
+    def validate_delay_task_request(request_body: dict) -> typing.Union[Response, dict]:
+        """ Validates the transition task request """
+        from app.Controllers import TaskController
+
+        task_id = _check_task_id(request_body.get('task_id'))
+        if isinstance(task_id, Response):
+            return task_id
+
+        org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
+        if isinstance(org_id, Response):
+            return org_id
+
+        try:
+            assignee = TaskController.get_assignee(task_id)
+        except ValueError as e:
+            logger.warning(str(e))
+            assignee = None
+
+        delay_for = _check_task_delayed_until(request_body.get('delay_for'))
+        if isinstance(delay_for, Response):
+            return delay_for
+
+        return {
+            'org_id': org_id,
+            'task_id': task_id,
+            'assignee': assignee,
+            'delayed_until': delay_for + int(time.time())
+        }

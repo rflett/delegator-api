@@ -11,6 +11,7 @@ ENABLE = 'ENABLE'
 DISABLE = 'DISABLE'
 TRANSITION = 'TRANSITION'
 UPSERT = 'UPSERT'
+DELAY = 'DELAY'
 
 
 class Operation(db.Model):

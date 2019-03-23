@@ -796,3 +796,47 @@ class TaskController(object):
                     f"created:{total_created}, updated:{total_updated}, deleted:{total_deleted}")
         # SUCCESS
         return g_response(status=204)
+
+    @staticmethod
+    def delay_task(req: request) -> Response:
+        """ Transitions the status of a task """
+        from app.Controllers import ValidationController
+        from app.Models import DelayedTask
+
+        valid_delay_task = ValidationController.validate_delay_task_request(request.get_json())
+        # invalid task drop request
+        if isinstance(valid_delay_task, Response):
+            return valid_delay_task
+
+        req_user = AuthController.authorize_request(
+            request_headers=req.headers,
+            operation=Operation.DELAY,
+            resource=Resource.TASK,
+            resource_org_id=valid_delay_task.get('org_id'),
+            resource_user_id=valid_delay_task.get('assignee')
+        )
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        with session_scope() as session:
+            delay = session.query(DelayedTask).filter(
+                    DelayedTask.task_id == valid_delay_task.get('task_id')
+                ).first()
+            if delay is not None:
+                delay.delayed_until = valid_delay_task.get('delayed_until')
+            else:
+                delayed_task = DelayedTask(
+                    task_id=valid_delay_task.get('task_id'),
+                    delayed_until=valid_delay_task.get('delayed_until')
+                )
+                session.add(delayed_task)
+
+        req_user.log(
+            operation=Operation.DELAY,
+            resource=Resource.TASK,
+            resource_id=valid_delay_task.get('task_id')
+        )
+        logger.info(f"user {req_user.id} delayed task {valid_delay_task.get('task_id')} "
+                    f"until {valid_delay_task.get('delayed_until')}")
+        return g_response(status=204)

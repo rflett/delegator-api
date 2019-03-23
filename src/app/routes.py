@@ -235,6 +235,13 @@ def transition_task():
     return TaskController.transition_task(request)
 
 
+@app.route('/task/delay', methods=['POST'])
+@requires_jwt
+@safe_exceptions
+def delay_task():
+    return TaskController.delay_task(request)
+
+
 @app.route('/org/settings', methods=['GET'])
 @requires_jwt
 @safe_exceptions
