@@ -741,8 +741,7 @@ class ValidationController(object):
 
     @staticmethod
     def validate_upsert_task_escalation(escalations: typing.List[dict]) -> typing.Union[typing.List[dict], Response]:
-        from app.Controllers import TaskController
-
+        """ Validates upserting task type escalations """
         valid_escalations = []
 
         for escalation in escalations:
@@ -755,7 +754,6 @@ class ValidationController(object):
                 return display_order
 
             ret = {
-                "org_id": TaskController.get_task_type_by_id(task_type_id).org_id,
                 "task_type_id": task_type_id,
                 "display_order": display_order,
                 "delay": _check_escalation_delay(escalation.get('delay')),

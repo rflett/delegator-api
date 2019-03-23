@@ -539,7 +539,16 @@ Overview of the BackBurner API.
                       "id": 1,
                       "type": "TT1",
                       "org_id": 1,
-                      "disabled": false
+                      "disabled": false,
+                      "escalation_policies": [
+                          {
+                              "task_type_id": 1,
+                              "display_order": 4,
+                              "delay": 600,
+                              "from_priority": 1,
+                              "to_priority": 2
+                          }
+                      ]
                   }
               }
             ]
@@ -683,7 +692,16 @@ Overview of the BackBurner API.
                   "id": 1,
                   "type": "TT1",
                   "org_id": 1,
-                  "disabled": false
+                  "disabled": false,
+                      "escalation_policies": [
+                          {
+                              "task_type_id": 1,
+                              "display_order": 4,
+                              "delay": 600,
+                              "from_priority": 1,
+                              "to_priority": 2
+                          }
+                      ]
               }
             ]
 
@@ -718,4 +736,38 @@ Overview of the BackBurner API.
             
             Authorization: Bearer JWT
         
++ Response 204 (application/json)
+
+
+## Task Type Escalations [/tasks/types/escalation]
+
+### Sync Escalations [POST]
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+
+    + Body
+
+            {
+                "task_type_id": 1,
+                "org_id": 1,
+                "escalation_policies": [
+                    {
+                        "task_type_id": 1,
+                        "display_order": 1,
+                        "delay": 600,
+                        "from_priority": 0,
+                        "to_priority": 1
+                    },
+                    {
+                        "task_type_id": 1,
+                        "display_order": 3,
+                        "delay": 300,
+                        "from_priority": 1,
+                        "to_priority": 2
+                    }
+                ]
+            }
+
 + Response 204 (application/json)
