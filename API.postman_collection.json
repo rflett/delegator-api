@@ -1088,6 +1088,62 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Delay Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"task_id\": 1,\n\t\"delay_for\": 600\n}"
+						},
+						"url": {
+							"raw": "{{host}}/task/delay",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"task",
+								"delay"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},

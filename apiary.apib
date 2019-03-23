@@ -607,6 +607,25 @@ Overview of the BackBurner API.
 + Response 204 (application/json)
 
 
+## Task Delaying [/task/delay]
+
+### Delay Task [POST]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+
+    + Body
+
+            {
+              "task_id": 1,
+              "delay_for": 600
+            }
+
++ Response 204 (application/json)
+
+
 ## Task Priorities [/tasks/priorities]
 
 ### Get Priorities [GET]
