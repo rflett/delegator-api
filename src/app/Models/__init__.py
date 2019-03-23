@@ -9,6 +9,8 @@ from app.Models.ActiveUser import ActiveUser
 from app.Models.Task import Task
 from app.Models.UserSetting import UserSetting
 from app.Models.OrgSetting import OrgSetting
+from app.Models.TaskTypeEscalation import TaskTypeEscalation
+from app.Models.DelayedTask import DelayedTask
 
 __all__ = [
     BlacklistedToken,
@@ -21,5 +23,7 @@ __all__ = [
     ActiveUser,
     Task,
     UserSetting,
-    OrgSetting
+    OrgSetting,
+    TaskTypeEscalation,
+    DelayedTask
 ]

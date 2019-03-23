@@ -1,5 +1,24 @@
 # api
 
+## Directory Structure
+
+### Repo Root
+
+- `.gitlab-ci.yml` - CI configuration
+- `.API.postman_collection.json` - Postman collection for API routes
+- `apiary.apib` - API Blueprint for https://backburner.docs.apiary.io/#
+
+### deploy/
+Contains scripts and configuration for deploying to ECS. Used in the CI pipeline.
+
+### dev/
+Scripts for local development, stands up the databases/redis/api etc.
+
+### src/
+Source files. This should be what you open in PyCharm.
+
+## Development
+
 API is a Python Flask application.
 
 Requirements:
@@ -11,31 +30,13 @@ Local development setup steps
 1. Install python3.7
 2. Install [Docker](https://www.docker.com/get-started)
 3. Install pipenv ```pip install pipenv```
+4. `cd src`
+5. `pipenv install`
+6. `pipenv shell`
+7. `./local.sh`
+8. `curl localhost:5000/health`
 
-Now that your environment is set up, run `pipenv install` in the src root to setup your virtualenv and requirements.
-
-## Local development with hot reload
-To run the api with hot reloading just run
-
-``` pipenv run flask run --reload ``` 
-
-in the ``` src ``` folder. Then visit or curl ``` localhost:5000 ```. The Flask server will update when files are changed.
-
-### Testing
-To run pytest, cd to the ``` src ``` folder and run ``` python -m pytest ```.
-
-## Build and run container stack
-cd to the dev folder then
-
-``` bash local_launch.sh ```
-
-or
-
-``` cmd local_launch.sh ```
-
-Alternatively, just run ``` docker compose up --build ``` in the dev folder. Either way this will build the API docker image, and then run the API image along side an NGINX container. This will provide the most accurate replication of the production environment. 
-
-## Local development vs production deployment
-Locally, development is best supported when executing ``` flask run ``` with hot reloading. This runs the flask development server which is not ideal in production.. 
-
-Instead, in production the ``` api.py ``` file is executed using gunicorn, which is a production ready HTTP WSGI server.
+## Full Stack Testing
+1. `cd dev`
+2. `./local_launch.sh`
+3. `curl localhost:5000/health`

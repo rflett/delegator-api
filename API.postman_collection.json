@@ -236,13 +236,13 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{host}}/user/{{user_id}}",
+							"raw": "{{host}}/user/1",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
 								"user",
-								"{{user_id}}"
+								"1"
 							]
 						}
 					},
@@ -608,6 +608,63 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "Upsert Task Escalation",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "fed51681-1030-43df-9387-5a58d297a618",
+										"exec": [
+											"pm.test(\"response is ok\", function () {\r",
+											"    pm.response.to.have.status(201);\r",
+											"});\r",
+											"\r",
+											"pm.test(\"response must be valid and have a body\", function () {\r",
+											"     pm.response.to.be.json;\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "{{token}}"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"task_type_id\": 1,\n\t\"org_id\": 1,\n\t\"escalation_policies\": [\n\t\t{\n\t\t\t\"task_type_id\": 1,\n\t\t\t\"display_order\": 1,\n\t\t\t\"delay\": 600,\n\t\t\t\"from_priority\": 0,\n\t\t\t\"to_priority\": 1\n\t\t},\n\t\t{\n\t\t\t\"task_type_id\": 1,\n\t\t\t\"display_order\": 2,\n\t\t\t\"delay\": 300,\n\t\t\t\"from_priority\": 1,\n\t\t\t\"to_priority\": 2\n\t\t}\n\t]\n}"
+								},
+								"url": {
+									"raw": "{{host}}/tasks/types/escalation",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"tasks",
+										"types",
+										"escalation"
+									]
+								}
+							},
+							"response": []
 						}
 					],
 					"_postman_isSubFolder": true
@@ -737,7 +794,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"READY\",\n\t\"time_estimate\": 600,\n\t\"due_time\": \"2019-03-26T06:00:00+10:00\",\n\t\"assignee\": 1,\n\t\"priority\": 2\n}"
+							"raw": "{\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"READY\",\n\t\"time_estimate\": 600,\n\t\"due_time\": \"2019-03-26 06:00:00\",\n\t\"assignee\": 1,\n\t\"priority\": 2\n}"
 						},
 						"url": {
 							"raw": "{{host}}/tasks",
@@ -1027,6 +1084,62 @@
 							"path": [
 								"task",
 								"transition"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delay Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"task_id\": 1,\n\t\"delay_for\": 600\n}"
+						},
+						"url": {
+							"raw": "{{host}}/task/delay",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"task",
+								"delay"
 							]
 						}
 					},

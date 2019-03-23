@@ -179,6 +179,13 @@ def disable_task_type(task_type_id):
     return TaskController.disable_task_type(task_type_id, request)
 
 
+@app.route('/tasks/types/escalation', methods=['POST'])
+@requires_jwt
+@safe_exceptions
+def update_task_type_escalation():
+    return TaskController.upsert_task_escalations(request)
+
+
 @app.route('/tasks', methods=['POST'])
 @requires_jwt
 @safe_exceptions
@@ -226,6 +233,13 @@ def drop_task(task_id):
 @safe_exceptions
 def transition_task():
     return TaskController.transition_task(request)
+
+
+@app.route('/task/delay', methods=['POST'])
+@requires_jwt
+@safe_exceptions
+def delay_task():
+    return TaskController.delay_task(request)
 
 
 @app.route('/org/settings', methods=['GET'])

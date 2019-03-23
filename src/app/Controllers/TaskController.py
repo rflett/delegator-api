@@ -3,7 +3,7 @@ import json
 import typing
 from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
-from app.Models import TaskType, User, Task, TaskStatus, TaskPriority
+from app.Models import TaskType, User, Task, TaskStatus, TaskPriority, TaskTypeEscalation
 from app.Models.Enums import TaskStatuses
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -33,7 +33,7 @@ def _make_task_dict(
         'assignee': ta.as_dict() if ta is not None else None,
         'created_by': tcb.as_dict(),
         'status': ts.as_dict(),
-        'type': tt.as_dict(),
+        'type': _make_task_type_dict(tt),
         'priority': tp.as_dict()
     }
 
@@ -54,7 +54,41 @@ def _make_task_dict(
     }.items()))
 
 
+def _make_task_type_dict(
+        tt: TaskType
+) -> dict:
+    """ Creates a nice dict of a task type """
+    task_type_dict = tt.as_dict()
+
+    # get task type escalations
+    with session_scope() as session:
+        tte_qry = session.query(TaskTypeEscalation).filter(TaskTypeEscalation.task_type_id == tt.id).all()
+        escalation_policies = [escalation.as_dict() for escalation in tte_qry]
+
+    # sort by display order
+    task_type_dict['escalation_policies'] = list(sorted(escalation_policies, key=lambda i: i['display_order']))
+
+    return task_type_dict
+
+
 class TaskController(object):
+    @staticmethod
+    def get_task_type_escalation(task_type_id: int, display_order: int):
+        """ Gets a task type escalation """
+        with session_scope() as session:
+            ret = session.query(TaskTypeEscalation).filter(
+                and_(
+                    TaskTypeEscalation.task_type_id == task_type_id,
+                    TaskTypeEscalation.display_order == display_order
+                )
+            ).first()
+        if ret is None:
+            logger.info(f"No task type escalation with task_type_id {task_type_id} and display order {display_order}")
+            raise ValueError(f"No task type escalation with "
+                             f"task_type_id {task_type_id} and display order {display_order}")
+        else:
+            return ret
+
     @staticmethod
     def get_assignee(task_id: int) -> typing.Union[int, None]:
         """ Gets the assignee for a task """
@@ -106,7 +140,10 @@ class TaskController(object):
                 )).scalar()
 
     @staticmethod
-    def task_type_exists(task_type_identifier: typing.Union[str, int], org_identifier: int) -> bool:
+    def task_type_exists(
+            task_type_identifier: typing.Union[str, int],
+            org_identifier: typing.Optional[int] = None
+    ) -> bool:
         """ Checks to see if a task type exists. """
         with session_scope() as session:
             if isinstance(task_type_identifier, int):
@@ -219,7 +256,7 @@ class TaskController(object):
         with session_scope() as session:
             task_tt_qry = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
 
-        task_types = [tt.as_dict() for tt in task_tt_qry]
+        task_types = [_make_task_type_dict(tt) for tt in task_tt_qry]
         logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
         req_user.log(
             operation=Operation.GET,
@@ -659,3 +696,147 @@ class TaskController(object):
         else:
             logger.info(f"task with id {task_id} does not exist")
             return g_response("Task does not exist.", 400)
+
+    @staticmethod
+    def upsert_task_escalations(req: request) -> Response:
+        """ Updates a task. Requires the full task object in the request. """
+        from app.Controllers import ValidationController, TaskController
+        from app.Controllers.ValidationController import _check_task_type_id, _check_org_id
+        request_body = req.get_json()
+        total_updated = total_created = total_deleted = 0
+
+        # VALIDATION
+        escalations = request_body.get('escalation_policies')
+        if escalations is None or not isinstance(escalations, list):
+            return g_response("Missing escalations", 400)
+        task_type_id = _check_task_type_id(request_body.get('task_type_id'), should_exist=True)
+        if isinstance(task_type_id, Response):
+            return task_type_id
+        org_id = _check_org_id(request_body.get('task_type_id'), should_exist=True)
+        if isinstance(org_id, Response):
+            return org_id
+
+        valid_escalations = ValidationController.validate_upsert_task_escalation(escalations)
+        # invalid
+        if isinstance(valid_escalations, Response):
+            return valid_escalations
+
+        # AUTHORIZATION
+        req_user = AuthController.authorize_request(
+            request_headers=req.headers,
+            operation=Operation.UPSERT,
+            resource=Resource.TASK_TYPE_ESCALATION,
+            resource_org_id=org_id,
+        )
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        # UPSERT
+        for escalation in valid_escalations:
+            if escalation.get('action') == 'create':
+                total_created += 1
+                with session_scope() as session:
+                    new_escalation = TaskTypeEscalation(
+                        task_type_id=escalation.get('task_type_id'),
+                        display_order=escalation.get('display_order'),
+                        delay=escalation.get('delay'),
+                        from_priority=escalation.get('from_priority'),
+                        to_priority=escalation.get('to_priority')
+                    )
+                    session.add(new_escalation)
+
+                req_user.log(
+                    operation=Operation.CREATE,
+                    resource=Resource.TASK_TYPE_ESCALATION,
+                    resource_id=escalation.get('task_type_id')
+                )
+                logger.info(f"created task type escalation {new_escalation.as_dict()}")
+
+            elif escalation.get('action') == 'update':
+                total_updated += 1
+                escalation_to_update = TaskController.get_task_type_escalation(
+                    task_type_id=escalation.get('task_type_id'),
+                    display_order=escalation.get('display_order')
+                )
+                with session_scope():
+                    for k, v in escalation.items():
+                        escalation_to_update.__setattr__(k, v)
+
+                    req_user.log(
+                        operation=Operation.UPDATE,
+                        resource=Resource.TASK_TYPE_ESCALATION,
+                        resource_id=escalation.get('task_type_id')
+                    )
+                logger.info(f"updated task type escalation {escalation_to_update.as_dict()}")
+
+        # DELETE MISMATCH
+        # get escalations in request as a set of tuples
+        request_escalations = {(e.get('task_type_id'), e.get('display_order')) for e in valid_escalations}
+
+        with session_scope() as session:
+            # get escalations which exist in the db as a set of tuples
+            db_esc_qry = session.query(TaskTypeEscalation.task_type_id, TaskTypeEscalation.display_order)\
+                .filter(TaskTypeEscalation.task_type_id == task_type_id).all()
+            db_escalations = {e for e in db_esc_qry}
+
+            # remove those that exist in the db that didn't in the request
+            to_remove = db_escalations - request_escalations
+            for r in to_remove:
+                total_deleted += 1
+                session.query(TaskTypeEscalation).filter(
+                    and_(
+                        TaskTypeEscalation.task_type_id == r[0],
+                        TaskTypeEscalation.display_order == r[1]
+                    )
+                ).delete(synchronize_session=False)
+                logger.info(f"deleted task type escalation with task_type_id:{r[0]}, display_order:{r[1]}")
+
+        logger.info(f"upsert task type escalations finished. "
+                    f"created:{total_created}, updated:{total_updated}, deleted:{total_deleted}")
+        # SUCCESS
+        return g_response(status=204)
+
+    @staticmethod
+    def delay_task(req: request) -> Response:
+        """ Transitions the status of a task """
+        from app.Controllers import ValidationController
+        from app.Models import DelayedTask
+
+        valid_delay_task = ValidationController.validate_delay_task_request(request.get_json())
+        # invalid task drop request
+        if isinstance(valid_delay_task, Response):
+            return valid_delay_task
+
+        req_user = AuthController.authorize_request(
+            request_headers=req.headers,
+            operation=Operation.DELAY,
+            resource=Resource.TASK,
+            resource_org_id=valid_delay_task.get('org_id'),
+            resource_user_id=valid_delay_task.get('assignee')
+        )
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
+
+        with session_scope() as session:
+            delay = session.query(DelayedTask).filter(
+                    DelayedTask.task_id == valid_delay_task.get('task_id')
+                ).first()
+            if delay is not None:
+                delay.delayed_until = valid_delay_task.get('delayed_until')
+            else:
+                delayed_task = DelayedTask(
+                    task_id=valid_delay_task.get('task_id'),
+                    delayed_until=valid_delay_task.get('delayed_until')
+                )
+                session.add(delayed_task)
+
+        req_user.log(
+            operation=Operation.DELAY,
+            resource=Resource.TASK,
+            resource_id=valid_delay_task.get('task_id')
+        )
+        logger.info(f"user {req_user.id} delayed task {valid_delay_task.get('task_id')} "
+                    f"until {valid_delay_task.get('delayed_until')}")
+        return g_response(status=204)
