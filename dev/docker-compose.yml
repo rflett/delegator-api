@@ -1,20 +1,14 @@
 version: '3.7'
 services:
-  # api:
-    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest
-    # build:
-    #   context: ../src
-    #   dockerfile: Dockerfile
-    #   args:
-    #     FLASK_ENV: development
-    #     APP_ENV: Ci
-    # depends_on:
-    #   - postgres
-    #   - redis
-    # environment:
-    #   APP_ENV: Ci
-    # ports:
-    #   - 5000:5000
+  api:
+    image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      APP_ENV: Ci
+    ports:
+      - 5000:5000
 
   reporting-cruncher:
     image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/reporting-cruncher:latest
@@ -25,15 +19,6 @@ services:
     ports:
       - 5005:5005
 
-  postgres:
-    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
-    build:
-      context: ../../containers/postgres
-      dockerfile: Dockerfile
-    command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track='all'
-    ports:
-      - 5432:5432
-
   pg_hero:
     image: ankane/pghero:latest
     environment:
@@ -42,6 +27,12 @@ services:
       - 8080:8080
     depends_on:
       - postgres
+
+  postgres:
+    image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
+    command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track='all'
+    ports:
+      - 5432:5432
 
   redis:
     image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/reporting-cache:latest
