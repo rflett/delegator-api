@@ -1,4 +1,5 @@
 import datetime
+import typing
 from app import db
 from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
 
@@ -34,7 +35,7 @@ class Task(db.Model):
         status: str,
         time_estimate: int,
         due_time: datetime,
-        assignee: int,
+        assignee: typing.Optional[int],
         priority: int,
         created_by: int,
         created_at: datetime,

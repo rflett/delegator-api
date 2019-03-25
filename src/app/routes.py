@@ -190,28 +190,28 @@ def update_task_type_escalation():
 @requires_jwt
 @safe_exceptions
 def create_task():
-    return TaskController.task_create(request)
+    return TaskController.create_task(request)
 
 
 @app.route('/tasks', methods=['GET'])
 @requires_jwt
 @safe_exceptions
 def get_tasks():
-    return TaskController.task_get_all(request)
+    return TaskController.get_tasks(request)
 
 
 @app.route('/task/<task_id>', methods=['PUT'])
 @requires_jwt
 @safe_exceptions
 def update_task(task_id):
-    return TaskController.task_update(task_id, request)
+    return TaskController.update_task(task_id, request)
 
 
 @app.route('/task/<task_id>', methods=['GET'])
 @requires_jwt
 @safe_exceptions
 def get_task(task_id):
-    return TaskController.task_get(task_id, request)
+    return TaskController.get_task(task_id, request)
 
 
 @app.route('/task/assign', methods=['POST'])

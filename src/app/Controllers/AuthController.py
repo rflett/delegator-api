@@ -30,9 +30,9 @@ def _get_user_from_request(request_headers: dict) -> typing.Union[User, Response
     # get user id
     if isinstance(payload, dict):
         user_id = payload.get('claims').get('user_id')
-        logger.info(f"found user id {user_id} in the request JWT")
+        logger.debug(f"found user id {user_id} in the request JWT")
     else:
-        logger.info("missing payload from the bearer token")
+        logger.warning("missing payload from the bearer token")
         return g_response("Missing payload from Bearer token", 401)
 
     # get User object
@@ -54,7 +54,7 @@ def _generate_jwt_token(user: User) -> str:
     """
     payload = user.claims()
     if payload is None:
-        logger.info("user claims is empty")
+        logger.debug("user claims is empty")
         payload = {}
     return jwt.encode(
         payload={
@@ -406,7 +406,7 @@ class AuthController(object):
             if user_id is not None:
                 from app.Controllers import UserController
                 user = UserController.get_user_by_id(user_id)
-                logger.info(f"found user {user.id} in jwt claim. attempting to decode jwt.")
+                logger.debug(f"found user {user.id} in jwt claim. attempting to decode jwt.")
                 return jwt.decode(jwt=token, key=user.jwt_secret(), audience=user.jwt_aud(), algorithms='HS256')
             else:
                 logger.info(f"user {suspect_jwt.get('claims').get('user_id')} does not exist")
