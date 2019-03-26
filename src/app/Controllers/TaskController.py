@@ -17,6 +17,7 @@ def _transition_task(task_id: int, status: str, req_user: User) -> None:
         task_to_transition = TaskController.get_task_by_id(task_id)
         old_status = task_to_transition.status
         task_to_transition.status = status
+        task_to_transition.status_changed_at = datetime.datetime.utcnow()
 
     req_user.log(
         operation=Operation.TRANSITION,
@@ -38,6 +39,16 @@ def _assign_task(task_id: int, assignee: int, req_user: User) -> None:
         resource_id=task_id
     )
     logger.info(f"assigned task {task_id} to user {assignee}")
+
+
+def _change_task_priority(task_id: int, priority: int) -> None:
+    """ Common function for assigning a task """
+    with session_scope():
+        task_to_change = TaskController.get_task_by_id(task_id)
+        task_to_change.priority = priority
+        task_to_change.priority_changed_at = datetime.datetime.utcnow()
+
+    logger.info(f"changed task {task_id} priority to {priority}")
 
 
 def _make_task_dict(
@@ -526,7 +537,7 @@ class TaskController(object):
         task_type_id = _check_task_type_id(request_body.get('task_type_id'), should_exist=True)
         if isinstance(task_type_id, Response):
             return task_type_id
-        org_id = _check_org_id(request_body.get('task_type_id'), should_exist=True)
+        org_id = _check_org_id(request_body.get('org_id'), should_exist=True)
         if isinstance(org_id, Response):
             return org_id
 
@@ -667,6 +678,14 @@ class TaskController(object):
                 task_id=task_id,
                 status=task_status,
                 req_user=req_user
+            )
+
+        # change priority
+        task_priority = valid_task.pop('priority')
+        if task_to_update.priority != task_priority:
+            _change_task_priority(
+                task_id=task_id,
+                priority=task_priority
             )
 
         # update other values
