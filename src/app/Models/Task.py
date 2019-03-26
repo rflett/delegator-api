@@ -1,4 +1,5 @@
 import datetime
+import typing
 from app import db
 from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
 
@@ -18,6 +19,8 @@ class Task(db.Model):
     created_by = db.Column('created_by', db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
     finished_at = db.Column('finished_at', db.DateTime)
+    status_changed_at = db.Column('status_changed_at', db.DateTime)
+    priority_changed_at = db.Column('priority_changed_at', db.DateTime)
 
     orgs = db.relationship("Organisation")
     assignees = db.relationship("User", foreign_keys=[assignee])
@@ -34,11 +37,13 @@ class Task(db.Model):
         status: str,
         time_estimate: int,
         due_time: datetime,
-        assignee: int,
+        assignee: typing.Optional[int],
         priority: int,
         created_by: int,
         created_at: datetime,
-        finished_at: datetime
+        finished_at: datetime,
+        status_changed_at: datetime = None,
+        priority_changed_at: datetime = None
     ):
         self.org_id = org_id
         self.type = type
@@ -51,6 +56,8 @@ class Task(db.Model):
         self.created_by = created_by
         self.created_at = created_at
         self.finished_at = finished_at
+        self.status_changed_at = status_changed_at
+        self.priority_changed_at = priority_changed_at
 
     def as_dict(self) -> dict:
         """
@@ -68,5 +75,7 @@ class Task(db.Model):
             "priority": self.priority,
             "created_by": self.created_by,
             "created_at": self.created_at,
-            "finished_at": self.finished_at
+            "finished_at": self.finished_at,
+            "status_changed_at": self.status_changed_at,
+            "priority_changed_at": self.priority_changed_at
         }
