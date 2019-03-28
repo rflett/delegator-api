@@ -352,15 +352,15 @@ def _check_escalation(
                 return g_response(f"task type escalation {task_type_id}:{display_order} already exists", 400)
 
 
-def _check_task_delayed_until(delayed_until: int) -> typing.Union[int, Response]:
+def _check_task_delay_for(delay_for: int) -> typing.Union[int, Response]:
     """ Check escalation display order """
-    if isinstance(delayed_until, bool):
-        logger.info(f"Bad delayed_until, expected int got {type(delayed_until)}.")
-        return g_response(f"Bad delayed_until, expected int got {type(delayed_until)}.", 400)
-    if not isinstance(delayed_until, int):
-        logger.info(f"Bad delayed_until, expected int got {type(delayed_until)}.")
-        return g_response(f"Bad delayed_until, expected int got {type(delayed_until)}.", 400)
-    return delayed_until
+    if isinstance(delay_for, bool):
+        logger.info(f"Bad delay_for, expected int got {type(delay_for)}.")
+        return g_response(f"Bad delay_for, expected int got {type(delay_for)}.", 400)
+    if not isinstance(delay_for, int):
+        logger.info(f"Bad delay_for, expected int got {type(delay_for)}.")
+        return g_response(f"Bad delay_for, expected int got {type(delay_for)}.", 400)
+    return delay_for
 
 
 class ValidationController(object):
@@ -828,7 +828,7 @@ class ValidationController(object):
             logger.warning(str(e))
             assignee = None
 
-        delay_for = _check_task_delayed_until(request_body.get('delay_for'))
+        delay_for = _check_task_delay_for(request_body.get('delay_for'))
         if isinstance(delay_for, Response):
             return delay_for
 
@@ -836,5 +836,5 @@ class ValidationController(object):
             'org_id': org_id,
             'task_id': task_id,
             'assignee': assignee,
-            'delayed_until': delay_for + int(time.time())
+            'delay_for': delay_for
         }
