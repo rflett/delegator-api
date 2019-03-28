@@ -870,11 +870,12 @@ class TaskController(object):
                     DelayedTask.task_id == valid_delay_task.get('task_id')
                 ).first()
             if delay is not None:
-                delay.delayed_until = valid_delay_task.get('delayed_until')
+                delay.delay_for = valid_delay_task.get('delay_for')
+                delay.delayed_at = datetime.datetime.utcnow()
             else:
                 delayed_task = DelayedTask(
                     task_id=valid_delay_task.get('task_id'),
-                    delayed_until=valid_delay_task.get('delayed_until')
+                    delay_for=valid_delay_task.get('delay_for')
                 )
                 session.add(delayed_task)
 
@@ -884,5 +885,5 @@ class TaskController(object):
             resource_id=valid_delay_task.get('task_id')
         )
         logger.info(f"user {req_user.id} delayed task {valid_delay_task.get('task_id')} "
-                    f"until {valid_delay_task.get('delayed_until')}")
+                    f"until {valid_delay_task.get('delay_for')}")
         return g_response(status=204)
