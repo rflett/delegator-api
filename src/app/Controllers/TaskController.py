@@ -872,10 +872,12 @@ class TaskController(object):
             if delay is not None:
                 delay.delay_for = valid_delay_task.get('delay_for')
                 delay.delayed_at = datetime.datetime.utcnow()
+                delay.snoozed = False
             else:
                 delayed_task = DelayedTask(
                     task_id=valid_delay_task.get('task_id'),
-                    delay_for=valid_delay_task.get('delay_for')
+                    delay_for=valid_delay_task.get('delay_for'),
+                    delayed_at=datetime.datetime.utcnow()
                 )
                 session.add(delayed_task)
 
