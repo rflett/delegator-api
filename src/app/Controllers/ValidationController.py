@@ -1,12 +1,34 @@
 import datetime
 import dateutil
-import time
 import typing
 from app import logger, g_response, app, session_scope
 from app.Models import TaskType, TaskTypeEscalation
 from flask import Response
 from sqlalchemy import exists, and_
 from validate_email import validate_email
+
+
+def _check_int(param: int, param_name: str) -> typing.Union[int, Response]:
+    if isinstance(param, bool):
+        logger.info(f"Bad {param_name}, expected int got {type(param)}.")
+        return g_response(f"Bad {param_name}, expected int got {type(param)}.", 400)
+    if not isinstance(param, int):
+        logger.info(f"Bad {param_name}, expected int got {type(param)}.")
+        return g_response(f"Bad {param_name}, expected int got {type(param)}.", 400)
+    if param < 0:
+        logger.info(f"{param_name} is negative.")
+        return g_response(f"{param_name} is negative.", 400)
+    return param
+
+
+def _check_str(param: str, param_name: str) -> typing.Union[str, Response]:
+    if not isinstance(param, str):
+        logger.info(f"Bad {param_name}, expected str got {type(param)}.")
+        return g_response(f"Bad {param_name}, expected str got {type(param)}.", 400)
+    if len(param.strip()) == 0:
+        logger.info(f"{param_name} is required.")
+        return g_response(f"{param_name} is required.", 400)
+    return param.strip()
 
 
 def _check_password_reqs(password: str) -> typing.Union[str, bool]:
@@ -32,7 +54,6 @@ def _check_org_id(
         identifier: typing.Union[str, int],
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[str, int, Response]:
-    """ Checks an org id """
     from app.Controllers import OrganisationController
     if isinstance(identifier, bool):
         return g_response(f"Bad org_id, expected int|str got {type(identifier)}.", 400)
@@ -62,7 +83,6 @@ def _check_user_id(
         identifier: typing.Union[str, int],
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[None, str, int, Response]:
-    """ Checks a user id """
     from app.Controllers import UserController
     if isinstance(identifier, bool):
         return g_response(f"Bad org_id, expected int|str got {type(identifier)}.", 400)
@@ -83,37 +103,11 @@ def _check_user_id(
     return identifier
 
 
-def _check_user_first_name(first_name: str) -> typing.Union[str, Response]:
-    """ Check a first name """
-    if not isinstance(first_name, str):
-        logger.info(f"Bad first_name, expected str got {type(first_name)}.")
-        return g_response(f"Bad first_name, expected str got {type(first_name)}.", 400)
-    if len(first_name.strip()) == 0:
-        logger.info(f"first_name is required.")
-        return g_response(f"first_name is required.", 400)
-    return first_name.strip()
-
-
-def _check_user_last_name(last_name: str) -> typing.Union[str, Response]:
-    """ Check a last name """
-    if not isinstance(last_name, str):
-        logger.info(f"Bad last_name, expected str got {type(last_name)}.")
-        return g_response(f"Bad last_name, expected str got {type(last_name)}.", 400)
-    if len(last_name.strip()) == 0:
-        logger.info(f"last_name is required.")
-        return g_response(f"last_name is required.", 400)
-    return last_name.strip()
-
-
 def _check_user_role(role: str) -> typing.Union[str, Response]:
-    """" Check a user role """
     from app.Controllers import AuthController
-    if not isinstance(role, str):
-        logger.info(f"Bad role, expected str got {type(role)}.")
-        return g_response(f"Bad role, expected str got {type(role)}.", 400)
-    if len(role.strip()) == 0:
-        logger.info(f"role is required.")
-        return g_response(f"role is required.", 400)
+    role = _check_str(role, 'role')
+    if isinstance(role, Response):
+        return role
     if not AuthController.role_exists(role):
         logger.info(f"Role {role} does not exist")
         return g_response(f"Role {role} does not exist", 400)
@@ -121,20 +115,12 @@ def _check_user_role(role: str) -> typing.Union[str, Response]:
 
 
 def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None, str, Response]:
-    """ Check a job title """
     if job_title is not None:
-        if not isinstance(job_title, str):
-            logger.info(f"Bad job_title, expected str got {type(job_title)}.")
-            return g_response(f"Bad job_title, expected str got {type(job_title)}.", 400)
-        if len(job_title.strip()) == 0:
-            logger.info(f"job_title length is 0.")
-            return g_response(f"job_title length is 0.", 400)
-        return job_title.strip()
+        return _check_str(job_title, 'job_title')
     return job_title
 
 
 def _check_user_disabled(disabled: typing.Optional[bool]) -> typing.Union[None, bool, Response]:
-    """ Check the disabled value """
     if disabled is not None:
         if not isinstance(disabled, bool):
             logger.info(f"Bad disabled, expected bool got {type(disabled)}.")
@@ -143,14 +129,10 @@ def _check_user_disabled(disabled: typing.Optional[bool]) -> typing.Union[None, 
 
 
 def _check_task_id(task_id: int) -> typing.Union[Response, int]:
-    """ Checks a task id """
     from app.Controllers import TaskController
-    if isinstance(task_id, bool):
-        logger.info(f"Bad task id, expected int got {type(task_id)}.")
-        return g_response(f"Bad task id, expected int got {type(task_id)}.", 400)
-    if not isinstance(task_id, int):
-        logger.info(f"Bad task id, expected int got {type(task_id)}.")
-        return g_response(f"Bad task id, expected int got {type(task_id)}.", 400)
+    task_id = _check_int(task_id, 'task_id')
+    if isinstance(task_id, Response):
+        return task_id
     if not TaskController.task_exists(task_id):
         logger.info(f"task {task_id} doesn't exist")
         return g_response(f"task does not exist", 400)
@@ -161,14 +143,10 @@ def _check_task_type_id(
         task_type_id: int,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[int, Response]:
-    """ Check a task type """
     from app.Controllers import TaskController
-    if isinstance(task_type_id, bool):
-        logger.info(f"Bad task_type, expected int got {type(task_type_id)}.")
-        return g_response(f"Bad task_type, expected int got {type(task_type_id)}.", 400)
-    if not isinstance(task_type_id, int):
-        logger.info(f"Bad task_type, expected int got {type(task_type_id)}.")
-        return g_response(f"Bad task_type, expected int got {type(task_type_id)}.", 400)
+    task_type_id = _check_int(task_type_id, 'task_type_id')
+    if isinstance(task_type_id, Response):
+        return task_type_id
 
     # optionally check if it exists or not
     if should_exist is not None:
@@ -189,14 +167,10 @@ def _check_task_type_label(
         org_id: int,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[str, int, Response]:
-    """ Checks a task type label """
     from app.Controllers import TaskController
-    if not isinstance(label, str):
-        logger.info(f"Bad task type label, expected str got {type(label)}.")
-        return g_response(f"Bad task type label, expected str got {type(label)}.", 400)
-    if len(label.strip()) == 0:
-        logger.info(f"Task type label length is 0")
-        return g_response(f"Task type label length is 0.", 400)
+    label = _check_str(label, 'task_type_label')
+    if isinstance(label, Response):
+        return label
 
     # optionally check if it exists or not
     if should_exist is not None:
@@ -216,14 +190,10 @@ def _check_task_status(
         task_status: str,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[str, Response]:
-    """ Check a task status """
     from app.Controllers import TaskController
-    if not isinstance(task_status, str):
-        logger.info(f"Bad task_status, expected str got {type(task_status)}.")
-        return g_response(f"Bad task_status, expected str got {type(task_status)}.", 400)
-    if len(task_status.strip()) == 0:
-        logger.info(f"status length is 0")
-        return g_response(f"status length is 0.", 400)
+    task_status = _check_str(task_status, 'task_status')
+    if isinstance(task_status, Response):
+        return task_status
 
     # optionally check if it exists or not
     if should_exist is not None:
@@ -240,32 +210,18 @@ def _check_task_status(
 
 
 def _check_task_description(description: typing.Optional[str]) -> typing.Union[None, str, Response]:
-    """ Check a task description """
     if description is not None:
-        if not isinstance(description, str):
-            logger.info(f"Bad description, expected str got {type(description)}.")
-            return g_response(f"Bad description, expected str got {type(description)}.", 400)
-        if len(description.strip()) == 0:
-            logger.info(f"description length is 0.")
-            return g_response(f"description length is 0.", 400)
-        return description.strip()
+        return _check_str(description, 'task_description')
     return description
 
 
 def _check_task_estimate(time_estimate: typing.Optional[int]) -> typing.Union[None, int, Response]:
-    """ Check a task estimate - estimated seconds to complete """
     if time_estimate is not None:
-        if not isinstance(time_estimate, int):
-            logger.info(f"Bad estimate, expected int got {type(time_estimate)}.")
-            return g_response(f"Bad estimate, expected int got {type(time_estimate)}.", 400)
-        if time_estimate < 0:
-            logger.info(f"Estimate must be positive.")
-            return g_response(f"Estimate must be positive.", 400)
+        return _check_int(time_estimate, 'task_time_estimate')
     return time_estimate
 
 
 def _check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[None, datetime.datetime, Response]:
-    """ Check the task due time """
     if due_time_str is not None:
         try:
             due_time_parsed = dateutil.parser.parse(due_time_str)
@@ -281,12 +237,11 @@ def _check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[Non
 
 
 def _check_task_assignee(assignee: typing.Optional[int]) -> typing.Union[int, Response]:
-    """ Check a task assignee """
     from app.Controllers import UserController
     if assignee is not None:
-        if not isinstance(assignee, int):
-            logger.info(f"Bad assignee, expected int got {type(assignee)}.")
-            return g_response(f"Bad assignee, expected int got {type(assignee)}.", 400)
+        assignee = _check_int(assignee, 'assignee')
+        if isinstance(assignee, Response):
+            return assignee
         if not UserController.user_exists(assignee):
             logger.info(f"Assignee {assignee} does not exist")
             return g_response(f"Assignee does not exist", 400)
@@ -294,40 +249,14 @@ def _check_task_assignee(assignee: typing.Optional[int]) -> typing.Union[int, Re
 
 
 def _check_task_priority(priority: int) -> typing.Union[int, Response]:
-    """ Check a task priority """
     from app.Controllers import TaskController
-    if isinstance(priority, bool):
-        logger.info(f"Bad priority, expected int got {type(priority)}.")
-        return g_response(f"Bad priority, expected int got {type(priority)}.", 400)
-    if not isinstance(priority, int):
-        logger.info(f"Bad priority, expected int got {type(priority)}.")
-        return g_response(f"Bad priority, expected int got {type(priority)}.", 400)
+    priority = _check_int(priority, 'task_priority')
+    if isinstance(priority, Response):
+        return priority
     if not TaskController.task_priority_exists(priority):
         logger.info(f"Priority {priority} does not exist")
         return g_response(f"Priority does not exist", 400)
     return priority
-
-
-def _check_escalation_delay(delay: int) -> typing.Union[int, Response]:
-    """ Check escalation delay """
-    if isinstance(delay, bool):
-        logger.info(f"Bad priority, expected int got {type(delay)}.")
-        return g_response(f"Bad priority, expected int got {type(delay)}.", 400)
-    if not isinstance(delay, int):
-        logger.info(f"Bad priority, expected int got {type(delay)}.")
-        return g_response(f"Bad priority, expected int got {type(delay)}.", 400)
-    return delay
-
-
-def _check_escalation_display_order(order: int) -> typing.Union[int, Response]:
-    """ Check escalation display order """
-    if isinstance(order, bool):
-        logger.info(f"Bad priority, expected int got {type(order)}.")
-        return g_response(f"Bad priority, expected int got {type(order)}.", 400)
-    if not isinstance(order, int):
-        logger.info(f"Bad priority, expected int got {type(order)}.")
-        return g_response(f"Bad priority, expected int got {type(order)}.", 400)
-    return order
 
 
 def _check_escalation(
@@ -335,7 +264,6 @@ def _check_escalation(
         display_order: int,
         should_exist: bool
 ) -> typing.Optional[Response]:
-    """ Checks to see if an escalation already exists """
     with session_scope() as session:
         escalation_exists = session.query(exists().where(
             and_(
@@ -350,17 +278,6 @@ def _check_escalation(
             if escalation_exists:
                 logger.info(f"task type escalation {task_type_id}:{display_order} already exists")
                 return g_response(f"task type escalation {task_type_id}:{display_order} already exists", 400)
-
-
-def _check_task_delay_for(delay_for: int) -> typing.Union[int, Response]:
-    """ Check escalation display order """
-    if isinstance(delay_for, bool):
-        logger.info(f"Bad delay_for, expected int got {type(delay_for)}.")
-        return g_response(f"Bad delay_for, expected int got {type(delay_for)}.", 400)
-    if not isinstance(delay_for, int):
-        logger.info(f"Bad delay_for, expected int got {type(delay_for)}.")
-        return g_response(f"Bad delay_for, expected int got {type(delay_for)}.", 400)
-    return delay_for
 
 
 class ValidationController(object):
@@ -391,9 +308,9 @@ class ValidationController(object):
         if not isinstance(password, str):
             logger.info(f"bad password expected str got {type(password)}")
             return g_response(f"Bad password expected str got {type(password)}", 400)
-        # password_check = _check_password_reqs(password)
-        # if isinstance(password_check, str):
-        #     return g_response(password_check, 400)
+        password_check = _check_password_reqs(password)
+        if isinstance(password_check, str):
+            return g_response(password_check, 400)
         return True
 
     @staticmethod
@@ -476,8 +393,8 @@ class ValidationController(object):
             ret['org_id'] = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
             ret['role'] = _check_user_role(request_body.get('role_name'))
 
-        ret['first_name'] = _check_user_first_name(request_body.get('first_name'))
-        ret['last_name'] = _check_user_last_name(request_body.get('last_name'))
+        ret['first_name'] = _check_str(request_body.get('first_name'), 'first_name')
+        ret['last_name'] = _check_str(request_body.get('last_name'), 'last_name')
         ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
         ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
 
@@ -513,8 +430,8 @@ class ValidationController(object):
                 return g_response(f"Email already exists.", 400)
 
         ret['org_id'] = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
-        ret['first_name'] = _check_user_first_name(request_body.get('first_name'))
-        ret['last_name'] = _check_user_last_name(request_body.get('last_name'))
+        ret['first_name'] = _check_str(request_body.get('first_name'), 'first_name')
+        ret['last_name'] = _check_str(request_body.get('last_name'), 'last_name')
         ret['role'] = _check_user_role(request_body.get('role_name'))
         ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
         ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
@@ -761,14 +678,14 @@ class ValidationController(object):
             if isinstance(task_type_id, Response):
                 return task_type_id
 
-            display_order = _check_escalation_display_order(escalation.get('display_order'))
+            display_order = _check_int(escalation.get('display_order'), 'display_order')
             if isinstance(display_order, Response):
                 return display_order
 
             ret = {
                 "task_type_id": task_type_id,
                 "display_order": display_order,
-                "delay": _check_escalation_delay(escalation.get('delay')),
+                "delay": _check_int(escalation.get('delay'), 'delay'),
                 "from_priority": _check_task_priority(escalation.get('from_priority')),
                 "to_priority": _check_task_priority(escalation.get('to_priority'))
             }
@@ -828,7 +745,7 @@ class ValidationController(object):
             logger.warning(str(e))
             assignee = None
 
-        delay_for = _check_task_delay_for(request_body.get('delay_for'))
+        delay_for = _check_int(request_body.get('delay_for'), 'delay_for')
         if isinstance(delay_for, Response):
             return delay_for
 
