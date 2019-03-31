@@ -242,7 +242,7 @@ class AuthController(object):
                 )
 
             elif user_permission_scope == ResourceScope.GLOBAL:
-                # they can do anything cos they're l33t
+                # admin OR scope doesn't apply for this permission since the check is done elsewhere
                 logger.info(f"user {auth_user.id} has {user_permission_scope} permissions "
                             f"for {operation} {resource}")
                 return auth_user

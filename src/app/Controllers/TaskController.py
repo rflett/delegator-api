@@ -3,7 +3,7 @@ import json
 import typing
 from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
-from app.Models import TaskType, User, Task, TaskStatus, TaskPriority, TaskTypeEscalation
+from app.Models import TaskType, User, Task, TaskStatus, TaskPriority, TaskTypeEscalation, DelayedTask
 from app.Models.Enums import TaskStatuses
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -13,9 +13,15 @@ from sqlalchemy.orm import aliased
 
 def _transition_task(task_id: int, status: str, req_user: User) -> None:
     """ Common function for transitioning a task """
-    with session_scope():
+    with session_scope() as session:
         task_to_transition = TaskController.get_task_by_id(task_id)
         old_status = task_to_transition.status
+
+        # remove delayed task
+        if old_status == TaskStatuses.DELAYED:
+            delayed_task = session.query(DelayedTask).filter(DelayedTask.task_id == task_id).first()
+            session.delete(delayed_task)
+
         task_to_transition.status = status
         task_to_transition.status_changed_at = datetime.datetime.utcnow()
 
