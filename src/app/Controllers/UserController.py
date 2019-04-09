@@ -2,7 +2,8 @@ import json
 import typing
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthController
-from app.Models import User, Organisation
+from app.Models import User, Organisation, Notification
+from app.Models.Enums import Events
 from app.Models.RBAC import Operation, Resource, Role, Permission
 from flask import request, Response
 from sqlalchemy import exists, func
@@ -153,6 +154,13 @@ class UserController(object):
             # create user settings
             create_user_settings(user.id)
 
+            # publish event
+            Notification(
+                org_id=user.org_id,
+                event=Events.user_created,
+                payload=UserController.get_full_user_as_dict(user.id)
+            ).publish()
+
             if request_user is not None:
                 request_user.log(
                     operation=Operation.CREATE,
@@ -233,6 +241,13 @@ class UserController(object):
             for k, v in valid_user.items():
                 user_to_update.__setattr__(k, v)
 
+        # publish event
+        Notification(
+            org_id=user_to_update.org_id,
+            event=Events.user_updated,
+            payload=UserController.get_full_user_as_dict(user_id)
+        ).publish()
+
         req_user.log(
             operation=Operation.UPDATE,
             resource=Resource.USER,
@@ -269,6 +284,13 @@ class UserController(object):
         with session_scope():
             user_to_del = UserController.get_user_by_id(user_id)
             user_to_del.anonymize()
+
+        # publish event
+        Notification(
+            org_id=user_to_del.org_id,
+            event=Events.user_deleted,
+            payload=UserController.get_full_user_as_dict(user_id)
+        ).publish()
 
         req_user.log(
             operation=Operation.DELETE,

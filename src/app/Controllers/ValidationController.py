@@ -308,9 +308,9 @@ class ValidationController(object):
         if not isinstance(password, str):
             logger.info(f"bad password expected str got {type(password)}")
             return g_response(f"Bad password expected str got {type(password)}", 400)
-        password_check = _check_password_reqs(password)
-        if isinstance(password_check, str):
-            return g_response(password_check, 400)
+        # password_check = _check_password_reqs(password)
+        # if isinstance(password_check, str):
+        #     return g_response(password_check, 400)
         return True
 
     @staticmethod

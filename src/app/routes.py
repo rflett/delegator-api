@@ -168,8 +168,8 @@ def get_task_types():
 @app.route('/tasks/types', methods=['POST'])
 @requires_jwt
 @safe_exceptions
-def create_task_types():
-    return TaskController.create_task_types(request)
+def create_task_type():
+    return TaskController.create_task_type(request)
 
 
 @app.route('/tasks/types/<task_type_id>', methods=['DELETE'])

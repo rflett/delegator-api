@@ -8,8 +8,8 @@ import uuid
 from app import logger, app, g_response, session_scope
 from app.Controllers import ValidationController
 from app.Controllers.LogControllers import UserAuthLogController
-from app.Models import User, FailedLogin
-from app.Models.Enums import UserAuthLogAction
+from app.Models import User, FailedLogin, Notification
+from app.Models.Enums import UserAuthLogAction, Events
 from app.Models.RBAC import Role, ResourceScope
 from flask import Response, request
 from sqlalchemy import exists
@@ -322,6 +322,11 @@ class AuthController(object):
                 user.failed_login_time = None
                 user.is_active()
                 logged_in_user_dict = UserController.get_full_user_as_dict(user.id)
+                Notification(
+                    org_id=user.org_id,
+                    event=Events.user_login,
+                    payload=logged_in_user_dict
+                ).publish()
                 return Response(
                     json.dumps({
                         **logged_in_user_dict,
@@ -357,6 +362,11 @@ class AuthController(object):
         else:
             user = UserController.get_user_by_id(payload.get('claims').get('user_id'))
             user.is_inactive()
+            Notification(
+                org_id=user.org_id,
+                event=Events.user_logout,
+                payload=UserController.get_full_user_as_dict(user.id)
+            ).publish()
             AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
             UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
             logger.info(f"user {user.id} logged out")

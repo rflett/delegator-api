@@ -3,8 +3,8 @@ import json
 import typing
 from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
-from app.Models import TaskType, User, Task, TaskStatus, TaskPriority, TaskTypeEscalation, DelayedTask
-from app.Models.Enums import TaskStatuses
+from app.Models import TaskType, User, Task, TaskStatus, TaskPriority, TaskTypeEscalation, DelayedTask, Notification
+from app.Models.Enums import TaskStatuses, Events
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 from sqlalchemy import exists, and_, func
@@ -25,6 +25,13 @@ def _transition_task(task_id: int, status: str, req_user: User) -> None:
         task_to_transition.status = status
         task_to_transition.status_changed_at = datetime.datetime.utcnow()
 
+    # publish event
+    Notification(
+        org_id=task_to_transition.org_id,
+        event=f'task_transitioned_{task_to_transition.status.lower()}',
+        payload=TaskController.get_full_task_as_dict(task_id)
+    ).publish()
+
     req_user.log(
         operation=Operation.TRANSITION,
         resource=Resource.TASK,
@@ -39,6 +46,11 @@ def _assign_task(task_id: int, assignee: int, req_user: User) -> None:
         task_to_assign = TaskController.get_task_by_id(task_id)
         task_to_assign.assignee = assignee
 
+    Notification(
+        org_id=task_to_assign.org_id,
+        event=Events.task_assigned,
+        payload=TaskController.get_full_task_as_dict(task_to_assign.id)
+    )
     req_user.log(
         operation=Operation.ASSIGN,
         resource=Resource.TASK,
@@ -181,6 +193,25 @@ class TaskController(object):
         with session_scope() as session:
             ret = session.query(exists().where(TaskPriority.priority == task_priority)).scalar()
         return ret
+
+    @staticmethod
+    def get_full_task_as_dict(task_id: int) -> typing.Union[dict, Response]:
+        """ Returns a full task object with all of its FK's joined. """
+        with session_scope() as session:
+            task_assignee, task_created_by = aliased(User), aliased(User)
+            tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority) \
+                .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
+                .join(task_created_by, task_created_by.id == Task.created_by) \
+                .join(Task.created_bys) \
+                .join(Task.task_statuses) \
+                .join(Task.task_types) \
+                .join(Task.task_priorities) \
+                .filter(Task.id == task_id) \
+                .first()
+        if tasks_qry is not None:
+            return _make_task_dict(*tasks_qry)
+        else:
+            return g_response(f"Couldn't find task with id {task_id}", 400)
 
     @staticmethod
     def get_task_type_escalation(task_type_id: int, display_order: int):
@@ -394,7 +425,7 @@ class TaskController(object):
         return j_response(tasks)
 
     @staticmethod
-    def create_task_types(req: request) -> Response:
+    def create_task_type(req: request) -> Response:
         """ Create a task type """
         from app.Controllers import AuthController, ValidationController
         from app.Models import TaskType
@@ -424,6 +455,11 @@ class TaskController(object):
                     org_id=valid_tt.get('org_id')
                 )
                 session.add(task_type)
+            Notification(
+                org_id=task_type.org_id,
+                event=Events.task_type_created,
+                payload=task_type.as_dict()
+            ).publish()
             req_user.log(
                 operation=Operation.CREATE,
                 resource=Resource.TASK_TYPE,
@@ -449,6 +485,11 @@ class TaskController(object):
                     )
                 ).first()
                 task_type.disabled = False
+            Notification(
+                org_id=task_type.org_id,
+                event=Events.task_type_enabled,
+                payload=task_type.as_dict()
+            ).publish()
             req_user.log(
                 operation=Operation.ENABLE,
                 resource=Resource.TASK_TYPE,
@@ -500,6 +541,11 @@ class TaskController(object):
             )
             session.add(task)
 
+        Notification(
+            org_id=task.org_id,
+            event=Events.task_created,
+            payload=TaskController.get_full_task_as_dict(task.id)
+        )
         req_user.log(
             operation=Operation.CREATE,
             resource=Resource.TASK,
@@ -577,6 +623,11 @@ class TaskController(object):
                     )
                     session.add(new_escalation)
 
+                Notification(
+                    org_id=org_id,
+                    event=Events.task_type_escalation_created,
+                    payload=new_escalation.as_dict()
+                ).publish()
                 req_user.log(
                     operation=Operation.CREATE,
                     resource=Resource.TASK_TYPE_ESCALATION,
@@ -698,6 +749,13 @@ class TaskController(object):
         with session_scope():
             for k, v in valid_task.items():
                 task_to_update.__setattr__(k, v)
+
+        # publish event
+        Notification(
+            org_id=task_to_update.org_id,
+            event=Events.task_updated,
+            payload=TaskController.get_full_task_as_dict(task_id)
+        ).publish()
 
         req_user.log(
             operation=Operation.UPDATE,
@@ -834,6 +892,11 @@ class TaskController(object):
         with session_scope():
             valid_dtt.disabled = True
 
+        Notification(
+            org_id=valid_dtt.org_id,
+            event=Events.task_type_disabled ,
+            payload=valid_dtt.as_dict()
+        ).publish()
         req_user.log(
             operation=Operation.DISABLE,
             resource=Resource.TASK_TYPE,
