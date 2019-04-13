@@ -91,7 +91,7 @@ def _make_task_dict(
         'assignee': ta.as_dict() if ta is not None else None,
         'created_by': tcb.as_dict(),
         'status': ts.as_dict(),
-        'type': _make_task_type_dict(tt),
+        'type': tt.fat_dict(),
         'priority': tp.as_dict()
     }
 
@@ -110,23 +110,6 @@ def _make_task_dict(
         **task_dict,
         **extras
     }.items()))
-
-
-def _make_task_type_dict(
-        tt: TaskType
-) -> dict:
-    """ Creates a nice dict of a task type """
-    task_type_dict = tt.as_dict()
-
-    # get task type escalations
-    with session_scope() as session:
-        tte_qry = session.query(TaskTypeEscalation).filter(TaskTypeEscalation.task_type_id == tt.id).all()
-        escalation_policies = [escalation.as_dict() for escalation in tte_qry]
-
-    # sort by display order
-    task_type_dict['escalation_policies'] = list(sorted(escalation_policies, key=lambda i: i['display_order']))
-
-    return task_type_dict
 
 
 class TaskController(object):
@@ -331,9 +314,9 @@ class TaskController(object):
             return req_user
 
         with session_scope() as session:
-            task_tt_qry = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
+            task_type_query = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
 
-        task_types = [_make_task_type_dict(tt) for tt in task_tt_qry]
+        task_types = [tt.fact_dict() for tt in task_type_query]
         logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
         req_user.log(
             operation=Operation.GET,
