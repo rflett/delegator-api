@@ -1,9 +1,9 @@
 from app import db, session_scope
-from app.Models import TaskTypeEscalation
 
 
 def _get_fat_task_type(task_type) -> dict:
     """ Creates a nice dict of a task type """
+    from app.Models import TaskTypeEscalation
     task_type_dict = task_type.as_dict()
 
     # get task type escalations

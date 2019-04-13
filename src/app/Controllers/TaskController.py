@@ -29,7 +29,7 @@ def _transition_task(task_id: int, status: str, req_user: User) -> None:
     Notification(
         org_id=task_to_transition.org_id,
         event=f'task_transitioned_{task_to_transition.status.lower()}',
-        payload=TaskController.get_full_task_as_dict(task_id)
+        payload=task_to_transition.fat_dict()
     ).publish()
 
     req_user.log(
@@ -49,7 +49,7 @@ def _assign_task(task_id: int, assignee: int, req_user: User) -> None:
     Notification(
         org_id=task_to_assign.org_id,
         event=Events.task_assigned,
-        payload=TaskController.get_full_task_as_dict(task_to_assign.id)
+        payload=task_to_assign.fat_dict()
     )
     req_user.log(
         operation=Operation.ASSIGN,
@@ -67,49 +67,6 @@ def _change_task_priority(task_id: int, priority: int) -> None:
         task_to_change.priority_changed_at = datetime.datetime.utcnow()
 
     logger.info(f"changed task {task_id} priority to {priority}")
-
-
-def _make_task_dict(
-    t: Task,
-    ta: typing.Optional[User],
-    tcb: User,
-    ts: TaskStatus,
-    tt: TaskType,
-    tp: TaskPriority
-) -> dict:
-    """
-    Creates a nice dict of a task
-    :param t:   The task
-    :param ta:  The task assignee
-    :param tcb: The task created by
-    :param ts:  The task status
-    :param tt:  The task type
-    :param tp:  The task priority
-    :return:    A dict
-    """
-    extras = {
-        'assignee': ta.as_dict() if ta is not None else None,
-        'created_by': tcb.as_dict(),
-        'status': ts.as_dict(),
-        'type': tt.fat_dict(),
-        'priority': tp.as_dict()
-    }
-
-    task_dict = t.as_dict()
-
-    # remove extras from base task
-    for k in extras:
-        task_dict.pop(k)
-
-    # convert datetimes to str
-    for k, v in task_dict.items():
-        if isinstance(v, datetime.datetime):
-            task_dict[k] = v.strftime("%Y-%m-%d %H:%M:%S%z")
-
-    return dict(sorted({
-        **task_dict,
-        **extras
-    }.items()))
 
 
 class TaskController(object):
@@ -176,25 +133,6 @@ class TaskController(object):
         with session_scope() as session:
             ret = session.query(exists().where(TaskPriority.priority == task_priority)).scalar()
         return ret
-
-    @staticmethod
-    def get_full_task_as_dict(task_id: int) -> typing.Union[dict, Response]:
-        """ Returns a full task object with all of its FK's joined. """
-        with session_scope() as session:
-            task_assignee, task_created_by = aliased(User), aliased(User)
-            tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority) \
-                .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
-                .join(task_created_by, task_created_by.id == Task.created_by) \
-                .join(Task.created_bys) \
-                .join(Task.task_statuses) \
-                .join(Task.task_types) \
-                .join(Task.task_priorities) \
-                .filter(Task.id == task_id) \
-                .first()
-        if tasks_qry is not None:
-            return _make_task_dict(*tasks_qry)
-        else:
-            return g_response(f"Couldn't find task with id {task_id}", 400)
 
     @staticmethod
     def get_task_type_escalation(task_type_id: int, display_order: int):
@@ -316,7 +254,7 @@ class TaskController(object):
         with session_scope() as session:
             task_type_query = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
 
-        task_types = [tt.fact_dict() for tt in task_type_query]
+        task_types = [tt.fat_dict() for tt in task_type_query]
         logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
         req_user.log(
             operation=Operation.GET,
@@ -347,26 +285,13 @@ class TaskController(object):
             if isinstance(req_user, Response):
                 return req_user
 
-            with session_scope() as session:
-                task_assignee, task_created_by = aliased(User), aliased(User)
-                tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority)\
-                    .outerjoin(task_assignee, task_assignee.id == Task.assignee)\
-                    .join(task_created_by, task_created_by.id == Task.created_by)\
-                    .join(Task.created_bys)\
-                    .join(Task.task_statuses)\
-                    .join(Task.task_types)\
-                    .join(Task.task_priorities)\
-                    .filter(Task.id == task_id)\
-                    .first()
-
-            task_as_dict = _make_task_dict(*tasks_qry)
-            logger.debug(f"found task {task_as_dict}")
+            logger.debug(f"found task {task.fat_dict()}")
             req_user.log(
                 operation=Operation.GET,
                 resource=Resource.TASK,
                 resource_id=task.id
             )
-            return j_response(task_as_dict)
+            return j_response(task.fat_dict())
 
         else:
             logger.info(f"task with id {task_id} does not exist")
@@ -389,7 +314,7 @@ class TaskController(object):
 
         with session_scope() as session:
             task_assignee, task_created_by = aliased(User), aliased(User)
-            tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority)\
+            tasks_qry = session.query(Task, task_assignee, task_created_by)\
                 .outerjoin(task_assignee, task_assignee.id == Task.assignee)\
                 .join(task_created_by, task_created_by.id == Task.created_by)\
                 .join(Task.created_bys)\
@@ -399,7 +324,7 @@ class TaskController(object):
                 .filter(Task.org_id == req_user.org_id)\
                 .all()
 
-        tasks = [_make_task_dict(t, ta, tcb, ts, tt, tp) for t, ta, tcb, ts, tt, tp in tasks_qry]
+        tasks = [t.fat_dict() for t, ta, tcb in tasks_qry]
         logger.debug(f"found {len(tasks)} users: {json.dumps(tasks)}")
         req_user.log(
             operation=Operation.GET,
@@ -527,7 +452,7 @@ class TaskController(object):
         Notification(
             org_id=task.org_id,
             event=Events.task_created,
-            payload=TaskController.get_full_task_as_dict(task.id)
+            payload=task.fat_dict()
         )
         req_user.log(
             operation=Operation.CREATE,
@@ -737,7 +662,7 @@ class TaskController(object):
         Notification(
             org_id=task_to_update.org_id,
             event=Events.task_updated,
-            payload=TaskController.get_full_task_as_dict(task_id)
+            payload=task_to_update.fat_dict()
         ).publish()
 
         req_user.log(
@@ -877,7 +802,7 @@ class TaskController(object):
 
         Notification(
             org_id=valid_dtt.org_id,
-            event=Events.task_type_disabled ,
+            event=Events.task_type_disabled,
             payload=valid_dtt.as_dict()
         ).publish()
         req_user.log(
