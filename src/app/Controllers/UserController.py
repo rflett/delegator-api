@@ -2,9 +2,9 @@ import json
 import typing
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthController
-from app.Models import User, Organisation, Notification
+from app.Models import User, Notification
 from app.Models.Enums import Events
-from app.Models.RBAC import Operation, Resource, Role, Permission
+from app.Models.RBAC import Operation, Resource, Permission
 from flask import request, Response
 from sqlalchemy import exists, func
 
@@ -18,40 +18,6 @@ def _compare_user_orgs(user_resource: User, request_user: User) -> bool:
     :return:                True if the orgs are equal or false
     """
     return True if request_user.org_id == user_resource.org_id or request_user.role == 'ADMIN' else False
-
-
-def _make_user_dict(user: User, role: Role, org: Organisation) -> dict:
-    """
-    Creates a dict of a user and the appropriate attributes. Probably not the best way to do this yet,
-    needs refactoring once I understand its use more.
-    :param user:    The user
-    :param role:    The user's role
-    :return:        A dict with the params merged
-    """
-    from app.Controllers import SettingsController
-    extras = {}
-
-    # prepend role attrs with role_
-    for k, v in role.as_dict().items():
-        # key exclusions
-        if k not in ['id', 'rank']:
-            extras[f'role_{k}'] = v
-
-    # prepend org attrs with org_
-    for k, v in org.as_dict().items():
-        # key exclusions
-        if k not in ['id', 'jwt_aud', 'jwt_secret']:
-            extras[f'org_{k}'] = v
-
-    # get settings
-    extras['settings'] = SettingsController.get_user_settings(user.id).as_dict()
-    print(extras)
-
-    # merge role with user, with return dict sorted
-    return dict(sorted({
-        **user.as_dict(),
-        **extras
-    }.items()))
 
 
 def _get_user_by_email(email: str) -> User:
@@ -158,7 +124,7 @@ class UserController(object):
             Notification(
                 org_id=user.org_id,
                 event=Events.user_created,
-                payload=UserController.get_full_user_as_dict(user.id)
+                payload=user.fat_dict()
             ).publish()
 
             if request_user is not None:
@@ -245,7 +211,7 @@ class UserController(object):
         Notification(
             org_id=user_to_update.org_id,
             event=Events.user_updated,
-            payload=UserController.get_full_user_as_dict(user_id)
+            payload=user_to_update.fat_dict()
         ).publish()
 
         req_user.log(
@@ -289,7 +255,7 @@ class UserController(object):
         Notification(
             org_id=user_to_del.org_id,
             event=Events.user_deleted,
-            payload=UserController.get_full_user_as_dict(user_id)
+            payload=user_to_del.fat_dict()
         ).publish()
 
         req_user.log(
@@ -362,33 +328,17 @@ class UserController(object):
             return req_user
 
         with session_scope() as session:
-            users_qry = session.query(User, Role, Organisation) \
-                .join(User.roles) \
-                .join(User.orgs) \
+            users_qry = session.query(User) \
                 .filter(User.org_id == req_user.org_id) \
                 .all()
 
-        users = [_make_user_dict(u, r, o) for u, r, o in users_qry]
+        users = [u.fat_dict() for u in users_qry]
         req_user.log(
             operation=Operation.GET,
             resource=Resource.USERS
         )
         logger.info(f"found {len(users)} users: {json.dumps(users)}")
         return j_response(users)
-
-    @staticmethod
-    def get_full_user_as_dict(user_id: int) -> typing.Union[dict, Response]:
-        """ Returns a full user object with all of its FK's joined. """
-        with session_scope() as session:
-            user_qry = session.query(User, Role, Organisation)\
-                            .join(User.roles)\
-                            .join(User.orgs)\
-                            .filter(User.id == user_id)\
-                            .first()
-        if user_qry is not None:
-            return _make_user_dict(*user_qry)
-        else:
-            return g_response(f"Couldn't find user with id {user_id}", 400)
 
     @staticmethod
     def user_pages(req: request) -> Response:

@@ -7,7 +7,8 @@ import string
 import typing
 from app import db, session_scope, logger
 from app.Controllers.RBAC.RoleController import RoleController
-from app.Models import FailedLogin
+from app.Models import FailedLogin, Organisation
+from app.Models.RBAC import Role
 from sqlalchemy import exists
 
 
@@ -60,6 +61,42 @@ def _clear_failed_logins(email: str) -> None:
             session.query(FailedLogin).filter(FailedLogin.email == email).delete()
 
         logger.info(f"cleared failed logins for {email}")
+
+
+def _get_fat_user(user_id: int) -> dict:
+    """ Returns a full user object with all of its FK's joined. """
+    from app.Controllers import SettingsController
+
+    with session_scope() as session:
+        user_qry = session.query(User, Role, Organisation)\
+                        .join(User.roles)\
+                        .join(User.orgs)\
+                        .filter(User.id == user_id)\
+                        .first()
+
+    user, role, org = user_qry
+    extras = {}
+
+    # prepend role attrs with role_
+    for k, v in role.as_dict().items():
+        # key exclusions
+        if k not in ['id', 'rank']:
+            extras[f'role_{k}'] = v
+
+    # prepend org attrs with org_
+    for k, v in org.as_dict().items():
+        # key exclusions
+        if k not in ['id', 'jwt_aud', 'jwt_secret']:
+            extras[f'org_{k}'] = v
+
+    # get settings
+    extras['settings'] = SettingsController.get_user_settings(user.id).as_dict()
+
+    # merge role with user, with return dict sorted
+    return dict(sorted({
+        **user.as_dict(),
+        **extras
+    }.items()))
 
 
 class User(db.Model):
@@ -220,3 +257,7 @@ class User(db.Model):
             "job_title": self.job_title,
             "deleted": self.deleted
         }
+
+    def fat_dict(self) -> dict:
+        """ Returns a full user dict with all of its FK's joined. """
+        return _get_fat_user(self.id)

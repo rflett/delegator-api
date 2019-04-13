@@ -321,15 +321,14 @@ class AuthController(object):
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
                 user.is_active()
-                logged_in_user_dict = UserController.get_full_user_as_dict(user.id)
                 Notification(
                     org_id=user.org_id,
                     event=Events.user_login,
-                    payload=logged_in_user_dict
+                    payload=user.fat_dict()
                 ).publish()
                 return Response(
                     json.dumps({
-                        **logged_in_user_dict,
+                        **user.fat_dict(),
                         **{"jwt": _generate_jwt_token(user)}
                     }),
                     status=200,
@@ -365,7 +364,7 @@ class AuthController(object):
             Notification(
                 org_id=user.org_id,
                 event=Events.user_logout,
-                payload=UserController.get_full_user_as_dict(user.id)
+                payload=user.fat_dict()
             ).publish()
             AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
             UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
