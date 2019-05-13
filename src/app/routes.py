@@ -249,6 +249,13 @@ def delay_task():
     return TaskController.delay_task(request)
 
 
+@app.route('/task/activity/<task_id>', methods=['GET'])
+@requires_jwt
+@safe_exceptions
+def get_task_activity(task_id):
+    return TaskController.get_task_activity(task_id, request)
+
+
 @app.route('/org/settings', methods=['GET'])
 @requires_jwt
 @safe_exceptions

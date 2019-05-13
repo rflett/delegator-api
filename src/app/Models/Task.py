@@ -127,3 +127,8 @@ class Task(db.Model):
     def fat_dict(self) -> dict:
         """ Returns a full task dict with all of its FK's joined. """
         return _get_fat_task(self.id)
+
+    def activity(self) -> dict:
+        """ Returns the activity of a task. """
+        from app.Controllers.Activity import TaskActivity
+        return TaskActivity.get_activity(self.id)

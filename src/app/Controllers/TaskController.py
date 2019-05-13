@@ -866,3 +866,36 @@ class TaskController(object):
         logger.info(f"user {req_user.id} delayed task {valid_delay_task.get('task_id')} "
                     f"until {valid_delay_task.get('delay_for')}")
         return g_response(status=204)
+
+    @staticmethod
+    def get_task_activity(task_identifier: int, req: request) -> Response:
+        """ Returns the activity for a user """
+        from app.Controllers import TaskController
+        try:
+            task_identifier = int(task_identifier)
+        except ValueError:
+            return g_response(f"cannot cast `{task_identifier}` to int", 400)
+
+        if TaskController.task_exists(task_identifier):
+            task = TaskController.get_task_by_id(task_identifier)
+            req_user = AuthController.authorize_request(
+                request_headers=req.headers,
+                operation=Operation.GET,
+                resource=Resource.TASK_ACTIVITY,
+                resource_org_id=task.org_id
+            )
+            # no perms
+            if isinstance(req_user, Response):
+                return req_user
+
+            req_user.log(
+                operation=Operation.GET,
+                resource=Resource.TASK_ACTIVITY,
+                resource_id=task.id
+            )
+            logger.info(f"getting activity for task with id {task.id}")
+            return j_response(task.activity())
+        else:
+            logger.info(f"task with id {task_identifier} does not exist")
+            return g_response("Task does not exist.", 400)
+
