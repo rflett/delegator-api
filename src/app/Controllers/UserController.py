@@ -424,3 +424,45 @@ class UserController(object):
         )
         logger.info(f"updated user {req_user.id} settings")
         return g_response(status=204)
+
+    @staticmethod
+    def get_user_activity(user_identifier: typing.Union[str, int], req: request) -> Response:
+        """ Returns the activity for a user """
+        from app.Controllers import UserController
+
+        # is the identifier an email or user_id?
+        try:
+            user_identifier = int(user_identifier)
+            logger.info("user_identifier is an id")
+        except ValueError:
+            from app.Controllers import ValidationController
+            validate_identifier = ValidationController.validate_email(user_identifier)
+            if isinstance(validate_identifier, Response):
+                return validate_identifier
+            else:
+                logger.info("user_identifier is an email")
+                user_identifier = str(user_identifier)
+
+        if UserController.user_exists(user_identifier):
+            user = UserController.get_user(user_identifier)
+            req_user = AuthController.authorize_request(
+                request_headers=req.headers,
+                operation=Operation.GET,
+                resource=Resource.USER_ACTIVITY,
+                resource_user_id=user.id,
+                resource_org_id=user.org_id
+            )
+            # no perms
+            if isinstance(req_user, Response):
+                return req_user
+
+            req_user.log(
+                operation=Operation.GET,
+                resource=Resource.USER_ACTIVITY,
+                resource_id=user.id
+            )
+            logger.info(f"getting activity for user with id {user.id}")
+            return j_response(user.activity())
+        else:
+            logger.info(f"user with id {user_identifier} does not exist")
+            return g_response("User does not exist.", 400)

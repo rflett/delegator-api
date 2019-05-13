@@ -117,6 +117,7 @@ else:
 
 user_settings_table = dyn_db.Table(f"backburner-user-settings-{table_env}")
 org_settings_table = dyn_db.Table(f"backburner-organisation-settings-{table_env}")
+user_activity_table = dyn_db.Table(f"backburner-user-activity-{table_env}")
 
 # sns client
 sns = boto3.resource('sns')

@@ -95,11 +95,11 @@ def active_users():
     return ActiveUserController.get_active_users(request)
 
 
-@app.route('/user/<identifier>', methods=['GET'])
+@app.route('/user/<user_id>', methods=['GET'])
 @requires_jwt
 @safe_exceptions
-def get_user(identifier):
-    return UserController.user_get(identifier, request)
+def get_user(user_id):
+    return UserController.user_get(user_id, request)
 
 
 @app.route('/user/<user_id>', methods=['PUT'])
@@ -135,6 +135,13 @@ def get_user_settings():
 @safe_exceptions
 def update_user_settings():
     return UserController.update_user_settings(request)
+
+
+@app.route('/user/activity/<user_id>', methods=['GET'])
+@requires_jwt
+@safe_exceptions
+def get_user_activity(user_id):
+    return UserController.get_user_activity(user_id, request)
 
 
 @app.route('/roles', methods=['GET'])

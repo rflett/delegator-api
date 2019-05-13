@@ -166,7 +166,8 @@ def _authorize_org(
                                 f"however, {auth_user.org_id} == {resource_org_id}")
                     return g_response(f"No permissions to {operation} {resource}, "
                                       f"because user {auth_user.id} is not "
-                                      f"in the same org as the {resource_user_id}", 403)
+                                      f"in the same org as the resource user id {resource_user_id} which "
+                                      f"is in org {resource_user.org_id}", 403)
 
             logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
                         f"and can {operation} {resource}")

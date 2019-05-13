@@ -261,3 +261,8 @@ class User(db.Model):
     def fat_dict(self) -> dict:
         """ Returns a full user dict with all of its FK's joined. """
         return _get_fat_user(self.id)
+
+    def activity(self) -> dict:
+        """ Returns the activity of a user"""
+        from app.Controllers.Activity import UserActivity
+        return UserActivity.get_activity(self.id)
