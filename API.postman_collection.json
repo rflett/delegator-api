@@ -443,6 +443,35 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get User Activity",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/user/activity/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"activity",
+								"1"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -650,7 +679,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n\t\"task_type_id\": 1,\n\t\"org_id\": 1,\n\t\"escalation_policies\": [\n\t\t{\n\t\t\t\"task_type_id\": 1,\n\t\t\t\"display_order\": 1,\n\t\t\t\"delay\": 600,\n\t\t\t\"from_priority\": 0,\n\t\t\t\"to_priority\": 1\n\t\t},\n\t\t{\n\t\t\t\"task_type_id\": 1,\n\t\t\t\"display_order\": 2,\n\t\t\t\"delay\": 300,\n\t\t\t\"from_priority\": 1,\n\t\t\t\"to_priority\": 2\n\t\t}\n\t]\n}"
+									"raw": "{\n\t\"task_type_id\": 1,\n\t\"org_id\": 1,\n\t\"escalation_policies\": [\n\t\t{\n\t\t\t\"task_type_id\": 1,\n\t\t\t\"display_order\": 1,\n\t\t\t\"delay\": 30,\n\t\t\t\"from_priority\": 0,\n\t\t\t\"to_priority\": 1\n\t\t},\n\t\t{\n\t\t\t\"task_type_id\": 1,\n\t\t\t\"display_order\": 2,\n\t\t\t\"delay\": 60,\n\t\t\t\"from_priority\": 1,\n\t\t\t\"to_priority\": 2\n\t\t}\n\t]\n}"
 								},
 								"url": {
 									"raw": "{{host}}/tasks/types/escalation",
@@ -794,7 +823,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"READY\",\n\t\"time_estimate\": 600,\n\t\"due_time\": \"2019-03-26 06:00:00\",\n\t\"assignee\": 1,\n\t\"priority\": 2\n}"
+							"raw": "{\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"READY\",\n\t\"time_estimate\": 600,\n\t\"due_time\": \"2020-04-26 06:00:00\",\n\t\"assignee\": 1,\n\t\"priority\": 0\n}"
 						},
 						"url": {
 							"raw": "{{host}}/tasks",
@@ -889,6 +918,35 @@
 							"path": [
 								"task",
 								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Task Activity",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/task/activity/2",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"task",
+								"activity",
+								"2"
 							]
 						}
 					},
@@ -1130,7 +1188,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"task_id\": 1,\n\t\"delay_for\": 600\n}"
+							"raw": "{\n\t\"task_id\": 1,\n\t\"delay_for\": 20\n}"
 						},
 						"url": {
 							"raw": "{{host}}/task/delay",
@@ -1504,7 +1562,7 @@
 			"response": []
 		},
 		{
-			"name": "Reset Password Copy",
+			"name": "Reset Password",
 			"event": [
 				{
 					"listen": "test",
@@ -1536,7 +1594,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"email\": \"ryan@sink.backburner.com\"\n}"
+					"raw": "{\n\t\"email\": \"ryan.flett1@gmail.com\"\n}"
 				},
 				"url": {
 					"raw": "{{host}}/reset_password",
