@@ -1,6 +1,7 @@
 import json
 from app import api_events_sns_topic, logger
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass
@@ -8,6 +9,9 @@ class Notification(object):
     org_id: int
     event: str
     payload: dict
+
+    def __post_init__(self):
+        self.event_time = datetime.utcnow().strftime("%Y%m%dT%H%M%S.%fZ")
 
     def publish(self) -> None:
         """ Publishes an event to SNS """
@@ -25,5 +29,6 @@ class Notification(object):
         return {
             'org_id': self.org_id,
             'event': self.event,
-            'payload': self.payload
+            'payload': self.payload,
+            'event_time': self.event_time
         }
