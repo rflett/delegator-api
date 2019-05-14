@@ -1,7 +1,8 @@
 import datetime
 import typing
-from app import db, session_scope
+from app import db, session_scope, logger, task_activity_table
 from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
+from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
 
 
@@ -128,7 +129,21 @@ class Task(db.Model):
         """ Returns a full task dict with all of its FK's joined. """
         return _get_fat_task(self.id)
 
-    def activity(self) -> dict:
+    def activity(self) -> list:
         """ Returns the activity of a task. """
-        from app.Controllers.Activity import TaskActivity
-        return TaskActivity.get_activity(self.id)
+        activity = task_activity_table.query(
+            Select='ALL_ATTRIBUTES',
+            KeyConditionExpression=Key('id').eq(self.id)
+        )
+        logger.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
+
+        log = []
+
+        for item in activity.get('Items'):
+            try:
+                del item['id']
+                log.append(item)
+            except KeyError:
+                logger.error(f"Key 'id' was missing from activity item. Table:{task_activity_table.name} Item:{item}")
+
+        return log

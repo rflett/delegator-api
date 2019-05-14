@@ -125,4 +125,4 @@ sns = boto3.resource('sns')
 api_events_sns_topic = sns.Topic(app.config['EVENTS_SNS_TOPIC_ARN'])
 
 # routes
-from app import routes   # noqa
+from app import routes  # noqa

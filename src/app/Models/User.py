@@ -5,10 +5,11 @@ import os
 import random
 import string
 import typing
-from app import db, session_scope, logger
+from app import db, session_scope, logger, user_activity_table
 from app.Controllers.RBAC.RoleController import RoleController
 from app.Models import FailedLogin, Organisation
 from app.Models.RBAC import Role
+from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
 
@@ -262,7 +263,21 @@ class User(db.Model):
         """ Returns a full user dict with all of its FK's joined. """
         return _get_fat_user(self.id)
 
-    def activity(self) -> dict:
+    def activity(self) -> list:
         """ Returns the activity of a user"""
-        from app.Controllers.Activity import UserActivity
-        return UserActivity.get_activity(self.id)
+        activity = user_activity_table.query(
+            Select='ALL_ATTRIBUTES',
+            KeyConditionExpression=Key('id').eq(self.id)
+        )
+        logger.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
+
+        log = []
+
+        for item in activity.get('Items'):
+            try:
+                del item['id']
+                log.append(item)
+            except KeyError:
+                logger.error(f"Key 'id' was missing from activity item. Table:{user_activity_table.name} Item:{item}")
+
+        return log
