@@ -50,7 +50,7 @@ def _assign_task(task_id: int, assignee: int, req_user: User) -> None:
         org_id=task_to_assign.org_id,
         event=Events.task_assigned,
         payload=task_to_assign.fat_dict()
-    )
+    ).publish()
     req_user.log(
         operation=Operation.ASSIGN,
         resource=Resource.TASK,
@@ -365,7 +365,7 @@ class TaskController(object):
                 session.add(task_type)
             Notification(
                 org_id=task_type.org_id,
-                event=Events.task_type_created,
+                event=Events.tasktype_created,
                 payload=task_type.as_dict()
             ).publish()
             req_user.log(
@@ -395,7 +395,7 @@ class TaskController(object):
                 task_type.disabled = False
             Notification(
                 org_id=task_type.org_id,
-                event=Events.task_type_enabled,
+                event=Events.tasktype_enabled,
                 payload=task_type.as_dict()
             ).publish()
             req_user.log(
@@ -453,7 +453,7 @@ class TaskController(object):
             org_id=task.org_id,
             event=Events.task_created,
             payload=task.fat_dict()
-        )
+        ).publish()
         req_user.log(
             operation=Operation.CREATE,
             resource=Resource.TASK,
@@ -533,7 +533,7 @@ class TaskController(object):
 
                 Notification(
                     org_id=org_id,
-                    event=Events.task_type_escalation_created,
+                    event=Events.tasktype_escalation_created,
                     payload=new_escalation.as_dict()
                 ).publish()
                 req_user.log(
@@ -802,7 +802,7 @@ class TaskController(object):
 
         Notification(
             org_id=valid_dtt.org_id,
-            event=Events.task_type_disabled,
+            event=Events.tasktype_disabled,
             payload=valid_dtt.as_dict()
         ).publish()
         req_user.log(

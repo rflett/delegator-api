@@ -20,7 +20,17 @@ class Notification(object):
             Message=json.dumps({
                 'default': json.dumps(self.as_dict())
             }),
-            MessageStructure='json'
+            MessageStructure='json',
+            MessageAttributes={
+                'event': {
+                    'DataType': 'String',
+                    'StringValue': self.event
+                },
+                'event_class': {
+                    'DataType': 'String',
+                    'StringValue': self.event.split('_')[0]
+                }
+            }
         )
         logger.info(f"published event with messageid {res.get('MessageId')}")
 
