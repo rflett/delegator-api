@@ -31,6 +31,8 @@ class Events(str):
     task_updated = 'task_updated'
     task_assigned = 'task_assigned'
 
+    task_escalated = 'task_escalated'
+
     tasktype_created = 'tasktype_created'
     tasktype_enabled = 'tasktype_enabled'
     tasktype_disabled = 'tasktype_disabled'
