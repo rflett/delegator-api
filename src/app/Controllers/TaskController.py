@@ -3,8 +3,8 @@ import json
 import typing
 from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
-from app.Models import TaskType, User, Task, TaskStatus, TaskPriority, TaskTypeEscalation
-from app.Models.Enums import TaskStatuses
+from app.Models import TaskType, User, Task, TaskStatus, TaskPriority, TaskTypeEscalation, DelayedTask, Notification
+from app.Models.Enums import TaskStatuses, Events
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 from sqlalchemy import exists, and_, func
@@ -13,11 +13,24 @@ from sqlalchemy.orm import aliased
 
 def _transition_task(task_id: int, status: str, req_user: User) -> None:
     """ Common function for transitioning a task """
-    with session_scope():
+    with session_scope() as session:
         task_to_transition = TaskController.get_task_by_id(task_id)
         old_status = task_to_transition.status
+
+        # remove delayed task
+        if old_status == TaskStatuses.DELAYED:
+            delayed_task = session.query(DelayedTask).filter(DelayedTask.task_id == task_id).first()
+            session.delete(delayed_task)
+
         task_to_transition.status = status
         task_to_transition.status_changed_at = datetime.datetime.utcnow()
+
+    # publish event
+    Notification(
+        org_id=task_to_transition.org_id,
+        event=f'task_transitioned_{task_to_transition.status.lower()}',
+        payload=task_to_transition.fat_dict()
+    ).publish()
 
     req_user.log(
         operation=Operation.TRANSITION,
@@ -33,6 +46,11 @@ def _assign_task(task_id: int, assignee: int, req_user: User) -> None:
         task_to_assign = TaskController.get_task_by_id(task_id)
         task_to_assign.assignee = assignee
 
+    Notification(
+        org_id=task_to_assign.org_id,
+        event=Events.task_assigned,
+        payload=task_to_assign.fat_dict()
+    ).publish()
     req_user.log(
         operation=Operation.ASSIGN,
         resource=Resource.TASK,
@@ -49,66 +67,6 @@ def _change_task_priority(task_id: int, priority: int) -> None:
         task_to_change.priority_changed_at = datetime.datetime.utcnow()
 
     logger.info(f"changed task {task_id} priority to {priority}")
-
-
-def _make_task_dict(
-    t: Task,
-    ta: typing.Optional[User],
-    tcb: User,
-    ts: TaskStatus,
-    tt: TaskType,
-    tp: TaskPriority
-) -> dict:
-    """
-    Creates a nice dict of a task
-    :param t:   The task
-    :param ta:  The task assignee
-    :param tcb: The task created by
-    :param ts:  The task status
-    :param tt:  The task type
-    :param tp:  The task priority
-    :return:    A dict
-    """
-    extras = {
-        'assignee': ta.as_dict() if ta is not None else None,
-        'created_by': tcb.as_dict(),
-        'status': ts.as_dict(),
-        'type': _make_task_type_dict(tt),
-        'priority': tp.as_dict()
-    }
-
-    task_dict = t.as_dict()
-
-    # remove extras from base task
-    for k in extras:
-        task_dict.pop(k)
-
-    # convert datetimes to str
-    for k, v in task_dict.items():
-        if isinstance(v, datetime.datetime):
-            task_dict[k] = v.strftime("%Y-%m-%d %H:%M:%S%z")
-
-    return dict(sorted({
-        **task_dict,
-        **extras
-    }.items()))
-
-
-def _make_task_type_dict(
-        tt: TaskType
-) -> dict:
-    """ Creates a nice dict of a task type """
-    task_type_dict = tt.as_dict()
-
-    # get task type escalations
-    with session_scope() as session:
-        tte_qry = session.query(TaskTypeEscalation).filter(TaskTypeEscalation.task_type_id == tt.id).all()
-        escalation_policies = [escalation.as_dict() for escalation in tte_qry]
-
-    # sort by display order
-    task_type_dict['escalation_policies'] = list(sorted(escalation_policies, key=lambda i: i['display_order']))
-
-    return task_type_dict
 
 
 class TaskController(object):
@@ -294,9 +252,9 @@ class TaskController(object):
             return req_user
 
         with session_scope() as session:
-            task_tt_qry = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
+            task_type_query = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
 
-        task_types = [_make_task_type_dict(tt) for tt in task_tt_qry]
+        task_types = [tt.fat_dict() for tt in task_type_query]
         logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
         req_user.log(
             operation=Operation.GET,
@@ -327,26 +285,13 @@ class TaskController(object):
             if isinstance(req_user, Response):
                 return req_user
 
-            with session_scope() as session:
-                task_assignee, task_created_by = aliased(User), aliased(User)
-                tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority)\
-                    .outerjoin(task_assignee, task_assignee.id == Task.assignee)\
-                    .join(task_created_by, task_created_by.id == Task.created_by)\
-                    .join(Task.created_bys)\
-                    .join(Task.task_statuses)\
-                    .join(Task.task_types)\
-                    .join(Task.task_priorities)\
-                    .filter(Task.id == task_id)\
-                    .first()
-
-            task_as_dict = _make_task_dict(*tasks_qry)
-            logger.debug(f"found task {task_as_dict}")
+            logger.debug(f"found task {task.fat_dict()}")
             req_user.log(
                 operation=Operation.GET,
                 resource=Resource.TASK,
                 resource_id=task.id
             )
-            return j_response(task_as_dict)
+            return j_response(task.fat_dict())
 
         else:
             logger.info(f"task with id {task_id} does not exist")
@@ -369,7 +314,7 @@ class TaskController(object):
 
         with session_scope() as session:
             task_assignee, task_created_by = aliased(User), aliased(User)
-            tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority)\
+            tasks_qry = session.query(Task, task_assignee, task_created_by)\
                 .outerjoin(task_assignee, task_assignee.id == Task.assignee)\
                 .join(task_created_by, task_created_by.id == Task.created_by)\
                 .join(Task.created_bys)\
@@ -379,7 +324,7 @@ class TaskController(object):
                 .filter(Task.org_id == req_user.org_id)\
                 .all()
 
-        tasks = [_make_task_dict(t, ta, tcb, ts, tt, tp) for t, ta, tcb, ts, tt, tp in tasks_qry]
+        tasks = [t.fat_dict() for t, ta, tcb in tasks_qry]
         logger.debug(f"found {len(tasks)} users: {json.dumps(tasks)}")
         req_user.log(
             operation=Operation.GET,
@@ -388,7 +333,7 @@ class TaskController(object):
         return j_response(tasks)
 
     @staticmethod
-    def create_task_types(req: request) -> Response:
+    def create_task_type(req: request) -> Response:
         """ Create a task type """
         from app.Controllers import AuthController, ValidationController
         from app.Models import TaskType
@@ -418,6 +363,11 @@ class TaskController(object):
                     org_id=valid_tt.get('org_id')
                 )
                 session.add(task_type)
+            Notification(
+                org_id=task_type.org_id,
+                event=Events.tasktype_created,
+                payload=task_type.as_dict()
+            ).publish()
             req_user.log(
                 operation=Operation.CREATE,
                 resource=Resource.TASK_TYPE,
@@ -443,6 +393,11 @@ class TaskController(object):
                     )
                 ).first()
                 task_type.disabled = False
+            Notification(
+                org_id=task_type.org_id,
+                event=Events.tasktype_enabled,
+                payload=task_type.as_dict()
+            ).publish()
             req_user.log(
                 operation=Operation.ENABLE,
                 resource=Resource.TASK_TYPE,
@@ -494,6 +449,11 @@ class TaskController(object):
             )
             session.add(task)
 
+        Notification(
+            org_id=task.org_id,
+            event=Events.task_created,
+            payload=task.fat_dict()
+        ).publish()
         req_user.log(
             operation=Operation.CREATE,
             resource=Resource.TASK,
@@ -571,6 +531,11 @@ class TaskController(object):
                     )
                     session.add(new_escalation)
 
+                Notification(
+                    org_id=org_id,
+                    event=Events.tasktype_escalation_created,
+                    payload=new_escalation.as_dict()
+                ).publish()
                 req_user.log(
                     operation=Operation.CREATE,
                     resource=Resource.TASK_TYPE_ESCALATION,
@@ -692,6 +657,13 @@ class TaskController(object):
         with session_scope():
             for k, v in valid_task.items():
                 task_to_update.__setattr__(k, v)
+
+        # publish event
+        Notification(
+            org_id=task_to_update.org_id,
+            event=Events.task_updated,
+            payload=task_to_update.fat_dict()
+        ).publish()
 
         req_user.log(
             operation=Operation.UPDATE,
@@ -828,6 +800,11 @@ class TaskController(object):
         with session_scope():
             valid_dtt.disabled = True
 
+        Notification(
+            org_id=valid_dtt.org_id,
+            event=Events.tasktype_disabled,
+            payload=valid_dtt.as_dict()
+        ).publish()
         req_user.log(
             operation=Operation.DISABLE,
             resource=Resource.TASK_TYPE,
@@ -889,3 +866,36 @@ class TaskController(object):
         logger.info(f"user {req_user.id} delayed task {valid_delay_task.get('task_id')} "
                     f"until {valid_delay_task.get('delay_for')}")
         return g_response(status=204)
+
+    @staticmethod
+    def get_task_activity(task_identifier: int, req: request) -> Response:
+        """ Returns the activity for a user """
+        from app.Controllers import TaskController
+        try:
+            task_identifier = int(task_identifier)
+        except ValueError:
+            return g_response(f"cannot cast `{task_identifier}` to int", 400)
+
+        if TaskController.task_exists(task_identifier):
+            task = TaskController.get_task_by_id(task_identifier)
+            req_user = AuthController.authorize_request(
+                request_headers=req.headers,
+                operation=Operation.GET,
+                resource=Resource.TASK_ACTIVITY,
+                resource_org_id=task.org_id
+            )
+            # no perms
+            if isinstance(req_user, Response):
+                return req_user
+
+            req_user.log(
+                operation=Operation.GET,
+                resource=Resource.TASK_ACTIVITY,
+                resource_id=task.id
+            )
+            logger.info(f"getting activity for task with id {task.id}")
+            return j_response(task.activity())
+        else:
+            logger.info(f"task with id {task_identifier} does not exist")
+            return g_response("Task does not exist.", 400)
+

@@ -8,8 +8,8 @@ import uuid
 from app import logger, app, g_response, session_scope
 from app.Controllers import ValidationController
 from app.Controllers.LogControllers import UserAuthLogController
-from app.Models import User, FailedLogin
-from app.Models.Enums import UserAuthLogAction
+from app.Models import User, FailedLogin, Notification
+from app.Models.Enums import UserAuthLogAction, Events
 from app.Models.RBAC import Role, ResourceScope
 from flask import Response, request
 from sqlalchemy import exists
@@ -166,7 +166,8 @@ def _authorize_org(
                                 f"however, {auth_user.org_id} == {resource_org_id}")
                     return g_response(f"No permissions to {operation} {resource}, "
                                       f"because user {auth_user.id} is not "
-                                      f"in the same org as the {resource_user_id}", 403)
+                                      f"in the same org as the resource user id {resource_user_id} which "
+                                      f"is in org {resource_user.org_id}", 403)
 
             logger.info(f"user {auth_user.id} has {user_permission_scope} permissions, "
                         f"and can {operation} {resource}")
@@ -242,7 +243,7 @@ class AuthController(object):
                 )
 
             elif user_permission_scope == ResourceScope.GLOBAL:
-                # they can do anything cos they're l33t
+                # admin OR scope doesn't apply for this permission since the check is done elsewhere
                 logger.info(f"user {auth_user.id} has {user_permission_scope} permissions "
                             f"for {operation} {resource}")
                 return auth_user
@@ -321,10 +322,14 @@ class AuthController(object):
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
                 user.is_active()
-                logged_in_user_dict = UserController.get_full_user_as_dict(user.id)
+                Notification(
+                    org_id=user.org_id,
+                    event=Events.user_login,
+                    payload=user.fat_dict()
+                ).publish()
                 return Response(
                     json.dumps({
-                        **logged_in_user_dict,
+                        **user.fat_dict(),
                         **{"jwt": _generate_jwt_token(user)}
                     }),
                     status=200,
@@ -357,6 +362,11 @@ class AuthController(object):
         else:
             user = UserController.get_user_by_id(payload.get('claims').get('user_id'))
             user.is_inactive()
+            Notification(
+                org_id=user.org_id,
+                event=Events.user_logout,
+                payload=user.fat_dict()
+            ).publish()
             AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
             UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
             logger.info(f"user {user.id} logged out")

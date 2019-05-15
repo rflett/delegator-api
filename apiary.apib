@@ -306,6 +306,33 @@ Overview of the BackBurner API.
 + Response 204 (application/json)
 
 
+## User Activity [/user/activity/{user_id}]
+
++ Parameters
+    + user_id - A user id
+
+### Get User Activity [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+    
++ Response 200 (application/json)
+    + Body
+    
+            [
+                {
+                    "activity": "user_login",
+                    "activity_timestamp": "20190514T220642.642214Z"
+                },
+                {
+                    "activity": "user_login",
+                    "activity_timestamp": "20190514T220707.890465Z"
+                }
+            ]
+
+
 ## Organisation Settings [/org/settings]
 
 ### Get Organisation's Settings [GET]
@@ -406,7 +433,8 @@ Overview of the BackBurner API.
     + Headers
             
             Authorization: Bearer JWT
-            
+
++ Response 200 (application/json)
     + Body
     
             {
@@ -454,8 +482,6 @@ Overview of the BackBurner API.
                   "disabled": false
               }
             }
-    
-+ Response 204 (application/json)
 
 
 ## Tasks [/tasks]
@@ -691,6 +717,33 @@ Overview of the BackBurner API.
                   "status": "COMPLETED",
                   "label": "Completed"
               }
+            ]
+
+
+## Task Activity [/task/activity/{task_id}]
+
++ Parameters
+    + task_id - A task id
+
+### Get Task Activity [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+    
++ Response 200 (application/json)
+    + Body
+    
+            [
+                {
+                    "activity": "task_created",
+                    "activity_timestamp": "20190514T213035.542295Z"
+                },
+                {
+                    "activity": "task_assigned",
+                    "activity_timestamp": "20190514T213035.788676Z"
+                }
             ]
 
 

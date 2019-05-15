@@ -11,6 +11,7 @@ from app.Models.UserSetting import UserSetting
 from app.Models.OrgSetting import OrgSetting
 from app.Models.TaskTypeEscalation import TaskTypeEscalation
 from app.Models.DelayedTask import DelayedTask
+from app.Models.Notification import Notification
 
 __all__ = [
     BlacklistedToken,
@@ -25,5 +26,6 @@ __all__ = [
     UserSetting,
     OrgSetting,
     TaskTypeEscalation,
-    DelayedTask
+    DelayedTask,
+    Notification
 ]

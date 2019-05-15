@@ -95,11 +95,11 @@ def active_users():
     return ActiveUserController.get_active_users(request)
 
 
-@app.route('/user/<identifier>', methods=['GET'])
+@app.route('/user/<user_id>', methods=['GET'])
 @requires_jwt
 @safe_exceptions
-def get_user(identifier):
-    return UserController.user_get(identifier, request)
+def get_user(user_id):
+    return UserController.user_get(user_id, request)
 
 
 @app.route('/user/<user_id>', methods=['PUT'])
@@ -137,6 +137,13 @@ def update_user_settings():
     return UserController.update_user_settings(request)
 
 
+@app.route('/user/activity/<user_id>', methods=['GET'])
+@requires_jwt
+@safe_exceptions
+def get_user_activity(user_id):
+    return UserController.get_user_activity(user_id, request)
+
+
 @app.route('/roles', methods=['GET'])
 @requires_jwt
 @safe_exceptions
@@ -168,8 +175,8 @@ def get_task_types():
 @app.route('/tasks/types', methods=['POST'])
 @requires_jwt
 @safe_exceptions
-def create_task_types():
-    return TaskController.create_task_types(request)
+def create_task_type():
+    return TaskController.create_task_type(request)
 
 
 @app.route('/tasks/types/<task_type_id>', methods=['DELETE'])
@@ -240,6 +247,13 @@ def transition_task():
 @safe_exceptions
 def delay_task():
     return TaskController.delay_task(request)
+
+
+@app.route('/task/activity/<task_id>', methods=['GET'])
+@requires_jwt
+@safe_exceptions
+def get_task_activity(task_id):
+    return TaskController.get_task_activity(task_id, request)
 
 
 @app.route('/org/settings', methods=['GET'])

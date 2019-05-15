@@ -117,7 +117,12 @@ else:
 
 user_settings_table = dyn_db.Table(f"backburner-user-settings-{table_env}")
 org_settings_table = dyn_db.Table(f"backburner-organisation-settings-{table_env}")
+user_activity_table = dyn_db.Table(f"backburner-user-activity-{table_env}")
+task_activity_table = dyn_db.Table(f"backburner-task-activity-{table_env}")
 
+# sns client
+sns = boto3.resource('sns')
+api_events_sns_topic = sns.Topic(app.config['EVENTS_SNS_TOPIC_ARN'])
 
 # routes
-from app import routes   # noqa
+from app import routes  # noqa

@@ -1,7 +1,52 @@
 import datetime
 import typing
-from app import db
+from app import db, session_scope, logger, task_activity_table
 from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
+from boto3.dynamodb.conditions import Key
+from sqlalchemy.orm import aliased
+
+
+def _get_fat_task(task_id: int) -> dict:
+    """
+    Creates a nice dict of a task
+    """
+    with session_scope() as session:
+        task_assignee, task_created_by = aliased(User), aliased(User)
+        tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority) \
+            .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
+            .join(task_created_by, task_created_by.id == Task.created_by) \
+            .join(Task.created_bys) \
+            .join(Task.task_statuses) \
+            .join(Task.task_types) \
+            .join(Task.task_priorities) \
+            .filter(Task.id == task_id) \
+            .first()
+
+    t, ta, tcb, ts, tt, tp = tasks_qry
+
+    extras = {
+        'assignee': ta.as_dict() if ta is not None else None,
+        'created_by': tcb.as_dict(),
+        'status': ts.as_dict(),
+        'type': tt.fat_dict(),
+        'priority': tp.as_dict()
+    }
+
+    task_dict = t.as_dict()
+
+    # remove extras from base task
+    for k in extras:
+        task_dict.pop(k)
+
+    # convert datetimes to str
+    for k, v in task_dict.items():
+        if isinstance(v, datetime.datetime):
+            task_dict[k] = v.strftime("%Y-%m-%d %H:%M:%S%z")
+
+    return dict(sorted({
+        **task_dict,
+        **extras
+    }.items()))
 
 
 class Task(db.Model):
@@ -79,3 +124,26 @@ class Task(db.Model):
             "status_changed_at": self.status_changed_at,
             "priority_changed_at": self.priority_changed_at
         }
+
+    def fat_dict(self) -> dict:
+        """ Returns a full task dict with all of its FK's joined. """
+        return _get_fat_task(self.id)
+
+    def activity(self) -> list:
+        """ Returns the activity of a task. """
+        activity = task_activity_table.query(
+            Select='ALL_ATTRIBUTES',
+            KeyConditionExpression=Key('id').eq(self.id)
+        )
+        logger.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
+
+        log = []
+
+        for item in activity.get('Items'):
+            try:
+                del item['id']
+                log.append(item)
+            except KeyError:
+                logger.error(f"Key 'id' was missing from activity item. Table:{task_activity_table.name} Item:{item}")
+
+        return log
