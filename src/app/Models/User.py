@@ -281,3 +281,7 @@ class User(db.Model):
                 logger.error(f"Key 'id' was missing from activity item. Table:{user_activity_table.name} Item:{item}")
 
         return log
+
+    def name(self) -> str:
+        """ Returns their full name """
+        return self.first_name + " " + self.last_name

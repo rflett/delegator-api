@@ -29,7 +29,8 @@ def _transition_task(task_id: int, status: str, req_user: User) -> None:
     Notification(
         org_id=task_to_transition.org_id,
         event=f'task_transitioned_{task_to_transition.status.lower()}',
-        payload=task_to_transition.fat_dict()
+        payload=task_to_transition.fat_dict(),
+        friendly=f"Status changed from {old_status} to {status}."
     ).publish()
 
     req_user.log(
@@ -42,14 +43,17 @@ def _transition_task(task_id: int, status: str, req_user: User) -> None:
 
 def _assign_task(task_id: int, assignee: int, req_user: User) -> None:
     """ Common function for assigning a task """
+    from app.Controllers import UserController
     with session_scope():
         task_to_assign = TaskController.get_task_by_id(task_id)
         task_to_assign.assignee = assignee
 
+    assigned_user = UserController.get_user_by_id(assignee)
     Notification(
         org_id=task_to_assign.org_id,
         event=Events.task_assigned,
-        payload=task_to_assign.fat_dict()
+        payload=task_to_assign.fat_dict(),
+        friendly=f"{assigned_user.name()} assigned to task by {req_user.name()}."
     ).publish()
     req_user.log(
         operation=Operation.ASSIGN,
@@ -452,7 +456,8 @@ class TaskController(object):
         Notification(
             org_id=task.org_id,
             event=Events.task_created,
-            payload=task.fat_dict()
+            payload=task.fat_dict(),
+            friendly=f"Created by {req_user.name()}."
         ).publish()
         req_user.log(
             operation=Operation.CREATE,
@@ -662,7 +667,8 @@ class TaskController(object):
         Notification(
             org_id=task_to_update.org_id,
             event=Events.task_updated,
-            payload=task_to_update.fat_dict()
+            payload=task_to_update.fat_dict(),
+            friendly=f"Updated by {req_user.name()}."
         ).publish()
 
         req_user.log(

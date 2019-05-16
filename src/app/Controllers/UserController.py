@@ -120,19 +120,19 @@ class UserController(object):
             # create user settings
             create_user_settings(user.id)
 
-            # publish event
-            Notification(
-                org_id=user.org_id,
-                event=Events.user_created,
-                payload=user.fat_dict()
-            ).publish()
-
             if request_user is not None:
                 request_user.log(
                     operation=Operation.CREATE,
                     resource=Resource.USER,
                     resource_id=user.id
                 )
+                # publish event
+                Notification(
+                    org_id=user.org_id,
+                    event=Events.user_created,
+                    payload=user.fat_dict(),
+                    friendly=f"Created by {request_user.name()}"
+                ).publish()
                 logger.info(f"user {request_user.id} created user {user.as_dict()}")
             else:
                 user.log(
@@ -140,6 +140,13 @@ class UserController(object):
                     resource=Resource.USER,
                     resource_id=user.id
                 )
+                # publish event
+                Notification(
+                    org_id=user.org_id,
+                    event=Events.user_created,
+                    payload=user.fat_dict(),
+                    friendly=f"Created by {user.name()}"
+                ).publish()
                 logger.info(f"user {user.id} created user {user.as_dict()}")
             return g_response("Successfully created user", 201)
 
@@ -211,7 +218,8 @@ class UserController(object):
         Notification(
             org_id=user_to_update.org_id,
             event=Events.user_updated,
-            payload=user_to_update.fat_dict()
+            payload=user_to_update.fat_dict(),
+            friendly=f"Updated by {req_user.name()}"
         ).publish()
 
         req_user.log(
@@ -255,7 +263,8 @@ class UserController(object):
         Notification(
             org_id=user_to_del.org_id,
             event=Events.user_deleted,
-            payload=user_to_del.fat_dict()
+            payload=user_to_del.fat_dict(),
+            friendly=f"Deleted by {req_user.name()}"
         ).publish()
 
         req_user.log(
