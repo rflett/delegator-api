@@ -109,11 +109,8 @@ def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) ->
 # user and org settings
 dyn_db = boto3.resource('dynamodb')
 
-# temporarily using prod table for non prod
-if os.getenv('APP_ENV', 'local').lower() == 'staging':
-    table_env = 'staging'
-else:
-    table_env = 'production'
+# temporarily use only staging
+table_env = 'staging'
 
 user_settings_table = dyn_db.Table(f"backburner-user-settings-{table_env}")
 org_settings_table = dyn_db.Table(f"backburner-organisation-settings-{table_env}")
