@@ -33,6 +33,8 @@ class Events(str):
 
     task_escalated = 'task_escalated'
 
+    task_delay_finished = 'task_delay_finished'
+
     tasktype_created = 'tasktype_created'
     tasktype_enabled = 'tasktype_enabled'
     tasktype_disabled = 'tasktype_disabled'

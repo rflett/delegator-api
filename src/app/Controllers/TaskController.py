@@ -898,4 +898,3 @@ class TaskController(object):
         else:
             logger.info(f"task with id {task_identifier} does not exist")
             return g_response("Task does not exist.", 400)
-
