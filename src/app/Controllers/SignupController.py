@@ -1,4 +1,4 @@
-from app import app, logger, g_response
+from app import app, logger, g_response, session_scope
 from app.Controllers import UserController, OrganisationController, ValidationController
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -50,6 +50,11 @@ class SignupController(object):
             create_user_res = UserController.user_create(req, require_auth=False)
         except Exception as e:
             logger.error(str(e))
+            # the org was actually created, but the user failed, so delete the org
+            if create_org_res.status_code == 201:
+                with session_scope() as session:
+                    session.delete(new_org)
+                    logger.info(f"deleted the new organisation {new_org.name} since there was an issue creating the user")
             return g_response("There was an issue creating the user", 500)
 
         if create_user_res.status_code != 201:
