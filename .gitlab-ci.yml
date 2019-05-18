@@ -52,10 +52,14 @@ integrationTest:
   allow_failure: true
   only:
     - master
+    - develop
   services:
     - docker:dind
   tags:
     - docker
+  artifacts:
+    paths:
+      - logs/
   script:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
@@ -75,8 +79,15 @@ integrationTest:
     - docker run 
       --link api:api 
       -v `pwd`/src/tests/integration:/newman 
+      --name newman 
       $AMZ_REGISTRY/newman:latest 
       newman run /newman/integration.postman_collection.json
+
+    # dump logs
+    - mkdir logs
+    - docker logs api > logs/api.log
+    - docker logs postgres > logs/postgres.log
+    - docker logs newman > logs/postgres.log
 
 deployStaging:
   stage: deployStaging

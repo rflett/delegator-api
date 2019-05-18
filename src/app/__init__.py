@@ -1,7 +1,6 @@
 import boto3
 import json
 import logging
-import os
 import redis
 import typing
 from contextlib import contextmanager
