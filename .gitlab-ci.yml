@@ -3,7 +3,7 @@ stages:
   # - unitTest
   - build
   - integrationTest
-  - deployStaging
+  - deploy
 
 variables:
   AMZ_REGISTRY: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com
@@ -48,19 +48,12 @@ build:
 integrationTest:
   stage: integrationTest
   image: $GITLAB_REGISTRY/docker:latest
-  when: manual
-  allow_failure: true
   only:
     - master
-    - develop
   services:
     - docker:dind
   tags:
     - docker
-  artifacts:
-    when: always
-    paths:
-      - logs/
   script:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
@@ -84,14 +77,8 @@ integrationTest:
       $AMZ_REGISTRY/newman:latest 
       newman run /newman/integration.postman_collection.json
 
-    # dump logs
-    - mkdir logs
-    - docker logs api > logs/api.log
-    - docker logs postgres > logs/postgres.log
-    - docker logs newman > logs/postgres.log
-
-deployStaging:
-  stage: deployStaging
+staging:
+  stage: deploy
   image: $GITLAB_REGISTRY/python:latest
   only:
     - master
