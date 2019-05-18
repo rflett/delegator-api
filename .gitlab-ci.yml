@@ -58,6 +58,7 @@ integrationTest:
   tags:
     - docker
   artifacts:
+    when: always
     paths:
       - logs/
   script:
