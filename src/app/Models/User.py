@@ -30,76 +30,6 @@ def _hash_password(password: str) -> str:
     return (salt + pwdhash).decode('ascii')
 
 
-def _get_jwt_secret(org_id: int) -> str:
-    """
-    Gets the JWT secret for this users organisation
-    :param org_id:  The id of the user's organisation
-    :return:        The JWT secret.
-    """
-    from app.Controllers import OrganisationController
-    user_org = OrganisationController.get_org_by_id(org_id)
-    return user_org.jwt_secret
-
-
-def _get_jwt_aud(org_id: int) -> str:
-    """
-    Gets the JWT aud for this users organisation. The aud (audience claim) is unique per
-    organisation, and identifies the org.
-    :param org_id: The org's id
-    :return: The aud claim
-    """
-    from app.Controllers import OrganisationController
-    user_org = OrganisationController.get_org_by_id(org_id)
-    return user_org.jwt_aud
-
-
-def _clear_failed_logins(email: str) -> None:
-    """ Removes an email address from the failed logins table """
-    with session_scope() as session:
-        failed_email = session.query(exists().where(FailedLogin.email == email)).scalar()
-
-        if failed_email:
-            session.query(FailedLogin).filter(FailedLogin.email == email).delete()
-
-        logger.info(f"cleared failed logins for {email}")
-
-
-def _get_fat_user(user_id: int) -> dict:
-    """ Returns a full user object with all of its FK's joined. """
-    from app.Controllers import SettingsController
-
-    with session_scope() as session:
-        user_qry = session.query(User, Role, Organisation)\
-                        .join(User.roles)\
-                        .join(User.orgs)\
-                        .filter(User.id == user_id)\
-                        .first()
-
-    user, role, org = user_qry
-    extras = {}
-
-    # prepend role attrs with role_
-    for k, v in role.as_dict().items():
-        # key exclusions
-        if k not in ['id', 'rank']:
-            extras[f'role_{k}'] = v
-
-    # prepend org attrs with org_
-    for k, v in org.as_dict().items():
-        # key exclusions
-        if k not in ['id', 'jwt_aud', 'jwt_secret']:
-            extras[f'org_{k}'] = v
-
-    # get settings
-    extras['settings'] = SettingsController.get_user_settings(user.id).as_dict()
-
-    # merge role with user, with return dict sorted
-    return dict(sorted({
-        **user.as_dict(),
-        **extras
-    }.items()))
-
-
 class User(db.Model):
     __tablename__ = "users"
 
@@ -184,17 +114,22 @@ class User(db.Model):
 
     def jwt_aud(self) -> str:
         """
-        Get's the users JWT aud.
-        :return: JWT aud
+        Gets the JWT aud for this users organisation. The aud (audience claim) is unique per
+        organisation, and identifies the org.
+        :return: The aud claim
         """
-        return _get_jwt_aud(self.org_id)
+        from app.Controllers import OrganisationController
+        user_org = OrganisationController.get_org_by_id(self.org_id)
+        return user_org.jwt_aud
 
     def jwt_secret(self) -> str:
         """
-        Get's the users JWT secret.
-        :return: JWT secret
+        Gets the JWT secret for this users organisation
+        :return:        The JWT secret.
         """
-        return _get_jwt_secret(self.org_id)
+        from app.Controllers import OrganisationController
+        user_org = OrganisationController.get_org_by_id(self.org_id)
+        return user_org.jwt_secret
 
     def log(self, **kwargs) -> None:
         """
@@ -230,7 +165,13 @@ class User(db.Model):
 
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """
-        _clear_failed_logins(self.email)
+        with session_scope() as session:
+            failed_email = session.query(exists().where(FailedLogin.email == self.email)).scalar()
+
+            if failed_email:
+                session.query(FailedLogin).filter(FailedLogin.email == self.email).delete()
+
+            logger.info(f"cleared failed logins for {self.email}")
 
     def anonymize(self) -> None:
         """ Removes any PII from the user object """
@@ -261,7 +202,42 @@ class User(db.Model):
 
     def fat_dict(self) -> dict:
         """ Returns a full user dict with all of its FK's joined. """
-        return _get_fat_user(self.id)
+        from app.Controllers import SettingsController
+
+        with session_scope() as session:
+            user_qry = session.query(User, Role, Organisation) \
+                .join(User.roles) \
+                .join(User.orgs) \
+                .filter(User.id == self.id) \
+                .first()
+
+        user, role, org = user_qry
+        extras = {}
+
+        # prepend role attrs with role_
+        for k, v in role.as_dict().items():
+            # key exclusions
+            if k not in ['id', 'rank']:
+                extras[f'role_{k}'] = v
+
+        # prepend org attrs with org_
+        for k, v in org.as_dict().items():
+            # key exclusions
+            if k not in ['id', 'jwt_aud', 'jwt_secret']:
+                extras[f'org_{k}'] = v
+
+        # get settings
+        extras['settings'] = SettingsController.get_user_settings(user.id).as_dict()
+
+        # merge role with user, with return dict sorted
+        return dict(
+                sorted(
+                    {
+                        **user.as_dict(),
+                        **extras
+                    }.items()
+                )
+        )
 
     def activity(self) -> list:
         """ Returns the activity of a user"""
