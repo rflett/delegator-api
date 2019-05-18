@@ -11,56 +11,109 @@ from sqlalchemy import exists, and_, func
 from sqlalchemy.orm import aliased
 
 
-def _transition_task(task_id: int, status: str, req_user: User) -> None:
+def _transition_task(task: Task, status: str, req_user: User) -> None:
     """ Common function for transitioning a task """
     with session_scope() as session:
-        task_to_transition = TaskController.get_task_by_id(task_id)
-        old_status = task_to_transition.status
+        old_status = task.status
+
+        if status == old_status:
+            return
 
         # remove delayed task
-        if old_status == TaskStatuses.DELAYED:
-            delayed_task = session.query(DelayedTask).filter(DelayedTask.task_id == task_id).first()
+        if old_status == TaskStatuses.DELAYED and status != TaskStatuses.DELAYED:
+            delayed_task = session.query(DelayedTask).filter(DelayedTask.task_id == task.id).first()
             session.delete(delayed_task)
 
-        task_to_transition.status = status
-        task_to_transition.status_changed_at = datetime.datetime.utcnow()
+        task.status = status
+        task.status_changed_at = datetime.datetime.utcnow()
 
-    # publish event
     Notification(
-        org_id=task_to_transition.org_id,
-        event=f'task_transitioned_{task_to_transition.status.lower()}',
-        payload=task_to_transition.fat_dict(),
-        friendly=f"Status changed from {old_status} to {status}."
+        org_id=task.org_id,
+        event=f'task_transitioned_{task.status.lower()}',
+        payload=task.fat_dict(),
+        friendly=f"Transitioned from {old_status.lower()} to {status.lower()}."
     ).publish()
-
+    Notification(
+        org_id=req_user.org_id,
+        event=Events.user_transitioned_task,
+        payload=req_user.fat_dict(),
+        friendly=f"Transitioned {_get_task_type_label(task)} from {old_status.lower()} to {status.lower()}."
+    ).publish()
     req_user.log(
         operation=Operation.TRANSITION,
         resource=Resource.TASK,
-        resource_id=task_id
+        resource_id=task.id
     )
-    logger.info(f"user {req_user.id} transitioned task {task_id} from {old_status} to {status}")
+    logger.info(f"user {req_user.id} transitioned task {task.id} from {old_status} to {status}")
 
 
-def _assign_task(task_id: int, assignee: int, req_user: User) -> None:
+def _assign_task(task: Task, assignee: int, req_user: User) -> None:
     """ Common function for assigning a task """
     from app.Controllers import UserController
     with session_scope():
-        task_to_assign = TaskController.get_task_by_id(task_id)
-        task_to_assign.assignee = assignee
+        task.assignee = assignee
 
     assigned_user = UserController.get_user_by_id(assignee)
     Notification(
-        org_id=task_to_assign.org_id,
+        org_id=task.org_id,
         event=Events.task_assigned,
-        payload=task_to_assign.fat_dict(),
+        payload=task.fat_dict(),
         friendly=f"{assigned_user.name()} assigned to task by {req_user.name()}."
+    ).publish()
+    Notification(
+        org_id=req_user.org_id,
+        event=Events.user_assigned_task,
+        payload=req_user.fat_dict(),
+        friendly=f"Assigned {assigned_user.name()} to {_get_task_type_label(task)}."
+    ).publish()
+    Notification(
+        org_id=assigned_user.org_id,
+        event=Events.user_assigned_to_task,
+        payload=assigned_user.fat_dict(),
+        friendly=f"Assigned to {_get_task_type_label(task)} by {req_user.name()}."
     ).publish()
     req_user.log(
         operation=Operation.ASSIGN,
         resource=Resource.TASK,
-        resource_id=task_id
+        resource_id=task.id
     )
-    logger.info(f"assigned task {task_id} to user {assignee}")
+    logger.info(f"assigned task {task.id} to user {assignee}")
+
+
+def _unassign_task(task: Task, req_user: User) -> None:
+    """ Common function for assigning a task """
+    from app.Controllers import UserController
+
+    if task.assignee is not None:
+        old_assignee = UserController.get_user_by_id(task.assignee)
+
+        with session_scope():
+            task.assignee = None
+
+        Notification(
+            org_id=task.org_id,
+            event=Events.task_unassigned,
+            payload=task.fat_dict(),
+            friendly=f"{old_assignee.name()} unassigned from task by {req_user.name()}."
+        ).publish()
+        Notification(
+            org_id=req_user.org_id,
+            event=Events.user_unassigned_task,
+            payload=req_user.fat_dict(),
+            friendly=f"Unassigned {old_assignee.name()} from {_get_task_type_label(task)}."
+        ).publish()
+        Notification(
+            org_id=old_assignee.org_id,
+            event=Events.user_unassigned_from_task,
+            payload=old_assignee.fat_dict(),
+            friendly=f"Unassigned from {_get_task_type_label(task)} by {req_user.name()}."
+        ).publish()
+        req_user.log(
+            operation=Operation.ASSIGN,
+            resource=Resource.TASK,
+            resource_id=task.id
+        )
+        logger.info(f"unassigned user {old_assignee.id} from task {task.id}")
 
 
 def _change_task_priority(task_id: int, priority: int) -> None:
@@ -71,6 +124,12 @@ def _change_task_priority(task_id: int, priority: int) -> None:
         task_to_change.priority_changed_at = datetime.datetime.utcnow()
 
     logger.info(f"changed task {task_id} priority to {priority}")
+
+
+def _get_task_type_label(task: Task) -> str:
+    """ Returns the label for a tasks's type """
+    from app.Controllers import TaskController
+    return TaskController.get_task_type_by_id(task.type).label
 
 
 class TaskController(object):
@@ -372,6 +431,12 @@ class TaskController(object):
                 event=Events.tasktype_created,
                 payload=task_type.as_dict()
             ).publish()
+            Notification(
+                org_id=req_user.org_id,
+                event=Events.user_created_tasktype,
+                payload=req_user.as_dict(),
+                friendly=f"Created task type {task_type.label}."
+            ).publish()
             req_user.log(
                 operation=Operation.CREATE,
                 resource=Resource.TASK_TYPE,
@@ -459,6 +524,12 @@ class TaskController(object):
             payload=task.fat_dict(),
             friendly=f"Created by {req_user.name()}."
         ).publish()
+        Notification(
+            org_id=req_user.org_id,
+            event=Events.user_created_task,
+            payload=req_user.fat_dict(),
+            friendly=f"Created task {_get_task_type_label(task)}."
+        ).publish()
         req_user.log(
             operation=Operation.CREATE,
             resource=Resource.TASK,
@@ -480,7 +551,7 @@ class TaskController(object):
                 return req_user
 
             _assign_task(
-                task_id=task.id,
+                task=task,
                 assignee=valid_task.get('assignee'),
                 req_user=req_user
             )
@@ -541,6 +612,13 @@ class TaskController(object):
                     event=Events.tasktype_escalation_created,
                     payload=new_escalation.as_dict()
                 ).publish()
+                Notification(
+                    org_id=req_user.org_id,
+                    event=Events.user_created_tasktype_escalation,
+                    payload=req_user.as_dict(),
+                    friendly=f"Created escalation for task type "
+                    f"{TaskController.get_task_type_by_id(new_escalation.task_type_id).label}."
+                ).publish()
                 req_user.log(
                     operation=Operation.CREATE,
                     resource=Resource.TASK_TYPE_ESCALATION,
@@ -558,6 +636,18 @@ class TaskController(object):
                     for k, v in escalation.items():
                         escalation_to_update.__setattr__(k, v)
 
+                    Notification(
+                        org_id=org_id,
+                        event=Events.tasktype_escalation_updated,
+                        payload=escalation_to_update.as_dict()
+                    ).publish()
+                    Notification(
+                        org_id=req_user.org_id,
+                        event=Events.user_created_tasktype_escalation,
+                        payload=req_user.as_dict(),
+                        friendly=f"Updated escalation for task type "
+                        f"{TaskController.get_task_type_by_id(escalation_to_update.task_type_id).label}."
+                    ).publish()
                     req_user.log(
                         operation=Operation.UPDATE,
                         resource=Resource.TASK_TYPE_ESCALATION,
@@ -635,17 +725,23 @@ class TaskController(object):
             if isinstance(req_user, Response):
                 return req_user
 
-            _assign_task(
-                task_id=task_id,
-                assignee=assignee,
-                req_user=req_user
-            )
+            if assignee is None:
+                _unassign_task(
+                    task=task_to_update,
+                    req_user=req_user
+                )
+            else:
+                _assign_task(
+                    task=task_to_update,
+                    assignee=assignee,
+                    req_user=req_user
+                )
 
         # transition
         task_status = valid_task.pop('status')
         if task_to_update.status != task_status:
             _transition_task(
-                task_id=task_id,
+                task=task_to_update,
                 status=task_status,
                 req_user=req_user
             )
@@ -682,7 +778,7 @@ class TaskController(object):
     @staticmethod
     def assign_task(req: request) -> Response:
         """ Assigns a user to task """
-        from app.Controllers import ValidationController
+        from app.Controllers import ValidationController, TaskController
 
         valid_assignment = ValidationController.validate_assign_task(req.get_json())
         # invalid assignment
@@ -701,7 +797,7 @@ class TaskController(object):
             return req_user
 
         _assign_task(
-            task_id=valid_assignment.get('task_id'),
+            task=TaskController.get_task_by_id(valid_assignment.get('task_id')),
             assignee=valid_assignment.get('assignee'),
             req_user=req_user
         )
@@ -737,7 +833,12 @@ class TaskController(object):
         task_to_drop = TaskController.get_task_by_id(valid_task_drop.get('task_id'))
 
         with session_scope():
-            task_to_drop.assignee = None
+            _unassign_task(task_to_drop, req_user)
+            _transition_task(
+                task=task_to_drop,
+                status=TaskStatuses.READY,
+                req_user=req_user
+            )
             task_to_drop.status = TaskStatuses.READY
 
         req_user.log(
@@ -752,7 +853,7 @@ class TaskController(object):
     @staticmethod
     def transition_task(req: request) -> Response:
         """ Transitions the status of a task """
-        from app.Controllers import ValidationController
+        from app.Controllers import ValidationController, TaskController
 
         valid_task_transition = ValidationController.validate_transition_task(request.get_json())
         # invalid
@@ -771,7 +872,7 @@ class TaskController(object):
             return req_user
 
         _transition_task(
-            task_id=valid_task_transition.get('task_id'),
+            task=TaskController.get_task_by_id(valid_task_transition.get('task_id')),
             status=valid_task_transition.get('task_status'),
             req_user=req_user
         )
@@ -811,6 +912,12 @@ class TaskController(object):
             event=Events.tasktype_disabled,
             payload=valid_dtt.as_dict()
         ).publish()
+        Notification(
+            org_id=req_user.org_id,
+            event=Events.user_disabled_tasktype,
+            payload=req_user.as_dict(),
+            friendly=f"Disabled task type {valid_dtt.label}"
+        ).publish()
         req_user.log(
             operation=Operation.DISABLE,
             resource=Resource.TASK_TYPE,
@@ -822,7 +929,7 @@ class TaskController(object):
     @staticmethod
     def delay_task(req: request) -> Response:
         """ Transitions the status of a task """
-        from app.Controllers import ValidationController
+        from app.Controllers import ValidationController, TaskController
         from app.Models import DelayedTask
 
         valid_delay_task = ValidationController.validate_delay_task_request(request.get_json())
@@ -844,7 +951,7 @@ class TaskController(object):
         with session_scope() as session:
             # set task to delayed
             _transition_task(
-                task_id=valid_delay_task.get('task_id'),
+                task=TaskController.get_task_by_id(valid_delay_task.get('task_id')),
                 status=TaskStatuses.DELAYED,
                 req_user=req_user
             )
