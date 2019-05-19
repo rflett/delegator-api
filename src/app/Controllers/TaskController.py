@@ -924,7 +924,7 @@ class TaskController(object):
             resource_id=valid_dtt.id
         )
         logger.info(f"disabled task type {valid_dtt.as_dict()}")
-        return g_response("Successfully disabled task type", 201)
+        return g_response(status=204)
 
     @staticmethod
     def delay_task(req: request) -> Response:
