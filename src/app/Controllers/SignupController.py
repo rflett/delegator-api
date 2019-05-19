@@ -54,7 +54,8 @@ class SignupController(object):
             if create_org_res.status_code == 201:
                 with session_scope() as session:
                     session.delete(new_org)
-                    logger.info(f"deleted the new organisation {new_org.name} since there was an issue creating the user")
+                    logger.info(f"deleted the new organisation {new_org.name} "
+                                f"since there was an issue creating the user")
             return g_response("There was an issue creating the user", 500)
 
         if create_user_res.status_code != 201:
