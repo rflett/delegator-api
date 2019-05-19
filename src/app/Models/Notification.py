@@ -9,6 +9,7 @@ class Notification(object):
     org_id: int
     event: str
     payload: dict
+    friendly: str = ""
 
     def __post_init__(self):
         self.event_time = datetime.utcnow().strftime("%Y%m%dT%H%M%S.%fZ")
@@ -40,5 +41,6 @@ class Notification(object):
             'org_id': self.org_id,
             'event': self.event,
             'payload': self.payload,
-            'event_time': self.event_time
+            'event_time': self.event_time,
+            'event_friendly': self.friendly
         }

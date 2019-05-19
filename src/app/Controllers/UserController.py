@@ -120,19 +120,24 @@ class UserController(object):
             # create user settings
             create_user_settings(user.id)
 
-            # publish event
-            Notification(
-                org_id=user.org_id,
-                event=Events.user_created,
-                payload=user.fat_dict()
-            ).publish()
-
             if request_user is not None:
                 request_user.log(
                     operation=Operation.CREATE,
                     resource=Resource.USER,
                     resource_id=user.id
                 )
+                Notification(
+                    org_id=user.org_id,
+                    event=Events.user_created,
+                    payload=user.fat_dict(),
+                    friendly=f"Created by {request_user.name()}."
+                ).publish()
+                Notification(
+                    org_id=req_user.org_id,
+                    event=Events.user_created_user,
+                    payload=req_user.fat_dict(),
+                    friendly=f"Created {user.name()}."
+                ).publish()
                 logger.info(f"user {request_user.id} created user {user.as_dict()}")
             else:
                 user.log(
@@ -140,6 +145,13 @@ class UserController(object):
                     resource=Resource.USER,
                     resource_id=user.id
                 )
+                # publish event
+                Notification(
+                    org_id=user.org_id,
+                    event=Events.user_created,
+                    payload=user.fat_dict(),
+                    friendly=f"Created by {user.name()}"
+                ).publish()
                 logger.info(f"user {user.id} created user {user.as_dict()}")
             return g_response("Successfully created user", 201)
 
@@ -207,13 +219,18 @@ class UserController(object):
             for k, v in valid_user.items():
                 user_to_update.__setattr__(k, v)
 
-        # publish event
         Notification(
             org_id=user_to_update.org_id,
             event=Events.user_updated,
-            payload=user_to_update.fat_dict()
+            payload=user_to_update.fat_dict(),
+            friendly=f"Updated by {req_user.name()}"
         ).publish()
-
+        Notification(
+            org_id=req_user.org_id,
+            event=Events.user_updated_user,
+            payload=req_user.fat_dict(),
+            friendly=f"Updated {user_to_update.name()}."
+        ).publish()
         req_user.log(
             operation=Operation.UPDATE,
             resource=Resource.USER,
@@ -249,15 +266,20 @@ class UserController(object):
 
         with session_scope():
             user_to_del = UserController.get_user_by_id(user_id)
+            Notification(
+                org_id=req_user.org_id,
+                event=Events.user_deleted_user,
+                payload=req_user.fat_dict(),
+                friendly=f"Deleted {user_to_del.first_name}."
+            ).publish()
             user_to_del.anonymize()
 
-        # publish event
         Notification(
             org_id=user_to_del.org_id,
             event=Events.user_deleted,
-            payload=user_to_del.fat_dict()
+            payload=user_to_del.fat_dict(),
+            friendly=f"Deleted by {req_user.name()}."
         ).publish()
-
         req_user.log(
             operation=Operation.DELETE,
             resource=Resource.USER,
