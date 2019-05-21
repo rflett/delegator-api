@@ -109,7 +109,7 @@ def update_user(user_id):
     return UserController.user_update(user_id, request)
 
 
-@app.route('/user/<user_id>', methods=['DELETE'])
+@app.route('/user/<int:user_id>', methods=['DELETE'])
 @requires_jwt
 @safe_exceptions
 def delete_user(user_id):

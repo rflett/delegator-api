@@ -416,23 +416,20 @@ class ValidationController(object):
         return ret
 
     @staticmethod
-    def validate_delete_user_request(user_id: int) -> typing.Union[Response, dict]:
+    def validate_delete_user_request(user_id: int) -> typing.Union[Response, User]:
         """ Validates a delete user request body """
         from app.Controllers import UserController
 
-        check_user = _check_user_id(user_id, should_exist=True)
+        check_user = _check_int(user_id, 'user_id')
         if isinstance(check_user, Response):
             return check_user
 
         try:
-            org_id = UserController.get_user_by_id(user_id).org_id
+            user = UserController.get_user_by_id(check_user)
+            return user
         except ValueError as e:
             logger.warning(str(e))
             return g_response("user does not exist", 400)
-
-        return {
-            "org_id": org_id
-        }
 
     @staticmethod
     def validate_create_org_request(request_body: dict) -> typing.Union[Response, dict]:
