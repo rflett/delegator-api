@@ -86,3 +86,6 @@ staging:
     - docker
   script:
     - python deploy/deploy.py api staging
+  environment:
+    name: staging
+    url: https://api-staging.backburner.online
