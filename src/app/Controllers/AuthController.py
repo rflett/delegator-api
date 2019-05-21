@@ -79,13 +79,11 @@ def _failed_login_attempt(email: str) -> Response:
     logger.info(f"attempted to login with non existing email {email}")
     with session_scope() as session:
         failed_email = session.query(FailedLogin).filter(FailedLogin.email == email).first()
+        if failed_email is not None:
+            # it's failed before so increment
+            logger.info(f"email {email} has failed to log in "
+                        f"{failed_email.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
 
-    if failed_email is not None:
-        # it's failed before so increment
-        logger.info(f"email {email} has failed to log in "
-                    f"{failed_email.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
-
-        with session_scope() as session:
             # check if it has breached the limits
             if failed_email.failed_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
                 # check timeout
@@ -107,13 +105,12 @@ def _failed_login_attempt(email: str) -> Response:
                 logger.info(f"incorrect email attempt for user {email}, "
                             f"total failed attempts: {failed_email.failed_attempts}")
                 return g_response("Email incorrect.", 401)
-    else:
-        with session_scope() as session:
+        else:
             # hasn't failed before, so create it
             logger.info(f"first login failure for email {email}")
             new_failure = FailedLogin(email=email)
             session.add(new_failure)
-        return g_response("Email incorrect.", 401)
+            return g_response("Email incorrect.", 401)
 
 
 def _authorize_self(
@@ -466,10 +463,3 @@ class AuthController(object):
         except Exception as e:
             logger.error(str(e))
             return g_response("Invalid token.", 401)
-
-    @staticmethod
-    def role_exists(role_name: str) -> User:
-        """ Checks to see if a role exists """
-        with session_scope() as session:
-            ret = session.query(exists().where(Role.id == role_name)).scalar()
-            return ret
