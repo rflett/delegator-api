@@ -147,3 +147,8 @@ class Task(db.Model):
                 logger.error(f"Key 'id' was missing from activity item. Table:{task_activity_table.name} Item:{item}")
 
         return log
+
+    def label(self) -> str:
+        """ Gets the label of its task type """
+        from app.Controllers import TaskTypeController
+        return TaskTypeController.get_task_type_by_id(self.type).label

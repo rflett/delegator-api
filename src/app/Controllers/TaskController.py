@@ -37,7 +37,7 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
         org_id=req_user.org_id,
         event=Events.user_transitioned_task,
         payload=req_user.fat_dict(),
-        friendly=f"Transitioned {_get_task_type_label(task)} from {old_status.lower()} to {status.lower()}."
+        friendly=f"Transitioned {task.label()} from {old_status.lower()} to {status.lower()}."
     ).publish()
     req_user.log(
         operation=Operation.TRANSITION,
@@ -64,13 +64,13 @@ def _assign_task(task: Task, assignee: int, req_user: User) -> None:
         org_id=req_user.org_id,
         event=Events.user_assigned_task,
         payload=req_user.fat_dict(),
-        friendly=f"Assigned {assigned_user.name()} to {_get_task_type_label(task)}."
+        friendly=f"Assigned {assigned_user.name()} to {task.label()}."
     ).publish()
     Notification(
         org_id=assigned_user.org_id,
         event=Events.user_assigned_to_task,
         payload=assigned_user.fat_dict(),
-        friendly=f"Assigned to {_get_task_type_label(task)} by {req_user.name()}."
+        friendly=f"Assigned to {task.label()} by {req_user.name()}."
     ).publish()
     req_user.log(
         operation=Operation.ASSIGN,
@@ -100,13 +100,13 @@ def _unassign_task(task: Task, req_user: User) -> None:
             org_id=req_user.org_id,
             event=Events.user_unassigned_task,
             payload=req_user.fat_dict(),
-            friendly=f"Unassigned {old_assignee.name()} from {_get_task_type_label(task)}."
+            friendly=f"Unassigned {old_assignee.name()} from {task.label()}."
         ).publish()
         Notification(
             org_id=old_assignee.org_id,
             event=Events.user_unassigned_from_task,
             payload=old_assignee.fat_dict(),
-            friendly=f"Unassigned from {_get_task_type_label(task)} by {req_user.name()}."
+            friendly=f"Unassigned from {task.label()} by {req_user.name()}."
         ).publish()
         req_user.log(
             operation=Operation.ASSIGN,
@@ -124,12 +124,6 @@ def _change_task_priority(task_id: int, priority: int) -> None:
         task_to_change.priority_changed_at = datetime.datetime.utcnow()
 
     logger.info(f"changed task {task_id} priority to {priority}")
-
-
-def _get_task_type_label(task: Task) -> str:
-    """ Returns the label for a tasks's type """
-    from app.Controllers import TaskTypeController
-    return TaskTypeController.get_task_type_by_id(task.type).label
 
 
 class TaskController(object):
@@ -350,7 +344,7 @@ class TaskController(object):
             org_id=req_user.org_id,
             event=Events.user_created_task,
             payload=req_user.fat_dict(),
-            friendly=f"Created task {_get_task_type_label(task)}."
+            friendly=f"Created task {task.label()}."
         ).publish()
         req_user.log(
             operation=Operation.CREATE,
