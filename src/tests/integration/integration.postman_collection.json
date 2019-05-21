@@ -226,7 +226,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"label\": \"Happy Task Type\",\n\t\"org_id\": \"HappyPath\"\n}"
+							"raw": "{\n\t\"label\": \"Happy Task Type\",\n\t\"org_id\": 1\n}"
 						},
 						"url": {
 							"raw": "{{host}}/tasks/types",
