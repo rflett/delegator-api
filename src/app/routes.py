@@ -207,14 +207,14 @@ def get_tasks():
     return TaskController.get_tasks(request)
 
 
-@app.route('/task/<task_id>', methods=['PUT'])
+@app.route('/task/<int:task_id>', methods=['PUT'])
 @requires_jwt
 @safe_exceptions
 def update_task(task_id):
     return TaskController.update_task(task_id, request)
 
 
-@app.route('/task/<task_id>', methods=['GET'])
+@app.route('/task/<int:task_id>', methods=['GET'])
 @requires_jwt
 @safe_exceptions
 def get_task(task_id):
@@ -228,7 +228,7 @@ def assign_task():
     return TaskController.assign_task(request)
 
 
-@app.route('/task/drop/<task_id>', methods=['POST'])
+@app.route('/task/drop/<int:task_id>', methods=['POST'])
 @requires_jwt
 @safe_exceptions
 def drop_task(task_id):
@@ -249,7 +249,7 @@ def delay_task():
     return TaskController.delay_task(request)
 
 
-@app.route('/task/activity/<task_id>', methods=['GET'])
+@app.route('/task/activity/<int:task_id>', methods=['GET'])
 @requires_jwt
 @safe_exceptions
 def get_task_activity(task_id):

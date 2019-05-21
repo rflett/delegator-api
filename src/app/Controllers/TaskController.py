@@ -784,21 +784,23 @@ class TaskController(object):
         # invalid assignment
         if isinstance(valid_assignment, Response):
             return valid_assignment
+        else:
+            task, assignee_id = valid_assignment
 
         req_user = AuthController.authorize_request(
             request_headers=req.headers,
             operation=Operation.ASSIGN,
             resource=Resource.TASK,
-            resource_org_id=valid_assignment.get('org_id'),
-            resource_user_id=valid_assignment.get('assignee')
+            resource_org_id=task.org_id,
+            resource_user_id=assignee_id
         )
         # no perms
         if isinstance(req_user, Response):
             return req_user
 
         _assign_task(
-            task=TaskController.get_task_by_id(valid_assignment.get('task_id')),
-            assignee=valid_assignment.get('assignee'),
+            task=task,
+            assignee=assignee_id,
             req_user=req_user
         )
 
@@ -807,30 +809,23 @@ class TaskController(object):
     @staticmethod
     def drop_task(task_id, req: request) -> Response:
         """ Drops a task, which sets it to READY and removes the assignee """
-        from app.Controllers import ValidationController, TaskController
+        from app.Controllers import ValidationController
 
-        try:
-            task_id = int(task_id)
-        except ValueError:
-            return g_response(f"cannot cast `{task_id}` to int", 400)
-
-        valid_task_drop = ValidationController.validate_drop_task(task_id)
+        task_to_drop = ValidationController.validate_drop_task(task_id)
         # invalid task drop request
-        if isinstance(valid_task_drop, Response):
-            return valid_task_drop
+        if isinstance(task_to_drop, Response):
+            return task_to_drop
 
         req_user = AuthController.authorize_request(
             request_headers=req.headers,
             operation=Operation.DROP,
             resource=Resource.TASK,
-            resource_org_id=valid_task_drop.get('org_id'),
-            resource_user_id=valid_task_drop.get('assignee')
+            resource_org_id=task_to_drop.id,
+            resource_user_id=task_to_drop.assignee
         )
         # no perms
         if isinstance(req_user, Response):
             return req_user
-
-        task_to_drop = TaskController.get_task_by_id(valid_task_drop.get('task_id'))
 
         with session_scope():
             _unassign_task(task_to_drop, req_user)
@@ -847,7 +842,7 @@ class TaskController(object):
             resource_id=task_id
         )
         logger.info(f"user {req_user.id} dropped task {task_to_drop.id} "
-                    f"which was assigned to {valid_task_drop.get('assignee')}")
+                    f"which was assigned to {task_to_drop.assignee}")
         return g_response(status=204)
 
     @staticmethod
@@ -859,21 +854,23 @@ class TaskController(object):
         # invalid
         if isinstance(valid_task_transition, Response):
             return valid_task_transition
+        else:
+            task, task_status = valid_task_transition
 
         req_user = AuthController.authorize_request(
             request_headers=req.headers,
             operation=Operation.TRANSITION,
             resource=Resource.TASK,
-            resource_org_id=valid_task_transition.get('org_id'),
-            resource_user_id=valid_task_transition.get('assignee')
+            resource_org_id=task.org_id,
+            resource_user_id=task.assignee
         )
         # no perms
         if isinstance(req_user, Response):
             return req_user
 
         _transition_task(
-            task=TaskController.get_task_by_id(valid_task_transition.get('task_id')),
-            status=valid_task_transition.get('task_status'),
+            task=task,
+            status=task_status,
             req_user=req_user
         )
 
