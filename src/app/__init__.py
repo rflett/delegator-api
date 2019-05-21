@@ -35,6 +35,17 @@ r_cache = redis.Redis(host=app.config['R_CACHE_HOST'], port=6379, db=0, charset=
 # db conf
 db = SQLAlchemy(app)
 
+# dynamo db
+dyn_db = boto3.resource('dynamodb')
+user_settings_table = dyn_db.Table(app.config['USER_SETTINGS_TABLE'])
+org_settings_table = dyn_db.Table(app.config['ORG_SETTINGS_TABLE'])
+user_activity_table = dyn_db.Table(app.config['USER_ACTIVITY_TABLE'])
+task_activity_table = dyn_db.Table(app.config['TASK_ACTIVITY_TABLE'])
+
+# sns
+sns = boto3.resource('sns')
+api_events_sns_topic = sns.Topic(app.config['EVENTS_SNS_TOPIC_ARN'])
+
 
 @contextmanager
 def session_scope():
@@ -104,21 +115,6 @@ def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) ->
         **kwargs
     )
 
-
-# user and org settings
-dyn_db = boto3.resource('dynamodb')
-
-# temporarily use only staging
-table_env = 'staging'
-
-user_settings_table = dyn_db.Table(f"backburner-user-settings-{table_env}")
-org_settings_table = dyn_db.Table(f"backburner-organisation-settings-{table_env}")
-user_activity_table = dyn_db.Table(f"backburner-user-activity-{table_env}")
-task_activity_table = dyn_db.Table(f"backburner-task-activity-{table_env}")
-
-# sns client
-sns = boto3.resource('sns')
-api_events_sns_topic = sns.Topic(app.config['EVENTS_SNS_TOPIC_ARN'])
 
 # routes
 from app import routes  # noqa

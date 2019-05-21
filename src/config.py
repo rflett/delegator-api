@@ -8,6 +8,10 @@ class Config(object):
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 300
     INACTIVE_USER_TTL = 300
     EVENTS_SNS_TOPIC_ARN = 'arn:aws:sns:ap-southeast-2:008492826001:api-staging-events'
+    USER_SETTINGS_TABLE = 'backburner-user-settings-staging'
+    ORG_SETTINGS_TABLE = 'backburner-user-settings-staging'
+    USER_ACTIVITY_TABLE = 'backburner-user-activity-staging'
+    TASK_ACTIVITY_TABLE = 'backburner-user-activity-staging'
 
 
 class Ci(Config):
