@@ -672,31 +672,19 @@ class ValidationController(object):
         return valid_escalations
 
     @staticmethod
-    def validate_delay_task_request(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_delay_task_request(request_body: dict) -> typing.Union[Response, tuple]:
         """ Validates the transition task request """
         from app.Controllers import TaskController
 
-        task_id = _check_task_id(request_body.get('task_id'))
+        task_id = _check_int(request_body.get('task_id'), 'task_id')
         if isinstance(task_id, Response):
             return task_id
-
-        org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
-        if isinstance(org_id, Response):
-            return org_id
-
-        try:
-            assignee = TaskController.get_assignee(task_id)
-        except ValueError as e:
-            logger.warning(str(e))
-            assignee = None
 
         delay_for = _check_int(request_body.get('delay_for'), 'delay_for')
         if isinstance(delay_for, Response):
             return delay_for
 
-        return {
-            'org_id': org_id,
-            'task_id': task_id,
-            'assignee': assignee,
-            'delay_for': delay_for
-        }
+        try:
+            return TaskController.get_task_by_id(task_id), delay_for
+        except ValueError:
+            return g_response("Task does not exist.")

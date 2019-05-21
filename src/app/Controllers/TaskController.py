@@ -148,17 +148,6 @@ class TaskController(object):
         return ret
 
     @staticmethod
-    def get_assignee(task_id: int) -> typing.Union[int, None]:
-        """ Gets the assignee for a task """
-        with session_scope() as session:
-            ret = session.query(Task).filter(Task.id == task_id).first()
-        if ret is None:
-            logger.info(f"No-one is assigned to task with id {task_id}")
-            raise ValueError(f"No-one is assigned to task with id {task_id}")
-        else:
-            return ret.assignee
-
-    @staticmethod
     def get_task_by_id(task_id: int) -> Task:
         """ Gets a task by its id """
         with session_scope() as session:
@@ -571,20 +560,22 @@ class TaskController(object):
     @staticmethod
     def delay_task(req: request) -> Response:
         """ Transitions the status of a task """
-        from app.Controllers import ValidationController, TaskController
+        from app.Controllers import ValidationController
         from app.Models import DelayedTask
 
-        valid_delay_task = ValidationController.validate_delay_task_request(request.get_json())
+        validate_res = ValidationController.validate_delay_task_request(request.get_json())
         # invalid
-        if isinstance(valid_delay_task, Response):
-            return valid_delay_task
+        if isinstance(validate_res, Response):
+            return validate_res
+        else:
+            task, delay_for = validate_res
 
         req_user = AuthController.authorize_request(
             request_headers=req.headers,
             operation=Operation.DELAY,
             resource=Resource.TASK,
-            resource_org_id=valid_delay_task.get('org_id'),
-            resource_user_id=valid_delay_task.get('assignee')
+            resource_org_id=task.org_id,
+            resource_user_id=task.assignee
         )
         # no perms
         if isinstance(req_user, Response):
@@ -593,22 +584,22 @@ class TaskController(object):
         with session_scope() as session:
             # set task to delayed
             _transition_task(
-                task=TaskController.get_task_by_id(valid_delay_task.get('task_id')),
+                task=task,
                 status=TaskStatuses.DELAYED,
                 req_user=req_user
             )
             # created delayed until
             delay = session.query(DelayedTask).filter(
-                    DelayedTask.task_id == valid_delay_task.get('task_id')
+                    DelayedTask.task_id == task.id
                 ).first()
             if delay is not None:
-                delay.delay_for = valid_delay_task.get('delay_for')
+                delay.delay_for = delay_for
                 delay.delayed_at = datetime.datetime.utcnow()
                 delay.snoozed = False
             else:
                 delayed_task = DelayedTask(
-                    task_id=valid_delay_task.get('task_id'),
-                    delay_for=valid_delay_task.get('delay_for'),
+                    task_id=task.id,
+                    delay_for=delay_for,
                     delayed_at=datetime.datetime.utcnow()
                 )
                 session.add(delayed_task)
@@ -616,10 +607,9 @@ class TaskController(object):
         req_user.log(
             operation=Operation.DELAY,
             resource=Resource.TASK,
-            resource_id=valid_delay_task.get('task_id')
+            resource_id=task.id
         )
-        logger.info(f"user {req_user.id} delayed task {valid_delay_task.get('task_id')} "
-                    f"until {valid_delay_task.get('delay_for')}")
+        logger.info(f"user {req_user.id} delayed task {task.id} for {delay_for}")
         return g_response(status=204)
 
     @staticmethod
