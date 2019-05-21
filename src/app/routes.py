@@ -3,7 +3,7 @@ from app import app, g_response, logger
 from functools import wraps
 from flask import Response, request
 from app.Controllers import AuthController, UserController, SignupController, TaskController, VersionController, \
-    ActiveUserController, OrganisationController
+    ActiveUserController, OrganisationController, TaskTypeController
 from app.Controllers.RBAC import RoleController
 from app.Controllers.Reporting import Reports
 
@@ -109,7 +109,7 @@ def update_user(user_id):
     return UserController.user_update(user_id, request)
 
 
-@app.route('/user/<user_id>', methods=['DELETE'])
+@app.route('/user/<int:user_id>', methods=['DELETE'])
 @requires_jwt
 @safe_exceptions
 def delete_user(user_id):
@@ -169,28 +169,28 @@ def get_task_statuses():
 @requires_jwt
 @safe_exceptions
 def get_task_types():
-    return TaskController.get_task_types(request)
+    return TaskTypeController.get_task_types(request)
 
 
 @app.route('/tasks/types', methods=['POST'])
 @requires_jwt
 @safe_exceptions
 def create_task_type():
-    return TaskController.create_task_type(request)
+    return TaskTypeController.create_task_type(request)
 
 
 @app.route('/tasks/types/<task_type_id>', methods=['DELETE'])
 @requires_jwt
 @safe_exceptions
 def disable_task_type(task_type_id):
-    return TaskController.disable_task_type(task_type_id, request)
+    return TaskTypeController.disable_task_type(task_type_id, request)
 
 
 @app.route('/tasks/types/escalation', methods=['POST'])
 @requires_jwt
 @safe_exceptions
 def update_task_type_escalation():
-    return TaskController.upsert_task_escalations(request)
+    return TaskTypeController.upsert_task_escalations(request)
 
 
 @app.route('/tasks', methods=['POST'])
@@ -207,14 +207,14 @@ def get_tasks():
     return TaskController.get_tasks(request)
 
 
-@app.route('/task/<task_id>', methods=['PUT'])
+@app.route('/task/<int:task_id>', methods=['PUT'])
 @requires_jwt
 @safe_exceptions
 def update_task(task_id):
     return TaskController.update_task(task_id, request)
 
 
-@app.route('/task/<task_id>', methods=['GET'])
+@app.route('/task/<int:task_id>', methods=['GET'])
 @requires_jwt
 @safe_exceptions
 def get_task(task_id):
@@ -228,7 +228,7 @@ def assign_task():
     return TaskController.assign_task(request)
 
 
-@app.route('/task/drop/<task_id>', methods=['POST'])
+@app.route('/task/drop/<int:task_id>', methods=['POST'])
 @requires_jwt
 @safe_exceptions
 def drop_task(task_id):
@@ -249,7 +249,7 @@ def delay_task():
     return TaskController.delay_task(request)
 
 
-@app.route('/task/activity/<task_id>', methods=['GET'])
+@app.route('/task/activity/<int:task_id>', methods=['GET'])
 @requires_jwt
 @safe_exceptions
 def get_task_activity(task_id):

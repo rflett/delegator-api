@@ -3,11 +3,11 @@ import json
 import typing
 from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
-from app.Models import TaskType, User, Task, TaskStatus, TaskPriority, TaskTypeEscalation, DelayedTask, Notification
+from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Notification
 from app.Models.Enums import TaskStatuses, Events
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
-from sqlalchemy import exists, and_, func
+from sqlalchemy import exists
 from sqlalchemy.orm import aliased
 
 
@@ -37,7 +37,7 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
         org_id=req_user.org_id,
         event=Events.user_transitioned_task,
         payload=req_user.fat_dict(),
-        friendly=f"Transitioned {_get_task_type_label(task)} from {old_status.lower()} to {status.lower()}."
+        friendly=f"Transitioned {task.label()} from {old_status.lower()} to {status.lower()}."
     ).publish()
     req_user.log(
         operation=Operation.TRANSITION,
@@ -64,13 +64,13 @@ def _assign_task(task: Task, assignee: int, req_user: User) -> None:
         org_id=req_user.org_id,
         event=Events.user_assigned_task,
         payload=req_user.fat_dict(),
-        friendly=f"Assigned {assigned_user.name()} to {_get_task_type_label(task)}."
+        friendly=f"Assigned {assigned_user.name()} to {task.label()}."
     ).publish()
     Notification(
         org_id=assigned_user.org_id,
         event=Events.user_assigned_to_task,
         payload=assigned_user.fat_dict(),
-        friendly=f"Assigned to {_get_task_type_label(task)} by {req_user.name()}."
+        friendly=f"Assigned to {task.label()} by {req_user.name()}."
     ).publish()
     req_user.log(
         operation=Operation.ASSIGN,
@@ -100,13 +100,13 @@ def _unassign_task(task: Task, req_user: User) -> None:
             org_id=req_user.org_id,
             event=Events.user_unassigned_task,
             payload=req_user.fat_dict(),
-            friendly=f"Unassigned {old_assignee.name()} from {_get_task_type_label(task)}."
+            friendly=f"Unassigned {old_assignee.name()} from {task.label()}."
         ).publish()
         Notification(
             org_id=old_assignee.org_id,
             event=Events.user_unassigned_from_task,
             payload=old_assignee.fat_dict(),
-            friendly=f"Unassigned from {_get_task_type_label(task)} by {req_user.name()}."
+            friendly=f"Unassigned from {task.label()} by {req_user.name()}."
         ).publish()
         req_user.log(
             operation=Operation.ASSIGN,
@@ -126,62 +126,12 @@ def _change_task_priority(task_id: int, priority: int) -> None:
     logger.info(f"changed task {task_id} priority to {priority}")
 
 
-def _get_task_type_label(task: Task) -> str:
-    """ Returns the label for a tasks's type """
-    from app.Controllers import TaskController
-    return TaskController.get_task_type_by_id(task.type).label
-
-
 class TaskController(object):
     @staticmethod
     def task_exists(task_id: int) -> bool:
         """ Checks to see if a task type exists. """
         with session_scope() as session:
             return session.query(exists().where(Task.id == task_id)).scalar()
-
-    @staticmethod
-    def task_type_enabled(task_type_identifier: typing.Union[str, int], org_identifier: int) -> bool:
-        """ Checks to see if a task type is enabled. """
-        with session_scope() as session:
-            if isinstance(task_type_identifier, int):
-                logger.info(f"task type identifier is an int so finding by id")
-                return session.query(exists().where(
-                    and_(
-                        TaskType.id == task_type_identifier,
-                        TaskType.disabled == False  # noqa
-                    )
-                )).scalar()
-            elif isinstance(task_type_identifier, str):
-                logger.info(f"task type identifier is a str so finding by type")
-                return session.query(exists().where(
-                    and_(
-                        TaskType.label == task_type_identifier,
-                        TaskType.org_id == org_identifier,
-                        TaskType.disabled == False  # noqa
-                    )
-                )).scalar()
-
-    @staticmethod
-    def task_type_exists(
-            task_type_identifier: typing.Union[str, int],
-            org_identifier: typing.Optional[int] = None
-    ) -> bool:
-        """ Checks to see if a task type exists. """
-        with session_scope() as session:
-            if isinstance(task_type_identifier, int):
-                logger.info(f"task type identifier is an int so finding by id")
-                return session.query(exists().where(
-                        TaskType.id == task_type_identifier
-                    )
-                ).scalar()
-            elif isinstance(task_type_identifier, str):
-                logger.info(f"task type identifier is a str so finding by type")
-                return session.query(exists().where(
-                    and_(
-                        func.lower(TaskType.label) == func.lower(task_type_identifier),
-                        TaskType.org_id == org_identifier
-                    )
-                )).scalar()
 
     @staticmethod
     def task_status_exists(task_status: str) -> bool:
@@ -196,34 +146,6 @@ class TaskController(object):
         with session_scope() as session:
             ret = session.query(exists().where(TaskPriority.priority == task_priority)).scalar()
         return ret
-
-    @staticmethod
-    def get_task_type_escalation(task_type_id: int, display_order: int):
-        """ Gets a task type escalation """
-        with session_scope() as session:
-            ret = session.query(TaskTypeEscalation).filter(
-                and_(
-                    TaskTypeEscalation.task_type_id == task_type_id,
-                    TaskTypeEscalation.display_order == display_order
-                )
-            ).first()
-        if ret is None:
-            logger.info(f"No task type escalation with task_type_id {task_type_id} and display order {display_order}")
-            raise ValueError(f"No task type escalation with "
-                             f"task_type_id {task_type_id} and display order {display_order}")
-        else:
-            return ret
-
-    @staticmethod
-    def get_assignee(task_id: int) -> typing.Union[int, None]:
-        """ Gets the assignee for a task """
-        with session_scope() as session:
-            ret = session.query(Task).filter(Task.id == task_id).first()
-        if ret is None:
-            logger.info(f"No-one is assigned to task with id {task_id}")
-            raise ValueError(f"No-one is assigned to task with id {task_id}")
-        else:
-            return ret.assignee
 
     @staticmethod
     def get_task_by_id(task_id: int) -> Task:
@@ -287,43 +209,6 @@ class TaskController(object):
             resource=Resource.TASK_STATUSES
         )
         return j_response(task_statuses)
-
-    @staticmethod
-    def get_task_type_by_id(task_type_id: int) -> TaskType:
-        """ Gets a task type by its id """
-        with session_scope() as session:
-            ret = session.query(TaskType).filter(TaskType.id == task_type_id).first()
-        if ret is None:
-            logger.info(f"Task Type with id {task_type_id} does not exist.")
-            raise ValueError(f"Task Type with id {task_type_id} does not exist.")
-        else:
-            return ret
-
-    @staticmethod
-    def get_task_types(req: request) -> Response:
-        """ Returns all task types """
-        from app.Controllers import AuthController
-        from app.Models import TaskType
-
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.GET,
-            resource=Resource.TASK_TYPES
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
-
-        with session_scope() as session:
-            task_type_query = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
-
-        task_types = [tt.fat_dict() for tt in task_type_query]
-        logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
-        req_user.log(
-            operation=Operation.GET,
-            resource=Resource.TASK_TYPES
-        )
-        return j_response(task_types)
 
     @staticmethod
     def get_task(task_id: int, req: request) -> Response:
@@ -396,86 +281,6 @@ class TaskController(object):
         return j_response(tasks)
 
     @staticmethod
-    def create_task_type(req: request) -> Response:
-        """ Create a task type """
-        from app.Controllers import AuthController, ValidationController
-        from app.Models import TaskType
-
-        request_body = req.get_json()
-
-        # validate task_type
-        valid_tt = ValidationController.validate_create_task_type_request(request_body)
-        # invalid task type
-        if isinstance(valid_tt, Response):
-            return valid_tt
-
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.CREATE,
-            resource=Resource.TASK_TYPE,
-            resource_org_id=valid_tt.get('org_id')
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
-
-        if valid_tt.get('disabled') is None:
-            with session_scope() as session:
-                task_type = TaskType(
-                    type=valid_tt.get('label'),
-                    org_id=valid_tt.get('org_id')
-                )
-                session.add(task_type)
-            Notification(
-                org_id=task_type.org_id,
-                event=Events.tasktype_created,
-                payload=task_type.as_dict()
-            ).publish()
-            Notification(
-                org_id=req_user.org_id,
-                event=Events.user_created_tasktype,
-                payload=req_user.as_dict(),
-                friendly=f"Created task type {task_type.label}."
-            ).publish()
-            req_user.log(
-                operation=Operation.CREATE,
-                resource=Resource.TASK_TYPE,
-                resource_id=task_type.id
-            )
-            logger.info(f"created task type {task_type.as_dict()}")
-            return g_response("Successfully created task type", 201)
-        else:
-            with session_scope() as session:
-                req_user = AuthController.authorize_request(
-                    request_headers=req.headers,
-                    operation=Operation.ENABLE,
-                    resource=Resource.TASK_TYPE,
-                    resource_org_id=valid_tt.get('org_id')
-                )
-                # no perms
-                if isinstance(req_user, Response):
-                    return req_user
-                task_type = session.query(TaskType).filter(
-                    and_(
-                        TaskType.org_id == valid_tt.get('org_id'),
-                        TaskType.label == valid_tt.get('label')
-                    )
-                ).first()
-                task_type.disabled = False
-            Notification(
-                org_id=task_type.org_id,
-                event=Events.tasktype_enabled,
-                payload=task_type.as_dict()
-            ).publish()
-            req_user.log(
-                operation=Operation.ENABLE,
-                resource=Resource.TASK_TYPE,
-                resource_id=task_type.id
-            )
-            logger.info(f"enabled task type {task_type.as_dict()}")
-            return g_response("Successfully enabled task type", 201)
-
-    @staticmethod
     def create_task(req: request) -> Response:
         """
         Creates a task
@@ -528,7 +333,7 @@ class TaskController(object):
             org_id=req_user.org_id,
             event=Events.user_created_task,
             payload=req_user.fat_dict(),
-            friendly=f"Created task {_get_task_type_label(task)}."
+            friendly=f"Created task {task.label()}."
         ).publish()
         req_user.log(
             operation=Operation.CREATE,
@@ -557,130 +362,6 @@ class TaskController(object):
             )
 
         return g_response("Successfully created task", 201)
-
-    @staticmethod
-    def upsert_task_escalations(req: request) -> Response:
-        """ Updates a task. Requires the full task object in the request. """
-        from app.Controllers import ValidationController, TaskController
-        from app.Controllers.ValidationController import _check_task_type_id, _check_org_id
-        request_body = req.get_json()
-        total_updated = total_created = total_deleted = 0
-
-        # VALIDATION
-        escalations = request_body.get('escalation_policies')
-        if escalations is None or not isinstance(escalations, list):
-            return g_response("Missing escalations", 400)
-        task_type_id = _check_task_type_id(request_body.get('task_type_id'), should_exist=True)
-        if isinstance(task_type_id, Response):
-            return task_type_id
-        org_id = _check_org_id(request_body.get('org_id'), should_exist=True)
-        if isinstance(org_id, Response):
-            return org_id
-
-        valid_escalations = ValidationController.validate_upsert_task_escalation(escalations)
-        # invalid
-        if isinstance(valid_escalations, Response):
-            return valid_escalations
-
-        # AUTHORIZATION
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.UPSERT,
-            resource=Resource.TASK_TYPE_ESCALATION,
-            resource_org_id=org_id,
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
-
-        # UPSERT
-        for escalation in valid_escalations:
-            if escalation.get('action') == 'create':
-                total_created += 1
-                with session_scope() as session:
-                    new_escalation = TaskTypeEscalation(
-                        task_type_id=escalation.get('task_type_id'),
-                        display_order=escalation.get('display_order'),
-                        delay=escalation.get('delay'),
-                        from_priority=escalation.get('from_priority'),
-                        to_priority=escalation.get('to_priority')
-                    )
-                    session.add(new_escalation)
-
-                Notification(
-                    org_id=org_id,
-                    event=Events.tasktype_escalation_created,
-                    payload=new_escalation.as_dict()
-                ).publish()
-                Notification(
-                    org_id=req_user.org_id,
-                    event=Events.user_created_tasktype_escalation,
-                    payload=req_user.as_dict(),
-                    friendly=f"Created escalation for task type "
-                    f"{TaskController.get_task_type_by_id(new_escalation.task_type_id).label}."
-                ).publish()
-                req_user.log(
-                    operation=Operation.CREATE,
-                    resource=Resource.TASK_TYPE_ESCALATION,
-                    resource_id=escalation.get('task_type_id')
-                )
-                logger.info(f"created task type escalation {new_escalation.as_dict()}")
-
-            elif escalation.get('action') == 'update':
-                total_updated += 1
-                escalation_to_update = TaskController.get_task_type_escalation(
-                    task_type_id=escalation.get('task_type_id'),
-                    display_order=escalation.get('display_order')
-                )
-                with session_scope():
-                    for k, v in escalation.items():
-                        escalation_to_update.__setattr__(k, v)
-
-                    Notification(
-                        org_id=org_id,
-                        event=Events.tasktype_escalation_updated,
-                        payload=escalation_to_update.as_dict()
-                    ).publish()
-                    Notification(
-                        org_id=req_user.org_id,
-                        event=Events.user_created_tasktype_escalation,
-                        payload=req_user.as_dict(),
-                        friendly=f"Updated escalation for task type "
-                        f"{TaskController.get_task_type_by_id(escalation_to_update.task_type_id).label}."
-                    ).publish()
-                    req_user.log(
-                        operation=Operation.UPDATE,
-                        resource=Resource.TASK_TYPE_ESCALATION,
-                        resource_id=escalation.get('task_type_id')
-                    )
-                logger.info(f"updated task type escalation {escalation_to_update.as_dict()}")
-
-        # DELETE MISMATCH
-        # get escalations in request as a set of tuples
-        request_escalations = {(e.get('task_type_id'), e.get('display_order')) for e in valid_escalations}
-
-        with session_scope() as session:
-            # get escalations which exist in the db as a set of tuples
-            db_esc_qry = session.query(TaskTypeEscalation.task_type_id, TaskTypeEscalation.display_order)\
-                .filter(TaskTypeEscalation.task_type_id == task_type_id).all()
-            db_escalations = {e for e in db_esc_qry}
-
-            # remove those that exist in the db that didn't in the request
-            to_remove = db_escalations - request_escalations
-            for r in to_remove:
-                total_deleted += 1
-                session.query(TaskTypeEscalation).filter(
-                    and_(
-                        TaskTypeEscalation.task_type_id == r[0],
-                        TaskTypeEscalation.display_order == r[1]
-                    )
-                ).delete(synchronize_session=False)
-                logger.info(f"deleted task type escalation with task_type_id:{r[0]}, display_order:{r[1]}")
-
-        logger.info(f"upsert task type escalations finished. "
-                    f"created:{total_created}, updated:{total_updated}, deleted:{total_deleted}")
-        # SUCCESS
-        return g_response(status=204)
 
     @staticmethod
     def update_task(task_id: int, req: request) -> Response:
@@ -778,27 +459,29 @@ class TaskController(object):
     @staticmethod
     def assign_task(req: request) -> Response:
         """ Assigns a user to task """
-        from app.Controllers import ValidationController, TaskController
+        from app.Controllers import ValidationController
 
         valid_assignment = ValidationController.validate_assign_task(req.get_json())
         # invalid assignment
         if isinstance(valid_assignment, Response):
             return valid_assignment
+        else:
+            task, assignee_id = valid_assignment
 
         req_user = AuthController.authorize_request(
             request_headers=req.headers,
             operation=Operation.ASSIGN,
             resource=Resource.TASK,
-            resource_org_id=valid_assignment.get('org_id'),
-            resource_user_id=valid_assignment.get('assignee')
+            resource_org_id=task.org_id,
+            resource_user_id=assignee_id
         )
         # no perms
         if isinstance(req_user, Response):
             return req_user
 
         _assign_task(
-            task=TaskController.get_task_by_id(valid_assignment.get('task_id')),
-            assignee=valid_assignment.get('assignee'),
+            task=task,
+            assignee=assignee_id,
             req_user=req_user
         )
 
@@ -807,30 +490,23 @@ class TaskController(object):
     @staticmethod
     def drop_task(task_id, req: request) -> Response:
         """ Drops a task, which sets it to READY and removes the assignee """
-        from app.Controllers import ValidationController, TaskController
+        from app.Controllers import ValidationController
 
-        try:
-            task_id = int(task_id)
-        except ValueError:
-            return g_response(f"cannot cast `{task_id}` to int", 400)
-
-        valid_task_drop = ValidationController.validate_drop_task(task_id)
+        task_to_drop = ValidationController.validate_drop_task(task_id)
         # invalid task drop request
-        if isinstance(valid_task_drop, Response):
-            return valid_task_drop
+        if isinstance(task_to_drop, Response):
+            return task_to_drop
 
         req_user = AuthController.authorize_request(
             request_headers=req.headers,
             operation=Operation.DROP,
             resource=Resource.TASK,
-            resource_org_id=valid_task_drop.get('org_id'),
-            resource_user_id=valid_task_drop.get('assignee')
+            resource_org_id=task_to_drop.id,
+            resource_user_id=task_to_drop.assignee
         )
         # no perms
         if isinstance(req_user, Response):
             return req_user
-
-        task_to_drop = TaskController.get_task_by_id(valid_task_drop.get('task_id'))
 
         with session_scope():
             _unassign_task(task_to_drop, req_user)
@@ -847,102 +523,59 @@ class TaskController(object):
             resource_id=task_id
         )
         logger.info(f"user {req_user.id} dropped task {task_to_drop.id} "
-                    f"which was assigned to {valid_task_drop.get('assignee')}")
+                    f"which was assigned to {task_to_drop.assignee}")
         return g_response(status=204)
 
     @staticmethod
     def transition_task(req: request) -> Response:
         """ Transitions the status of a task """
-        from app.Controllers import ValidationController, TaskController
+        from app.Controllers import ValidationController
 
         valid_task_transition = ValidationController.validate_transition_task(request.get_json())
         # invalid
         if isinstance(valid_task_transition, Response):
             return valid_task_transition
+        else:
+            task, task_status = valid_task_transition
 
         req_user = AuthController.authorize_request(
             request_headers=req.headers,
             operation=Operation.TRANSITION,
             resource=Resource.TASK,
-            resource_org_id=valid_task_transition.get('org_id'),
-            resource_user_id=valid_task_transition.get('assignee')
+            resource_org_id=task.org_id,
+            resource_user_id=task.assignee
         )
         # no perms
         if isinstance(req_user, Response):
             return req_user
 
         _transition_task(
-            task=TaskController.get_task_by_id(valid_task_transition.get('task_id')),
-            status=valid_task_transition.get('task_status'),
+            task=task,
+            status=task_status,
             req_user=req_user
         )
 
         return g_response(status=204)
 
     @staticmethod
-    def disable_task_type(task_type_id: int, req: request) -> Response:
-        """ Disables a task type """
-        from app.Controllers import AuthController, ValidationController
-
-        try:
-            task_type_id = int(task_type_id)
-        except ValueError:
-            return g_response(f"cannot cast `{task_type_id}` to int", 400)
-
-        valid_dtt = ValidationController.validate_disable_task_type_request(task_type_id)
-        # invalid
-        if isinstance(valid_dtt, Response):
-            return valid_dtt
-
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.DISABLE,
-            resource=Resource.TASK_TYPE,
-            resource_org_id=valid_dtt.org_id
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
-
-        with session_scope():
-            valid_dtt.disabled = True
-
-        Notification(
-            org_id=valid_dtt.org_id,
-            event=Events.tasktype_disabled,
-            payload=valid_dtt.as_dict()
-        ).publish()
-        Notification(
-            org_id=req_user.org_id,
-            event=Events.user_disabled_tasktype,
-            payload=req_user.as_dict(),
-            friendly=f"Disabled task type {valid_dtt.label}"
-        ).publish()
-        req_user.log(
-            operation=Operation.DISABLE,
-            resource=Resource.TASK_TYPE,
-            resource_id=valid_dtt.id
-        )
-        logger.info(f"disabled task type {valid_dtt.as_dict()}")
-        return g_response(status=204)
-
-    @staticmethod
     def delay_task(req: request) -> Response:
         """ Transitions the status of a task """
-        from app.Controllers import ValidationController, TaskController
+        from app.Controllers import ValidationController
         from app.Models import DelayedTask
 
-        valid_delay_task = ValidationController.validate_delay_task_request(request.get_json())
+        validate_res = ValidationController.validate_delay_task_request(request.get_json())
         # invalid
-        if isinstance(valid_delay_task, Response):
-            return valid_delay_task
+        if isinstance(validate_res, Response):
+            return validate_res
+        else:
+            task, delay_for = validate_res
 
         req_user = AuthController.authorize_request(
             request_headers=req.headers,
             operation=Operation.DELAY,
             resource=Resource.TASK,
-            resource_org_id=valid_delay_task.get('org_id'),
-            resource_user_id=valid_delay_task.get('assignee')
+            resource_org_id=task.org_id,
+            resource_user_id=task.assignee
         )
         # no perms
         if isinstance(req_user, Response):
@@ -951,22 +584,22 @@ class TaskController(object):
         with session_scope() as session:
             # set task to delayed
             _transition_task(
-                task=TaskController.get_task_by_id(valid_delay_task.get('task_id')),
+                task=task,
                 status=TaskStatuses.DELAYED,
                 req_user=req_user
             )
             # created delayed until
             delay = session.query(DelayedTask).filter(
-                    DelayedTask.task_id == valid_delay_task.get('task_id')
+                    DelayedTask.task_id == task.id
                 ).first()
             if delay is not None:
-                delay.delay_for = valid_delay_task.get('delay_for')
+                delay.delay_for = delay_for
                 delay.delayed_at = datetime.datetime.utcnow()
                 delay.snoozed = False
             else:
                 delayed_task = DelayedTask(
-                    task_id=valid_delay_task.get('task_id'),
-                    delay_for=valid_delay_task.get('delay_for'),
+                    task_id=task.id,
+                    delay_for=delay_for,
                     delayed_at=datetime.datetime.utcnow()
                 )
                 session.add(delayed_task)
@@ -974,10 +607,9 @@ class TaskController(object):
         req_user.log(
             operation=Operation.DELAY,
             resource=Resource.TASK,
-            resource_id=valid_delay_task.get('task_id')
+            resource_id=task.id
         )
-        logger.info(f"user {req_user.id} delayed task {valid_delay_task.get('task_id')} "
-                    f"until {valid_delay_task.get('delay_for')}")
+        logger.info(f"user {req_user.id} delayed task {task.id} for {delay_for}")
         return g_response(status=204)
 
     @staticmethod

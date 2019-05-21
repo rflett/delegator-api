@@ -18,6 +18,7 @@ boto3 = "*"
 flask-cors = "*"
 redis = "*"
 flask-sqlalchemy = "*"
+flask-profiler = "*"
 
 [requires]
 python_version = "3.7"

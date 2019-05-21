@@ -8,6 +8,7 @@ from app.Controllers.TaskController import TaskController
 from app.Controllers.VersionController import VersionController
 from app.Controllers.ActiveUserController import ActiveUserController
 from app.Controllers.SettingsController import SettingsController
+from app.Controllers.TaskTypeController import TaskTypeController
 
 __all__ = [
     AuthController,
@@ -19,5 +20,6 @@ __all__ = [
     TaskController,
     VersionController,
     ActiveUserController,
-    SettingsController
+    SettingsController,
+    TaskTypeController
 ]

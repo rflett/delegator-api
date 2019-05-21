@@ -244,11 +244,6 @@ class UserController(object):
         """ Deletes a user """
         from app.Controllers import ValidationController
 
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return g_response(f"cannot cast `{user_id}` to int", 400)
-
         valid_user = ValidationController.validate_delete_user_request(user_id)
         # invalid
         if isinstance(valid_user, Response):
@@ -258,34 +253,27 @@ class UserController(object):
             request_headers=req.headers,
             operation=Operation.DELETE,
             resource=Resource.USER,
-            resource_org_id=valid_user.get('org_id')
+            resource_org_id=valid_user.org_id
         )
         # no perms
         if isinstance(req_user, Response):
             return req_user
 
         with session_scope():
-            user_to_del = UserController.get_user_by_id(user_id)
             Notification(
                 org_id=req_user.org_id,
                 event=Events.user_deleted_user,
                 payload=req_user.fat_dict(),
-                friendly=f"Deleted {user_to_del.first_name}."
+                friendly=f"Deleted user id {valid_user.id}."
             ).publish()
-            user_to_del.anonymize()
+            valid_user.anonymize()
 
-        Notification(
-            org_id=user_to_del.org_id,
-            event=Events.user_deleted,
-            payload=user_to_del.fat_dict(),
-            friendly=f"Deleted by {req_user.name()}."
-        ).publish()
         req_user.log(
             operation=Operation.DELETE,
             resource=Resource.USER,
-            resource_id=user_id
+            resource_id=valid_user.id
         )
-        logger.info(f"user {req_user.id} deleted user {user_to_del.as_dict()}")
+        logger.info(f"user {req_user.id} deleted user id {valid_user.id}")
         return g_response(status=204)
 
     @staticmethod

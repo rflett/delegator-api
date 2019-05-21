@@ -2,7 +2,7 @@ import datetime
 import dateutil
 import typing
 from app import logger, g_response, app, session_scope
-from app.Models import TaskType, TaskTypeEscalation
+from app.Models import TaskType, TaskTypeEscalation, Task, User
 from flask import Response
 from sqlalchemy import exists, and_
 from validate_email import validate_email
@@ -143,14 +143,14 @@ def _check_task_type_id(
         task_type_id: int,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[int, Response]:
-    from app.Controllers import TaskController
+    from app.Controllers import TaskTypeController
     task_type_id = _check_int(task_type_id, 'task_type_id')
     if isinstance(task_type_id, Response):
         return task_type_id
 
     # optionally check if it exists or not
     if should_exist is not None:
-        task_exists = TaskController.task_type_exists(task_type_id)
+        task_exists = TaskTypeController.task_type_exists(task_type_id)
         if should_exist:
             if not task_exists:
                 logger.info(f"task type id {task_type_id} doesn't exist")
@@ -160,30 +160,6 @@ def _check_task_type_id(
                 logger.info(f"task type id {task_type_id} in org already exists")
                 return g_response("task type already exists", 400)
     return task_type_id
-
-
-def _check_task_type_label(
-        label: str,
-        org_id: int,
-        should_exist: typing.Optional[bool] = None
-) -> typing.Union[str, int, Response]:
-    from app.Controllers import TaskController
-    label = _check_str(label, 'task_type_label')
-    if isinstance(label, Response):
-        return label
-
-    # optionally check if it exists or not
-    if should_exist is not None:
-        task_type_exists = TaskController.task_type_exists(label, org_id)
-        if should_exist:
-            if not task_type_exists:
-                logger.info(f"task type id {label} in org {org_id} doesn't exist")
-                return g_response(f"task type does not exist", 400)
-        elif not should_exist:
-            if task_type_exists:
-                logger.info(f"task type id {label} in org {org_id} already exists")
-                return g_response("task type already exists", 400)
-    return label
 
 
 def _check_task_status(
@@ -314,48 +290,44 @@ class ValidationController(object):
         return True
 
     @staticmethod
-    def validate_create_task_type_request(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_create_task_type_request(request_body: dict) -> typing.Union[Response, TaskType, str]:
         """
         Validates a task type request body
         :param request_body:    The request body from the create task type request
         :return:                Response if the request body contains invalid values, or the TaskTypeRequest dataclass
         """
-        from app.Controllers import TaskController
+        from app.Controllers import TaskTypeController
 
         org_id = _check_org_id(request_body.get('org_id'), should_exist=True)
         if isinstance(org_id, Response):
             return org_id
 
-        label = _check_task_type_label(request_body.get('label'), org_id)
+        label = _check_str(request_body.get('label'), 'label')
         if isinstance(label, Response):
             return label
 
-        disabled = None
-        if TaskController.task_type_exists(label, org_id):
-            # if it's enabled, return exists error, else re-enable it
-            if TaskController.task_type_enabled(label, org_id):
-                return g_response(f"Task type already exists.")
-            disabled = True
-
-        return {
-            "org_id": org_id,
-            "label": label,
-            "disabled": disabled
-        }
+        try:
+            task_type = TaskTypeController.get_task_type_by_label(label, org_id)
+            if task_type.disabled:
+                # enable it instead of creating
+                return task_type
+        except ValueError:
+            # it doesn't exist, so create it
+            return label
 
     @staticmethod
     def validate_disable_task_type_request(task_type_id: int) -> typing.Union[Response, TaskType]:
         """ Validates the disable task request """
-        from app.Controllers import TaskController
+        from app.Controllers import TaskTypeController
 
-        type_id = _check_task_type_id(task_type_id=task_type_id)
+        type_id = _check_int(task_type_id, 'task_type_id')
         if isinstance(type_id, Response):
             return type_id
 
         try:
-            task_type = TaskController.get_task_type_by_id(type_id)
+            task_type = TaskTypeController.get_task_type_by_id(type_id)
         except ValueError as e:
-            logger.warning(str(e))
+            logger.info(str(e))
             return g_response(f"Task type does not exist.")
 
         return task_type
@@ -444,23 +416,20 @@ class ValidationController(object):
         return ret
 
     @staticmethod
-    def validate_delete_user_request(user_id: int) -> typing.Union[Response, dict]:
+    def validate_delete_user_request(user_id: int) -> typing.Union[Response, User]:
         """ Validates a delete user request body """
         from app.Controllers import UserController
 
-        check_user = _check_user_id(user_id, should_exist=True)
+        check_user = _check_int(user_id, 'user_id')
         if isinstance(check_user, Response):
             return check_user
 
         try:
-            org_id = UserController.get_user_by_id(user_id).org_id
+            user = UserController.get_user_by_id(check_user)
+            return user
         except ValueError as e:
             logger.warning(str(e))
             return g_response("user does not exist", 400)
-
-        return {
-            "org_id": org_id
-        }
 
     @staticmethod
     def validate_create_org_request(request_body: dict) -> typing.Union[Response, dict]:
@@ -539,7 +508,7 @@ class ValidationController(object):
         return ret
 
     @staticmethod
-    def validate_assign_task(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_assign_task(request_body: dict) -> typing.Union[Response, tuple]:
         """
         Validates the assign task request
         :param request_body:    The request body from the update task request
@@ -547,30 +516,23 @@ class ValidationController(object):
         """
         from app.Controllers import TaskController
 
-        task_id = _check_task_id(request_body.get('task_id'))
+        task_id = _check_int(param=request_body.get('task_id'), param_name='task_id')
         if isinstance(task_id, Response):
             return task_id
 
-        assignee = _check_task_assignee(request_body.get('assignee'))
-        if isinstance(assignee, Response):
-            return assignee
-
         try:
-            org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
-            if isinstance(org_id, Response):
-                return org_id
-        except ValueError as e:
-            logger.warning(str(e))
-            return g_response(f"Task with id {task_id} does not exist.", 400)
+            task = TaskController.get_task_by_id(task_id)
+        except ValueError:
+            return g_response("Task does not exist.")
 
-        return {
-            'org_id': org_id,
-            'task_id': task_id,
-            'assignee': assignee
-        }
+        assignee_id = _check_task_assignee(request_body.get('assignee'))
+        if isinstance(assignee_id, Response):
+            return assignee_id
+
+        return task, assignee_id
 
     @staticmethod
-    def validate_drop_task(task_id: int) -> typing.Union[Response, dict]:
+    def validate_drop_task(task_id: int) -> typing.Union[Response, Task]:
         """
         Validates the assign task request
         :param task_id:    The id of the task to drop
@@ -578,55 +540,38 @@ class ValidationController(object):
         """
         from app.Controllers import TaskController
 
-        task_id = _check_task_id(task_id)
+        task_id = _check_int(param=task_id, param_name='task_id')
         if isinstance(task_id, Response):
             return task_id
 
-        org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
-        if isinstance(org_id, Response):
-            return org_id
-
         try:
-            assignee = TaskController.get_assignee(task_id)
-        except ValueError as e:
-            logger.warning(str(e))
-            return g_response("Can't drop task because it is not assigned to anyone.")
-
-        return {
-            'org_id': org_id,
-            'task_id': task_id,
-            'assignee': assignee
-        }
+            task = TaskController.get_task_by_id(task_id)
+            if task.assignee is None:
+                return g_response("Can't drop task because it is not assigned to anyone.")
+            else:
+                return task
+        except ValueError:
+            return g_response("Task does not exist.")
 
     @staticmethod
-    def validate_transition_task(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_transition_task(request_body: dict) -> typing.Union[Response, tuple]:
         """ Validates the transition task request """
         from app.Controllers import TaskController
 
-        task_id = _check_task_id(request_body.get('task_id'))
+        task_id = _check_int(param=request_body.get('task_id'), param_name='task_id')
         if isinstance(task_id, Response):
             return task_id
 
-        org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
-        if isinstance(org_id, Response):
-            return org_id
-
         try:
-            assignee = TaskController.get_assignee(task_id)
-        except ValueError as e:
-            logger.warning(str(e))
-            assignee = None
+            task = TaskController.get_task_by_id(task_id)
+        except ValueError:
+            return g_response("Task does not exist.")
 
         task_status = _check_task_status(request_body.get('task_status'), should_exist=True)
         if isinstance(task_status, Response):
             return task_status
 
-        return {
-            'org_id': org_id,
-            'task_id': task_id,
-            'assignee': assignee,
-            'task_status': task_status
-        }
+        return task, task_status
 
     @staticmethod
     def validate_update_user_settings_request(request_body: dict) -> typing.Union[Response, dict]:
@@ -727,31 +672,19 @@ class ValidationController(object):
         return valid_escalations
 
     @staticmethod
-    def validate_delay_task_request(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_delay_task_request(request_body: dict) -> typing.Union[Response, tuple]:
         """ Validates the transition task request """
         from app.Controllers import TaskController
 
-        task_id = _check_task_id(request_body.get('task_id'))
+        task_id = _check_int(request_body.get('task_id'), 'task_id')
         if isinstance(task_id, Response):
             return task_id
-
-        org_id = _check_org_id(TaskController.get_task_by_id(task_id).org_id, should_exist=True)
-        if isinstance(org_id, Response):
-            return org_id
-
-        try:
-            assignee = TaskController.get_assignee(task_id)
-        except ValueError as e:
-            logger.warning(str(e))
-            assignee = None
 
         delay_for = _check_int(request_body.get('delay_for'), 'delay_for')
         if isinstance(delay_for, Response):
             return delay_for
 
-        return {
-            'org_id': org_id,
-            'task_id': task_id,
-            'assignee': assignee,
-            'delay_for': delay_for
-        }
+        try:
+            return TaskController.get_task_by_id(task_id), delay_for
+        except ValueError:
+            return g_response("Task does not exist.")
