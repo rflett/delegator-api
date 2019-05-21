@@ -2,7 +2,7 @@ import datetime
 import dateutil
 import typing
 from app import logger, g_response, app, session_scope
-from app.Models import TaskType, TaskTypeEscalation, Task
+from app.Models import TaskType, TaskTypeEscalation, Task, User
 from flask import Response
 from sqlalchemy import exists, and_
 from validate_email import validate_email
@@ -309,7 +309,7 @@ class ValidationController(object):
         try:
             task_type = TaskTypeController.get_task_type_by_label(label, org_id)
             if task_type.disabled:
-                # enable it and say it was created successfully
+                # enable it instead of creating
                 return task_type
         except ValueError:
             # it doesn't exist, so create it
@@ -320,14 +320,14 @@ class ValidationController(object):
         """ Validates the disable task request """
         from app.Controllers import TaskTypeController
 
-        type_id = _check_task_type_id(task_type_id=task_type_id)
+        type_id = _check_int(task_type_id, 'task_type_id')
         if isinstance(type_id, Response):
             return type_id
 
         try:
             task_type = TaskTypeController.get_task_type_by_id(type_id)
         except ValueError as e:
-            logger.warning(str(e))
+            logger.info(str(e))
             return g_response(f"Task type does not exist.")
 
         return task_type
