@@ -29,11 +29,11 @@ class TaskType(db.Model):
 
     def __init__(
             self,
-            type: str,
+            label: str,
             org_id: int,
             disabled: bool = False
     ):
-        self.label = type
+        self.label = label
         self.org_id = org_id
         self.disabled = disabled
 

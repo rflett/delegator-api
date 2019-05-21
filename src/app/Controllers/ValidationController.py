@@ -143,14 +143,14 @@ def _check_task_type_id(
         task_type_id: int,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[int, Response]:
-    from app.Controllers import TaskController
+    from app.Controllers import TaskTypeController
     task_type_id = _check_int(task_type_id, 'task_type_id')
     if isinstance(task_type_id, Response):
         return task_type_id
 
     # optionally check if it exists or not
     if should_exist is not None:
-        task_exists = TaskController.task_type_exists(task_type_id)
+        task_exists = TaskTypeController.task_type_exists(task_type_id)
         if should_exist:
             if not task_exists:
                 logger.info(f"task type id {task_type_id} doesn't exist")
@@ -160,30 +160,6 @@ def _check_task_type_id(
                 logger.info(f"task type id {task_type_id} in org already exists")
                 return g_response("task type already exists", 400)
     return task_type_id
-
-
-def _check_task_type_label(
-        label: str,
-        org_id: int,
-        should_exist: typing.Optional[bool] = None
-) -> typing.Union[str, int, Response]:
-    from app.Controllers import TaskController
-    label = _check_str(label, 'task_type_label')
-    if isinstance(label, Response):
-        return label
-
-    # optionally check if it exists or not
-    if should_exist is not None:
-        task_type_exists = TaskController.task_type_exists(label, org_id)
-        if should_exist:
-            if not task_type_exists:
-                logger.info(f"task type id {label} in org {org_id} doesn't exist")
-                return g_response(f"task type does not exist", 400)
-        elif not should_exist:
-            if task_type_exists:
-                logger.info(f"task type id {label} in org {org_id} already exists")
-                return g_response("task type already exists", 400)
-    return label
 
 
 def _check_task_status(
@@ -314,46 +290,42 @@ class ValidationController(object):
         return True
 
     @staticmethod
-    def validate_create_task_type_request(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_create_task_type_request(request_body: dict) -> typing.Union[Response, TaskType, str]:
         """
         Validates a task type request body
         :param request_body:    The request body from the create task type request
         :return:                Response if the request body contains invalid values, or the TaskTypeRequest dataclass
         """
-        from app.Controllers import TaskController
+        from app.Controllers import TaskTypeController
 
         org_id = _check_org_id(request_body.get('org_id'), should_exist=True)
         if isinstance(org_id, Response):
             return org_id
 
-        label = _check_task_type_label(request_body.get('label'), org_id)
+        label = _check_str(request_body.get('label'), 'label')
         if isinstance(label, Response):
             return label
 
-        disabled = None
-        if TaskController.task_type_exists(label, org_id):
-            # if it's enabled, return exists error, else re-enable it
-            if TaskController.task_type_enabled(label, org_id):
-                return g_response(f"Task type already exists.")
-            disabled = True
-
-        return {
-            "org_id": org_id,
-            "label": label,
-            "disabled": disabled
-        }
+        try:
+            task_type = TaskTypeController.get_task_type_by_label(label, org_id)
+            if task_type.disabled:
+                # enable it and say it was created successfully
+                return task_type
+        except ValueError:
+            # it doesn't exist, so create it
+            return label
 
     @staticmethod
     def validate_disable_task_type_request(task_type_id: int) -> typing.Union[Response, TaskType]:
         """ Validates the disable task request """
-        from app.Controllers import TaskController
+        from app.Controllers import TaskTypeController
 
         type_id = _check_task_type_id(task_type_id=task_type_id)
         if isinstance(type_id, Response):
             return type_id
 
         try:
-            task_type = TaskController.get_task_type_by_id(type_id)
+            task_type = TaskTypeController.get_task_type_by_id(type_id)
         except ValueError as e:
             logger.warning(str(e))
             return g_response(f"Task type does not exist.")

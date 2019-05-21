@@ -3,7 +3,7 @@ from app import app, g_response, logger
 from functools import wraps
 from flask import Response, request
 from app.Controllers import AuthController, UserController, SignupController, TaskController, VersionController, \
-    ActiveUserController, OrganisationController
+    ActiveUserController, OrganisationController, TaskTypeController
 from app.Controllers.RBAC import RoleController
 from app.Controllers.Reporting import Reports
 
@@ -169,28 +169,28 @@ def get_task_statuses():
 @requires_jwt
 @safe_exceptions
 def get_task_types():
-    return TaskController.get_task_types(request)
+    return TaskTypeController.get_task_types(request)
 
 
 @app.route('/tasks/types', methods=['POST'])
 @requires_jwt
 @safe_exceptions
 def create_task_type():
-    return TaskController.create_task_type(request)
+    return TaskTypeController.create_task_type(request)
 
 
 @app.route('/tasks/types/<task_type_id>', methods=['DELETE'])
 @requires_jwt
 @safe_exceptions
 def disable_task_type(task_type_id):
-    return TaskController.disable_task_type(task_type_id, request)
+    return TaskTypeController.disable_task_type(task_type_id, request)
 
 
 @app.route('/tasks/types/escalation', methods=['POST'])
 @requires_jwt
 @safe_exceptions
 def update_task_type_escalation():
-    return TaskController.upsert_task_escalations(request)
+    return TaskTypeController.upsert_task_escalations(request)
 
 
 @app.route('/tasks', methods=['POST'])
