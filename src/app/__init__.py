@@ -9,10 +9,26 @@ from flask_cors import CORS
 from logging.handlers import SysLogHandler
 from os import getenv
 from flask_sqlalchemy import SQLAlchemy
+import flask_profiler
 
 # flask conf
 app = Flask(__name__)
 app.config.from_object(f"config.{getenv('APP_ENV', 'Local')}")
+
+# flask profiler
+app.config["flask_profiler"] = {
+    "enabled": True,
+    "storage": {
+        # "engine": "sqlite"
+        "engine": "sqlalchemy",
+        "db_url": app.config['SQLALCHEMY_DATABASE_URI']
+    },
+    "basicAuth": {
+        "enabled": True,
+        "username": "admin",
+        "password": "B4ckburn3r"
+    }
+}
 
 # CORS
 CORS(app)
@@ -118,3 +134,5 @@ def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) ->
 
 # routes
 from app import routes  # noqa
+
+flask_profiler.init_app(app)
