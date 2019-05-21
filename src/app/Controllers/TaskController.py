@@ -1,6 +1,5 @@
 import datetime
 import json
-import typing
 from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
 from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Notification
@@ -508,15 +507,12 @@ class TaskController(object):
         if isinstance(req_user, Response):
             return req_user
 
-        with session_scope():
-            _unassign_task(task_to_drop, req_user)
-            _transition_task(
-                task=task_to_drop,
-                status=TaskStatuses.READY,
-                req_user=req_user
-            )
-            task_to_drop.status = TaskStatuses.READY
-
+        _unassign_task(task_to_drop, req_user)
+        _transition_task(
+            task=task_to_drop,
+            status=TaskStatuses.READY,
+            req_user=req_user
+        )
         req_user.log(
             operation=Operation.DROP,
             resource=Resource.TASK,

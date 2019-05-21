@@ -3,6 +3,7 @@ import dateutil
 import typing
 from app import logger, g_response, app, session_scope
 from app.Models import TaskType, TaskTypeEscalation, Task, User
+from app.Models.RBAC import Role
 from flask import Response
 from sqlalchemy import exists, and_
 from validate_email import validate_email
@@ -104,11 +105,12 @@ def _check_user_id(
 
 
 def _check_user_role(role: str) -> typing.Union[str, Response]:
-    from app.Controllers import AuthController
     role = _check_str(role, 'role')
     if isinstance(role, Response):
         return role
-    if not AuthController.role_exists(role):
+    with session_scope() as session:
+        role_exists = session.query(exists().where(Role.id == role)).scalar()
+    if not role_exists:
         logger.info(f"Role {role} does not exist")
         return g_response(f"Role {role} does not exist", 400)
     return role
