@@ -104,7 +104,7 @@ class User(db.Model):
         pwdhash = hashlib.pbkdf2_hmac('sha512',
                                       password.encode('utf-8'),
                                       salt.encode('ascii'),
-                                      100000)
+                                      1000)
         pwdhash = binascii.hexlify(pwdhash).decode('ascii')
         return pwdhash == stored_password
 
