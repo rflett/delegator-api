@@ -10,9 +10,8 @@ from app.Controllers import ValidationController
 from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User, FailedLogin, Notification
 from app.Models.Enums import UserAuthLogAction, Events
-from app.Models.RBAC import Role, ResourceScope
+from app.Models.RBAC import ResourceScope
 from flask import Response, request
-from sqlalchemy import exists
 
 
 def _get_user_from_request(request_headers: dict) -> typing.Union[User, Response]:

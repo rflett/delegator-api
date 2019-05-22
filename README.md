@@ -40,3 +40,11 @@ Local development setup steps
 1. `cd dev`
 2. `./local_launch.sh`
 3. `curl localhost:5000/health`
+
+## Profiling
+
+Flask Profiler watches each of the endpoints and monitors the performance, visit:
+
+http://127.0.0.1:5000/flask-profiler/#tab-dashboard
+
+to view.
