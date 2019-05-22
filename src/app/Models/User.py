@@ -8,7 +8,7 @@ import typing
 from app import db, session_scope, logger, user_activity_table
 from app.Controllers.RBAC.RoleController import RoleController
 from app.Models import FailedLogin, Organisation
-from app.Models.RBAC import Role, Log
+from app.Models.RBAC import Role, Log, Permission, Operation
 from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
@@ -74,13 +74,23 @@ class User(db.Model):
 
     def can(self, operation: str, resource: str) -> typing.Union[bool, str]:
         """
-        Checks if user can perform {operation} on {resource} with their {role}. Basically checks
-        if their role can do this.
+        Checks if user can perform {operation} on {resource} with their {role}.
         :param operation:   The operation to perform.
         :param resource:    The affected resource.
         :return:            True if they can do the thing, or False.
         """
-        return RoleController.role_can(self.role, operation, resource)
+        with session_scope() as session:
+            permission = session.query(Permission).filter(
+                Permission.role_id == self.role,
+                Permission.operation_id == operation,
+                Permission.resource_id == resource
+            ).first()
+
+        if permission is None:
+            logger.info(f"permission with role:{self.role}, operation:{operation}, resource:{resource} does not exist")
+            return False
+        else:
+            return permission.resource_scope
 
     def password_correct(self, password: str) -> bool:
         """
