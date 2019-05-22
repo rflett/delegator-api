@@ -1,3 +1,4 @@
+import _thread
 import binascii
 import datetime
 import hashlib
@@ -6,9 +7,8 @@ import random
 import string
 import typing
 from app import db, session_scope, logger, user_activity_table
-from app.Controllers.RBAC.RoleController import RoleController
 from app.Models import FailedLogin, Organisation
-from app.Models.RBAC import Role
+from app.Models.RBAC import Role, Log, Permission
 from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
@@ -25,7 +25,7 @@ def _hash_password(password: str) -> str:
     :return: The password hashed.
     """
     salt = hashlib.sha256(os.urandom(60)).hexdigest().encode('ascii')
-    pwdhash = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), salt, 100000)
+    pwdhash = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), salt, 1000)
     pwdhash = binascii.hexlify(pwdhash)
     return (salt + pwdhash).decode('ascii')
 
@@ -74,13 +74,23 @@ class User(db.Model):
 
     def can(self, operation: str, resource: str) -> typing.Union[bool, str]:
         """
-        Checks if user can perform {operation} on {resource} with their {role}. Basically checks
-        if their role can do this.
+        Checks if user can perform {operation} on {resource} with their {role}.
         :param operation:   The operation to perform.
         :param resource:    The affected resource.
         :return:            True if they can do the thing, or False.
         """
-        return RoleController.role_can(self.role, operation, resource)
+        with session_scope() as session:
+            permission = session.query(Permission).filter(
+                Permission.role_id == self.role,
+                Permission.operation_id == operation,
+                Permission.resource_id == resource
+            ).first()
+
+        if permission is None:
+            logger.info(f"permission with role:{self.role}, operation:{operation}, resource:{resource} does not exist")
+            return False
+        else:
+            return permission.resource_scope
 
     def password_correct(self, password: str) -> bool:
         """
@@ -94,7 +104,7 @@ class User(db.Model):
         pwdhash = hashlib.pbkdf2_hmac('sha512',
                                       password.encode('utf-8'),
                                       salt.encode('ascii'),
-                                      100000)
+                                      1000)
         pwdhash = binascii.hexlify(pwdhash).decode('ascii')
         return pwdhash == stored_password
 
@@ -131,13 +141,21 @@ class User(db.Model):
         user_org = OrganisationController.get_org_by_id(self.org_id)
         return user_org.jwt_secret
 
-    def log(self, **kwargs) -> None:
+    def log(self, operation: str, resource: str, resource_id: typing.Union[str, None] = None) -> None:
         """
         Logs an action that a user would perform.
-        :param kwargs:  operation, resource, optional(resource_id)
         """
-        from app.Controllers.LogControllers import RBACAuditLogController
-        RBACAuditLogController.log(self, **kwargs)
+        audit_log = Log(
+            org_id=self.org_id,
+            user_id=self.id,
+            operation=operation,
+            resource=resource,
+            resource_id=resource_id
+        )
+        with session_scope() as session:
+            session.add(audit_log)
+        logger.info(f"user with id {self.id} did {operation} on {resource} with "
+                    f"and id of {resource_id}")
 
     def reset_password(self, password) -> None:
         """
@@ -153,7 +171,7 @@ class User(db.Model):
         :return:
         """
         from app.Controllers import ActiveUserController
-        ActiveUserController.user_is_active(self)
+        _thread.start_new_thread(ActiveUserController.user_is_active, (self,))
 
     def is_inactive(self) -> None:
         """
@@ -161,7 +179,7 @@ class User(db.Model):
         :return:
         """
         from app.Controllers import ActiveUserController
-        ActiveUserController.user_is_inactive(self)
+        _thread.start_new_thread(ActiveUserController.user_is_inactive, (self,))
 
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """

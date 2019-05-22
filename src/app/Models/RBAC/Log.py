@@ -1,10 +1,11 @@
 import datetime
+import typing
 from app import db
 from app.Models import Organisation, User   # noqa
 from app.Models.RBAC import Resource, Operation   # noqa
 
 
-class RBACAuditLog(db.Model):
+class Log(db.Model):
     __tablename__ = "rbac_audit_log"
 
     id = db.Column('id', db.Integer, primary_key=True, autoincrement=True)
@@ -24,13 +25,15 @@ class RBACAuditLog(db.Model):
         self,
         org_id: int,
         user_id: int,
-        **kwargs
+        operation: str,
+        resource: str,
+        resource_id: typing.Union[int, None] = None
     ):
         self.org_id = org_id
         self.user_id = user_id
-        self.operation = kwargs.get('operation')
-        self.resource = kwargs.get('resource')
-        self.resource_id = kwargs.get('resource_id')
+        self.operation = operation
+        self.resource = resource
+        self.resource_id = resource_id
 
     def to_dict(self) -> dict:
         """
