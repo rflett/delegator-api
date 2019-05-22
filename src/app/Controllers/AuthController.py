@@ -7,9 +7,8 @@ import typing
 import uuid
 from app import logger, app, g_response, session_scope
 from app.Controllers import ValidationController
-from app.Controllers.LogControllers import UserAuthLogController
 from app.Models import User, FailedLogin, Notification
-from app.Models.Enums import UserAuthLogAction, Events
+from app.Models.Enums import Events
 from app.Models.RBAC import ResourceScope
 from flask import Response, request
 
@@ -310,10 +309,6 @@ class AuthController(object):
         with session_scope():
             # check password
             if user.password_correct(password):
-                UserAuthLogController.log(
-                    user=user,
-                    action=UserAuthLogAction.LOGIN
-                )
                 logger.info(f"user {user.id} logged in")
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
@@ -349,7 +344,6 @@ class AuthController(object):
         :return:        Response
         """
         from app.Controllers import AuthController, UserController
-        from app.Controllers.LogControllers import UserAuthLogController
 
         auth = headers.get('Authorization', None)
         payload = AuthController.validate_jwt(auth.replace('Bearer ', ''))
@@ -366,7 +360,6 @@ class AuthController(object):
                 friendly="Logged out."
             ).publish()
             AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
-            UserAuthLogController.log(user=user, action=UserAuthLogAction.LOGOUT)
             logger.info(f"user {user.id} logged out")
             return g_response('Logged out')
 
@@ -384,7 +377,6 @@ class AuthController(object):
             user = UserController.get_user_by_email(request_body.get('email'))
             new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])
             user.reset_password(new_password)
-            UserAuthLogController.log(user, 'reset_password')
             logger.info(json.dumps(user.as_dict()))
             logger.info(f"password successfully reset for {request_body.get('email')}")
             return g_response(f"Password reset successfully, new password is {new_password}")

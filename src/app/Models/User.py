@@ -8,7 +8,7 @@ import typing
 from app import db, session_scope, logger, user_activity_table
 from app.Controllers.RBAC.RoleController import RoleController
 from app.Models import FailedLogin, Organisation
-from app.Models.RBAC import Role
+from app.Models.RBAC import Role, Log
 from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
@@ -131,13 +131,21 @@ class User(db.Model):
         user_org = OrganisationController.get_org_by_id(self.org_id)
         return user_org.jwt_secret
 
-    def log(self, **kwargs) -> None:
+    def log(self, operation: str, resource: str, resource_id: typing.Union[str, None] = None) -> None:
         """
         Logs an action that a user would perform.
-        :param kwargs:  operation, resource, optional(resource_id)
         """
-        from app.Controllers.LogControllers import RBACAuditLogController
-        RBACAuditLogController.log(self, **kwargs)
+        audit_log = Log(
+            org_id=self.org_id,
+            user_id=self.id,
+            operation=operation,
+            resource=resource,
+            resource_id=resource_id
+        )
+        with session_scope() as session:
+            session.add(audit_log)
+        logger.info(f"user with id {self.id} did {operation} on {resource} with "
+                    f"and id of {resource_id}")
 
     def reset_password(self, password) -> None:
         """
