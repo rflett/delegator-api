@@ -1,3 +1,4 @@
+import _thread
 import binascii
 import datetime
 import hashlib
@@ -6,9 +7,8 @@ import random
 import string
 import typing
 from app import db, session_scope, logger, user_activity_table
-from app.Controllers.RBAC.RoleController import RoleController
 from app.Models import FailedLogin, Organisation
-from app.Models.RBAC import Role, Log, Permission, Operation
+from app.Models.RBAC import Role, Log, Permission
 from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
@@ -25,7 +25,7 @@ def _hash_password(password: str) -> str:
     :return: The password hashed.
     """
     salt = hashlib.sha256(os.urandom(60)).hexdigest().encode('ascii')
-    pwdhash = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), salt, 100000)
+    pwdhash = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), salt, 1000)
     pwdhash = binascii.hexlify(pwdhash)
     return (salt + pwdhash).decode('ascii')
 
@@ -171,7 +171,7 @@ class User(db.Model):
         :return:
         """
         from app.Controllers import ActiveUserController
-        ActiveUserController.user_is_active(self)
+        _thread.start_new_thread(ActiveUserController.user_is_active, (self,))
 
     def is_inactive(self) -> None:
         """
@@ -179,7 +179,7 @@ class User(db.Model):
         :return:
         """
         from app.Controllers import ActiveUserController
-        ActiveUserController.user_is_inactive(self)
+        _thread.start_new_thread(ActiveUserController.user_is_inactive, (self,))
 
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """
