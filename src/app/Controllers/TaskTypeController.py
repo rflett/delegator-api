@@ -164,13 +164,13 @@ class TaskTypeController(object):
             Notification(
                 org_id=task_type.org_id,
                 event=Events.tasktype_created,
-                payload=task_type.as_dict()
+                event_id=task_type.id,
             ).publish()
             Notification(
                 org_id=req_user.org_id,
                 event=Events.user_created_tasktype,
-                payload=req_user.as_dict(),
-                friendly=f"Created task type {task_type.label}."
+                event_id=req_user.id,
+                event_friendly=f"Created task type {task_type.label}."
             ).publish()
             req_user.log(
                 operation=Operation.CREATE,
@@ -195,7 +195,7 @@ class TaskTypeController(object):
             Notification(
                 org_id=validate_res.org_id,
                 event=Events.tasktype_enabled,
-                payload=validate_res.as_dict()
+                event_id=validate_res.id
             ).publish()
             req_user.log(
                 operation=Operation.ENABLE,
@@ -257,13 +257,13 @@ class TaskTypeController(object):
                 Notification(
                     org_id=org_id,
                     event=Events.tasktype_escalation_created,
-                    payload=new_escalation.as_dict()
+                    event_id=new_escalation.id
                 ).publish()
                 Notification(
                     org_id=req_user.org_id,
                     event=Events.user_created_tasktype_escalation,
-                    payload=req_user.as_dict(),
-                    friendly=f"Created escalation for task type "
+                    event_id=req_user.id,
+                    event_friendly=f"Created escalation for task type "
                     f"{_get_task_type_by_id(new_escalation.task_type_id).label}."
                 ).publish()
                 req_user.log(
@@ -286,13 +286,13 @@ class TaskTypeController(object):
                     Notification(
                         org_id=org_id,
                         event=Events.tasktype_escalation_updated,
-                        payload=escalation_to_update.as_dict()
+                        event_id=escalation_to_update.id
                     ).publish()
                     Notification(
                         org_id=req_user.org_id,
                         event=Events.user_created_tasktype_escalation,
-                        payload=req_user.as_dict(),
-                        friendly=f"Updated escalation for task type "
+                        event_id=req_user.id,
+                        event_friendly=f"Updated escalation for task type "
                         f"{_get_task_type_by_id(escalation_to_update.task_type_id).label}."
                     ).publish()
                     req_user.log(
@@ -360,13 +360,13 @@ class TaskTypeController(object):
         Notification(
             org_id=valid_dtt.org_id,
             event=Events.tasktype_disabled,
-            payload=valid_dtt.as_dict()
+            event_id=valid_dtt.id,
         ).publish()
         Notification(
             org_id=req_user.org_id,
             event=Events.user_disabled_tasktype,
-            payload=req_user.as_dict(),
-            friendly=f"Disabled task type {valid_dtt.label}"
+            event_id=req_user.id,
+            event_friendly=f"Disabled task type {valid_dtt.label}"
         ).publish()
         req_user.log(
             operation=Operation.DISABLE,

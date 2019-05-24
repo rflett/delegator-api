@@ -11,6 +11,10 @@ class Events(str):
             'DataType': 'String',
             'StringValue': self.event.split('_')[0]
         }
+        'push': {
+            'DataType': 'String',
+            'StringValue': message.get('push', 'false')
+        }
     }
 
     The event class is the characters before the first underscore.

@@ -141,7 +141,7 @@ class User(db.Model):
         user_org = OrganisationController.get_org_by_id(self.org_id)
         return user_org.jwt_secret
 
-    def log(self, operation: str, resource: str, resource_id: typing.Union[str, None] = None) -> None:
+    def log(self, operation: str, resource: str, resource_id: typing.Union[int, None] = None) -> None:
         """
         Logs an action that a user would perform.
         """

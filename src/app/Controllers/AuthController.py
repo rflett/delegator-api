@@ -316,8 +316,8 @@ class AuthController(object):
                 Notification(
                     org_id=user.org_id,
                     event=Events.user_login,
-                    payload=user.fat_dict(),
-                    friendly="Logged in."
+                    event_id=user.id,
+                    event_friendly="Logged in."
                 ).publish()
                 return Response(
                     json.dumps({
@@ -356,8 +356,8 @@ class AuthController(object):
             Notification(
                 org_id=user.org_id,
                 event=Events.user_logout,
-                payload=user.fat_dict(),
-                friendly="Logged out."
+                event_id=user.id,
+                event_friendly="Logged out."
             ).publish()
             AuthController.invalidate_jwt_token((auth.replace('Bearer ', '')))
             logger.info(f"user {user.id} logged out")

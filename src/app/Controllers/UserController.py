@@ -129,14 +129,14 @@ class UserController(object):
                 Notification(
                     org_id=user.org_id,
                     event=Events.user_created,
-                    payload=user.fat_dict(),
-                    friendly=f"Created by {request_user.name()}."
+                    event_id=user.id,
+                    event_friendly=f"Created by {request_user.name()}."
                 ).publish()
                 Notification(
                     org_id=req_user.org_id,
                     event=Events.user_created_user,
-                    payload=req_user.fat_dict(),
-                    friendly=f"Created {user.name()}."
+                    event_id=req_user.id,
+                    event_friendly=f"Created {user.name()}."
                 ).publish()
                 logger.info(f"user {request_user.id} created user {user.as_dict()}")
             else:
@@ -149,8 +149,8 @@ class UserController(object):
                 Notification(
                     org_id=user.org_id,
                     event=Events.user_created,
-                    payload=user.fat_dict(),
-                    friendly=f"Created by {user.name()}"
+                    event_id=user.id,
+                    event_friendly=f"Created by {user.name()}"
                 ).publish()
                 logger.info(f"user {user.id} created user {user.as_dict()}")
             return g_response("Successfully created user", 201)
@@ -222,14 +222,14 @@ class UserController(object):
         Notification(
             org_id=user_to_update.org_id,
             event=Events.user_updated,
-            payload=user_to_update.fat_dict(),
-            friendly=f"Updated by {req_user.name()}"
+            event_id=user_to_update.id,
+            event_friendly=f"Updated by {req_user.name()}"
         ).publish()
         Notification(
             org_id=req_user.org_id,
             event=Events.user_updated_user,
-            payload=req_user.fat_dict(),
-            friendly=f"Updated {user_to_update.name()}."
+            event_id=req_user.id,
+            event_friendly=f"Updated {user_to_update.name()}."
         ).publish()
         req_user.log(
             operation=Operation.UPDATE,
@@ -263,8 +263,8 @@ class UserController(object):
             Notification(
                 org_id=req_user.org_id,
                 event=Events.user_deleted_user,
-                payload=req_user.fat_dict(),
-                friendly=f"Deleted user id {valid_user.id}."
+                event_id=req_user.id,
+                event_friendly=f"Deleted user id {valid_user.id}."
             ).publish()
             valid_user.anonymize()
 
