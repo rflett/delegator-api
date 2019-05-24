@@ -29,14 +29,14 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
     Notification(
         org_id=task.org_id,
         event=f'task_transitioned_{task.status.lower()}',
-        payload=task.fat_dict(),
-        friendly=f"Transitioned from {old_status.lower()} to {status.lower()}."
+        event_id=task.id,
+        event_friendly=f"Transitioned from {old_status.lower()} to {status.lower()}."
     ).publish()
     Notification(
         org_id=req_user.org_id,
         event=Events.user_transitioned_task,
-        payload=req_user.fat_dict(),
-        friendly=f"Transitioned {task.label()} from {old_status.lower()} to {status.lower()}."
+        event_id=req_user.id,
+        event_friendly=f"Transitioned {task.label()} from {old_status.lower()} to {status.lower()}."
     ).publish()
     req_user.log(
         operation=Operation.TRANSITION,
@@ -56,20 +56,20 @@ def _assign_task(task: Task, assignee: int, req_user: User) -> None:
     Notification(
         org_id=task.org_id,
         event=Events.task_assigned,
-        payload=task.fat_dict(),
-        friendly=f"{assigned_user.name()} assigned to task by {req_user.name()}."
+        event_id=task.id,
+        event_friendly=f"{assigned_user.name()} assigned to task by {req_user.name()}."
     ).publish()
     Notification(
         org_id=req_user.org_id,
         event=Events.user_assigned_task,
-        payload=req_user.fat_dict(),
-        friendly=f"Assigned {assigned_user.name()} to {task.label()}."
+        event_id=req_user.id,
+        event_friendly=f"Assigned {assigned_user.name()} to {task.label()}."
     ).publish()
     Notification(
         org_id=assigned_user.org_id,
         event=Events.user_assigned_to_task,
-        payload=assigned_user.fat_dict(),
-        friendly=f"Assigned to {task.label()} by {req_user.name()}."
+        event_id=assigned_user.id,
+        event_friendly=f"Assigned to {task.label()} by {req_user.name()}."
     ).publish()
     req_user.log(
         operation=Operation.ASSIGN,
@@ -92,20 +92,20 @@ def _unassign_task(task: Task, req_user: User) -> None:
         Notification(
             org_id=task.org_id,
             event=Events.task_unassigned,
-            payload=task.fat_dict(),
-            friendly=f"{old_assignee.name()} unassigned from task by {req_user.name()}."
+            event_id=task.id,
+            event_friendly=f"{old_assignee.name()} unassigned from task by {req_user.name()}."
         ).publish()
         Notification(
             org_id=req_user.org_id,
             event=Events.user_unassigned_task,
-            payload=req_user.fat_dict(),
-            friendly=f"Unassigned {old_assignee.name()} from {task.label()}."
+            event_id=req_user.id,
+            event_friendly=f"Unassigned {old_assignee.name()} from {task.label()}."
         ).publish()
         Notification(
             org_id=old_assignee.org_id,
             event=Events.user_unassigned_from_task,
-            payload=old_assignee.fat_dict(),
-            friendly=f"Unassigned from {task.label()} by {req_user.name()}."
+            event_id=old_assignee.id,
+            event_friendly=f"Unassigned from {task.label()} by {req_user.name()}."
         ).publish()
         req_user.log(
             operation=Operation.ASSIGN,
@@ -325,14 +325,14 @@ class TaskController(object):
         Notification(
             org_id=task.org_id,
             event=Events.task_created,
-            payload=task.fat_dict(),
-            friendly=f"Created by {req_user.name()}."
+            event_id=task.id,
+            event_friendly=f"Created by {req_user.name()}."
         ).publish()
         Notification(
             org_id=req_user.org_id,
             event=Events.user_created_task,
-            payload=req_user.fat_dict(),
-            friendly=f"Created task {task.label()}."
+            event_id=req_user.id,
+            event_friendly=f"Created task {task.label()}."
         ).publish()
         req_user.log(
             operation=Operation.CREATE,
@@ -443,8 +443,8 @@ class TaskController(object):
         Notification(
             org_id=task_to_update.org_id,
             event=Events.task_updated,
-            payload=task_to_update.fat_dict(),
-            friendly=f"Updated by {req_user.name()}."
+            event_id=task_to_update.id,
+            event_friendly=f"Updated by {req_user.name()}."
         ).publish()
 
         req_user.log(
