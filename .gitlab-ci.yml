@@ -77,12 +77,10 @@ integrationTest:
       $AMZ_REGISTRY/newman:latest 
       newman run /newman/integration.postman_collection.json
 
-    - docker logs api
-    - docker logs postgres
-
 staging:
   stage: deploy
   image: $GITLAB_REGISTRY/python:latest
+  when: always
   only:
     - master
   tags:
