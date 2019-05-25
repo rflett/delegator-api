@@ -257,7 +257,7 @@ class TaskTypeController(object):
                 Notification(
                     org_id=org_id,
                     event=Events.tasktype_escalation_created,
-                    event_id=new_escalation.id
+                    event_id=new_escalation.task_type_id
                 ).publish()
                 Notification(
                     org_id=req_user.org_id,
@@ -286,7 +286,7 @@ class TaskTypeController(object):
                     Notification(
                         org_id=org_id,
                         event=Events.tasktype_escalation_updated,
-                        event_id=escalation_to_update.id
+                        event_id=escalation_to_update.task_type_id
                     ).publish()
                     Notification(
                         org_id=req_user.org_id,
