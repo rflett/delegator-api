@@ -48,6 +48,7 @@ build:
 integrationTest:
   stage: integrationTest
   image: $GITLAB_REGISTRY/docker:latest
+  when: manual
   only:
     - master
   services:
@@ -80,7 +81,6 @@ integrationTest:
 staging:
   stage: deploy
   image: $GITLAB_REGISTRY/python:latest
-  when: always
   only:
     - master
   tags:
