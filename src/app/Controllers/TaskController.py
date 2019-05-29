@@ -21,7 +21,7 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
         # remove delayed task
         if old_status == TaskStatuses.DELAYED and status != TaskStatuses.DELAYED:
             delayed_task = session.query(DelayedTask).filter(DelayedTask.task_id == task.id).first()
-            delayed_task.expired = True
+            delayed_task.expired = datetime.datetime.utcnow()
 
         task.status = status
         task.status_changed_at = datetime.datetime.utcnow()
@@ -596,7 +596,8 @@ class TaskController(object):
                 delayed_task = DelayedTask(
                     task_id=task.id,
                     delay_for=delay_for,
-                    delayed_at=datetime.datetime.utcnow()
+                    delayed_at=datetime.datetime.utcnow(),
+                    delayed_by=req_user.id
                 )
                 session.add(delayed_task)
 

@@ -15,17 +15,17 @@ class Config(object):
 
 
 class Ci(Config):
-    SQLALCHEMY_DATABASE_URI = f"postgresql://backburner:backburner@postgres:5432/backburner"
+    SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@postgres:5432/backburner"
     R_CACHE_HOST = "redis"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
 
 
 class Local(Config):
-    SQLALCHEMY_DATABASE_URI = f"postgresql://backburner:backburner@localhost:5432/backburner"
+    SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@localhost:5432/backburner"
     R_CACHE_HOST = "localhost"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
 
 
 class Staging(Config):
-    SQLALCHEMY_DATABASE_URI = f"postgresql://backburner:backburner@127.0.0.1:5432/backburner"
+    SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@127.0.0.1:5432/backburner"
     R_CACHE_HOST = "127.0.0.1"
