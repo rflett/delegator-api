@@ -1,5 +1,6 @@
 import datetime
 import typing
+import time
 from app import db, session_scope, logger, task_activity_table
 from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
 from boto3.dynamodb.conditions import Key
@@ -24,29 +25,15 @@ def _get_fat_task(task_id: int) -> dict:
 
     t, ta, tcb, ts, tt, tp = tasks_qry
 
-    extras = {
-        'assignee': ta.as_dict() if ta is not None else None,
-        'created_by': tcb.as_dict(),
-        'status': ts.as_dict(),
-        'type': tt.fat_dict(),
-        'priority': tp.as_dict()
-    }
-
     task_dict = t.as_dict()
 
-    # remove extras from base task
-    for k in extras:
-        task_dict.pop(k)
+    task_dict['assignee'] = ta.as_dict() if ta is not None else None
+    task_dict['created_by'] = tcb.as_dict()
+    task_dict['status'] = ts.as_dict()
+    task_dict['type'] = tt.as_dict()
+    task_dict['priority'] = tp.as_dict()
 
-    # convert datetimes to str
-    for k, v in task_dict.items():
-        if isinstance(v, datetime.datetime):
-            task_dict[k] = v.strftime("%Y-%m-%d %H:%M:%S%z")
-
-    return dict(sorted({
-        **task_dict,
-        **extras
-    }.items()))
+    return task_dict
 
 
 class Task(db.Model):
@@ -108,6 +95,31 @@ class Task(db.Model):
         """
         :return: dict repr of a Task object
         """
+        if self.due_time is None:
+            due_time = None
+        else:
+            due_time = self.due_time.strftime("%Y-%m-%d %H:%M:%S%z")
+
+        if self.created_at is None:
+            created_at = None
+        else:
+            created_at = self.created_at.strftime("%Y-%m-%d %H:%M:%S%z")
+
+        if self.finished_at is None:
+            finished_at = None
+        else:
+            finished_at = self.finished_at.strftime("%Y-%m-%d %H:%M:%S%z")
+
+        if self.status_changed_at is None:
+            status_changed_at = None
+        else:
+            status_changed_at = self.status_changed_at.strftime("%Y-%m-%d %H:%M:%S%z")
+
+        if self.priority_changed_at is None:
+            priority_changed_at = None
+        else:
+            priority_changed_at = self.priority_changed_at.strftime("%Y-%m-%d %H:%M:%S%z")
+
         return {
             "id": self.id,
             "org_id": self.org_id,
@@ -115,14 +127,14 @@ class Task(db.Model):
             "description": self.description,
             "status": self.status,
             "time_estimate": self.time_estimate,
-            "due_time": self.due_time,
+            "due_time": due_time,
             "assignee": self.assignee,
             "priority": self.priority,
             "created_by": self.created_by,
-            "created_at": self.created_at,
-            "finished_at": self.finished_at,
-            "status_changed_at": self.status_changed_at,
-            "priority_changed_at": self.priority_changed_at
+            "created_at": created_at,
+            "finished_at": finished_at,
+            "status_changed_at": status_changed_at,
+            "priority_changed_at": priority_changed_at
         }
 
     def fat_dict(self) -> dict:

@@ -2,7 +2,7 @@ import datetime
 import json
 from app import logger, session_scope, g_response, j_response
 from app.Controllers import AuthController
-from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Notification
+from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Notification, TaskType
 from app.Models.Enums import TaskStatuses, Events
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -261,18 +261,28 @@ class TaskController(object):
 
         with session_scope() as session:
             task_assignee, task_created_by = aliased(User), aliased(User)
-            tasks_qry = session.query(Task, task_assignee, task_created_by)\
-                .outerjoin(task_assignee, task_assignee.id == Task.assignee)\
-                .join(task_created_by, task_created_by.id == Task.created_by)\
-                .join(Task.created_bys)\
-                .join(Task.task_statuses)\
-                .join(Task.task_types)\
-                .join(Task.task_priorities)\
-                .filter(Task.org_id == req_user.org_id)\
+            tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority) \
+                .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
+                .join(task_created_by, task_created_by.id == Task.created_by) \
+                .join(Task.created_bys) \
+                .join(Task.task_statuses) \
+                .join(Task.task_types) \
+                .join(Task.task_priorities) \
+                .filter(Task.org_id == req_user.org_id) \
                 .all()
 
-        tasks = [t.fat_dict() for t, ta, tcb in tasks_qry]
-        logger.debug(f"found {len(tasks)} users: {json.dumps(tasks)}")
+        tasks = []
+
+        for t, ta, tcb, ts, tt, tp in tasks_qry:
+            task_dict = t.as_dict()
+            task_dict['assignee'] = ta.as_dict() if ta is not None else None
+            task_dict['created_by'] = tcb.as_dict()
+            task_dict['status'] = ts.as_dict()
+            task_dict['type'] = tt.as_dict()
+            task_dict['priority'] = tp.as_dict()
+            tasks.append(task_dict)
+
+        logger.debug(f"found {len(tasks)} tasks")
         req_user.log(
             operation=Operation.GET,
             resource=Resource.TASKS
