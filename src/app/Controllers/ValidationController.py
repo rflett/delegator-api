@@ -122,12 +122,13 @@ def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None,
     return job_title
 
 
-def _check_user_disabled(disabled: typing.Optional[bool]) -> typing.Union[None, bool, Response]:
+def _check_user_disabled(disabled: typing.Optional[datetime.datetime]) -> typing.Union[None, datetime.datetime, Response]:
     if disabled is not None:
-        if not isinstance(disabled, bool):
-            logger.info(f"Bad disabled, expected bool got {type(disabled)}.")
-            return g_response(f"Bad disabled, expected bool got {type(disabled)}.", 400)
-    return False
+        try:
+            disabled = datetime.datetime.strptime(disabled, "%Y-%m-%d %H:%M:%S%z")
+            return disabled
+        except ValueError:
+            return g_response("Couldn't convert disabled to datetime.datetime", 400)
 
 
 def _check_task_id(task_id: int) -> typing.Union[Response, int]:
@@ -310,7 +311,7 @@ class ValidationController(object):
 
         try:
             task_type = TaskTypeController.get_task_type_by_label(label, org_id)
-            if task_type.disabled:
+            if task_type.disabled is not None:
                 # enable it instead of creating
                 return task_type
         except ValueError:
