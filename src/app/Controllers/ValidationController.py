@@ -122,7 +122,8 @@ def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None,
     return job_title
 
 
-def _check_user_disabled(disabled: typing.Optional[datetime.datetime]) -> typing.Union[None, datetime.datetime, Response]:
+def _check_user_disabled(disabled: typing.Optional[datetime.datetime]) \
+        -> typing.Union[None, datetime.datetime, Response]:
     if disabled is not None:
         try:
             disabled = datetime.datetime.strptime(disabled, "%Y-%m-%d %H:%M:%S%z")

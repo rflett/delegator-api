@@ -23,6 +23,15 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
             delayed_task = session.query(DelayedTask).filter(DelayedTask.task_id == task.id).first()
             delayed_task.expired = datetime.datetime.utcnow()
 
+        # finished task
+        if status == TaskStatuses.COMPLETED:
+            task.finished_by = req_user.id
+            task.finished_at = datetime.datetime.utcnow()
+
+        # start task once
+        if status == TaskStatuses.INPROGRESS and task.started_at is not None:
+            task.started_at = datetime.datetime.utcnow()
+
         task.status = status
         task.status_changed_at = datetime.datetime.utcnow()
 
@@ -324,7 +333,6 @@ class TaskController(object):
                 status=valid_task.get('status'),
                 time_estimate=valid_task.get('time_estimate'),
                 due_time=valid_task.get('due_time'),
-                assignee=None,
                 priority=valid_task.get('priority'),
                 created_by=req_user.id,
                 created_at=valid_task.get('created_at'),
