@@ -1,6 +1,5 @@
 stages:
   - lint
-  # - unitTest
   - build
   - integrationTest
   - deploy
@@ -18,14 +17,6 @@ flake8:
   script:
     - flake8 src/
 
-# unitTest:
-#   stage: unitTest
-#   image: $GITLAB_REGISTRY/python:latest
-#   script:
-#     - cd src/
-#     - pipenv install
-#     - pipenv run python -m pytest
-
 build:
   stage: build
   image: $GITLAB_REGISTRY/docker:latest
@@ -39,7 +30,7 @@ build:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
     # build, tag, and push commit
-    - docker build --build-arg COMMIT_SHA=$CI_COMMIT_SHA -t $AMZ_REGISTRY/api:$CI_COMMIT_SHA src/
+    - docker build --cache-from $AMZ_REGISTRY/api:latest --build-arg COMMIT_SHA=$CI_COMMIT_SHA -t $AMZ_REGISTRY/api:$CI_COMMIT_SHA src/
     - docker push $AMZ_REGISTRY/api:$CI_COMMIT_SHA
     # tag and push latest
     - docker tag $AMZ_REGISTRY/api:$CI_COMMIT_SHA $AMZ_REGISTRY/api:latest
