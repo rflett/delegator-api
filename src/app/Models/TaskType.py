@@ -1,3 +1,5 @@
+import datetime
+import typing
 from app import db, session_scope
 
 
@@ -23,7 +25,7 @@ class TaskType(db.Model):
     id = db.Column('id', db.Integer, primary_key=True)
     label = db.Column('label', db.String)
     org_id = db.Column('org_id', db.Integer, db.ForeignKey('organisations.id'))
-    disabled = db.Column('disabled', db.Boolean, default=False)
+    disabled = db.Column('disabled', db.DateTime, default=None)
 
     orgs = db.relationship("Organisation")
 
@@ -31,7 +33,7 @@ class TaskType(db.Model):
             self,
             label: str,
             org_id: int,
-            disabled: bool = False
+            disabled: typing.Union[datetime.datetime, None] = None
     ):
         self.label = label
         self.org_id = org_id
@@ -41,11 +43,16 @@ class TaskType(db.Model):
         """
         :return: dict repr of a TaskType object
         """
+        if self.disabled is None:
+            disabled = None
+        else:
+            disabled = self.disabled.strftime("%Y-%m-%d %H:%M:%S%z")
+
         return {
             "id": self.id,
             "type": self.label,
             "org_id": self.org_id,
-            "disabled": self.disabled
+            "disabled": disabled
         }
 
     def fat_dict(self) -> dict:

@@ -311,7 +311,7 @@ class ValidationController(object):
 
         try:
             task_type = TaskTypeController.get_task_type_by_label(label, org_id)
-            if task_type.disabled:
+            if task_type.disabled is not None:
                 # enable it instead of creating
                 return task_type
         except ValueError:

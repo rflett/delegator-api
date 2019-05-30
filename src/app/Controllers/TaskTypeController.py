@@ -1,3 +1,4 @@
+import datetime
 import json
 import typing
 from app import logger, session_scope, g_response, j_response
@@ -47,7 +48,7 @@ class TaskTypeController(object):
                 return session.query(exists().where(
                     and_(
                         TaskType.id == task_type_identifier,
-                        TaskType.disabled == False  # noqa
+                        TaskType.disabled == None  # noqa
                     )
                 )).scalar()
             elif isinstance(task_type_identifier, str):
@@ -56,7 +57,7 @@ class TaskTypeController(object):
                     and_(
                         TaskType.label == task_type_identifier,
                         TaskType.org_id == org_identifier,
-                        TaskType.disabled == False  # noqa
+                        TaskType.disabled == None  # noqa
                     )
                 )).scalar()
 
@@ -191,7 +192,7 @@ class TaskTypeController(object):
                 # no perms
                 if isinstance(req_user, Response):
                     return req_user
-                validate_res.disabled = False
+                validate_res.disabled = None
             Notification(
                 org_id=validate_res.org_id,
                 event=Events.tasktype_enabled,
@@ -355,7 +356,7 @@ class TaskTypeController(object):
             return req_user
 
         with session_scope():
-            valid_dtt.disabled = True
+            valid_dtt.disabled = datetime.datetime.utcnow()
 
         Notification(
             org_id=valid_dtt.org_id,
