@@ -277,13 +277,13 @@ class AuthController(object):
             return _failed_login_attempt(email)
 
         # don't let them log in if they are disabled
-        if user.disabled is True:
+        if user.disabled is not None:
             logger.info(f"Disabled user {email} tried to log in.")
             return g_response(f"Cannot log in since this account has been disabled. Please consult your "
                               f"administrator for assistance.", 401)
 
         # don't let them log in if they are deleted (shouldn't happen but good to check)
-        if user.deleted is True:
+        if user.deleted is not None:
             logger.warning(f"Deleted user tried to log in.")
             return g_response(f"Email or password incorrect", 401)
 

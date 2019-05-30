@@ -41,8 +41,8 @@ class User(db.Model):
     password = db.Column('password', db.String)
     job_title = db.Column('job_title', db.String)
     role = db.Column('role', db.String, db.ForeignKey('rbac_roles.id'))
-    disabled = db.Column('disabled', db.Boolean, default=False)
-    deleted = db.Column('deleted', db.Boolean, default=False)
+    disabled = db.Column('disabled', db.DateTime, default=None)
+    deleted = db.Column('deleted', db.DateTime, default=None)
     failed_login_attempts = db.Column('failed_login_attempts', db.Integer, default=0)
     failed_login_time = db.Column('failed_login_time', db.DateTime, default=None)
     created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
@@ -59,8 +59,8 @@ class User(db.Model):
             password: str,
             job_title: str,
             role: str,
-            disabled: bool = False,
-            deleted: bool = False
+            disabled: typing.Union[datetime.datetime, None] = None,
+            deleted: typing.Union[datetime.datetime, None] = None
     ):
         self.org_id = org_id
         self.email = email
@@ -200,12 +200,22 @@ class User(db.Model):
         self.last_name = make_random()
         self.email = f"{make_random()}@{make_random()}.com"
         self.password = _hash_password(make_random())
-        self.deleted = True
+        self.deleted = datetime.datetime.utcnow()
 
     def as_dict(self) -> dict:
         """
         :return: The dict repr of a User object
         """
+        if self.disabled is None:
+            disabled = None
+        else:
+            disabled = self.disabled.strftime("%Y-%m-%d %H:%M:%S%z")
+
+        if self.deleted is None:
+            deleted = None
+        else:
+            deleted = self.deleted.strftime("%Y-%m-%d %H:%M:%S%z")
+
         return {
             "id": self.id,
             "org_id": self.org_id,
@@ -213,9 +223,9 @@ class User(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "role": self.role,
-            "disabled": self.disabled,
+            "disabled": disabled,
             "job_title": self.job_title,
-            "deleted": self.deleted
+            "deleted": deleted
         }
 
     def fat_dict(self) -> dict:
