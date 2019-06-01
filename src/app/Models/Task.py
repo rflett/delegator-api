@@ -1,5 +1,4 @@
 import datetime
-import typing
 from app import db, session_scope, logger, task_activity_table
 from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
 from boto3.dynamodb.conditions import Key
