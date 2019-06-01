@@ -21,9 +21,9 @@ def completed_tasks(org_id: int) -> list:
     with session_scope() as session:
         qry = session.execute(
             """
-            SELECT u.id AS user_id, 
-                   u.first_name || ' ' || u.last_name AS name, 
-                   tt.label AS task_type, 
+            SELECT u.id AS user_id,
+                   u.first_name || ' ' || u.last_name AS name,
+                   tt.label AS task_type,
                    t.finished_at AS finished_at
             FROM tasks t INNER JOIN task_types tt
                          ON t.type = tt.id
@@ -43,9 +43,9 @@ def delayed_tasks(org_id: int) -> list:
     with session_scope() as session:
         qry = session.execute(
             """
-            SELECT u.id AS user_id, 
-            u.first_name || ' ' || u.last_name AS name, 
-            tt.label AS task_type, 
+            SELECT u.id AS user_id,
+            u.first_name || ' ' || u.last_name AS name,
+            tt.label AS task_type,
             td.delayed_at AS delayed_at
             FROM users u INNER JOIN tasks_delayed td
                          ON u.id = td.delayed_by
@@ -98,7 +98,7 @@ def task_statuses(org_id: int) -> list:
                    t.status_changed_at AS status_changed_at
             FROM users u RIGHT JOIN tasks t
                          ON u.id = t.assignee
-                         INNER JOIN task_types tt 
+                         INNER JOIN task_types tt
                          ON t.type = tt.id
                          INNER JOIN task_statuses ts
                          ON t.status = ts.status
@@ -123,7 +123,7 @@ def task_priorities(org_id: int) -> list:
                    t.priority_changed_at AS priority_changed_at
             FROM users u RIGHT JOIN tasks t
                          ON u.id = t.assignee
-                         INNER JOIN task_types tt 
+                         INNER JOIN task_types tt
                          ON t.type = tt.id
                          INNER JOIN task_priorities tp
                          ON t.priority = tp.priority
@@ -140,13 +140,13 @@ def tasks_created(org_id: int) -> list:
     with session_scope() as session:
         qry = session.execute(
             """
-            SELECT u.id AS user_id, 
-                   u.first_name || ' ' || 
-                   u.last_name AS name, tt.label AS task_type, 
+            SELECT u.id AS user_id,
+                   u.first_name || ' ' ||
+                   u.last_name AS name, tt.label AS task_type,
                    t.created_at AS created_at
             FROM users u INNER JOIN tasks t
                          ON u.id = t.created_by
-                         INNER JOIN task_types tt 
+                         INNER JOIN task_types tt
                          ON t.type = tt.id
             WHERE u.org_id = :org_id
             ORDER BY t.created_at ASC
@@ -183,7 +183,7 @@ def time_to_finish(org_id: int) -> list:
                    t.id AS task_id,
                    tt.label AS task_type,
                    EXTRACT(EPOCH FROM (t.finished_at - t.created_at)) AS time_to_finish
-            FROM users u INNER JOIN tasks t 
+            FROM users u INNER JOIN tasks t
                          ON u.id = t.finished_by
                          INNER JOIN task_types tt
                          ON t.type = tt.id
