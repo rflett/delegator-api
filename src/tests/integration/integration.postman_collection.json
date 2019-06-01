@@ -1198,6 +1198,49 @@
 					"response": []
 				},
 				{
+					"name": "Get Reports",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "b0b5e210-0e5b-4d09-9c98-ec516f65ebad",
+								"exec": [
+									"pm.test(\"get task activity is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/reporting/all",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"reporting",
+								"all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Update Org Settings",
 					"request": {
 						"method": "PUT",
