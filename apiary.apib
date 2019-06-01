@@ -1,5 +1,5 @@
 FORMAT: 1A
-HOST: api-staging.backburner.online
+HOST: api.backburner.online
 
 # BackBurner
 
@@ -842,3 +842,90 @@ Overview of the BackBurner API.
             }
 
 + Response 204 (application/json)
+
+
+## Reporting [/reporting/all]
+
+### Get Reports [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 200 (application/json)
+    + Body
+    
+            {
+              "completed_tasks": [
+                {
+                    "user_id": 3,
+                    "name": "Luke Meeking",
+                    "task_type": "Pellentesque at nulla.",
+                    "finished_at": "2019-05-30 00:05:31"
+                }
+              ],
+              "delayed_tasks": [
+                {
+                    "user_id": 1,
+                    "name": "Ryan Flett",
+                    "task_type": "Fusce consequat.",
+                    "delayed_at": "2018-06-17 04:30:22"
+                }
+              ],
+              "dropped_tasks": [
+                {
+                    "user_id": 1,
+                    "name": "Ryan Flett",
+                    "task_type": "Fusce consequat.",
+                    "dropped_at": "2018-06-17 04:30:22"
+                }
+              ],
+              "task_statuses": [
+                {
+                    "user_id": 2,
+                    "name": "James Turner",
+                    "task_type": "Pellentesque at nulla.",
+                    "status": "In Progress",
+                    "status_changed_at": "2019-05-30 00:05:31"
+                }
+              ],
+              "task_priorities": [
+                {
+                    "user_id": 2,
+                    "name": "James Turner",
+                    "task_type": "In sagittis dui vel nisl.",
+                    "priority": "Medium",
+                    "priority_changed_at": "2019-05-30 00:05:31"
+                }
+              ],
+              "tasks_created": [
+                {
+                    "user_id": 2,
+                    "name": "James Turner",
+                    "task_type": "Suspendisse accumsan tortor quis turpis.",
+                    "created_at": "2019-05-29 00:05:32"
+                }
+              ],
+              "time_to_start": [
+                {
+                    "task_type": "Nulla ac enim.",
+                    "time_to_start": 31756411
+                }
+              ],
+              "time_to_finish": [
+                {
+                    "user_id": 3,
+                    "name": "Luke Meeking",
+                    "task_id": 72,
+                    "task_type": "Integer a nibh.",
+                    "time_to_finish": 159779
+                }
+              ],
+              "delays_per_task": [
+                {
+                    "id": 74,
+                    "delayed_for": 4170
+                }
+              ]
+            }
