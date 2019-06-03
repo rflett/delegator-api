@@ -1,6 +1,6 @@
 import typing
 from app import session_scope, logger, g_response, j_response
-from app.Models import Organisation, TaskType, OrgSetting
+from app.Models import Organisation, TaskType
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 from sqlalchemy import exists, func

@@ -2,7 +2,7 @@ import datetime
 import json
 import typing
 from app import session_scope, logger, g_response, app, j_response
-from app.Controllers import AuthController
+from app.Controllers import AuthenticationController
 from app.Models import User, ActiveUser
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
@@ -25,7 +25,7 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
     if auth is None:
         return g_response("Missing Authorization header")
 
-    payload = AuthController.validate_jwt(auth.replace('Bearer ', ''))
+    payload = AuthenticationController.validate_jwt(auth.replace('Bearer ', ''))
 
     # get user id
     if isinstance(payload, dict):

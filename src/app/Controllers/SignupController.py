@@ -1,6 +1,5 @@
-from app import app, logger, g_response, session_scope
+from app import logger, g_response, session_scope
 from app.Controllers import UserController, OrganisationController, ValidationController
-from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 
 

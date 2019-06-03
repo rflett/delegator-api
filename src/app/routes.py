@@ -3,7 +3,7 @@ from app import app, g_response, logger
 from functools import wraps
 from flask import Response, request
 from app.Controllers import AuthController, UserController, SignupController, TaskController, VersionController, \
-    ActiveUserController, OrganisationController, TaskTypeController
+    ActiveUserController, OrganisationController, TaskTypeController, AuthenticationController
 from app.Controllers.RBAC import RoleController
 from app.Controllers.Reporting import Reports
 
@@ -17,7 +17,7 @@ def requires_jwt(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.headers.get('Authorization', None)
-        check = AuthController.check_authorization_header(auth)
+        check = AuthenticationController.check_authorization_header(auth)
         if isinstance(check, Response):
             return check
         else:
@@ -52,14 +52,14 @@ def version_info():
 @app.route('/login', methods=['POST'])
 @safe_exceptions
 def login():
-    return AuthController.login(request)
+    return AuthenticationController.login(request)
 
 
 @app.route('/logout', methods=['POST'])
 @requires_jwt
 @safe_exceptions
 def logout():
-    return AuthController.logout(request.headers)
+    return AuthenticationController.logout(request.headers)
 
 
 @app.route('/reset_password', methods=['POST'])
