@@ -77,8 +77,8 @@ def signup():
 @app.route('/users', methods=['POST'])
 @requires_jwt
 @safe_exceptions
-def user_create():
-    return UserController.user_create(request)
+def create_user():
+    return UserController.create_user(request)
 
 
 @app.route('/users', methods=['GET'])

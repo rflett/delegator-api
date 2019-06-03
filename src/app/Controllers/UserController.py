@@ -95,65 +95,10 @@ class UserController(object):
         return _get_user_by_id(user_id)
 
     @staticmethod
-    def user_create(req: request, require_auth: bool = True) -> Response:
+    def create_user(req: request) -> Response:
         """ Creates a user from a request """
-        def create_user_settings(user_id) -> None:
-            """ Creates user settings for this user """
-            from app.Controllers import SettingsController
-            from app.Models import UserSetting
-            SettingsController.set_user_settings(UserSetting(user_id=user_id))
-
-        def create_user(user_to_create: dict, request_user: User = None) -> Response:
-            """ Creates the user """
-            with session_scope() as session:
-                user = User(
-                    org_id=user_to_create.get('org_id'),
-                    email=user_to_create.get('email'),
-                    first_name=user_to_create.get('first_name'),
-                    last_name=user_to_create.get('last_name'),
-                    password=user_to_create.get('password'),
-                    role=user_to_create.get('role'),
-                    job_title=user_to_create.get('job_title')
-                )
-                session.add(user)
-
-            # create user settings
-            create_user_settings(user.id)
-
-            if request_user is not None:
-                request_user.log(
-                    operation=Operation.CREATE,
-                    resource=Resource.USER,
-                    resource_id=user.id
-                )
-                Notification(
-                    org_id=user.org_id,
-                    event=Events.user_created,
-                    event_id=user.id,
-                    event_friendly=f"Created by {request_user.name()}."
-                ).publish()
-                Notification(
-                    org_id=req_user.org_id,
-                    event=Events.user_created_user,
-                    event_id=req_user.id,
-                    event_friendly=f"Created {user.name()}."
-                ).publish()
-                logger.info(f"user {request_user.id} created user {user.as_dict()}")
-            else:
-                user.log(
-                    operation=Operation.CREATE,
-                    resource=Resource.USER,
-                    resource_id=user.id
-                )
-                # publish event
-                Notification(
-                    org_id=user.org_id,
-                    event=Events.user_created,
-                    event_id=user.id,
-                    event_friendly=f"Created by {user.name()}"
-                ).publish()
-                logger.info(f"user {user.id} created user {user.as_dict()}")
-            return g_response("Successfully created user", 201)
+        from app.Controllers import SettingsController
+        from app.Models import UserSetting
 
         request_body = req.get_json()
 
@@ -165,25 +110,94 @@ class UserController(object):
         if isinstance(valid_user, Response):
             return valid_user
 
-        if require_auth:
-            logger.info("requiring auth to create user")
-            req_user = AuthController.authorize_request(
-                request_headers=req.headers,
-                operation=Operation.CREATE,
-                resource=Resource.USER,
-                resource_org_id=valid_user.get('org_id')
-            )
-            # no perms
-            if isinstance(req_user, Response):
-                return req_user
+        logger.info("requiring auth to create user")
+        req_user = AuthController.authorize_request(
+            request_headers=req.headers,
+            operation=Operation.CREATE,
+            resource=Resource.USER,
+            resource_org_id=valid_user.get('org_id')
+        )
+        # no perms
+        if isinstance(req_user, Response):
+            return req_user
 
-            return create_user(
-                user_to_create=valid_user,
-                request_user=req_user
+        with session_scope() as session:
+            user = User(
+                org_id=valid_user.get('org_id'),
+                email=valid_user.get('email'),
+                first_name=valid_user.get('first_name'),
+                last_name=valid_user.get('last_name'),
+                password='secret',
+                role=valid_user.get('role'),
+                job_title=valid_user.get('job_title')
             )
-        else:
-            logger.info("not requiring auth to create user")
-            return create_user(valid_user)
+            session.add(user)
+
+        # create user settings
+        SettingsController.set_user_settings(UserSetting(user_id=user.id))
+
+        req_user.log(
+            operation=Operation.CREATE,
+            resource=Resource.USER,
+            resource_id=user.id
+        )
+        Notification(
+            org_id=user.org_id,
+            event=Events.user_created,
+            event_id=user.id,
+            event_friendly=f"Created by {req_user.name()}."
+        ).publish()
+        Notification(
+            org_id=req_user.org_id,
+            event=Events.user_created_user,
+            event_id=req_user.id,
+            event_friendly=f"Created {user.name()}."
+        ).publish()
+        logger.info(f"user {req_user.id} created user {user.as_dict()}")
+
+        return g_response("Successfully created user", 201)
+
+    @staticmethod
+    def create_signup_user(org_id: int, valid_user: dict) -> Response:
+        """ Creates a user from the signup page """
+        from app.Controllers import SettingsController
+        from app.Models import UserSetting
+
+        with session_scope() as session:
+            user = User(
+                org_id=org_id,
+                email=valid_user.get('email'),
+                first_name=valid_user.get('first_name'),
+                last_name=valid_user.get('last_name'),
+                password=valid_user.get('password'),
+                role=valid_user.get('role'),
+                job_title=valid_user.get('job_title')
+            )
+            session.add(user)
+
+        # create user settings
+        SettingsController.set_user_settings(UserSetting(user_id=user.id))
+
+
+        user.log(
+            operation=Operation.CREATE,
+            resource=Resource.ORGANISATION,
+            resource_id=org_id
+        )
+        user.log(
+            operation=Operation.CREATE,
+            resource=Resource.USER,
+            resource_id=user.id
+        )
+        # publish event
+        Notification(
+            org_id=user.org_id,
+            event=Events.user_created,
+            event_id=user.id,
+            event_friendly=f"Created by {user.name()}"
+        ).publish()
+        logger.info(f"user {user.id} created user {user.as_dict()}")
+        return g_response("Successfully created user", 201)
 
     @staticmethod
     def user_update(user_id: int, req: request) -> Response:

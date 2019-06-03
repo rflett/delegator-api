@@ -337,16 +337,38 @@ class ValidationController(object):
         return task_type
 
     @staticmethod
-    def validate_create_user_request(request_body: dict, from_signup=False) -> typing.Union[Response, dict]:
+    def validate_create_user_request(request_body: dict) -> typing.Union[Response, dict]:
         """
         Validates a create user request body
         :param request_body:    The request body from the create user request
-        :param from_signup:     Indicates that this validation request came from the signup page, so
-                                we should ignore org and role checks. The organisation won't be created yet, this is
-                                pre-creation validation. The role will not be provided because the default role
-                                will be given.
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
+        ret = {}
+
+        # check email
+        email = request_body.get('email')
+        email_check = ValidationController.validate_email(email)
+        if isinstance(email_check, Response):
+            return email_check
+        ret['email'] = _check_user_id(request_body.get('email'), should_exist=False)
+
+        ret['org_id'] = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
+        ret['role'] = _check_user_role(request_body.get('role_name'))
+        ret['first_name'] = _check_str(request_body.get('first_name'), 'first_name')
+        ret['last_name'] = _check_str(request_body.get('last_name'), 'last_name')
+        ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
+        ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
+
+        # return a response if any ret values are response objects
+        for k, v in ret.items():
+            if isinstance(v, Response):
+                return v
+
+        return ret
+
+    @staticmethod
+    def validate_create_signup_user(request_body: dict) -> typing.Union[Response, dict]:
+        """ Validates creating a user from the signup page """
         ret = {}
 
         # check email
@@ -363,12 +385,7 @@ class ValidationController(object):
             return password_check
         ret['password'] = password
 
-        if from_signup:
-            request_body['role'] = app.config['SIGNUP_ROLE']
-        elif not from_signup:
-            ret['org_id'] = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
-            ret['role'] = _check_user_role(request_body.get('role_name'))
-
+        ret['role'] = app.config['SIGNUP_ROLE']
         ret['first_name'] = _check_str(request_body.get('first_name'), 'first_name')
         ret['last_name'] = _check_str(request_body.get('last_name'), 'last_name')
         ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
@@ -436,7 +453,7 @@ class ValidationController(object):
             return g_response("user does not exist", 400)
 
     @staticmethod
-    def validate_create_org_request(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_create_org_request(request_body: dict) -> typing.Union[Response, str]:
         """ Validates a create org request body """
         org_name = request_body.get('name', request_body.get('org_name'))
 
@@ -444,9 +461,7 @@ class ValidationController(object):
         if isinstance(org, Response):
             return org
 
-        return {
-            "org_name": org
-        }
+        return org
 
     @staticmethod
     def validate_create_task_request(request_body: dict) -> typing.Union[Response, dict]:

@@ -1,7 +1,6 @@
 import typing
 from app import session_scope, logger, g_response, j_response
-from app.Controllers import AuthController
-from app.Models import Organisation, User, TaskType
+from app.Models import Organisation, TaskType, OrgSetting
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 from sqlalchemy import exists, func
@@ -52,71 +51,23 @@ class OrganisationController(object):
             return ret
 
     @staticmethod
-    def org_create(req: request, require_auth: bool = True) -> Response:
-        """
-        Creates an organisation.
-        :param req:         The request to create an org
-        :param require_auth:    If request needs to have authoriziation (e.g. not if signing up)
-        :return:                A response
-        """
-        def create_org_settings(org_id) -> None:
-            from app.Controllers import SettingsController
-            from app.Models import OrgSetting
-            SettingsController.set_org_settings(OrgSetting(org_id=org_id))
+    def create_org(org_name: str) -> Response:
+        from app.Controllers import SettingsController
 
-        def create_org(valid_org: dict, req_user: User = None) -> Response:
-            """
-            Creates the organisation
-            :param valid_org:  The validated organisation object
-            :param req_user:   The user making the request
-            :return:           Response
-            """
-
-            with session_scope() as session:
-                organisation = Organisation(
-                    name=valid_org.get('org_name')
-                )
-                session.add(organisation)
-
-            with session_scope() as session:
-                session.add(TaskType(label='Other', org_id=organisation.id))
-
-            # create org settings
-            create_org_settings(organisation.id)
-
-            if isinstance(req_user, User):
-                req_user.log(
-                    operation=Operation.CREATE,
-                    resource=Resource.ORGANISATION,
-                    resource_id=organisation.id
-                )
-            logger.info(f"created organisation {organisation.as_dict()}")
-            return g_response("Successfully created the organisation", 201)
-
-        request_body = req.get_json()
-
-        # validate org
-        from app.Controllers import ValidationController
-        valid_org = ValidationController.validate_create_org_request(request_body)
-        # invalid org
-        if isinstance(valid_org, Response):
-            return valid_org
-
-        if require_auth:
-            logger.info("requiring auth to create org")
-            req_user = AuthController.authorize_request(
-                request_headers=req.headers,
-                operation=Operation.CREATE,
-                resource=Resource.ORGANISATION,
-                resource_org_id=valid_org.get('org_id')
+        with session_scope() as session:
+            organisation = Organisation(
+                name=org_name
             )
-            # no perms
-            if isinstance(req_user, Response):
-                return req_user
-            return create_org(request_body, req_user=req_user)
-        else:
-            logger.info("not requiring auth to create org")
-            return create_org(valid_org)
+            session.add(organisation)
+
+        with session_scope() as session:
+            session.add(TaskType(label='Other', org_id=organisation.id))
+
+        # create org settings
+        SettingsController.set_org_settings(OrgSetting(org_id=organisation.id))
+
+        logger.info(f"created organisation {organisation.as_dict()}")
+        return g_response("Successfully created the organisation", 201)
 
     @staticmethod
     def get_org_settings(req: request) -> Response:

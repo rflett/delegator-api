@@ -29,12 +29,12 @@ class SignupController(object):
             return valid_org
 
         # validate user
-        valid_user = ValidationController.validate_create_user_request(request_body, from_signup=True)
+        valid_user = ValidationController.validate_create_signup_user(request_body)
         if isinstance(valid_user, Response):
             return valid_user
 
         try:
-            create_org_res = OrganisationController.org_create(req, require_auth=False)
+            create_org_res = OrganisationController.create_org(org_name=valid_org)
         except Exception as e:
             logger.error(str(e))
             return g_response("There was an issue creating the organisation", 500)
@@ -43,16 +43,16 @@ class SignupController(object):
             return create_org_res
 
         new_org = OrganisationController.get_org_by_name(request_body.get('org_name'))
-        request_body['role_name'] = app.config['SIGNUP_ROLE']
-        request_body['org_id'] = new_org.id
 
         try:
-            create_user_res = UserController.user_create(req, require_auth=False)
+            create_user_res = UserController.create_signup_user(org_id=new_org.id, valid_user=valid_user)
         except Exception as e:
             logger.error(str(e))
             # the org was actually created, but the user failed, so delete the org
             if create_org_res.status_code == 201:
                 with session_scope() as session:
+                    from app.Models import TaskType
+                    session.query(TaskType).filter(TaskType.org_id == new_org.id).delete()
                     session.delete(new_org)
                     logger.info(f"deleted the new organisation {new_org.name} "
                                 f"since there was an issue creating the user")
@@ -60,18 +60,5 @@ class SignupController(object):
 
         if create_user_res.status_code != 201:
             return create_user_res
-
-        # log events
-        new_user = UserController.get_user_by_email(request_body.get('email'))
-        new_user.log(
-            operation=Operation.CREATE,
-            resource=Resource.ORGANISATION,
-            resource_id=new_org.id
-        )
-        new_user.log(
-            operation=Operation.CREATE,
-            resource=Resource.USER,
-            resource_id=new_user.id
-        )
 
         return g_response("Successfully signed up.", 200)
