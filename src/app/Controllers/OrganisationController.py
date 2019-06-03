@@ -1,7 +1,7 @@
 import typing
 from app import session_scope, logger, g_response, j_response
 from app.Controllers import AuthController
-from app.Models import Organisation, User
+from app.Models import Organisation, User, TaskType
 from app.Models.RBAC import Operation, Resource
 from flask import request, Response
 from sqlalchemy import exists, func
@@ -77,6 +77,9 @@ class OrganisationController(object):
                     name=valid_org.get('org_name')
                 )
                 session.add(organisation)
+
+            with session_scope() as session:
+                session.add(TaskType(label='Other', org_id=organisation.id))
 
             # create org settings
             create_org_settings(organisation.id)
