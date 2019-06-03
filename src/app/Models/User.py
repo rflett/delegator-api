@@ -289,3 +289,9 @@ class User(db.Model):
     def name(self) -> str:
         """ Returns their full name """
         return self.first_name + " " + self.last_name
+
+    def create_settings(self) -> None:
+        """ Creates the settings for this user """
+        from app.Controllers.SettingsController import SettingsController
+        from app.Models import UserSetting
+        SettingsController.set_user_settings(UserSetting(self.id))

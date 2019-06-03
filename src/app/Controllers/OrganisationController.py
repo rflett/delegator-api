@@ -51,9 +51,7 @@ class OrganisationController(object):
             return ret
 
     @staticmethod
-    def create_org(org_name: str) -> Response:
-        from app.Controllers import SettingsController
-
+    def create_org(org_name: str) -> Organisation:
         with session_scope() as session:
             organisation = Organisation(
                 name=org_name
@@ -64,10 +62,10 @@ class OrganisationController(object):
             session.add(TaskType(label='Other', org_id=organisation.id))
 
         # create org settings
-        SettingsController.set_org_settings(OrgSetting(org_id=organisation.id))
+        organisation.create_settings()
 
         logger.info(f"created organisation {organisation.as_dict()}")
-        return g_response("Successfully created the organisation", 201)
+        return organisation
 
     @staticmethod
     def get_org_settings(req: request) -> Response:

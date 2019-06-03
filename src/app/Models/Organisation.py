@@ -20,6 +20,12 @@ class Organisation(db.Model):
         self.jwt_secret = binascii.hexlify(
             hashlib.pbkdf2_hmac('sha256', uuid.uuid4().bytes, uuid.uuid4().bytes, 100000)).decode('ascii')
 
+    def create_settings(self) -> None:
+        """ Creates the settings for this user """
+        from app.Controllers.SettingsController import SettingsController
+        from app.Models import OrgSetting
+        SettingsController.set_org_settings(OrgSetting(self.id))
+
     def as_dict(self):
         """
         :return: The dict repr of an Organisation object

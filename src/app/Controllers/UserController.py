@@ -97,9 +97,6 @@ class UserController(object):
     @staticmethod
     def create_user(req: request) -> Response:
         """ Creates a user from a request """
-        from app.Controllers import SettingsController
-        from app.Models import UserSetting
-
         request_body = req.get_json()
 
         # validate user
@@ -134,7 +131,7 @@ class UserController(object):
             session.add(user)
 
         # create user settings
-        SettingsController.set_user_settings(UserSetting(user_id=user.id))
+        user.create_settings()
 
         req_user.log(
             operation=Operation.CREATE,
@@ -158,11 +155,8 @@ class UserController(object):
         return g_response("Successfully created user", 201)
 
     @staticmethod
-    def create_signup_user(org_id: int, valid_user: dict) -> Response:
+    def create_signup_user(org_id: int, valid_user: dict) -> None:
         """ Creates a user from the signup page """
-        from app.Controllers import SettingsController
-        from app.Models import UserSetting
-
         with session_scope() as session:
             user = User(
                 org_id=org_id,
@@ -176,8 +170,7 @@ class UserController(object):
             session.add(user)
 
         # create user settings
-        SettingsController.set_user_settings(UserSetting(user_id=user.id))
-
+        user.create_settings()
 
         user.log(
             operation=Operation.CREATE,
@@ -197,7 +190,6 @@ class UserController(object):
             event_friendly=f"Created by {user.name()}"
         ).publish()
         logger.info(f"user {user.id} created user {user.as_dict()}")
-        return g_response("Successfully created user", 201)
 
     @staticmethod
     def user_update(user_id: int, req: request) -> Response:
