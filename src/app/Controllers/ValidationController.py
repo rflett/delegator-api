@@ -206,7 +206,7 @@ def _check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[Non
         try:
             due_time_parsed = dateutil.parser.parse(due_time_str)
             # check due time is not in the past
-            if due_time_parsed < datetime.datetime.utcnow():
+            if due_time_parsed < datetime.datetime.now(datetime.timezone.utc):
                 logger.info(f"due_time is in the past")
                 return g_response("Due time is in the past.", 400)
             return due_time_parsed
