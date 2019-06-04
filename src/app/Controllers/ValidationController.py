@@ -1,12 +1,14 @@
 import datetime
 import dateutil
 import typing
-from app import logger, g_response, app, session_scope
-from app.Models import TaskType, TaskTypeEscalation, Task, User, OrgSetting
-from app.Models.RBAC import Role
+
 from flask import Response
 from sqlalchemy import exists, and_
 from validate_email import validate_email
+
+from app import logger, g_response, app, session_scope
+from app.Models import TaskType, TaskTypeEscalation, Task, OrgSetting, UserSetting
+from app.Models.RBAC import Role
 
 
 def _check_int(param: int, param_name: str) -> typing.Union[int, Response]:
@@ -49,35 +51,6 @@ def _check_password_reqs(password: str) -> typing.Union[str, bool]:
         return f"Password requires more than {min_caps} capital letter(s)."
     logger.info(f"password meets requirements")
     return True
-
-
-def _check_org_id(
-        identifier: typing.Union[str, int],
-        should_exist: typing.Optional[bool] = None
-) -> typing.Union[str, int, Response]:
-    from app.Controllers import OrganisationController
-    if isinstance(identifier, bool):
-        return g_response(f"Bad org_id, expected int|str got {type(identifier)}.", 400)
-    if not isinstance(identifier, (int, str)):
-        return g_response(f"Bad org_id, expected int|str got {type(identifier)}.", 400)
-
-    # optionally check if it exists or not
-    if should_exist is not None:
-        org_exists = OrganisationController.org_exists(identifier)
-        if should_exist:
-            if org_exists:
-                if isinstance(identifier, str):
-                    return OrganisationController.get_org_by_name(identifier).id
-                else:
-                    return identifier
-            else:
-                logger.info(f"org {identifier} doesn't exist")
-                return g_response(f"Org does not exist", 400)
-        elif not should_exist:
-            if org_exists:
-                logger.info(f"organisation {identifier} already exists")
-                return g_response("Organisation already exists", 400)
-    return identifier
 
 
 def _check_user_id(
@@ -126,7 +99,7 @@ def _check_user_disabled(disabled: typing.Optional[datetime.datetime]) \
         -> typing.Union[None, datetime.datetime, Response]:
     if disabled is not None:
         try:
-            disabled = datetime.datetime.strptime(disabled, "%Y-%m-%d %H:%M:%S%z")
+            disabled = datetime.datetime.strptime(disabled, "%Y-%m-%dT%H:%M:%S%z")
             return disabled
         except ValueError:
             return g_response("Couldn't convert disabled to datetime.datetime", 400)
@@ -280,7 +253,7 @@ class ValidationController(object):
         return True
 
     @staticmethod
-    def validate_password(password: str) -> typing.Union[bool, Response]:
+    def validate_password(password: str) -> typing.Union[str, Response]:
         """
         Validates a password. Makes sure it's a string, and can do a strength check.
         :param password:    The password to check
@@ -292,7 +265,7 @@ class ValidationController(object):
         # password_check = _check_password_reqs(password)
         # if isinstance(password_check, str):
         #     return g_response(password_check, 400)
-        return True
+        return password
 
     @staticmethod
     def validate_create_task_type_request(org_id: int, request_body: dict) -> typing.Union[Response, TaskType, str]:
@@ -363,27 +336,21 @@ class ValidationController(object):
     @staticmethod
     def validate_create_signup_user(request_body: dict) -> typing.Union[Response, dict]:
         """ Validates creating a user from the signup page """
-        ret = {}
-
         # check email
         email = request_body.get('email')
         email_check = ValidationController.validate_email(email)
         if isinstance(email_check, Response):
             return email_check
-        ret['email'] = _check_user_id(request_body.get('email'), should_exist=False)
 
-        # check password
-        password = request_body.get('password')
-        password_check = ValidationController.validate_password(password)
-        if isinstance(password_check, Response):
-            return password_check
-        ret['password'] = password
-
-        ret['role'] = app.config['SIGNUP_ROLE']
-        ret['first_name'] = _check_str(request_body.get('first_name'), 'first_name')
-        ret['last_name'] = _check_str(request_body.get('last_name'), 'last_name')
-        ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
-        ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
+        ret = {
+            "email": _check_user_id(request_body.get('email'), should_exist=False),
+            "password": ValidationController.validate_password(request_body.get('password')),
+            "role": app.config['SIGNUP_ROLE'],
+            "first_name": _check_str(request_body.get('first_name'), 'first_name'),
+            "last_name": _check_str(request_body.get('last_name'), 'last_name'),
+            "job_title": _check_user_job_title(request_body.get('job_title')),
+            "disabled": _check_user_disabled(request_body.get('disabled'))
+        }
 
         # return a response if any ret values are response objects
         for k, v in ret.items():
@@ -393,35 +360,16 @@ class ValidationController(object):
         return ret
 
     @staticmethod
-    def validate_update_user_request(user_id: int, request_body: dict) -> typing.Union[Response, dict]:
+    def validate_update_user_request(request_body: dict) -> typing.Union[Response, dict]:
         """  Validates an update user request body """
-        from app.Controllers import UserController
-        ret = {}
-
-        check_user = _check_user_id(user_id, should_exist=True)
-        if isinstance(check_user, Response):
-            return check_user
-
-        # check email
-        email = request_body.get('email')
-        email_check = ValidationController.validate_email(email)
-        if isinstance(email_check, Response):
-            return email_check
-
-        # check email doesn't exist if it's not the same as before
-        user = UserController.get_user_by_id(user_id)
-        if email != user.email:
-            # emails don't match, so check that it doesn't exist
-            if UserController.user_exists(email):
-                logger.info(f"email {email} already in use")
-                return g_response(f"Email already exists.", 400)
-
-        ret['org_id'] = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
-        ret['first_name'] = _check_str(request_body.get('first_name'), 'first_name')
-        ret['last_name'] = _check_str(request_body.get('last_name'), 'last_name')
-        ret['role'] = _check_user_role(request_body.get('role_name'))
-        ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
-        ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
+        ret = {
+            "id": _check_user_id(request_body.get('id'), should_exist=True),
+            "first_name": _check_str(request_body.get('first_name'), 'first_name'),
+            "last_name": _check_str(request_body.get('last_name'), 'last_name'),
+            "role": _check_user_role(request_body.get('role_name')),
+            "job_title": _check_user_job_title(request_body.get('job_title')),
+            "disabled": _check_user_disabled(request_body.get('disabled'))
+        }
 
         # return a response if any ret values are response objects
         for k, v in ret.items():
@@ -429,33 +377,21 @@ class ValidationController(object):
                 return v
 
         return ret
-
-    @staticmethod
-    def validate_delete_user_request(user_id: int) -> typing.Union[Response, User]:
-        """ Validates a delete user request body """
-        from app.Controllers import UserController
-
-        check_user = _check_int(user_id, 'user_id')
-        if isinstance(check_user, Response):
-            return check_user
-
-        try:
-            user = UserController.get_user_by_id(check_user)
-            return user
-        except ValueError as e:
-            logger.warning(str(e))
-            return g_response("user does not exist", 400)
 
     @staticmethod
     def validate_create_org_request(request_body: dict) -> typing.Union[Response, str]:
         """ Validates a create org request body """
         org_name = request_body.get('name', request_body.get('org_name'))
 
-        org = _check_org_id(org_name, should_exist=False)
-        if isinstance(org, Response):
-            return org
+        from app.Controllers import OrganisationController
 
-        return org
+        if not isinstance(org_name, str):
+            return g_response(f"Bad org_name|name, expected str got {type(org_name)}.", 400)
+
+        if OrganisationController.org_exists(org_name):
+            return g_response("Organisation already exists", 400)
+
+        return org_name
 
     @staticmethod
     def validate_create_task_request(request_body: dict) -> typing.Union[Response, dict]:
@@ -489,12 +425,8 @@ class ValidationController(object):
         :param request_body:    The request body from the update user request
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
-        check_task = _check_task_id(request_body.get('id'), org_id)
-        if isinstance(check_task, Response):
-            return check_task
-
         ret = {
-            'id': request_body.get('id'),
+            'id': _check_task_id(request_body.get('id'), org_id),
             'type': _check_task_type_id(task_type_id=request_body.get('type_id'), should_exist=True),
             'description': _check_task_description(request_body.get('description')),
             'status': _check_task_status(request_body.get('status'), should_exist=True),
@@ -578,25 +510,15 @@ class ValidationController(object):
         return task, task_status
 
     @staticmethod
-    def validate_update_user_settings_request(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_update_user_settings_request(user_id: int, request_body: dict) -> UserSetting:
         """ Validates updating user settings """
-        from app.Controllers import UserController
-        from app.Models import UserSetting
         from decimal import Decimal
-
-        user_id = _check_user_id(request_body.pop('user_id'), should_exist=True)
-        if isinstance(user_id, Response):
-            return user_id
 
         user_setting_obj = UserSetting(user_id=Decimal(user_id))
         for k, v in request_body.items():
             user_setting_obj.__setattr__(k, v)
 
-        return {
-            "org_id": UserController.get_user_by_id(user_id).org_id,
-            "user_id": user_id,
-            "user_settings": user_setting_obj
-        }
+        return user_setting_obj
 
     @staticmethod
     def validate_update_org_settings_request(org_id: int, request_body: dict) -> OrgSetting:

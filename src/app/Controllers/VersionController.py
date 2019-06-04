@@ -1,6 +1,8 @@
-from app import j_response
-from flask import Response
 from os import environ
+
+from flask import Response
+
+from app import j_response
 
 
 class VersionController(object):

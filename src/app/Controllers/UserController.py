@@ -1,24 +1,15 @@
 import json
 import typing
+
+from flask import request, Response
+from sqlalchemy import exists, func
+
 from app import logger, g_response, session_scope, j_response
-from app.Controllers import AuthController
+from app.Controllers import AuthorizationController
 from app.Exceptions import AuthenticationError, AuthorizationError
 from app.Models import User, Notification
 from app.Models.Enums import Events
 from app.Models.RBAC import Operation, Resource, Permission
-from flask import request, Response
-from sqlalchemy import exists, func
-
-
-def _compare_user_orgs(user_resource: User, request_user: User) -> bool:
-    """
-    Checks to see if the user making the request belongs to the same organisation as the user they're
-    affecting. The exception to this rule is for the global superuser account.
-    :param user_resource:   The user affected by the request_user
-    :param request_user:    The user making the request
-    :return:                True if the orgs are equal or false
-    """
-    return True if request_user.org_id == user_resource.org_id or request_user.role == 'ADMIN' else False
 
 
 def _get_user_by_email(email: str) -> User:
@@ -52,6 +43,21 @@ def _get_user_by_id(user_id: int) -> User:
     else:
         return ret
 
+def _get_user(user_identifier: typing.Union[str, int]) -> User:
+    """
+    Gets a user by their id or email
+    :param user_identifier: The user id or email
+    :raises ValueError:     If the user doesn't exist.
+    """
+    if isinstance(user_identifier, str):
+        logger.info("user_identifier is a str so getting user by email")
+        return _get_user_by_email(user_identifier)
+    elif isinstance(user_identifier, int):
+        logger.info("user_identifier is an int so getting user by id")
+        return _get_user_by_id(user_identifier)
+    else:
+        raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
+
 
 class UserController(object):
     @staticmethod
@@ -72,22 +78,6 @@ class UserController(object):
                 raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
 
     @staticmethod
-    def get_user(user_identifier: typing.Union[str, int]) -> User:
-        """
-        Gets a user by their id or email
-        :param user_identifier: The user id or email
-        :raises ValueError:     If the user doesn't exist.
-        """
-        if isinstance(user_identifier, str):
-            logger.info("user_identifier is a str so getting user by email")
-            return _get_user_by_email(user_identifier)
-        elif isinstance(user_identifier, int):
-            logger.info("user_identifier is an int so getting user by id")
-            return _get_user_by_id(user_identifier)
-        else:
-            raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
-
-    @staticmethod
     def get_user_by_email(email: str) -> User:
         return _get_user_by_email(email)
 
@@ -105,7 +95,7 @@ class UserController(object):
             return g_response(str(e), 400)
 
         try:
-            AuthController.authorize_request(
+            AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operation.CREATE,
                 resource=Resource.USER
@@ -193,37 +183,34 @@ class UserController(object):
         logger.info(f"user {user.id} created user {user.as_dict()}")
 
     @staticmethod
-    def user_update(user_id: int, req: request) -> Response:
+    def update_user(req: request) -> Response:
         """ Updates a user, requires the full user object in the response body.  """
-        from app.Controllers import ValidationController
-
-        request_body = req.get_json()
+        from app.Controllers import ValidationController, AuthenticationController
 
         try:
-            user_id = int(user_id)
-        except ValueError:
-            return g_response(f"cannot cast `{user_id}` to int", 400)
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
 
-        valid_user = ValidationController.validate_update_user_request(user_id, request_body)
+        user_attrs = ValidationController.validate_update_user_request(req.get_json())
         # invalid
-        if isinstance(valid_user, Response):
-            return valid_user
+        if isinstance(user_attrs, Response):
+            return user_attrs
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.UPDATE,
-            resource=Resource.USER,
-            resource_org_id=valid_user.get('org_id'),
-            resource_user_id=user_id
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operation.UPDATE,
+                resource=Resource.USER,
+                affected_user_id=user_attrs.get('id')
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
-        user_to_update = UserController.get_user_by_id(user_id)
+        user_to_update = UserController.get_user_by_id(user_attrs.get('id'))
 
         with session_scope():
-            for k, v in valid_user.items():
+            for k, v in user_attrs.items():
                 user_to_update.__setattr__(k, v)
 
         Notification(
@@ -241,79 +228,83 @@ class UserController(object):
         req_user.log(
             operation=Operation.UPDATE,
             resource=Resource.USER,
-            resource_id=user_id
+            resource_id=user_to_update.id
         )
         logger.info(f"user {req_user.id} updated user {user_to_update.as_dict()}")
         return g_response(status=204)
 
     @staticmethod
-    def user_delete(user_id: int, req: request) -> Response:
+    def delete_user(user_id: int, req: request) -> Response:
         """ Deletes a user """
-        from app.Controllers import ValidationController
+        from app.Controllers import AuthenticationController
 
-        valid_user = ValidationController.validate_delete_user_request(user_id)
-        # invalid
-        if isinstance(valid_user, Response):
-            return valid_user
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.DELETE,
-            resource=Resource.USER,
-            resource_org_id=valid_user.org_id
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operation.DELETE,
+                resource=Resource.USER,
+                affected_user_id=user_id
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
+
+        user_to_delete = UserController.get_user_by_id(user_id)
 
         with session_scope():
             Notification(
                 org_id=req_user.org_id,
                 event=Events.user_deleted_user,
                 event_id=req_user.id,
-                event_friendly=f"Deleted user id {valid_user.id}."
+                event_friendly=f"Deleted user id {user_to_delete.id}."
             ).publish()
-            valid_user.anonymize()
+            user_to_delete.anonymize()
 
         req_user.log(
             operation=Operation.DELETE,
             resource=Resource.USER,
-            resource_id=valid_user.id
+            resource_id=user_to_delete.id
         )
-        logger.info(f"user {req_user.id} deleted user id {valid_user.id}")
+        logger.info(f"user {req_user.id} deleted user id {user_to_delete.id}")
         return g_response(status=204)
 
     @staticmethod
-    def user_get(user_identifier: typing.Union[int, str], req: request) -> Response:
+    def get_user(user_identifier: typing.Union[int, str], req: request) -> Response:
         """ Get a single user by email or ID """
-        from app.Controllers import UserController
+        from app.Controllers import AuthenticationController
+
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
 
         # is the identifier an email or user_id?
         try:
             user_identifier = int(user_identifier)
-            logger.info("user_identifier is an id")
         except ValueError:
             from app.Controllers import ValidationController
             validate_identifier = ValidationController.validate_email(user_identifier)
             if isinstance(validate_identifier, Response):
                 return validate_identifier
             else:
-                logger.info("user_identifier is an email")
                 user_identifier = str(user_identifier)
 
-        if UserController.user_exists(user_identifier):
-            user = UserController.get_user(user_identifier)
-            req_user = AuthController.authorize_request(
-                request_headers=req.headers,
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
                 operation=Operation.GET,
                 resource=Resource.USER,
-                resource_user_id=user.id,
-                resource_org_id=user.org_id
+                affected_user_id=user_identifier
             )
-            # no perms
-            if isinstance(req_user, Response):
-                return req_user
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
+        try:
+            user = _get_user(user_identifier)
             req_user.log(
                 operation=Operation.GET,
                 resource=Resource.USER,
@@ -321,28 +312,32 @@ class UserController(object):
             )
             logger.info(f"found user {user.as_dict()}")
             return j_response(user.as_dict())
-        else:
-            logger.info(f"user with id {user_identifier} does not exist")
-            return g_response("User does not exist.", 400)
+        except ValueError as e:
+            return g_response(str(e), 400)
 
     @staticmethod
-    def user_get_all(req: request) -> Response:
+    def get_all_users(req: request) -> Response:
         """
         Get all users
         :param req:     The request object
         :return:
         """
-        from app.Controllers import AuthController
+        from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import User
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.GET,
-            resource=Resource.USERS
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
+
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operation.GET,
+                resource=Resource.USERS
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
         with session_scope() as session:
             users_qry = session.query(User) \
@@ -360,16 +355,21 @@ class UserController(object):
     @staticmethod
     def user_pages(req: request) -> Response:
         """ Returns the pages a user can access """
-        from app.Controllers import AuthController
+        from app.Controllers import AuthorizationController, AuthenticationController
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.GET,
-            resource=Resource.PAGES
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
+
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operation.GET,
+                resource=Resource.PAGES
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
         with session_scope() as session:
             pages_qry = session.query(Permission.resource_id).filter(
@@ -393,16 +393,22 @@ class UserController(object):
     @staticmethod
     def get_user_settings(req: request) -> Response:
         """ Returns the user's settings """
-        from app.Controllers import AuthController, SettingsController
+        from app.Controllers import AuthorizationController, SettingsController, AuthenticationController
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.GET,
-            resource=Resource.USER_SETTINGS
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
+
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operation.GET,
+                resource=Resource.USER_SETTINGS,
+                affected_user_id=req_user.id
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
         req_user.log(
             operation=Operation.GET,
@@ -415,25 +421,27 @@ class UserController(object):
     @staticmethod
     def update_user_settings(req: request) -> Response:
         """ Returns the user's settings """
-        from app.Controllers import AuthController, ValidationController, SettingsController
+        from app.Controllers import AuthorizationController, ValidationController, SettingsController, \
+            AuthenticationController
 
-        valid_user_settings = ValidationController.validate_update_user_settings_request(req.get_json())
-        # invalid
-        if isinstance(valid_user_settings, Response):
-            return valid_user_settings
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.UPDATE,
-            resource=Resource.USER_SETTINGS,
-            resource_org_id=valid_user_settings.get('org_id'),
-            resource_user_id=valid_user_settings.get('user_id')
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operation.UPDATE,
+                resource=Resource.USER_SETTINGS,
+                affected_user_id=req_user.id
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
-        SettingsController.set_user_settings(valid_user_settings.get('user_settings'))
+        user_setting = ValidationController.validate_update_user_settings_request(req_user.id, req.get_json())
+
+        SettingsController.set_user_settings(user_setting)
         req_user.log(
             operation=Operation.UPDATE,
             resource=Resource.USER_SETTINGS,
@@ -445,41 +453,43 @@ class UserController(object):
     @staticmethod
     def get_user_activity(user_identifier: typing.Union[str, int], req: request) -> Response:
         """ Returns the activity for a user """
-        from app.Controllers import UserController
+        from app.Controllers import AuthenticationController
+
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
 
         # is the identifier an email or user_id?
         try:
             user_identifier = int(user_identifier)
-            logger.info("user_identifier is an id")
         except ValueError:
             from app.Controllers import ValidationController
             validate_identifier = ValidationController.validate_email(user_identifier)
             if isinstance(validate_identifier, Response):
                 return validate_identifier
             else:
-                logger.info("user_identifier is an email")
                 user_identifier = str(user_identifier)
 
-        if UserController.user_exists(user_identifier):
-            user = UserController.get_user(user_identifier)
-            req_user = AuthController.authorize_request(
-                request_headers=req.headers,
-                operation=Operation.GET,
-                resource=Resource.USER_ACTIVITY,
-                resource_user_id=user.id,
-                resource_org_id=user.org_id
-            )
-            # no perms
-            if isinstance(req_user, Response):
-                return req_user
+        try:
+            user = _get_user(user_identifier)
+        except ValueError as e:
+            return g_response(str(e), 400)
 
-            req_user.log(
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
                 operation=Operation.GET,
                 resource=Resource.USER_ACTIVITY,
-                resource_id=user.id
+                affected_user_id=user.id
             )
-            logger.info(f"getting activity for user with id {user.id}")
-            return j_response(user.activity())
-        else:
-            logger.info(f"user with id {user_identifier} does not exist")
-            return g_response("User does not exist.", 400)
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
+
+        req_user.log(
+            operation=Operation.GET,
+            resource=Resource.USER_ACTIVITY,
+            resource_id=user.id
+        )
+        logger.info(f"getting activity for user with id {user.id}")
+        return j_response(user.activity())

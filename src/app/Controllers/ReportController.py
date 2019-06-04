@@ -217,7 +217,7 @@ def delays_per_task(org_id: int) -> list:
     return clean_qry(qry)
 
 
-class Reports(object):
+class ReportController(object):
     @staticmethod
     def get_all(req: request) -> Response:
         """ Get all reports """

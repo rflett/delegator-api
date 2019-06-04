@@ -684,6 +684,5 @@ class TaskController(object):
             )
             logger.info(f"getting activity for task with id {task.id}")
             return j_response(task.activity())
-        except ValueError:
-            logger.info(f"task with id {task_identifier} does not exist")
-            return g_response("Task does not exist.", 400)
+        except ValueError as e:
+            return g_response(str(e), 400)

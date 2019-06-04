@@ -120,7 +120,8 @@ class OrganisationController(object):
         SettingsController.set_org_settings(org_setting)
         req_user.log(
             operation=Operation.UPDATE,
-            resource=Resource.ORG_SETTINGS
+            resource=Resource.ORG_SETTINGS,
+            resource_id=req_user.org_id
         )
         logger.info(f"user {req_user.id} updated settings for org {req_user.org_id}")
         return g_response(status=204)
