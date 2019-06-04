@@ -179,7 +179,7 @@ def create_task_type():
     return TaskTypeController.create_task_type(request)
 
 
-@app.route('/tasks/types/<task_type_id>', methods=['DELETE'])
+@app.route('/tasks/types/<int:task_type_id>', methods=['DELETE'])
 @requires_jwt
 @safe_exceptions
 def disable_task_type(task_type_id):
@@ -207,11 +207,11 @@ def get_tasks():
     return TaskController.get_tasks(request)
 
 
-@app.route('/task/<int:task_id>', methods=['PUT'])
+@app.route('/task', methods=['PUT'])
 @requires_jwt
 @safe_exceptions
-def update_task(task_id):
-    return TaskController.update_task(task_id, request)
+def update_task():
+    return TaskController.update_task(request)
 
 
 @app.route('/task/<int:task_id>', methods=['GET'])
