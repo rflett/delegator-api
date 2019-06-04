@@ -8,8 +8,7 @@ from app import session_scope, logger, g_response, app, j_response
 from app.Controllers import AuthenticationController, AuthorizationController
 from app.Exceptions import AuthorizationError, AuthenticationError
 from app.Models import User, ActiveUser
-from app.Models.Enums import Operations
-from app.Models.RBAC import Resource
+from app.Models.Enums import Operations, Resources
 
 
 def _purge_inactive_users() -> None:
@@ -94,7 +93,7 @@ class ActiveUserController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.GET,
-                resource=Resource.ACTIVE_USERS
+                resource=Resources.ACTIVE_USERS
             )
         except AuthorizationError as e:
             return g_response(str(e), 400)
@@ -108,7 +107,7 @@ class ActiveUserController(object):
         active_users = [au.as_dict() for au in active_users_qry]
         req_user.log(
             operation=Operations.GET,
-            resource=Resource.ACTIVE_USERS
+            resource=Resources.ACTIVE_USERS
         )
         logger.debug(f"found {len(active_users)} active users: {json.dumps(active_users)}")
         return j_response(active_users)

@@ -8,8 +8,8 @@ from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthorizationController
 from app.Exceptions import AuthenticationError, AuthorizationError
 from app.Models import User, Notification
-from app.Models.Enums import Events, Operations
-from app.Models.RBAC import Resource, Permission
+from app.Models.Enums import Events, Operations, Resources
+from app.Models.RBAC import Permission
 
 
 def _get_user_by_email(email: str) -> User:
@@ -99,7 +99,7 @@ class UserController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.CREATE,
-                resource=Resource.USER
+                resource=Resources.USER
             )
         except AuthorizationError as e:
             return g_response(str(e), 400)
@@ -127,7 +127,7 @@ class UserController(object):
 
         req_user.log(
             operation=Operations.CREATE,
-            resource=Resource.USER,
+            resource=Resources.USER,
             resource_id=user.id
         )
         Notification(
@@ -166,12 +166,12 @@ class UserController(object):
 
         user.log(
             operation=Operations.CREATE,
-            resource=Resource.ORGANISATION,
+            resource=Resources.ORGANISATION,
             resource_id=org_id
         )
         user.log(
             operation=Operations.CREATE,
-            resource=Resource.USER,
+            resource=Resources.USER,
             resource_id=user.id
         )
         # publish event
@@ -202,7 +202,7 @@ class UserController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.UPDATE,
-                resource=Resource.USER,
+                resource=Resources.USER,
                 affected_user_id=user_attrs.get('id')
             )
         except AuthorizationError as e:
@@ -228,7 +228,7 @@ class UserController(object):
         ).publish()
         req_user.log(
             operation=Operations.UPDATE,
-            resource=Resource.USER,
+            resource=Resources.USER,
             resource_id=user_to_update.id
         )
         logger.info(f"user {req_user.id} updated user {user_to_update.as_dict()}")
@@ -248,7 +248,7 @@ class UserController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.DELETE,
-                resource=Resource.USER,
+                resource=Resources.USER,
                 affected_user_id=user_id
             )
         except AuthorizationError as e:
@@ -267,7 +267,7 @@ class UserController(object):
 
         req_user.log(
             operation=Operations.DELETE,
-            resource=Resource.USER,
+            resource=Resources.USER,
             resource_id=user_to_delete.id
         )
         logger.info(f"user {req_user.id} deleted user id {user_to_delete.id}")
@@ -298,7 +298,7 @@ class UserController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.GET,
-                resource=Resource.USER,
+                resource=Resources.USER,
                 affected_user_id=user_identifier
             )
         except AuthorizationError as e:
@@ -308,7 +308,7 @@ class UserController(object):
             user = _get_user(user_identifier)
             req_user.log(
                 operation=Operations.GET,
-                resource=Resource.USER,
+                resource=Resources.USER,
                 resource_id=user.id
             )
             logger.info(f"found user {user.as_dict()}")
@@ -335,7 +335,7 @@ class UserController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.GET,
-                resource=Resource.USERS
+                resource=Resources.USERS
             )
         except AuthorizationError as e:
             return g_response(str(e), 400)
@@ -348,7 +348,7 @@ class UserController(object):
         users = [u.fat_dict() for u in users_qry]
         req_user.log(
             operation=Operations.GET,
-            resource=Resource.USERS
+            resource=Resources.USERS
         )
         logger.info(f"found {len(users)} users: {json.dumps(users)}")
         return j_response(users)
@@ -367,7 +367,7 @@ class UserController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.GET,
-                resource=Resource.PAGES
+                resource=Resources.PAGES
             )
         except AuthorizationError as e:
             return g_response(str(e), 400)
@@ -386,7 +386,7 @@ class UserController(object):
 
             req_user.log(
                 operation=Operations.GET,
-                resource=Resource.PAGES
+                resource=Resources.PAGES
             )
             logger.info(f"found {len(pages)} pages: {pages}")
             return j_response(sorted(pages))
@@ -405,7 +405,7 @@ class UserController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.GET,
-                resource=Resource.USER_SETTINGS,
+                resource=Resources.USER_SETTINGS,
                 affected_user_id=req_user.id
             )
         except AuthorizationError as e:
@@ -413,7 +413,7 @@ class UserController(object):
 
         req_user.log(
             operation=Operations.GET,
-            resource=Resource.USER_SETTINGS,
+            resource=Resources.USER_SETTINGS,
             resource_id=req_user.id
         )
         logger.info(f"got user settings for {req_user.id}")
@@ -434,7 +434,7 @@ class UserController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.UPDATE,
-                resource=Resource.USER_SETTINGS,
+                resource=Resources.USER_SETTINGS,
                 affected_user_id=req_user.id
             )
         except AuthorizationError as e:
@@ -445,7 +445,7 @@ class UserController(object):
         SettingsController.set_user_settings(user_setting)
         req_user.log(
             operation=Operations.UPDATE,
-            resource=Resource.USER_SETTINGS,
+            resource=Resources.USER_SETTINGS,
             resource_id=req_user.id
         )
         logger.info(f"updated user {req_user.id} settings")
@@ -481,7 +481,7 @@ class UserController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.GET,
-                resource=Resource.USER_ACTIVITY,
+                resource=Resources.USER_ACTIVITY,
                 affected_user_id=user.id
             )
         except AuthorizationError as e:
@@ -489,7 +489,7 @@ class UserController(object):
 
         req_user.log(
             operation=Operations.GET,
-            resource=Resource.USER_ACTIVITY,
+            resource=Resources.USER_ACTIVITY,
             resource_id=user.id
         )
         logger.info(f"getting activity for user with id {user.id}")

@@ -6,8 +6,7 @@ from flask import request, Response
 import app.Exceptions
 from app import r_cache, j_response, logger, session_scope, g_response, app  # noqa
 from app.Controllers import AuthenticationController, AuthorizationController
-from app.Models.Enums import Operations
-from app.Models.RBAC import Resource
+from app.Models.Enums import Operations, Resources
 
 
 def clean_qry(qry) -> list:
@@ -231,7 +230,7 @@ class ReportController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.GET,
-                resource=Resource.REPORTS_PAGE
+                resource=Resources.REPORTS_PAGE
             )
         except app.Exceptions.AuthorizationError as e:
             return g_response(str(e), 400)

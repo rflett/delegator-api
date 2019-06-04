@@ -5,8 +5,7 @@ from sqlalchemy import and_
 
 import app.Exceptions
 from app import logger, session_scope, j_response, g_response
-from app.Models.Enums import Operations
-from app.Models.RBAC import Resource
+from app.Models.Enums import Operations, Resources
 
 
 class RoleController(object):
@@ -30,7 +29,7 @@ class RoleController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.GET,
-                resource=Resource.ROLES
+                resource=Resources.ROLES
             )
         except app.Exceptions.AuthorizationError as e:
             return g_response(str(e), 400)
@@ -52,7 +51,7 @@ class RoleController(object):
         roles = [r.as_dict() for r in roles_qry]
         req_user.log(
             operation=Operations.GET,
-            resource=Resource.ROLES
+            resource=Resources.ROLES
         )
         logger.debug(f"found {len(roles)} roles: {json.dumps(roles)}")
         return j_response(roles)

@@ -6,8 +6,7 @@ from sqlalchemy import exists, func
 from app import session_scope, logger, g_response, j_response
 from app.Exceptions import AuthenticationError, AuthorizationError
 from app.Models import Organisation, TaskType
-from app.Models.Enums import Operations
-from app.Models.RBAC import Resource
+from app.Models.Enums import Operations, Resources
 
 
 class OrganisationController(object):
@@ -84,14 +83,14 @@ class OrganisationController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.GET,
-                resource=Resource.ORG_SETTINGS
+                resource=Resources.ORG_SETTINGS
             )
         except AuthorizationError as e:
             return g_response(str(e), 400)
 
         req_user.log(
             operation=Operations.GET,
-            resource=Resource.ORG_SETTINGS
+            resource=Resources.ORG_SETTINGS
         )
         logger.info(f"user {req_user.id} got settings for org {req_user.org_id}")
         return j_response(SettingsController.get_org_settings(req_user.org_id).as_dict())
@@ -111,7 +110,7 @@ class OrganisationController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.UPDATE,
-                resource=Resource.ORG_SETTINGS
+                resource=Resources.ORG_SETTINGS
             )
         except AuthorizationError as e:
             return g_response(str(e), 400)
@@ -121,7 +120,7 @@ class OrganisationController(object):
         SettingsController.set_org_settings(org_setting)
         req_user.log(
             operation=Operations.UPDATE,
-            resource=Resource.ORG_SETTINGS,
+            resource=Resources.ORG_SETTINGS,
             resource_id=req_user.org_id
         )
         logger.info(f"user {req_user.id} updated settings for org {req_user.org_id}")

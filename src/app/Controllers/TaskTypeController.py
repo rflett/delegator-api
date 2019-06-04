@@ -9,8 +9,7 @@ from app import logger, session_scope, g_response, j_response
 from app.Exceptions import AuthorizationError, AuthenticationError
 from app.Controllers import AuthorizationController
 from app.Models import TaskType, TaskTypeEscalation, Notification
-from app.Models.Enums import Events, Operations
-from app.Models.RBAC import Resource
+from app.Models.Enums import Events, Operations, Resources
 
 
 def _get_task_type_escalation(task_type_id: int, display_order: int):
@@ -122,7 +121,7 @@ class TaskTypeController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.GET,
-                resource=Resource.TASK_TYPES
+                resource=Resources.TASK_TYPES
             )
         except AuthorizationError as e:
             return g_response(str(e), 400)
@@ -134,7 +133,7 @@ class TaskTypeController(object):
         logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
         req_user.log(
             operation=Operations.GET,
-            resource=Resource.TASK_TYPES
+            resource=Resources.TASK_TYPES
         )
         return j_response(task_types)
 
@@ -153,7 +152,7 @@ class TaskTypeController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.CREATE,
-                resource=Resource.TASK_TYPE
+                resource=Resources.TASK_TYPE
             )
         except AuthorizationError as e:
             return g_response(str(e), 400)
@@ -185,7 +184,7 @@ class TaskTypeController(object):
             ).publish()
             req_user.log(
                 operation=Operations.CREATE,
-                resource=Resource.TASK_TYPE,
+                resource=Resources.TASK_TYPE,
                 resource_id=task_type.id
             )
             logger.info(f"created task type {task_type.as_dict()}")
@@ -197,7 +196,7 @@ class TaskTypeController(object):
                     AuthorizationController.authorize_request(
                         auth_user=req_user,
                         operation=Operations.ENABLE,
-                        resource=Resource.TASK_TYPE
+                        resource=Resources.TASK_TYPE
                     )
                 except AuthorizationError as e:
                     return g_response(str(e), 400)
@@ -211,7 +210,7 @@ class TaskTypeController(object):
             ).publish()
             req_user.log(
                 operation=Operations.ENABLE,
-                resource=Resource.TASK_TYPE,
+                resource=Resources.TASK_TYPE,
                 resource_id=validate_res.id
             )
             logger.info(f"enabled task type {validate_res.as_dict()}")
@@ -253,7 +252,7 @@ class TaskTypeController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.UPSERT,
-                resource=Resource.TASK_TYPE_ESCALATION
+                resource=Resources.TASK_TYPE_ESCALATION
             )
         except AuthorizationError as e:
             return g_response(str(e), 400)
@@ -286,7 +285,7 @@ class TaskTypeController(object):
                 ).publish()
                 req_user.log(
                     operation=Operations.CREATE,
-                    resource=Resource.TASK_TYPE_ESCALATION,
+                    resource=Resources.TASK_TYPE_ESCALATION,
                     resource_id=task_type_id
                 )
                 logger.info(f"created task type escalation {new_escalation.as_dict()}")
@@ -315,7 +314,7 @@ class TaskTypeController(object):
                     ).publish()
                     req_user.log(
                         operation=Operations.UPDATE,
-                        resource=Resource.TASK_TYPE_ESCALATION,
+                        resource=Resources.TASK_TYPE_ESCALATION,
                         resource_id=task_type_id
                     )
                 logger.info(f"updated task type escalation {escalation_to_update.as_dict()}")
@@ -361,7 +360,7 @@ class TaskTypeController(object):
             AuthorizationController.authorize_request(
                 auth_user=req_user,
                 operation=Operations.DISABLE,
-                resource=Resource.TASK_TYPE
+                resource=Resources.TASK_TYPE
             )
         except AuthorizationError as e:
             return g_response(str(e), 400)
@@ -387,7 +386,7 @@ class TaskTypeController(object):
         ).publish()
         req_user.log(
             operation=Operations.DISABLE,
-            resource=Resource.TASK_TYPE,
+            resource=Resources.TASK_TYPE,
             resource_id=valid_dtt.id
         )
         logger.info(f"disabled task type {valid_dtt.as_dict()}")
