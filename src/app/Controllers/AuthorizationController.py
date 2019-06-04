@@ -1,6 +1,7 @@
 import json
 import random
 import string
+import typing
 from app import logger, g_response, session_scope
 from app.Controllers import ValidationController
 from app.Exceptions import AuthorizationError
@@ -9,18 +10,25 @@ from app.Models.RBAC import ResourceScope
 from flask import Response, request
 
 
-class AuthController(object):
+class AuthorizationController(object):
     @staticmethod
-    def authorize_request(auth_user: User, operation: str, resource: str, scope: str = ResourceScope.ORG) -> None:
+    def authorize_request(
+            auth_user: User,
+            operation: str,
+            resource: str,
+            affected_user_id: typing.Union[int, None] = None
+    ) -> None:
         """
         Checks to see if the user in the request has authorization to perform the request operation on a
         particular resource.
         :param auth_user:           The user to authorize
         :param operation:           The operation to perform
         :param resource:            The resource to affect
-        :param scope:               The scope of the required permission (SELF or ORG)
+        :param affected_user_id:
         :raises:                    AuthorizationError if the user is unauthorized
         """
+        from app.Controllers import UserController
+
         # mark user as active
         auth_user.is_active()
 
@@ -30,11 +38,24 @@ class AuthController(object):
             logger.info(f"user id {auth_user.id} cannot perform {operation} on {resource}")
             raise AuthorizationError(f"No permissions to {operation} {resource}")
 
-        if user_permission_scope != scope:
-            logger.info(f"user id {auth_user.id} cannot perform {operation} on {resource} because their scope "
-                        f"is {user_permission_scope} when it needs to be {scope}")
-            raise AuthorizationError(f"user id {auth_user.id} cannot perform {operation} on {resource} because "
-                                     f"their scope is {user_permission_scope} when it needs to be {scope}")
+        if user_permission_scope == ResourceScope.SELF:
+            if auth_user.id != affected_user_id:
+                msg = f"user id {auth_user.id} cannot perform {operation} on {resource} because their scope " \
+                    f"is {user_permission_scope} but the affected user is {affected_user_id}"
+                logger.info(msg)
+                raise AuthorizationError(msg)
+        elif user_permission_scope == ResourceScope.ORG:
+            if affected_user_id is not None:
+                try:
+                    affected_user_org_id = UserController.get_user_by_id(affected_user_id).org_id
+                except ValueError as e:
+                    raise AuthorizationError(e)
+                if auth_user.org_id != affected_user_org_id:
+                    msg = f"user id {auth_user.id} cannot perform {operation} on {resource} because their scope " \
+                        f"is {user_permission_scope} but the affected user is {affected_user_id} which is " \
+                        f"in org {affected_user_org_id}"
+                    logger.info(msg)
+                    raise AuthorizationError(msg)
 
     @staticmethod
     def reset_password(req: request):

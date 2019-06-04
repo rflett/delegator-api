@@ -1,4 +1,4 @@
-from app.Controllers.AuthController import AuthController
+from app.Controllers.AuthorizationController import AuthorizationController
 from app.Controllers.UserController import UserController
 from app.Controllers.OrganisationController import OrganisationController
 from app.Controllers.ValidationController import ValidationController
@@ -12,7 +12,7 @@ from app.Controllers.TaskTypeController import TaskTypeController
 from app.Controllers.AuthenticationController import AuthenticationController
 
 __all__ = [
-    AuthController,
+    AuthorizationController,
     UserController,
     OrganisationController,
     ValidationController,
