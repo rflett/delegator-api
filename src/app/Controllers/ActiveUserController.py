@@ -5,7 +5,7 @@ import typing
 from flask import request, Response
 
 from app import session_scope, logger, g_response, app, j_response
-from app.Controllers import AuthenticationController, AuthorizationController
+from app.Controllers import AuthenticationController
 from app.Exceptions import AuthorizationError, AuthenticationError
 from app.Models import User, ActiveUser
 from app.Models.Enums import Operations, Resources
