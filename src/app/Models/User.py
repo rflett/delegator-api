@@ -6,7 +6,7 @@ import os
 import random
 import string
 import typing
-from app import db, session_scope, logger, user_activity_table
+from app import db, session_scope, logger, user_activity_table, app
 from app.Models import FailedLogin, Organisation
 from app.Models.RBAC import Role, Log, Permission
 from boto3.dynamodb.conditions import Key
@@ -209,12 +209,12 @@ class User(db.Model):
         if self.disabled is None:
             disabled = None
         else:
-            disabled = self.disabled.strftime("%Y-%m-%d %H:%M:%S%z")
+            disabled = self.disabled.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         if self.deleted is None:
             deleted = None
         else:
-            deleted = self.deleted.strftime("%Y-%m-%d %H:%M:%S%z")
+            deleted = self.deleted.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         return {
             "id": self.id,

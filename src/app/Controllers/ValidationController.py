@@ -99,7 +99,7 @@ def _check_user_disabled(disabled: typing.Optional[datetime.datetime]) \
         -> typing.Union[None, datetime.datetime, Response]:
     if disabled is not None:
         try:
-            disabled = datetime.datetime.strptime(disabled, "%Y-%m-%dT%H:%M:%S%z")
+            disabled = datetime.datetime.strptime(disabled, app.config['REQUEST_DATE_FORMAT'])
             return disabled
         except ValueError:
             return g_response("Couldn't convert disabled to datetime.datetime", 400)

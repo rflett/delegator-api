@@ -43,6 +43,7 @@ def _get_user_by_id(user_id: int) -> User:
     else:
         return ret
 
+
 def _get_user(user_identifier: typing.Union[str, int]) -> User:
     """
     Gets a user by their id or email

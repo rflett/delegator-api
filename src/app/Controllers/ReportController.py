@@ -4,7 +4,7 @@ from collections import namedtuple
 from flask import request, Response
 
 import app.Exceptions
-from app import r_cache, j_response, logger, session_scope, g_response  # noqa
+from app import r_cache, j_response, logger, session_scope, g_response, app  # noqa
 from app.Models.RBAC import Operation, Resource
 from app.Controllers import AuthenticationController, AuthorizationController
 
@@ -16,7 +16,7 @@ def clean_qry(qry) -> list:
     for record in records:
         for k, v in record.items():
             if type(v) == datetime.datetime:
-                record[k] = v.strftime("%Y-%m-%d %H:%M:%S%z")
+                record[k] = v.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
     return records
 
