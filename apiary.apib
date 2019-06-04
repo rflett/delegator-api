@@ -113,9 +113,7 @@ Overview of the BackBurner API.
     + Body
     
             {
-              "org_name": "BackBurner",
               "email": "james@backburner.com.au",
-              "password": "xxxsecretxxx",
               "first_name": "James",
               "last_name": "Turner",
               "role_name": "USER",
@@ -170,6 +168,26 @@ Overview of the BackBurner API.
             ]
 
 
+### Update User [PUT]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+            
+    + Body
+    
+            {
+                "id": 2,
+                "first_name": "James",
+                "last_name": "W. Turner",
+                "role_name": "MANAGER",
+                "job_title": "Promoted from Scrub"
+            }
+        
++ Response 204 (application/json)
+
+
 ## User [/user/{id}]
 
 + Parameters
@@ -196,28 +214,6 @@ Overview of the BackBurner API.
               "job_title": "DevOps",
               "deleted": null
             }
-
-
-### Update User [PUT]
-
-+ Request (application/json)
-    + Headers
-            
-            Authorization: Bearer JWT
-            
-    + Body
-    
-            {
-              "org_id": 1,
-              "email": "james@backburner.com.au",
-              "first_name": "James",
-              "last_name": "W. Turner",
-              "role_name": "MANAGER",
-              "job_title": "Lead Developer",
-              "disabled": null
-            }
-        
-+ Response 204 (application/json)
 
 
 ## Delete User [DELETE]
@@ -402,28 +398,6 @@ Overview of the BackBurner API.
 + Parameters
     + task_id - A task id
 
-### Update Task [PUT]
-
-+ Request (application/json)
-    + Headers
-            
-            Authorization: Bearer JWT
-            
-    + Body
-    
-            {
-              "org_id": 1,
-              "type_id": 1,
-              "description": "Hello World",
-              "status": "INPROGRESS",
-              "time_estimate": 300,
-              "due_time": "2019-03-17T21:00:00+10:00",
-              "assignee": 2,
-              "priority": 1
-            }
-            
-+ Response 204 (application/json)
-
 ### Get Task [GET]
 
 + Request (application/json)
@@ -575,6 +549,28 @@ Overview of the BackBurner API.
                   }
               }
             ]
+
+### Update Task [PUT]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+            
+    + Body
+    
+            {
+                "id": 1,
+                "type_id": 1,
+                "description": "Hello World",
+                "status": "INPROGRESS",
+                "time_estimate": 300,
+                "due_time": "2019-10-31T21:00:00Z+10:00",
+                "assignee": 2,
+                "priority": 1
+            }
+            
++ Response 204 (application/json)
 
 
 ## Task Assigning [/task/assign]
@@ -786,8 +782,7 @@ Overview of the BackBurner API.
     + Body
     
             {
-              "label": "Task Type Label",
-              "org_id": 1
+              "label": "Task Type Label"
             }
         
 + Response 201 (application/json)
@@ -822,19 +817,16 @@ Overview of the BackBurner API.
 
             {
                 "task_type_id": 1,
-                "org_id": 1,
                 "escalation_policies": [
                     {
-                        "task_type_id": 1,
                         "display_order": 1,
-                        "delay": 600,
+                        "delay": 30,
                         "from_priority": 0,
                         "to_priority": 1
                     },
                     {
-                        "task_type_id": 1,
-                        "display_order": 3,
-                        "delay": 300,
+                        "display_order": 2,
+                        "delay": 60,
                         "from_priority": 1,
                         "to_priority": 2
                     }
