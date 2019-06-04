@@ -3,7 +3,6 @@ from app import db
 
 SELF = 'SELF'
 ORG = 'ORG'
-GLOBAL = 'GLOBAL'
 
 
 class ResourceScope(db.Model):

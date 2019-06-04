@@ -175,4 +175,4 @@ class Task(db.Model):
     def label(self) -> str:
         """ Gets the label of its task type """
         from app.Controllers import TaskTypeController
-        return TaskTypeController.get_task_type_by_id(self.type).label
+        return TaskTypeController.get_task_type_by_id(self.org_id, self.type).label
