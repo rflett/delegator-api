@@ -2,9 +2,6 @@ import datetime
 
 from app import db
 
-SELF = 'SELF'
-ORG = 'ORG'
-
 
 class ResourceScope(db.Model):
     __tablename__ = "rbac_resource_scopes"

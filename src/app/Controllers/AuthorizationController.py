@@ -6,7 +6,7 @@ from app import logger, g_response, session_scope
 from app.Controllers import ValidationController
 from app.Exceptions import AuthorizationError
 from app.Models import User
-from app.Models.RBAC import ResourceScope
+from app.Models.Enums import ResourceScopes
 from flask import Response, request
 
 
@@ -38,13 +38,13 @@ class AuthorizationController(object):
             logger.info(f"user id {auth_user.id} cannot perform {operation} on {resource}")
             raise AuthorizationError(f"No permissions to {operation} {resource}")
 
-        if user_permission_scope == ResourceScope.SELF:
+        if user_permission_scope == ResourceScopes.SELF:
             if auth_user.id != affected_user_id:
                 msg = f"user id {auth_user.id} cannot perform {operation} on {resource} because their scope " \
                     f"is {user_permission_scope} but the affected user is {affected_user_id}"
                 logger.info(msg)
                 raise AuthorizationError(msg)
-        elif user_permission_scope == ResourceScope.ORG:
+        elif user_permission_scope == ResourceScopes.ORG:
             if affected_user_id is not None:
                 try:
                     affected_user_org_id = UserController.get_user_by_id(affected_user_id).org_id
