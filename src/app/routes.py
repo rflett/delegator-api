@@ -2,7 +2,7 @@ import traceback
 from app import app, g_response, logger
 from functools import wraps
 from flask import Response, request
-from app.Controllers import AuthController, UserController, SignupController, TaskController, VersionController, \
+from app.Controllers import AuthorizationController, UserController, SignupController, TaskController, VersionController, \
     ActiveUserController, OrganisationController, TaskTypeController, AuthenticationController
 from app.Controllers.RBAC import RoleController
 from app.Controllers.Reporting import Reports
@@ -65,7 +65,7 @@ def logout():
 @app.route('/reset_password', methods=['POST'])
 @safe_exceptions
 def reset_password():
-    return AuthController.reset_password(request)
+    return AuthorizationController.reset_password(request)
 
 
 @app.route('/signup', methods=['POST'])
