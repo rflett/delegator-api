@@ -9,8 +9,8 @@ from app import logger, session_scope, g_response, j_response
 from app.Exceptions import AuthorizationError, AuthenticationError
 from app.Controllers import AuthorizationController
 from app.Models import TaskType, TaskTypeEscalation, Notification
-from app.Models.Enums import Events
-from app.Models.RBAC import Operation, Resource
+from app.Models.Enums import Events, Operations
+from app.Models.RBAC import Resource
 
 
 def _get_task_type_escalation(task_type_id: int, display_order: int):
@@ -121,7 +121,7 @@ class TaskTypeController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.GET,
+                operation=Operations.GET,
                 resource=Resource.TASK_TYPES
             )
         except AuthorizationError as e:
@@ -133,7 +133,7 @@ class TaskTypeController(object):
         task_types = [tt.fat_dict() for tt in task_type_query]
         logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
         req_user.log(
-            operation=Operation.GET,
+            operation=Operations.GET,
             resource=Resource.TASK_TYPES
         )
         return j_response(task_types)
@@ -152,7 +152,7 @@ class TaskTypeController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.CREATE,
+                operation=Operations.CREATE,
                 resource=Resource.TASK_TYPE
             )
         except AuthorizationError as e:
@@ -184,7 +184,7 @@ class TaskTypeController(object):
                 event_friendly=f"Created task type {task_type.label}."
             ).publish()
             req_user.log(
-                operation=Operation.CREATE,
+                operation=Operations.CREATE,
                 resource=Resource.TASK_TYPE,
                 resource_id=task_type.id
             )
@@ -196,7 +196,7 @@ class TaskTypeController(object):
                 try:
                     AuthorizationController.authorize_request(
                         auth_user=req_user,
-                        operation=Operation.ENABLE,
+                        operation=Operations.ENABLE,
                         resource=Resource.TASK_TYPE
                     )
                 except AuthorizationError as e:
@@ -210,7 +210,7 @@ class TaskTypeController(object):
                 event_id=validate_res.id
             ).publish()
             req_user.log(
-                operation=Operation.ENABLE,
+                operation=Operations.ENABLE,
                 resource=Resource.TASK_TYPE,
                 resource_id=validate_res.id
             )
@@ -252,7 +252,7 @@ class TaskTypeController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.UPSERT,
+                operation=Operations.UPSERT,
                 resource=Resource.TASK_TYPE_ESCALATION
             )
         except AuthorizationError as e:
@@ -285,7 +285,7 @@ class TaskTypeController(object):
                     f"{_get_task_type_by_id(req_user.org_id, task_type_id).label}."
                 ).publish()
                 req_user.log(
-                    operation=Operation.CREATE,
+                    operation=Operations.CREATE,
                     resource=Resource.TASK_TYPE_ESCALATION,
                     resource_id=task_type_id
                 )
@@ -314,7 +314,7 @@ class TaskTypeController(object):
                         f"{_get_task_type_by_id(req_user.org_id, task_type_id).label}."
                     ).publish()
                     req_user.log(
-                        operation=Operation.UPDATE,
+                        operation=Operations.UPDATE,
                         resource=Resource.TASK_TYPE_ESCALATION,
                         resource_id=task_type_id
                     )
@@ -360,7 +360,7 @@ class TaskTypeController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.DISABLE,
+                operation=Operations.DISABLE,
                 resource=Resource.TASK_TYPE
             )
         except AuthorizationError as e:
@@ -386,7 +386,7 @@ class TaskTypeController(object):
             event_friendly=f"Disabled task type {valid_dtt.label}"
         ).publish()
         req_user.log(
-            operation=Operation.DISABLE,
+            operation=Operations.DISABLE,
             resource=Resource.TASK_TYPE,
             resource_id=valid_dtt.id
         )

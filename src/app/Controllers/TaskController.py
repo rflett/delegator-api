@@ -9,8 +9,8 @@ from app import logger, session_scope, g_response, j_response
 from app.Exceptions import AuthorizationError, AuthenticationError
 from app.Controllers import AuthorizationController
 from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Notification, TaskType
-from app.Models.Enums import TaskStatuses, Events
-from app.Models.RBAC import Operation, Resource
+from app.Models.Enums import TaskStatuses, Events, Operations
+from app.Models.RBAC import Resource
 
 
 def _transition_task(task: Task, status: str, req_user: User) -> None:
@@ -51,7 +51,7 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
         event_friendly=f"Transitioned {task.label()} from {old_status.lower()} to {status.lower()}."
     ).publish()
     req_user.log(
-        operation=Operation.TRANSITION,
+        operation=Operations.TRANSITION,
         resource=Resource.TASK,
         resource_id=task.id
     )
@@ -84,7 +84,7 @@ def _assign_task(task: Task, assignee: int, req_user: User) -> None:
         event_friendly=f"Assigned to {task.label()} by {req_user.name()}."
     ).publish()
     req_user.log(
-        operation=Operation.ASSIGN,
+        operation=Operations.ASSIGN,
         resource=Resource.TASK,
         resource_id=task.id
     )
@@ -120,7 +120,7 @@ def _unassign_task(task: Task, req_user: User) -> None:
             event_friendly=f"Unassigned from {task.label()} by {req_user.name()}."
         ).publish()
         req_user.log(
-            operation=Operation.ASSIGN,
+            operation=Operations.ASSIGN,
             resource=Resource.TASK,
             resource_id=task.id
         )
@@ -183,7 +183,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.GET,
+                operation=Operations.GET,
                 resource=Resource.TASK_PRIORITIES
             )
         except AuthorizationError as e:
@@ -195,7 +195,7 @@ class TaskController(object):
         task_priorities = [tp.as_dict() for tp in task_pr_qry]
         logger.debug(f"found {len(task_priorities)} task_priorities: {json.dumps(task_priorities)}")
         req_user.log(
-            operation=Operation.GET,
+            operation=Operations.GET,
             resource=Resource.TASK_PRIORITIES
         )
         return j_response(task_priorities)
@@ -213,7 +213,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.GET,
+                operation=Operations.GET,
                 resource=Resource.TASK_STATUSES
             )
         except AuthorizationError as e:
@@ -225,7 +225,7 @@ class TaskController(object):
         task_statuses = [ts.as_dict() for ts in task_st_qry]
         logger.debug(f"found {len(task_statuses)} task statuses: {json.dumps(task_statuses)}")
         req_user.log(
-            operation=Operation.GET,
+            operation=Operations.GET,
             resource=Resource.TASK_STATUSES
         )
         return j_response(task_statuses)
@@ -243,7 +243,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.GET,
+                operation=Operations.GET,
                 resource=Resource.TASK
             )
         except AuthorizationError as e:
@@ -253,7 +253,7 @@ class TaskController(object):
             task = TaskController.get_task_by_id(task_id, req_user.org_id)
             logger.debug(f"found task {task.fat_dict()}")
             req_user.log(
-                operation=Operation.GET,
+                operation=Operations.GET,
                 resource=Resource.TASK,
                 resource_id=task.id
             )
@@ -276,7 +276,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.GET,
+                operation=Operations.GET,
                 resource=Resource.TASKS
             )
         except AuthorizationError as e:
@@ -307,7 +307,7 @@ class TaskController(object):
 
         logger.debug(f"found {len(tasks)} tasks")
         req_user.log(
-            operation=Operation.GET,
+            operation=Operations.GET,
             resource=Resource.TASKS
         )
         return j_response(tasks)
@@ -329,7 +329,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.CREATE,
+                operation=Operations.CREATE,
                 resource=Resource.TASK,
             )
         except AuthorizationError as e:
@@ -369,7 +369,7 @@ class TaskController(object):
             event_friendly=f"Created task {task.label()}."
         ).publish()
         req_user.log(
-            operation=Operation.CREATE,
+            operation=Operations.CREATE,
             resource=Resource.TASK,
             resource_id=task.id
         )
@@ -380,7 +380,7 @@ class TaskController(object):
             try:
                 AuthorizationController.authorize_request(
                     auth_user=req_user,
-                    operation=Operation.ASSIGN,
+                    operation=Operations.ASSIGN,
                     resource=Resource.TASK,
                     affected_user_id=task_attrs.get('assignee')
                 )
@@ -408,7 +408,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.UPDATE,
+                operation=Operations.UPDATE,
                 resource=Resource.TASK
             )
         except AuthorizationError as e:
@@ -428,7 +428,7 @@ class TaskController(object):
             try:
                 AuthorizationController.authorize_request(
                     auth_user=req_user,
-                    operation=Operation.ASSIGN,
+                    operation=Operations.ASSIGN,
                     resource=Resource.TASK,
                     affected_user_id=assignee
                 )
@@ -479,7 +479,7 @@ class TaskController(object):
         ).publish()
 
         req_user.log(
-            operation=Operation.UPDATE,
+            operation=Operations.UPDATE,
             resource=Resource.TASK,
             resource_id=task_to_update.id
         )
@@ -506,7 +506,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.ASSIGN,
+                operation=Operations.ASSIGN,
                 resource=Resource.TASK,
                 affected_user_id=assignee_id
             )
@@ -539,7 +539,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.DROP,
+                operation=Operations.DROP,
                 resource=Resource.TASK,
                 affected_user_id=task_to_drop.assignee
             )
@@ -553,7 +553,7 @@ class TaskController(object):
             req_user=req_user
         )
         req_user.log(
-            operation=Operation.DROP,
+            operation=Operations.DROP,
             resource=Resource.TASK,
             resource_id=task_id
         )
@@ -581,7 +581,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.TRANSITION,
+                operation=Operations.TRANSITION,
                 resource=Resource.TASK,
                 affected_user_id=task.assignee
             )
@@ -617,7 +617,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.DELAY,
+                operation=Operations.DELAY,
                 resource=Resource.TASK,
                 affected_user_id=task.assignee
             )
@@ -649,7 +649,7 @@ class TaskController(object):
                 session.add(delayed_task)
 
         req_user.log(
-            operation=Operation.DELAY,
+            operation=Operations.DELAY,
             resource=Resource.TASK,
             resource_id=task.id
         )
@@ -669,7 +669,7 @@ class TaskController(object):
         try:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
-                operation=Operation.GET,
+                operation=Operations.GET,
                 resource=Resource.TASK_ACTIVITY
             )
         except AuthorizationError as e:
@@ -678,7 +678,7 @@ class TaskController(object):
         try:
             task = TaskController.get_task_by_id(task_identifier, req_user.org_id)
             req_user.log(
-                operation=Operation.GET,
+                operation=Operations.GET,
                 resource=Resource.TASK_ACTIVITY,
                 resource_id=task.id
             )
