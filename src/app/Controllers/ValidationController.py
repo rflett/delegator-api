@@ -343,28 +343,27 @@ class ValidationController(object):
         :param request_body:    The request body from the create user request
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
-        ret = {}
-
         # check email
         email = request_body.get('email')
         email_check = ValidationController.validate_email(email)
         if isinstance(email_check, Response):
             return email_check
-        ret['email'] = _check_user_id(request_body.get('email'), should_exist=False)
 
-        ret['org_id'] = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
-        ret['role'] = _check_user_role(request_body.get('role_name'))
-        ret['first_name'] = _check_str(request_body.get('first_name'), 'first_name')
-        ret['last_name'] = _check_str(request_body.get('last_name'), 'last_name')
-        ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
-        ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
+        user_attrs = {
+            "email": _check_user_id(request_body.get('email'), should_exist=False),
+            "role": _check_user_role(request_body.get('role_name')),
+            "first_name": _check_str(request_body.get('first_name'), 'first_name'),
+            "last_name": _check_str(request_body.get('last_name'), 'last_name'),
+            "job_title":  _check_user_job_title(request_body.get('job_title')),
+            "disabled":  _check_user_disabled(request_body.get('disabled'))
+        }
 
         # return a response if any ret values are response objects
-        for k, v in ret.items():
+        for k, v in user_attrs.items():
             if isinstance(v, Response):
                 return v
 
-        return ret
+        return user_attrs
 
     @staticmethod
     def validate_create_signup_user(request_body: dict) -> typing.Union[Response, dict]:
