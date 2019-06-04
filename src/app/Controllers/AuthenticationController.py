@@ -1,15 +1,12 @@
 import datetime
 import json
 import jwt
-import random
-import string
 import typing
 import uuid
 from app import logger, app, g_response, session_scope
-from app.Controllers import ValidationController
+from app.Exceptions import AuthenticationError
 from app.Models import User, FailedLogin, Notification
 from app.Models.Enums import Events
-from app.Models.RBAC import ResourceScope
 from flask import Response, request
 
 
@@ -82,7 +79,7 @@ def _generate_jwt_token(user: User) -> str:
     ).decode("utf-8")
 
 
-def _validate_jwt(token: str) -> typing.Union[bool, dict]:
+def _validate_jwt(token: str) -> dict:
     """
     Validates a JWT token. The token will be decoded without any secret keys, to ensure it is actually
     a JWT token. Once the decode is successfull the userid will be pulled out of the token and
@@ -90,7 +87,8 @@ def _validate_jwt(token: str) -> typing.Union[bool, dict]:
     secret key), then try and decode the JWT again with the secret key.
     If this works, then the token is good, and JWT payload.
     :param token:   The JWT token as a string.
-    :return:        JWT payload if decode was successful, or False.
+    :return:        JWT payload if decode was successful
+    :raises:        AuthenticationError if decode was unsuccessful
     """
     from app.Controllers import BlacklistedTokenController
     try:
@@ -99,7 +97,7 @@ def _validate_jwt(token: str) -> typing.Union[bool, dict]:
         # check if aud:jti is blacklisted
         blacklist_id = f"{suspect_jwt.get('aud')}:{suspect_jwt.get('jti')}"
         if BlacklistedTokenController.is_token_blacklisted(blacklist_id):
-            return False
+            raise AuthenticationError("Token is blacklist.")
 
         # check user_id exists, is valid
         user_id = suspect_jwt.get('claims').get('user_id')
@@ -111,12 +109,13 @@ def _validate_jwt(token: str) -> typing.Union[bool, dict]:
         else:
             logger.info(f"user {suspect_jwt.get('claims').get('user_id')} does not exist")
             _blacklist_token(token)
-            return False
+            raise AuthenticationError(f"user {suspect_jwt.get('claims').get('user_id')} does not exist")
 
     except Exception as e:
         logger.error(str(e))
         logger.info(f"decoding raised {e}, likely failed to decode jwt due to user secret/aud issue")
         _blacklist_token(token)
+        raise AuthenticationError(str(e))
 
 
 def _blacklist_token(token: str) -> None:
@@ -168,23 +167,15 @@ class AuthenticationController(object):
 
         # get auth from request
         auth = request_headers.get('Authorization', None)
+
         payload = _validate_jwt(auth.replace('Bearer ', ''))
 
-        # get user id
-        if isinstance(payload, dict):
-            user_id = payload.get('claims').get('user_id')
-            logger.debug(f"found user id {user_id} in the request JWT")
-        else:
-            logger.warning("missing payload from the bearer token")
-            return g_response("Missing payload from Bearer token", 401)
-
-        # get User object
+        # get user
         try:
-            user = UserController.get_user_by_id(user_id)
-            return user
+            return UserController.get_user_by_id(payload.get('claims').get('user_id'))
         except Exception as e:
             logger.error(str(e))
-            return g_response('No user found in Bearer token.', 401)
+            raise AuthenticationError(str(e))
 
     @staticmethod
     def validate_jwt(token: str) -> typing.Union[bool, dict]:
