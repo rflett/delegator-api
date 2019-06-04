@@ -1,5 +1,6 @@
 import datetime
 import typing
+
 from app import db
 from app.Models import Organisation, User   # noqa
 from app.Models.RBAC import Resource, Operation   # noqa

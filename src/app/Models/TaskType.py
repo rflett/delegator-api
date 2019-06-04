@@ -1,5 +1,6 @@
 import datetime
 import typing
+
 from app import db, session_scope, app
 
 

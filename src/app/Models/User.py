@@ -6,11 +6,13 @@ import os
 import random
 import string
 import typing
+
+from boto3.dynamodb.conditions import Key
+from sqlalchemy import exists
+
 from app import db, session_scope, logger, user_activity_table, app
 from app.Models import FailedLogin, Organisation
 from app.Models.RBAC import Role, Log, Permission
-from boto3.dynamodb.conditions import Key
-from sqlalchemy import exists
 
 
 def _hash_password(password: str) -> str:

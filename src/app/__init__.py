@@ -1,15 +1,16 @@
-import boto3
 import json
 import logging
-import redis
 import typing
 from contextlib import contextmanager
-from flask import Flask, Response
-from flask_cors import CORS
 from logging.handlers import SysLogHandler
 from os import getenv
-from flask_sqlalchemy import SQLAlchemy
+
+import boto3
 import flask_profiler
+import redis
+from flask import Flask, Response
+from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
 
 # flask conf
 app = Flask(__name__)

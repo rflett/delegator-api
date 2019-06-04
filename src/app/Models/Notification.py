@@ -1,9 +1,10 @@
 import _thread
 import json
 import typing
-from app import api_events_sns_topic, logger
 from dataclasses import dataclass
 from datetime import datetime
+
+from app import api_events_sns_topic, logger
 
 
 def do_publish(message: dict, event: str) -> None:

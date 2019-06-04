@@ -1,8 +1,10 @@
 import datetime
-from app import db, session_scope, logger, task_activity_table, app
-from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
+
 from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
+
+from app import db, session_scope, logger, task_activity_table, app
+from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
 
 
 def _get_fat_task(task_id: int) -> dict:

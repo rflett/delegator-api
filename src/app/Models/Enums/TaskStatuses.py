@@ -1,7 +1,6 @@
 class TaskStatuses(str):
     READY = 'READY'
     INPROGRESS = 'INPROGRESS'
-    OPEN = 'OPEN'
     CANCELLED = 'CANCELLED'
     DELAYED = 'DELAYED'
     COMPLETED = 'COMPLETED'
