@@ -1,11 +1,14 @@
 import datetime
 import json
 import typing
+
+from flask import request, Response
+
 from app import session_scope, logger, g_response, app, j_response
-from app.Controllers import AuthenticationController
+from app.Controllers import AuthenticationController, AuthorizationController
+from app.Exceptions import AuthorizationError, AuthenticationError
 from app.Models import User, ActiveUser
 from app.Models.RBAC import Operation, Resource
-from flask import request, Response
 
 
 def _purge_inactive_users() -> None:
@@ -79,16 +82,21 @@ class ActiveUserController(object):
     @staticmethod
     def get_active_users(req: request) -> Response:
         """ Returns all active users for an organisation """
-        from app.Controllers import AuthController
+        from app.Controllers import AuthenticationController
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.GET,
-            resource=Resource.ACTIVE_USERS
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
+
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operation.GET,
+                resource=Resource.ACTIVE_USERS
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
         # remove inactive users
         _purge_inactive_users()

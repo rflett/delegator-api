@@ -1,6 +1,7 @@
+from flask import request, Response
+
 from app import logger, g_response, session_scope
 from app.Controllers import UserController, OrganisationController, ValidationController
-from flask import request, Response
 
 
 class SignupController(object):

@@ -1,9 +1,12 @@
 import typing
-from app import session_scope, logger, g_response, j_response
-from app.Models import Organisation, TaskType
-from app.Models.RBAC import Operation, Resource
+
 from flask import request, Response
 from sqlalchemy import exists, func
+
+from app import session_scope, logger, g_response, j_response
+from app.Exceptions import AuthenticationError, AuthorizationError
+from app.Models import Organisation, TaskType
+from app.Models.RBAC import Operation, Resource
 
 
 class OrganisationController(object):
@@ -70,20 +73,24 @@ class OrganisationController(object):
     @staticmethod
     def get_org_settings(req: request) -> Response:
         """ Returns the org's settings """
-        from app.Controllers import AuthController, SettingsController
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.GET,
-            resource=Resource.ORG_SETTINGS
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        from app.Controllers import AuthorizationController, SettingsController, AuthenticationController
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
+
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operation.GET,
+                resource=Resource.ORG_SETTINGS
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
         req_user.log(
-            operation=Operation.CREATE,
-            resource=Resource.ORGANISATION,
-            resource_id=req_user.org_id
+            operation=Operation.GET,
+            resource=Resource.ORG_SETTINGS
         )
         logger.info(f"user {req_user.id} got settings for org {req_user.org_id}")
         return j_response(SettingsController.get_org_settings(req_user.org_id).as_dict())
@@ -91,28 +98,29 @@ class OrganisationController(object):
     @staticmethod
     def update_org_settings(req: request) -> Response:
         """ Returns the org's settings """
-        from app.Controllers import AuthController, ValidationController, SettingsController
+        from app.Controllers import AuthorizationController, SettingsController, AuthenticationController, \
+            ValidationController
 
-        valid_org_settings = ValidationController.validate_update_org_settings_request(req.get_json())
-        # invalid
-        if isinstance(valid_org_settings, Response):
-            return valid_org_settings
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.UPDATE,
-            resource=Resource.ORG_SETTINGS,
-            resource_org_id=valid_org_settings.get('org_id')
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operation.UPDATE,
+                resource=Resource.ORG_SETTINGS
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
-        SettingsController.set_org_settings(valid_org_settings.get('org_settings'))
+        org_setting = ValidationController.validate_update_org_settings_request(req_user.org_id, req.get_json())
+
+        SettingsController.set_org_settings(org_setting)
         req_user.log(
             operation=Operation.UPDATE,
-            resource=Resource.ORG_SETTINGS,
-            resource_id=valid_org_settings.get('org_id')
+            resource=Resource.ORG_SETTINGS
         )
         logger.info(f"user {req_user.id} updated settings for org {req_user.org_id}")
         return g_response(status=204)

@@ -1,13 +1,15 @@
 import datetime
 import json
-import jwt
 import typing
 import uuid
+
+import jwt
+from flask import Response, request
+
 from app import logger, app, g_response, session_scope
 from app.Exceptions import AuthenticationError
 from app.Models import User, FailedLogin, Notification
 from app.Models.Enums import Events
-from flask import Response, request
 
 
 def _failed_login_attempt(email: str) -> Response:
