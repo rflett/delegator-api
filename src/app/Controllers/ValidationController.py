@@ -381,9 +381,9 @@ class ValidationController(object):
     @staticmethod
     def validate_create_org_request(request_body: dict) -> typing.Union[Response, str]:
         """ Validates a create org request body """
-        org_name = request_body.get('name', request_body.get('org_name'))
-
         from app.Controllers import OrganisationController
+
+        org_name = request_body.get('name', request_body.get('org_name'))
 
         if not isinstance(org_name, str):
             return g_response(f"Bad org_name|name, expected str got {type(org_name)}.", 400)
@@ -394,14 +394,14 @@ class ValidationController(object):
         return org_name
 
     @staticmethod
-    def validate_create_task_request(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_create_task_request(org_id: int, request_body: dict) -> typing.Union[Response, dict]:
         """
         Validates a task request body
         :param request_body:    The request body from the create task request
         :return:                Response if the request body contains invalid values, or the TaskRequest dataclass
         """
         ret = {
-            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), should_exist=True),
+            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), org_id=org_id, should_exist=True),
             'description': _check_task_description(request_body.get('description')),
             'status': _check_task_status(request_body.get('status'), should_exist=True),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
@@ -427,7 +427,7 @@ class ValidationController(object):
         """
         ret = {
             'id': _check_task_id(request_body.get('id'), org_id),
-            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), should_exist=True),
+            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), org_id=org_id, should_exist=True),
             'description': _check_task_description(request_body.get('description')),
             'status': _check_task_status(request_body.get('status'), should_exist=True),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),

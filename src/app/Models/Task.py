@@ -4,13 +4,14 @@ from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
 
 from app import db, session_scope, logger, task_activity_table, app
-from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
 
 
 def _get_fat_task(task_id: int) -> dict:
     """
     Creates a nice dict of a task
     """
+    from app.Models import User, TaskStatus, TaskType, TaskPriority
+
     with session_scope() as session:
         task_assignee, task_created_by = aliased(User), aliased(User)
         tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority) \

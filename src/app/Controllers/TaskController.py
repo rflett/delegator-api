@@ -334,7 +334,7 @@ class TaskController(object):
         except AuthorizationError as e:
             return g_response(str(e), 400)
 
-        task_attrs = ValidationController.validate_create_task_request(req.get_json())
+        task_attrs = ValidationController.validate_create_task_request(req_user.org_id, req.get_json())
         # invalid
         if isinstance(task_attrs, Response):
             return task_attrs

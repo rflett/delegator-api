@@ -11,7 +11,6 @@ from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
 from app import db, session_scope, logger, user_activity_table, app
-from app.Models import FailedLogin, Organisation
 from app.Models.RBAC import Role, Log, Permission
 
 
@@ -185,6 +184,8 @@ class User(db.Model):
 
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """
+        from app.Models import FailedLogin
+
         with session_scope() as session:
             failed_email = session.query(exists().where(FailedLogin.email == self.email)).scalar()
 
@@ -233,6 +234,7 @@ class User(db.Model):
     def fat_dict(self) -> dict:
         """ Returns a full user dict with all of its FK's joined. """
         from app.Controllers import SettingsController
+        from app.Models import Organisation
 
         with session_scope() as session:
             user_qry = session.query(User, Role, Organisation) \

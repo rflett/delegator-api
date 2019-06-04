@@ -82,7 +82,7 @@ class ActiveUserController(object):
     @staticmethod
     def get_active_users(req: request) -> Response:
         """ Returns all active users for an organisation """
-        from app.Controllers import AuthenticationController
+        from app.Controllers import AuthenticationController, AuthorizationController
 
         try:
             req_user = AuthenticationController.get_user_from_request(req.headers)

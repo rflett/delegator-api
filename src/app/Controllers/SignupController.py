@@ -1,7 +1,7 @@
 from flask import request, Response
 
 from app import logger, g_response, session_scope
-from app.Controllers import UserController, OrganisationController, ValidationController
+from app.Controllers import OrganisationController
 
 
 class SignupController(object):
@@ -12,6 +12,8 @@ class SignupController(object):
         :param req: The request object
         :return:        Response
         """
+        from app.Controllers import ValidationController, UserController
+
         request_body = req.get_json()
 
         # validate org

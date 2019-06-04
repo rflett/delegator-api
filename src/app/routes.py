@@ -89,6 +89,13 @@ def get_users():
     return UserController.get_all_users(request)
 
 
+@app.route('/users', methods=['PUT'])
+@requires_jwt
+@safe_exceptions
+def update_user():
+    return UserController.update_user(request)
+
+
 @app.route('/users/active', methods=['GET'])
 @requires_jwt
 @safe_exceptions
@@ -101,13 +108,6 @@ def active_users():
 @safe_exceptions
 def get_user(user_id):
     return UserController.get_user(user_id, request)
-
-
-@app.route('/user', methods=['PUT'])
-@requires_jwt
-@safe_exceptions
-def update_user():
-    return UserController.update_user(request)
 
 
 @app.route('/user/<int:user_id>', methods=['DELETE'])
@@ -208,7 +208,7 @@ def get_tasks():
     return TaskController.get_tasks(request)
 
 
-@app.route('/task', methods=['PUT'])
+@app.route('/tasks', methods=['PUT'])
 @requires_jwt
 @safe_exceptions
 def update_task():
