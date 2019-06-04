@@ -1,9 +1,6 @@
 import datetime
-from app import db
 
-SELF = 'SELF'
-ORG = 'ORG'
-GLOBAL = 'GLOBAL'
+from app import db
 
 
 class ResourceScope(db.Model):

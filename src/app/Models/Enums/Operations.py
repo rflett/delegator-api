@@ -1,0 +1,12 @@
+class Operations(str):
+    ASSIGN = 'ASSIGN'
+    CREATE = 'CREATE'
+    DELAY = 'DELAY'
+    DELETE = 'DELETE'
+    DISABLE = 'DISABLE'
+    DROP = 'DROP'
+    ENABLE = 'ENABLE'
+    GET = 'GET'
+    TRANSITION = 'TRANSITION'
+    UPDATE = 'UPDATE'
+    UPSERT = 'UPSERT'

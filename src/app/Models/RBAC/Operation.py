@@ -1,17 +1,6 @@
 import datetime
-from app import db
 
-CREATE = 'CREATE'
-DELETE = 'DELETE'
-UPDATE = 'UPDATE'
-GET = 'GET'
-ASSIGN = 'ASSIGN'
-DROP = 'DROP'
-ENABLE = 'ENABLE'
-DISABLE = 'DISABLE'
-TRANSITION = 'TRANSITION'
-UPSERT = 'UPSERT'
-DELAY = 'DELAY'
+from app import db
 
 
 class Operation(db.Model):

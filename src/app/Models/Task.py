@@ -1,14 +1,17 @@
 import datetime
-from app import db, session_scope, logger, task_activity_table
-from app.Models import Organisation, User, TaskPriority, TaskType, TaskStatus  # noqa
+
 from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
+
+from app import db, session_scope, logger, task_activity_table, app
 
 
 def _get_fat_task(task_id: int) -> dict:
     """
     Creates a nice dict of a task
     """
+    from app.Models import User, TaskStatus, TaskType, TaskPriority
+
     with session_scope() as session:
         task_assignee, task_created_by = aliased(User), aliased(User)
         tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority) \
@@ -103,32 +106,32 @@ class Task(db.Model):
         if self.due_time is None:
             due_time = None
         else:
-            due_time = self.due_time.strftime("%Y-%m-%d %H:%M:%S%z")
+            due_time = self.due_time.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         if self.created_at is None:
             created_at = None
         else:
-            created_at = self.created_at.strftime("%Y-%m-%d %H:%M:%S%z")
+            created_at = self.created_at.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         if self.started_at is None:
             started_at = None
         else:
-            started_at = self.started_at.strftime("%Y-%m-%d %H:%M:%S%z")
+            started_at = self.started_at.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         if self.finished_at is None:
             finished_at = None
         else:
-            finished_at = self.finished_at.strftime("%Y-%m-%d %H:%M:%S%z")
+            finished_at = self.finished_at.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         if self.status_changed_at is None:
             status_changed_at = None
         else:
-            status_changed_at = self.status_changed_at.strftime("%Y-%m-%d %H:%M:%S%z")
+            status_changed_at = self.status_changed_at.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         if self.priority_changed_at is None:
             priority_changed_at = None
         else:
-            priority_changed_at = self.priority_changed_at.strftime("%Y-%m-%d %H:%M:%S%z")
+            priority_changed_at = self.priority_changed_at.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         return {
             "id": self.id,
@@ -175,4 +178,4 @@ class Task(db.Model):
     def label(self) -> str:
         """ Gets the label of its task type """
         from app.Controllers import TaskTypeController
-        return TaskTypeController.get_task_type_by_id(self.type).label
+        return TaskTypeController.get_task_type_by_id(self.org_id, self.type).label

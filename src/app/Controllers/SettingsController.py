@@ -1,6 +1,7 @@
+from boto3.dynamodb.conditions import Key
+
 from app import user_settings_table, org_settings_table
 from app.Models import UserSetting, OrgSetting
-from boto3.dynamodb.conditions import Key
 
 
 class SettingsController(object):

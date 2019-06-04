@@ -1,8 +1,12 @@
 import datetime
-from app import r_cache, j_response, logger, session_scope  # noqa
-from app.Models.RBAC import Operation, Resource
 from collections import namedtuple
+
 from flask import request, Response
+
+import app.Exceptions
+from app import r_cache, j_response, logger, session_scope, g_response, app  # noqa
+from app.Controllers import AuthenticationController, AuthorizationController
+from app.Models.Enums import Operations, Resources
 
 
 def clean_qry(qry) -> list:
@@ -12,7 +16,7 @@ def clean_qry(qry) -> list:
     for record in records:
         for k, v in record.items():
             if type(v) == datetime.datetime:
-                record[k] = v.strftime("%Y-%m-%d %H:%M:%S%z")
+                record[k] = v.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
     return records
 
@@ -213,20 +217,23 @@ def delays_per_task(org_id: int) -> list:
     return clean_qry(qry)
 
 
-class Reports(object):
+class ReportController(object):
     @staticmethod
     def get_all(req: request) -> Response:
         """ Get all reports """
-        from app.Controllers import AuthController
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except app.Exceptions.AuthenticationError as e:
+            return g_response(str(e), 400)
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.GET,
-            resource=Resource.REPORTS_PAGE
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operations.GET,
+                resource=Resources.REPORTS_PAGE
+            )
+        except app.Exceptions.AuthorizationError as e:
+            return g_response(str(e), 400)
 
         # reports = r_cache.hgetall(req_user.org_id)
         # TODO this is a temporary way of pulling the reports for development

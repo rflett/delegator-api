@@ -1,6 +1,7 @@
+from sqlalchemy import exists
+
 from app import logger, session_scope
 from app.Models import BlacklistedToken
-from sqlalchemy import exists
 
 
 def id_exists(blacklist_id: str) -> bool:

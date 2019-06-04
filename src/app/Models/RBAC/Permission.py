@@ -1,4 +1,5 @@
 import datetime
+
 from app import db
 from app.Models.RBAC import Operation, Resource, ResourceScope # noqa
 

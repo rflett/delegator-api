@@ -1,10 +1,12 @@
 import typing
-from app import session_scope, logger, g_response, j_response
-from app.Controllers import AuthController
-from app.Models import Organisation, User, TaskType
-from app.Models.RBAC import Operation, Resource
+
 from flask import request, Response
 from sqlalchemy import exists, func
+
+from app import session_scope, logger, g_response, j_response
+from app.Exceptions import AuthenticationError, AuthorizationError
+from app.Models import Organisation, TaskType
+from app.Models.Enums import Operations, Resources
 
 
 class OrganisationController(object):
@@ -52,89 +54,43 @@ class OrganisationController(object):
             return ret
 
     @staticmethod
-    def org_create(req: request, require_auth: bool = True) -> Response:
-        """
-        Creates an organisation.
-        :param req:         The request to create an org
-        :param require_auth:    If request needs to have authoriziation (e.g. not if signing up)
-        :return:                A response
-        """
-        def create_org_settings(org_id) -> None:
-            from app.Controllers import SettingsController
-            from app.Models import OrgSetting
-            SettingsController.set_org_settings(OrgSetting(org_id=org_id))
-
-        def create_org(valid_org: dict, req_user: User = None) -> Response:
-            """
-            Creates the organisation
-            :param valid_org:  The validated organisation object
-            :param req_user:   The user making the request
-            :return:           Response
-            """
-
-            with session_scope() as session:
-                organisation = Organisation(
-                    name=valid_org.get('org_name')
-                )
-                session.add(organisation)
-
-            with session_scope() as session:
-                session.add(TaskType(label='Other', org_id=organisation.id))
-
-            # create org settings
-            create_org_settings(organisation.id)
-
-            if isinstance(req_user, User):
-                req_user.log(
-                    operation=Operation.CREATE,
-                    resource=Resource.ORGANISATION,
-                    resource_id=organisation.id
-                )
-            logger.info(f"created organisation {organisation.as_dict()}")
-            return g_response("Successfully created the organisation", 201)
-
-        request_body = req.get_json()
-
-        # validate org
-        from app.Controllers import ValidationController
-        valid_org = ValidationController.validate_create_org_request(request_body)
-        # invalid org
-        if isinstance(valid_org, Response):
-            return valid_org
-
-        if require_auth:
-            logger.info("requiring auth to create org")
-            req_user = AuthController.authorize_request(
-                request_headers=req.headers,
-                operation=Operation.CREATE,
-                resource=Resource.ORGANISATION,
-                resource_org_id=valid_org.get('org_id')
+    def create_org(org_name: str) -> Organisation:
+        with session_scope() as session:
+            organisation = Organisation(
+                name=org_name
             )
-            # no perms
-            if isinstance(req_user, Response):
-                return req_user
-            return create_org(request_body, req_user=req_user)
-        else:
-            logger.info("not requiring auth to create org")
-            return create_org(valid_org)
+            session.add(organisation)
+
+        with session_scope() as session:
+            session.add(TaskType(label='Other', org_id=organisation.id))
+
+        # create org settings
+        organisation.create_settings()
+
+        logger.info(f"created organisation {organisation.as_dict()}")
+        return organisation
 
     @staticmethod
     def get_org_settings(req: request) -> Response:
         """ Returns the org's settings """
-        from app.Controllers import AuthController, SettingsController
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.GET,
-            resource=Resource.ORG_SETTINGS
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        from app.Controllers import AuthorizationController, SettingsController, AuthenticationController
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
+
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operations.GET,
+                resource=Resources.ORG_SETTINGS
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
         req_user.log(
-            operation=Operation.CREATE,
-            resource=Resource.ORGANISATION,
-            resource_id=req_user.org_id
+            operation=Operations.GET,
+            resource=Resources.ORG_SETTINGS
         )
         logger.info(f"user {req_user.id} got settings for org {req_user.org_id}")
         return j_response(SettingsController.get_org_settings(req_user.org_id).as_dict())
@@ -142,28 +98,30 @@ class OrganisationController(object):
     @staticmethod
     def update_org_settings(req: request) -> Response:
         """ Returns the org's settings """
-        from app.Controllers import AuthController, ValidationController, SettingsController
+        from app.Controllers import AuthorizationController, SettingsController, AuthenticationController, \
+            ValidationController
 
-        valid_org_settings = ValidationController.validate_update_org_settings_request(req.get_json())
-        # invalid
-        if isinstance(valid_org_settings, Response):
-            return valid_org_settings
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.UPDATE,
-            resource=Resource.ORG_SETTINGS,
-            resource_org_id=valid_org_settings.get('org_id')
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operations.UPDATE,
+                resource=Resources.ORG_SETTINGS
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
-        SettingsController.set_org_settings(valid_org_settings.get('org_settings'))
+        org_setting = ValidationController.validate_update_org_settings_request(req_user.org_id, req.get_json())
+
+        SettingsController.set_org_settings(org_setting)
         req_user.log(
-            operation=Operation.UPDATE,
-            resource=Resource.ORG_SETTINGS,
-            resource_id=valid_org_settings.get('org_id')
+            operation=Operations.UPDATE,
+            resource=Resources.ORG_SETTINGS,
+            resource_id=req_user.org_id
         )
         logger.info(f"user {req_user.id} updated settings for org {req_user.org_id}")
         return g_response(status=204)

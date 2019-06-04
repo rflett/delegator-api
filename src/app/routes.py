@@ -1,11 +1,12 @@
 import traceback
-from app import app, g_response, logger
 from functools import wraps
+
 from flask import Response, request
-from app.Controllers import AuthController, UserController, SignupController, TaskController, VersionController, \
-    ActiveUserController, OrganisationController, TaskTypeController
-from app.Controllers.RBAC import RoleController
-from app.Controllers.Reporting import Reports
+
+from app import app, g_response, logger
+from app.Controllers import AuthorizationController, UserController, SignupController, TaskController, \
+    VersionController, ActiveUserController, OrganisationController, TaskTypeController, AuthenticationController, \
+    RoleController, ReportController
 
 
 def requires_jwt(f):
@@ -17,7 +18,7 @@ def requires_jwt(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.headers.get('Authorization', None)
-        check = AuthController.check_authorization_header(auth)
+        check = AuthenticationController.check_authorization_header(auth)
         if isinstance(check, Response):
             return check
         else:
@@ -52,20 +53,20 @@ def version_info():
 @app.route('/login', methods=['POST'])
 @safe_exceptions
 def login():
-    return AuthController.login(request)
+    return AuthenticationController.login(request)
 
 
 @app.route('/logout', methods=['POST'])
 @requires_jwt
 @safe_exceptions
 def logout():
-    return AuthController.logout(request.headers)
+    return AuthenticationController.logout(request.headers)
 
 
 @app.route('/reset_password', methods=['POST'])
 @safe_exceptions
 def reset_password():
-    return AuthController.reset_password(request)
+    return AuthorizationController.reset_password(request)
 
 
 @app.route('/signup', methods=['POST'])
@@ -77,15 +78,22 @@ def signup():
 @app.route('/users', methods=['POST'])
 @requires_jwt
 @safe_exceptions
-def user_create():
-    return UserController.user_create(request)
+def create_user():
+    return UserController.create_user(request)
 
 
 @app.route('/users', methods=['GET'])
 @requires_jwt
 @safe_exceptions
 def get_users():
-    return UserController.user_get_all(request)
+    return UserController.get_all_users(request)
+
+
+@app.route('/users', methods=['PUT'])
+@requires_jwt
+@safe_exceptions
+def update_user():
+    return UserController.update_user(request)
 
 
 @app.route('/users/active', methods=['GET'])
@@ -99,21 +107,14 @@ def active_users():
 @requires_jwt
 @safe_exceptions
 def get_user(user_id):
-    return UserController.user_get(user_id, request)
-
-
-@app.route('/user/<user_id>', methods=['PUT'])
-@requires_jwt
-@safe_exceptions
-def update_user(user_id):
-    return UserController.user_update(user_id, request)
+    return UserController.get_user(user_id, request)
 
 
 @app.route('/user/<int:user_id>', methods=['DELETE'])
 @requires_jwt
 @safe_exceptions
 def delete_user(user_id):
-    return UserController.user_delete(user_id, request)
+    return UserController.delete_user(user_id, request)
 
 
 @app.route('/user/pages', methods=['GET'])
@@ -179,7 +180,7 @@ def create_task_type():
     return TaskTypeController.create_task_type(request)
 
 
-@app.route('/tasks/types/<task_type_id>', methods=['DELETE'])
+@app.route('/tasks/types/<int:task_type_id>', methods=['DELETE'])
 @requires_jwt
 @safe_exceptions
 def disable_task_type(task_type_id):
@@ -207,11 +208,11 @@ def get_tasks():
     return TaskController.get_tasks(request)
 
 
-@app.route('/task/<int:task_id>', methods=['PUT'])
+@app.route('/tasks', methods=['PUT'])
 @requires_jwt
 @safe_exceptions
-def update_task(task_id):
-    return TaskController.update_task(task_id, request)
+def update_task():
+    return TaskController.update_task(request)
 
 
 @app.route('/task/<int:task_id>', methods=['GET'])
@@ -274,4 +275,4 @@ def update_org_settings():
 @requires_jwt
 @safe_exceptions
 def get_all_reports():
-    return Reports.get_all(request)
+    return ReportController.get_all(request)

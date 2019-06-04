@@ -1,6 +1,7 @@
 import datetime
 import typing
-from app import db, session_scope
+
+from app import db, session_scope, app
 
 
 def _get_fat_task_type(task_type) -> dict:
@@ -46,7 +47,7 @@ class TaskType(db.Model):
         if self.disabled is None:
             disabled = None
         else:
-            disabled = self.disabled.strftime("%Y-%m-%d %H:%M:%S%z")
+            disabled = self.disabled.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         return {
             "id": self.id,

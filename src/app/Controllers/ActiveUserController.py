@@ -1,11 +1,14 @@
 import datetime
 import json
 import typing
-from app import session_scope, logger, g_response, app, j_response
-from app.Controllers import AuthController
-from app.Models import User, ActiveUser
-from app.Models.RBAC import Operation, Resource
+
 from flask import request, Response
+
+from app import session_scope, logger, g_response, app, j_response
+from app.Controllers import AuthenticationController
+from app.Exceptions import AuthorizationError, AuthenticationError
+from app.Models import User, ActiveUser
+from app.Models.Enums import Operations, Resources
 
 
 def _purge_inactive_users() -> None:
@@ -25,7 +28,7 @@ def _get_user_from_request(req: request) -> typing.Union[User, Response]:
     if auth is None:
         return g_response("Missing Authorization header")
 
-    payload = AuthController.validate_jwt(auth.replace('Bearer ', ''))
+    payload = AuthenticationController.validate_jwt(auth.replace('Bearer ', ''))
 
     # get user id
     if isinstance(payload, dict):
@@ -79,16 +82,21 @@ class ActiveUserController(object):
     @staticmethod
     def get_active_users(req: request) -> Response:
         """ Returns all active users for an organisation """
-        from app.Controllers import AuthController
+        from app.Controllers import AuthenticationController, AuthorizationController
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.GET,
-            resource=Resource.ACTIVE_USERS
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
+
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operations.GET,
+                resource=Resources.ACTIVE_USERS
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
         # remove inactive users
         _purge_inactive_users()
@@ -98,8 +106,8 @@ class ActiveUserController(object):
 
         active_users = [au.as_dict() for au in active_users_qry]
         req_user.log(
-            operation=Operation.GET,
-            resource=Resource.ACTIVE_USERS
+            operation=Operations.GET,
+            resource=Resources.ACTIVE_USERS
         )
         logger.debug(f"found {len(active_users)} active users: {json.dumps(active_users)}")
         return j_response(active_users)

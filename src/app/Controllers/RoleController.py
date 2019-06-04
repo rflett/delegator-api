@@ -1,8 +1,11 @@
 import json
-from app.Models.RBAC import Operation, Resource
-from app import logger, session_scope, j_response
+
 from flask import request, Response
 from sqlalchemy import and_
+
+import app.Exceptions
+from app import logger, session_scope, j_response, g_response
+from app.Models.Enums import Operations, Resources
 
 
 class RoleController(object):
@@ -13,18 +16,23 @@ class RoleController(object):
         greater than theirs will be returned. For example, and admin would be rank 1 so can get all roles,
         but a middle level role can only get roles with less permissions than them.
         """
-        from app.Controllers import AuthController
+        from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import User
         from app.Models.RBAC import Role
 
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.GET,
-            resource=Resource.ROLES
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except app.Exceptions.AuthenticationError as e:
+            return g_response(str(e), 400)
+
+        try:
+            AuthorizationController.authorize_request(
+                auth_user=req_user,
+                operation=Operations.GET,
+                resource=Resources.ROLES
+            )
+        except app.Exceptions.AuthorizationError as e:
+            return g_response(str(e), 400)
 
         with session_scope() as session:
             roles_qry = session.query(Role)\
@@ -42,8 +50,8 @@ class RoleController(object):
 
         roles = [r.as_dict() for r in roles_qry]
         req_user.log(
-            operation=Operation.GET,
-            resource=Resource.ROLES
+            operation=Operations.GET,
+            resource=Resources.ROLES
         )
         logger.debug(f"found {len(roles)} roles: {json.dumps(roles)}")
         return j_response(roles)

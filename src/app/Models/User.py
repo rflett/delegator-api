@@ -6,11 +6,12 @@ import os
 import random
 import string
 import typing
-from app import db, session_scope, logger, user_activity_table
-from app.Models import FailedLogin, Organisation
-from app.Models.RBAC import Role, Log, Permission
+
 from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
+
+from app import db, session_scope, logger, user_activity_table, app
+from app.Models.RBAC import Role, Log, Permission
 
 
 def _hash_password(password: str) -> str:
@@ -183,6 +184,8 @@ class User(db.Model):
 
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """
+        from app.Models import FailedLogin
+
         with session_scope() as session:
             failed_email = session.query(exists().where(FailedLogin.email == self.email)).scalar()
 
@@ -209,12 +212,12 @@ class User(db.Model):
         if self.disabled is None:
             disabled = None
         else:
-            disabled = self.disabled.strftime("%Y-%m-%d %H:%M:%S%z")
+            disabled = self.disabled.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         if self.deleted is None:
             deleted = None
         else:
-            deleted = self.deleted.strftime("%Y-%m-%d %H:%M:%S%z")
+            deleted = self.deleted.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
         return {
             "id": self.id,
@@ -231,6 +234,7 @@ class User(db.Model):
     def fat_dict(self) -> dict:
         """ Returns a full user dict with all of its FK's joined. """
         from app.Controllers import SettingsController
+        from app.Models import Organisation
 
         with session_scope() as session:
             user_qry = session.query(User, Role, Organisation) \
@@ -289,3 +293,9 @@ class User(db.Model):
     def name(self) -> str:
         """ Returns their full name """
         return self.first_name + " " + self.last_name
+
+    def create_settings(self) -> None:
+        """ Creates the settings for this user """
+        from app.Controllers.SettingsController import SettingsController
+        from app.Models import UserSetting
+        SettingsController.set_user_settings(UserSetting(self.id))

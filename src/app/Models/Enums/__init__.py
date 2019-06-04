@@ -1,9 +1,13 @@
-from app.Models.Enums.UserAuthLogAction import UserAuthLogAction
-from app.Models.Enums.TaskStatuses import TaskStatuses
 from app.Models.Enums.Events import Events
+from app.Models.Enums.Operations import Operations
+from app.Models.Enums.Resources import Resources
+from app.Models.Enums.ResourceScopes import ResourceScopes
+from app.Models.Enums.TaskStatuses import TaskStatuses
 
 __all__ = [
-    UserAuthLogAction,
-    TaskStatuses,
-    Events
+    Events,
+    Operations,
+    Resources,
+    ResourceScopes,
+    TaskStatuses
 ]

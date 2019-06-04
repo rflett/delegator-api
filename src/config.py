@@ -12,6 +12,8 @@ class Config(object):
     ORG_SETTINGS_TABLE = 'backburner-organisation-settings-staging'
     USER_ACTIVITY_TABLE = 'backburner-user-activity-staging'
     TASK_ACTIVITY_TABLE = 'backburner-task-activity-staging'
+    REQUEST_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
+    RESPONSE_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
 
 
 class Ci(Config):

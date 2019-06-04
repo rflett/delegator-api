@@ -1,12 +1,14 @@
 import datetime
 import dateutil
 import typing
-from app import logger, g_response, app, session_scope
-from app.Models import TaskType, TaskTypeEscalation, Task, User
-from app.Models.RBAC import Role
+
 from flask import Response
 from sqlalchemy import exists, and_
 from validate_email import validate_email
+
+from app import logger, g_response, app, session_scope
+from app.Models import TaskType, TaskTypeEscalation, Task, OrgSetting, UserSetting
+from app.Models.RBAC import Role
 
 
 def _check_int(param: int, param_name: str) -> typing.Union[int, Response]:
@@ -49,35 +51,6 @@ def _check_password_reqs(password: str) -> typing.Union[str, bool]:
         return f"Password requires more than {min_caps} capital letter(s)."
     logger.info(f"password meets requirements")
     return True
-
-
-def _check_org_id(
-        identifier: typing.Union[str, int],
-        should_exist: typing.Optional[bool] = None
-) -> typing.Union[str, int, Response]:
-    from app.Controllers import OrganisationController
-    if isinstance(identifier, bool):
-        return g_response(f"Bad org_id, expected int|str got {type(identifier)}.", 400)
-    if not isinstance(identifier, (int, str)):
-        return g_response(f"Bad org_id, expected int|str got {type(identifier)}.", 400)
-
-    # optionally check if it exists or not
-    if should_exist is not None:
-        org_exists = OrganisationController.org_exists(identifier)
-        if should_exist:
-            if org_exists:
-                if isinstance(identifier, str):
-                    return OrganisationController.get_org_by_name(identifier).id
-                else:
-                    return identifier
-            else:
-                logger.info(f"org {identifier} doesn't exist")
-                return g_response(f"Org does not exist", 400)
-        elif not should_exist:
-            if org_exists:
-                logger.info(f"organisation {identifier} already exists")
-                return g_response("Organisation already exists", 400)
-    return identifier
 
 
 def _check_user_id(
@@ -126,18 +99,18 @@ def _check_user_disabled(disabled: typing.Optional[datetime.datetime]) \
         -> typing.Union[None, datetime.datetime, Response]:
     if disabled is not None:
         try:
-            disabled = datetime.datetime.strptime(disabled, "%Y-%m-%d %H:%M:%S%z")
+            disabled = datetime.datetime.strptime(disabled, app.config['REQUEST_DATE_FORMAT'])
             return disabled
         except ValueError:
             return g_response("Couldn't convert disabled to datetime.datetime", 400)
 
 
-def _check_task_id(task_id: int) -> typing.Union[Response, int]:
+def _check_task_id(task_id: int, org_id: int) -> typing.Union[Response, int]:
     from app.Controllers import TaskController
     task_id = _check_int(task_id, 'task_id')
     if isinstance(task_id, Response):
         return task_id
-    if not TaskController.task_exists(task_id):
+    if not TaskController.task_exists(task_id, org_id):
         logger.info(f"task {task_id} doesn't exist")
         return g_response(f"task does not exist", 400)
     return task_id
@@ -145,6 +118,7 @@ def _check_task_id(task_id: int) -> typing.Union[Response, int]:
 
 def _check_task_type_id(
         task_type_id: int,
+        org_id: int,
         should_exist: typing.Optional[bool] = None
 ) -> typing.Union[int, Response]:
     from app.Controllers import TaskTypeController
@@ -154,7 +128,7 @@ def _check_task_type_id(
 
     # optionally check if it exists or not
     if should_exist is not None:
-        task_exists = TaskTypeController.task_type_exists(task_type_id)
+        task_exists = TaskTypeController.task_type_exists(task_type_id, org_id)
         if should_exist:
             if not task_exists:
                 logger.info(f"task type id {task_type_id} doesn't exist")
@@ -279,7 +253,7 @@ class ValidationController(object):
         return True
 
     @staticmethod
-    def validate_password(password: str) -> typing.Union[bool, Response]:
+    def validate_password(password: str) -> typing.Union[str, Response]:
         """
         Validates a password. Makes sure it's a string, and can do a strength check.
         :param password:    The password to check
@@ -291,20 +265,14 @@ class ValidationController(object):
         # password_check = _check_password_reqs(password)
         # if isinstance(password_check, str):
         #     return g_response(password_check, 400)
-        return True
+        return password
 
     @staticmethod
-    def validate_create_task_type_request(request_body: dict) -> typing.Union[Response, TaskType, str]:
+    def validate_create_task_type_request(org_id: int, request_body: dict) -> typing.Union[Response, TaskType, str]:
         """
-        Validates a task type request body
-        :param request_body:    The request body from the create task type request
-        :return:                Response if the request body contains invalid values, or the TaskTypeRequest dataclass
+        Validates a create task type request body
         """
         from app.Controllers import TaskTypeController
-
-        org_id = _check_org_id(request_body.get('org_id'), should_exist=True)
-        if isinstance(org_id, Response):
-            return org_id
 
         label = _check_str(request_body.get('label'), 'label')
         if isinstance(label, Response):
@@ -320,7 +288,7 @@ class ValidationController(object):
             return label
 
     @staticmethod
-    def validate_disable_task_type_request(task_type_id: int) -> typing.Union[Response, TaskType]:
+    def validate_disable_task_type_request(org_id: int, task_type_id: int) -> typing.Union[Response, TaskType]:
         """ Validates the disable task request """
         from app.Controllers import TaskTypeController
 
@@ -329,7 +297,7 @@ class ValidationController(object):
             return type_id
 
         try:
-            task_type = TaskTypeController.get_task_type_by_id(type_id)
+            task_type = TaskTypeController.get_task_type_by_id(org_id, type_id)
         except ValueError as e:
             logger.info(str(e))
             return g_response(f"Task type does not exist.")
@@ -337,131 +305,103 @@ class ValidationController(object):
         return task_type
 
     @staticmethod
-    def validate_create_user_request(request_body: dict, from_signup=False) -> typing.Union[Response, dict]:
+    def validate_create_user_request(request_body: dict) -> typing.Union[Response, dict]:
         """
         Validates a create user request body
         :param request_body:    The request body from the create user request
-        :param from_signup:     Indicates that this validation request came from the signup page, so
-                                we should ignore org and role checks. The organisation won't be created yet, this is
-                                pre-creation validation. The role will not be provided because the default role
-                                will be given.
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
-        ret = {}
-
-        # check email
-        email = request_body.get('email')
-        email_check = ValidationController.validate_email(email)
-        if isinstance(email_check, Response):
-            return email_check
-        ret['email'] = _check_user_id(request_body.get('email'), should_exist=False)
-
-        # check password
-        password = request_body.get('password')
-        password_check = ValidationController.validate_password(password)
-        if isinstance(password_check, Response):
-            return password_check
-        ret['password'] = password
-
-        if from_signup:
-            request_body['role'] = app.config['SIGNUP_ROLE']
-        elif not from_signup:
-            ret['org_id'] = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
-            ret['role'] = _check_user_role(request_body.get('role_name'))
-
-        ret['first_name'] = _check_str(request_body.get('first_name'), 'first_name')
-        ret['last_name'] = _check_str(request_body.get('last_name'), 'last_name')
-        ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
-        ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
-
-        # return a response if any ret values are response objects
-        for k, v in ret.items():
-            if isinstance(v, Response):
-                return v
-
-        return ret
-
-    @staticmethod
-    def validate_update_user_request(user_id: int, request_body: dict) -> typing.Union[Response, dict]:
-        """  Validates an update user request body """
-        from app.Controllers import UserController
-        ret = {}
-
-        check_user = _check_user_id(user_id, should_exist=True)
-        if isinstance(check_user, Response):
-            return check_user
-
         # check email
         email = request_body.get('email')
         email_check = ValidationController.validate_email(email)
         if isinstance(email_check, Response):
             return email_check
 
-        # check email doesn't exist if it's not the same as before
-        user = UserController.get_user_by_id(user_id)
-        if email != user.email:
-            # emails don't match, so check that it doesn't exist
-            if UserController.user_exists(email):
-                logger.info(f"email {email} already in use")
-                return g_response(f"Email already exists.", 400)
-
-        ret['org_id'] = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
-        ret['first_name'] = _check_str(request_body.get('first_name'), 'first_name')
-        ret['last_name'] = _check_str(request_body.get('last_name'), 'last_name')
-        ret['role'] = _check_user_role(request_body.get('role_name'))
-        ret['job_title'] = _check_user_job_title(request_body.get('job_title'))
-        ret['disabled'] = _check_user_disabled(request_body.get('disabled'))
-
-        # return a response if any ret values are response objects
-        for k, v in ret.items():
-            if isinstance(v, Response):
-                return v
-
-        return ret
-
-    @staticmethod
-    def validate_delete_user_request(user_id: int) -> typing.Union[Response, User]:
-        """ Validates a delete user request body """
-        from app.Controllers import UserController
-
-        check_user = _check_int(user_id, 'user_id')
-        if isinstance(check_user, Response):
-            return check_user
-
-        try:
-            user = UserController.get_user_by_id(check_user)
-            return user
-        except ValueError as e:
-            logger.warning(str(e))
-            return g_response("user does not exist", 400)
-
-    @staticmethod
-    def validate_create_org_request(request_body: dict) -> typing.Union[Response, dict]:
-        """ Validates a create org request body """
-        org_name = request_body.get('name', request_body.get('org_name'))
-
-        org = _check_org_id(org_name, should_exist=False)
-        if isinstance(org, Response):
-            return org
-
-        return {
-            "org_name": org
+        user_attrs = {
+            "email": _check_user_id(request_body.get('email'), should_exist=False),
+            "role": _check_user_role(request_body.get('role_name')),
+            "first_name": _check_str(request_body.get('first_name'), 'first_name'),
+            "last_name": _check_str(request_body.get('last_name'), 'last_name'),
+            "job_title":  _check_user_job_title(request_body.get('job_title')),
+            "disabled":  _check_user_disabled(request_body.get('disabled'))
         }
 
+        # return a response if any ret values are response objects
+        for k, v in user_attrs.items():
+            if isinstance(v, Response):
+                return v
+
+        return user_attrs
+
     @staticmethod
-    def validate_create_task_request(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_create_signup_user(request_body: dict) -> typing.Union[Response, dict]:
+        """ Validates creating a user from the signup page """
+        # check email
+        email = request_body.get('email')
+        email_check = ValidationController.validate_email(email)
+        if isinstance(email_check, Response):
+            return email_check
+
+        ret = {
+            "email": _check_user_id(request_body.get('email'), should_exist=False),
+            "password": ValidationController.validate_password(request_body.get('password')),
+            "role": app.config['SIGNUP_ROLE'],
+            "first_name": _check_str(request_body.get('first_name'), 'first_name'),
+            "last_name": _check_str(request_body.get('last_name'), 'last_name'),
+            "job_title": _check_user_job_title(request_body.get('job_title')),
+            "disabled": _check_user_disabled(request_body.get('disabled'))
+        }
+
+        # return a response if any ret values are response objects
+        for k, v in ret.items():
+            if isinstance(v, Response):
+                return v
+
+        return ret
+
+    @staticmethod
+    def validate_update_user_request(request_body: dict) -> typing.Union[Response, dict]:
+        """  Validates an update user request body """
+        ret = {
+            "id": _check_user_id(request_body.get('id'), should_exist=True),
+            "first_name": _check_str(request_body.get('first_name'), 'first_name'),
+            "last_name": _check_str(request_body.get('last_name'), 'last_name'),
+            "role": _check_user_role(request_body.get('role_name')),
+            "job_title": _check_user_job_title(request_body.get('job_title')),
+            "disabled": _check_user_disabled(request_body.get('disabled'))
+        }
+
+        # return a response if any ret values are response objects
+        for k, v in ret.items():
+            if isinstance(v, Response):
+                return v
+
+        return ret
+
+    @staticmethod
+    def validate_create_org_request(request_body: dict) -> typing.Union[Response, str]:
+        """ Validates a create org request body """
+        from app.Controllers import OrganisationController
+
+        org_name = request_body.get('name', request_body.get('org_name'))
+
+        if not isinstance(org_name, str):
+            return g_response(f"Bad org_name|name, expected str got {type(org_name)}.", 400)
+
+        if OrganisationController.org_exists(org_name):
+            return g_response("Organisation already exists", 400)
+
+        return org_name
+
+    @staticmethod
+    def validate_create_task_request(org_id: int, request_body: dict) -> typing.Union[Response, dict]:
         """
         Validates a task request body
         :param request_body:    The request body from the create task request
         :return:                Response if the request body contains invalid values, or the TaskRequest dataclass
         """
-        org_id = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
-        if isinstance(org_id, Response):
-            return org_id
-
         ret = {
-            'org_id': org_id,
-            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), should_exist=True),
+            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), org_id=org_id, should_exist=True),
             'description': _check_task_description(request_body.get('description')),
             'status': _check_task_status(request_body.get('status'), should_exist=True),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
@@ -478,24 +418,16 @@ class ValidationController(object):
         return ret
 
     @staticmethod
-    def validate_update_task_request(task_id: int, request_body: dict) -> typing.Union[Response, dict]:
+    def validate_update_task_request(org_id: int, request_body: dict) -> typing.Union[Response, dict]:
         """
         Validates a user request body
-        :param task_id:         The task id
+        :param org_id:          The org that the task should be in (from the req user)
         :param request_body:    The request body from the update user request
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
-        check_task = _check_task_id(task_id)
-        if isinstance(check_task, Response):
-            return check_task
-
-        org_id = _check_org_id(request_body.get('org_id', request_body.get('org_name')), should_exist=True)
-        if isinstance(org_id, Response):
-            return org_id
-
         ret = {
-            'org_id': org_id,
-            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), should_exist=True),
+            'id': _check_task_id(request_body.get('id'), org_id),
+            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), org_id=org_id, should_exist=True),
             'description': _check_task_description(request_body.get('description')),
             'status': _check_task_status(request_body.get('status'), should_exist=True),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
@@ -512,7 +444,7 @@ class ValidationController(object):
         return ret
 
     @staticmethod
-    def validate_assign_task(request_body: dict) -> typing.Union[Response, tuple]:
+    def validate_assign_task(org_id: int, request_body: dict) -> typing.Union[Response, tuple]:
         """
         Validates the assign task request
         :param request_body:    The request body from the update task request
@@ -525,7 +457,7 @@ class ValidationController(object):
             return task_id
 
         try:
-            task = TaskController.get_task_by_id(task_id)
+            task = TaskController.get_task_by_id(task_id, org_id)
         except ValueError:
             return g_response("Task does not exist.")
 
@@ -536,7 +468,7 @@ class ValidationController(object):
         return task, assignee_id
 
     @staticmethod
-    def validate_drop_task(task_id: int) -> typing.Union[Response, Task]:
+    def validate_drop_task(org_id: int, task_id: int) -> typing.Union[Response, Task]:
         """
         Validates the assign task request
         :param task_id:    The id of the task to drop
@@ -549,7 +481,7 @@ class ValidationController(object):
             return task_id
 
         try:
-            task = TaskController.get_task_by_id(task_id)
+            task = TaskController.get_task_by_id(task_id, org_id)
             if task.assignee is None:
                 return g_response("Can't drop task because it is not assigned to anyone.")
             else:
@@ -558,7 +490,7 @@ class ValidationController(object):
             return g_response("Task does not exist.")
 
     @staticmethod
-    def validate_transition_task(request_body: dict) -> typing.Union[Response, tuple]:
+    def validate_transition_task(org_id: int, request_body: dict) -> typing.Union[Response, tuple]:
         """ Validates the transition task request """
         from app.Controllers import TaskController
 
@@ -567,7 +499,7 @@ class ValidationController(object):
             return task_id
 
         try:
-            task = TaskController.get_task_by_id(task_id)
+            task = TaskController.get_task_by_id(task_id, org_id)
         except ValueError:
             return g_response("Task does not exist.")
 
@@ -578,62 +510,38 @@ class ValidationController(object):
         return task, task_status
 
     @staticmethod
-    def validate_update_user_settings_request(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_update_user_settings_request(user_id: int, request_body: dict) -> UserSetting:
         """ Validates updating user settings """
-        from app.Controllers import UserController
-        from app.Models import UserSetting
         from decimal import Decimal
-
-        user_id = _check_user_id(request_body.pop('user_id'), should_exist=True)
-        if isinstance(user_id, Response):
-            return user_id
 
         user_setting_obj = UserSetting(user_id=Decimal(user_id))
         for k, v in request_body.items():
             user_setting_obj.__setattr__(k, v)
 
-        return {
-            "org_id": UserController.get_user_by_id(user_id).org_id,
-            "user_id": user_id,
-            "user_settings": user_setting_obj
-        }
+        return user_setting_obj
 
     @staticmethod
-    def validate_update_org_settings_request(request_body: dict) -> typing.Union[Response, dict]:
+    def validate_update_org_settings_request(org_id: int, request_body: dict) -> OrgSetting:
         """ Validates updating org settings """
-        from app.Models import OrgSetting
         from decimal import Decimal
-
-        org_id = _check_org_id(request_body.pop('org_id'), should_exist=True)
-        if isinstance(org_id, Response):
-            return org_id
 
         org_setting_obj = OrgSetting(org_id=Decimal(org_id))
         for k, v in request_body.items():
             org_setting_obj.__setattr__(k, v)
 
-        return {
-            "org_id": org_id,
-            "org_settings": org_setting_obj
-        }
+        return org_setting_obj
 
     @staticmethod
-    def validate_upsert_task_escalation(escalations: typing.List[dict]) -> typing.Union[typing.List[dict], Response]:
+    def validate_upsert_task_escalation(
+            task_type_id: int,
+            escalations: typing.List[dict]
+    ) -> typing.Union[typing.List[dict], Response]:
         """ Validates upserting task type escalations """
         valid_escalations = []
 
         for escalation in escalations:
-            task_type_id = _check_task_type_id(escalation.get('task_type_id'), should_exist=True)
-            if isinstance(task_type_id, Response):
-                return task_type_id
-
-            display_order = _check_int(escalation.get('display_order'), 'display_order')
-            if isinstance(display_order, Response):
-                return display_order
-
             ret = {
-                "task_type_id": task_type_id,
-                "display_order": display_order,
+                "display_order":  _check_int(escalation.get('display_order'), 'display_order'),
                 "delay": _check_int(escalation.get('delay'), 'delay'),
                 "from_priority": _check_task_priority(escalation.get('from_priority')),
                 "to_priority": _check_task_priority(escalation.get('to_priority'))
@@ -647,14 +555,14 @@ class ValidationController(object):
                 escalation_exists = session.query(exists().where(
                     and_(
                         TaskTypeEscalation.task_type_id == task_type_id,
-                        TaskTypeEscalation.display_order == display_order
+                        TaskTypeEscalation.display_order == ret['display_order']
                     ))).scalar()
 
                 if escalation_exists:
                     # validate update
                     check_escalation = _check_escalation(
                         task_type_id=task_type_id,
-                        display_order=display_order,
+                        display_order=ret['display_order'],
                         should_exist=True
                     )
                     if isinstance(check_escalation, Response):
@@ -664,7 +572,7 @@ class ValidationController(object):
                     # validate create
                     check_escalation = _check_escalation(
                         task_type_id=task_type_id,
-                        display_order=display_order,
+                        display_order=ret['display_order'],
                         should_exist=False
                     )
                     if isinstance(check_escalation, Response):
@@ -676,7 +584,7 @@ class ValidationController(object):
         return valid_escalations
 
     @staticmethod
-    def validate_delay_task_request(request_body: dict) -> typing.Union[Response, tuple]:
+    def validate_delay_task_request(org_id: int, request_body: dict) -> typing.Union[Response, tuple]:
         """ Validates the transition task request """
         from app.Controllers import TaskController
 
@@ -689,6 +597,6 @@ class ValidationController(object):
             return delay_for
 
         try:
-            return TaskController.get_task_by_id(task_id), delay_for
+            return TaskController.get_task_by_id(task_id, org_id), delay_for
         except ValueError:
             return g_response("Task does not exist.")
