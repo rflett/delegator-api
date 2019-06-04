@@ -2,6 +2,7 @@ import json
 import typing
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthController
+from app.Exceptions import AuthenticationError, AuthorizationError
 from app.Models import User, Notification
 from app.Models.Enums import Events
 from app.Models.RBAC import Operation, Resource, Permission
@@ -97,36 +98,36 @@ class UserController(object):
     @staticmethod
     def create_user(req: request) -> Response:
         """ Creates a user from a request """
-        request_body = req.get_json()
+        from app.Controllers import AuthenticationController, ValidationController
+        try:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
+        except AuthenticationError as e:
+            return g_response(str(e), 400)
+
+        try:
+            AuthController.authorize_request(
+                auth_user=req_user,
+                operation=Operation.CREATE,
+                resource=Resource.USER
+            )
+        except AuthorizationError as e:
+            return g_response(str(e), 400)
 
         # validate user
-        from app.Controllers import ValidationController
-
-        valid_user = ValidationController.validate_create_user_request(request_body)
+        user_attrs = ValidationController.validate_create_user_request(req.get_json())
         # invalid
-        if isinstance(valid_user, Response):
-            return valid_user
-
-        logger.info("requiring auth to create user")
-        req_user = AuthController.authorize_request(
-            request_headers=req.headers,
-            operation=Operation.CREATE,
-            resource=Resource.USER,
-            resource_org_id=valid_user.get('org_id')
-        )
-        # no perms
-        if isinstance(req_user, Response):
-            return req_user
+        if isinstance(user_attrs, Response):
+            return user_attrs
 
         with session_scope() as session:
             user = User(
-                org_id=valid_user.get('org_id'),
-                email=valid_user.get('email'),
-                first_name=valid_user.get('first_name'),
-                last_name=valid_user.get('last_name'),
+                org_id=req_user.org_id,
+                email=user_attrs.get('email'),
+                first_name=user_attrs.get('first_name'),
+                last_name=user_attrs.get('last_name'),
                 password='secret',
-                role=valid_user.get('role'),
-                job_title=valid_user.get('job_title')
+                role=user_attrs.get('role'),
+                job_title=user_attrs.get('job_title')
             )
             session.add(user)
 
