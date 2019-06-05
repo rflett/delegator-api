@@ -4,7 +4,6 @@ from flask import request, Response
 from sqlalchemy import exists, func
 
 from app import session_scope, logger, g_response, j_response
-from app.Exceptions import AuthorizationError
 from app.Models import Organisation, TaskType
 from app.Models.Enums import Operations, Resources
 
@@ -77,14 +76,11 @@ class OrganisationController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.ORG_SETTINGS
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.ORG_SETTINGS
+        )
 
         req_user.log(
             operation=Operations.GET,
@@ -101,14 +97,11 @@ class OrganisationController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.UPDATE,
-                resource=Resources.ORG_SETTINGS
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.UPDATE,
+            resource=Resources.ORG_SETTINGS
+        )
 
         org_setting = ValidationController.validate_update_org_settings_request(req_user.org_id, req.get_json())
 

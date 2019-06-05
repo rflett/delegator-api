@@ -4,7 +4,7 @@ from collections import namedtuple
 from flask import request, Response
 
 import app.Exceptions
-from app import r_cache, j_response, logger, session_scope, g_response, app  # noqa
+from app import r_cache, j_response, logger, session_scope, app  # noqa
 from app.Controllers import AuthenticationController, AuthorizationController
 from app.Models.Enums import Operations, Resources
 
@@ -224,14 +224,11 @@ class ReportController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.REPORTS_PAGE
-            )
-        except app.Exceptions.AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.REPORTS_PAGE
+        )
 
         # reports = r_cache.hgetall(req_user.org_id)
         # TODO this is a temporary way of pulling the reports for development

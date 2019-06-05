@@ -3,8 +3,7 @@ import json
 
 from flask import request, Response
 
-from app import session_scope, logger, g_response, app, j_response
-from app.Exceptions import AuthorizationError
+from app import session_scope, logger, app, j_response
 from app.Models import User, ActiveUser
 from app.Models.Enums import Operations, Resources
 
@@ -57,14 +56,11 @@ class ActiveUserController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.ACTIVE_USERS
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.ACTIVE_USERS
+        )
 
         # remove inactive users
         _purge_inactive_users()

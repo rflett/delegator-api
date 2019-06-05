@@ -35,6 +35,8 @@ def safe_exceptions(f):
             return f(*args, **kwargs)
         except AuthenticationError as e:
             return g_response(msg=str(e), status=401)
+        except AuthorizationError as e:
+            return g_response(msg=str(e), status=403)
         except Exception as e:
             logger.error(traceback.format_exc())
             return g_response(msg=str(e), status=500)

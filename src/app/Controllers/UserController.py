@@ -6,7 +6,6 @@ from sqlalchemy import exists, func
 
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthorizationController
-from app.Exceptions import AuthorizationError
 from app.Models import User, Notification
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
@@ -190,15 +189,12 @@ class UserController(object):
         if isinstance(user_attrs, Response):
             return user_attrs
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.UPDATE,
-                resource=Resources.USER,
-                affected_user_id=user_attrs.get('id')
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.UPDATE,
+            resource=Resources.USER,
+            affected_user_id=user_attrs.get('id')
+        )
 
         user_to_update = UserController.get_user_by_id(user_attrs.get('id'))
 
@@ -233,15 +229,12 @@ class UserController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.DELETE,
-                resource=Resources.USER,
-                affected_user_id=user_id
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.DELETE,
+            resource=Resources.USER,
+            affected_user_id=user_id
+        )
 
         user_to_delete = UserController.get_user_by_id(user_id)
 
@@ -280,15 +273,12 @@ class UserController(object):
             else:
                 user_identifier = str(user_identifier)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.USER,
-                affected_user_id=user_identifier
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.USER,
+            affected_user_id=user_identifier
+        )
 
         try:
             user = _get_user(user_identifier)
@@ -314,14 +304,11 @@ class UserController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.USERS
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.USERS
+        )
 
         with session_scope() as session:
             users_qry = session.query(User) \
@@ -343,14 +330,11 @@ class UserController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.PAGES
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.PAGES
+        )
 
         with session_scope() as session:
             pages_qry = session.query(Permission.resource_id).filter(
@@ -378,15 +362,12 @@ class UserController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.USER_SETTINGS,
-                affected_user_id=req_user.id
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.USER_SETTINGS,
+            affected_user_id=req_user.id
+        )
 
         req_user.log(
             operation=Operations.GET,
@@ -404,15 +385,12 @@ class UserController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.UPDATE,
-                resource=Resources.USER_SETTINGS,
-                affected_user_id=req_user.id
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.UPDATE,
+            resource=Resources.USER_SETTINGS,
+            affected_user_id=req_user.id
+        )
 
         user_setting = ValidationController.validate_update_user_settings_request(req_user.id, req.get_json())
 
@@ -448,15 +426,12 @@ class UserController(object):
         except ValueError as e:
             return g_response(str(e), 400)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.USER_ACTIVITY,
-                affected_user_id=user.id
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.USER_ACTIVITY,
+            affected_user_id=user.id
+        )
 
         req_user.log(
             operation=Operations.GET,
