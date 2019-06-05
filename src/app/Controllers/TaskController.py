@@ -6,7 +6,7 @@ from sqlalchemy import exists, and_
 from sqlalchemy.orm import aliased
 
 from app import logger, session_scope, g_response, j_response
-from app.Exceptions import AuthorizationError, AuthenticationError
+from app.Exceptions import AuthorizationError
 from app.Controllers import AuthorizationController
 from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Notification, TaskType
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
@@ -174,10 +174,7 @@ class TaskController(object):
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import TaskPriority
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(
@@ -204,10 +201,8 @@ class TaskController(object):
         """ Returns all task statuses """
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import TaskStatus
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(
@@ -234,10 +229,7 @@ class TaskController(object):
         """ Get a single task. """
         from app.Controllers import TaskController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(
@@ -267,10 +259,7 @@ class TaskController(object):
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import Task
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(
@@ -320,10 +309,7 @@ class TaskController(object):
         """
         from app.Controllers import ValidationController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(
@@ -399,10 +385,7 @@ class TaskController(object):
         """ Updates a task. Requires the full task object in the request. """
         from app.Controllers import ValidationController, TaskController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(
@@ -490,10 +473,7 @@ class TaskController(object):
         """ Assigns a user to task """
         from app.Controllers import ValidationController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         valid_assignment = ValidationController.validate_assign_task(req_user.org_id, req.get_json())
         # invalid assignment
@@ -525,10 +505,7 @@ class TaskController(object):
         """ Drops a task, which sets it to READY and removes the assignee """
         from app.Controllers import ValidationController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         task_to_drop = ValidationController.validate_drop_task(req_user.org_id, task_id)
         # invalid task drop request
@@ -565,10 +542,7 @@ class TaskController(object):
         """ Transitions the status of a task """
         from app.Controllers import ValidationController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         valid_task_transition = ValidationController.validate_transition_task(req_user.org_id, request.get_json())
         # invalid
@@ -601,10 +575,7 @@ class TaskController(object):
         from app.Controllers import ValidationController, AuthenticationController
         from app.Models import DelayedTask
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         validate_res = ValidationController.validate_delay_task_request(req_user.org_id, request.get_json())
         # invalid
@@ -660,10 +631,7 @@ class TaskController(object):
         """ Returns the activity for a user """
         from app.Controllers import TaskController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(

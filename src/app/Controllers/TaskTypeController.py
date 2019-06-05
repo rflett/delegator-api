@@ -6,7 +6,7 @@ from flask import request, Response
 from sqlalchemy import exists, and_, func
 
 from app import logger, session_scope, g_response, j_response
-from app.Exceptions import AuthorizationError, AuthenticationError
+from app.Exceptions import AuthorizationError
 from app.Controllers import AuthorizationController
 from app.Models import TaskType, TaskTypeEscalation, Notification
 from app.Models.Enums import Events, Operations, Resources
@@ -112,10 +112,7 @@ class TaskTypeController(object):
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import TaskType
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(
@@ -143,10 +140,7 @@ class TaskTypeController(object):
         from app.Controllers import AuthorizationController, ValidationController, AuthenticationController
         from app.Models import TaskType
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(
@@ -222,10 +216,7 @@ class TaskTypeController(object):
         from app.Controllers import ValidationController, AuthenticationController
         from app.Controllers.ValidationController import _check_task_type_id
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         request_body = req.get_json()
         total_updated = total_created = total_deleted = 0
@@ -351,10 +342,7 @@ class TaskTypeController(object):
         """ Disables a task type """
         from app.Controllers import AuthorizationController, ValidationController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(

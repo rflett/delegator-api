@@ -4,6 +4,7 @@ from functools import wraps
 from flask import Response, request
 
 from app import app, g_response, logger
+from app.Exceptions import AuthenticationError, AuthorizationError
 from app.Controllers import AuthorizationController, UserController, SignupController, TaskController, \
     VersionController, ActiveUserController, OrganisationController, TaskTypeController, AuthenticationController, \
     RoleController, ReportController
@@ -27,11 +28,13 @@ def requires_jwt(f):
 
 
 def safe_exceptions(f):
-    """ Returns 500 if an exception is raised """
+    """ Handles custom exceptions and unexpected errors """
     @wraps(f)
     def decorated(*args, **kwargs):
         try:
             return f(*args, **kwargs)
+        except AuthenticationError as e:
+            return g_response(msg=str(e), status=401)
         except Exception as e:
             logger.error(traceback.format_exc())
             return g_response(msg=str(e), status=500)

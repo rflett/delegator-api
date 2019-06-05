@@ -221,10 +221,8 @@ class ReportController(object):
     @staticmethod
     def get_all(req: request) -> Response:
         """ Get all reports """
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except app.Exceptions.AuthenticationError as e:
-            return g_response(str(e), 400)
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         try:
             AuthorizationController.authorize_request(
