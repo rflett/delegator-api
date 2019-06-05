@@ -100,9 +100,6 @@ class UserController(object):
 
         # validate user
         user_attrs = ValidationController.validate_create_user_request(req.get_json())
-        # invalid
-        if isinstance(user_attrs, Response):
-            return user_attrs
 
         with session_scope() as session:
             user = User(
@@ -185,9 +182,6 @@ class UserController(object):
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
         user_attrs = ValidationController.validate_update_user_request(req.get_json())
-        # invalid
-        if isinstance(user_attrs, Response):
-            return user_attrs
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -267,10 +261,7 @@ class UserController(object):
             user_identifier = int(user_identifier)
         except ValueError:
             from app.Controllers import ValidationController
-            validate_identifier = ValidationController.validate_email(user_identifier)
-            if isinstance(validate_identifier, Response):
-                return validate_identifier
-            else:
+            if ValidationController.validate_email(user_identifier):
                 user_identifier = str(user_identifier)
 
         AuthorizationController.authorize_request(
@@ -415,10 +406,7 @@ class UserController(object):
             user_identifier = int(user_identifier)
         except ValueError:
             from app.Controllers import ValidationController
-            validate_identifier = ValidationController.validate_email(user_identifier)
-            if isinstance(validate_identifier, Response):
-                return validate_identifier
-            else:
+            if ValidationController.validate_email(user_identifier):
                 user_identifier = str(user_identifier)
 
         try:

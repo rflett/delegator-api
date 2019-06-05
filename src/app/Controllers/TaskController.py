@@ -305,9 +305,6 @@ class TaskController(object):
         )
 
         task_attrs = ValidationController.validate_create_task_request(req_user.org_id, req.get_json())
-        # invalid
-        if isinstance(task_attrs, Response):
-            return task_attrs
 
         # create task
         with session_scope() as session:
@@ -375,9 +372,6 @@ class TaskController(object):
         )
 
         task_attrs = ValidationController.validate_update_task_request(req_user.org_id, req.get_json())
-        # invalid task
-        if isinstance(task_attrs, Response):
-            return task_attrs
 
         # update the task
         task_to_update = TaskController.get_task_by_id(task_attrs.get('id'), req_user.org_id)
@@ -450,12 +444,7 @@ class TaskController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        valid_assignment = ValidationController.validate_assign_task(req_user.org_id, req.get_json())
-        # invalid assignment
-        if isinstance(valid_assignment, Response):
-            return valid_assignment
-        else:
-            task, assignee_id = valid_assignment
+        task, assignee_id = ValidationController.validate_assign_task(req_user.org_id, req.get_json())
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -480,9 +469,6 @@ class TaskController(object):
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
         task_to_drop = ValidationController.validate_drop_task(req_user.org_id, task_id)
-        # invalid task drop request
-        if isinstance(task_to_drop, Response):
-            return task_to_drop
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -513,12 +499,7 @@ class TaskController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        valid_task_transition = ValidationController.validate_transition_task(req_user.org_id, request.get_json())
-        # invalid
-        if isinstance(valid_task_transition, Response):
-            return valid_task_transition
-        else:
-            task, task_status = valid_task_transition
+        task, task_status = ValidationController.validate_transition_task(req_user.org_id, request.get_json())
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -543,12 +524,7 @@ class TaskController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        validate_res = ValidationController.validate_delay_task_request(req_user.org_id, request.get_json())
-        # invalid
-        if isinstance(validate_res, Response):
-            return validate_res
-        else:
-            task, delay_for = validate_res
+        task, delay_for = ValidationController.validate_delay_task_request(req_user.org_id, request.get_json())
 
         AuthorizationController.authorize_request(
             auth_user=req_user,

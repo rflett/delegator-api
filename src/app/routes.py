@@ -4,7 +4,7 @@ from functools import wraps
 from flask import Response, request
 
 from app import app, g_response, logger
-from app.Exceptions import AuthenticationError, AuthorizationError
+from app.Exceptions import AuthenticationError, AuthorizationError, ValidationError
 from app.Controllers import AuthorizationController, UserController, SignupController, TaskController, \
     VersionController, ActiveUserController, OrganisationController, TaskTypeController, AuthenticationController, \
     RoleController, ReportController
@@ -33,6 +33,8 @@ def safe_exceptions(f):
     def decorated(*args, **kwargs):
         try:
             return f(*args, **kwargs)
+        except ValidationError as e:
+            return g_response(msg=str(e), status=400)
         except AuthenticationError as e:
             return g_response(msg=str(e), status=401)
         except AuthorizationError as e:

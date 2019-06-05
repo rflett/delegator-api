@@ -147,9 +147,6 @@ class TaskTypeController(object):
         # validate task_type
         validate_res = ValidationController.validate_create_task_type_request(req_user.org_id, req.get_json())
 
-        if isinstance(validate_res, Response):
-            return validate_res
-
         if isinstance(validate_res, str):
             # it will be a string it's new
             with session_scope() as session:
@@ -220,13 +217,8 @@ class TaskTypeController(object):
             org_id=req_user.org_id,
             should_exist=True
         )
-        if isinstance(task_type_id, Response):
-            return task_type_id
 
         valid_escalations = ValidationController.validate_upsert_task_escalation(task_type_id, escalations)
-        # invalid
-        if isinstance(valid_escalations, Response):
-            return valid_escalations
 
         # AUTHORIZATION
         AuthorizationController.authorize_request(
@@ -338,9 +330,6 @@ class TaskTypeController(object):
         )
 
         valid_dtt = ValidationController.validate_disable_task_type_request(req_user.org_id, task_type_id)
-        # invalid
-        if isinstance(valid_dtt, Response):
-            return valid_dtt
 
         with session_scope():
             valid_dtt.disabled = datetime.datetime.utcnow()

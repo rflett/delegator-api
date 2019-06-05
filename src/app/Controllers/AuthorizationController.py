@@ -7,7 +7,7 @@ from app.Controllers import ValidationController
 from app.Exceptions import AuthorizationError
 from app.Models import User
 from app.Models.Enums import ResourceScopes
-from flask import Response, request
+from flask import request
 
 
 class AuthorizationController(object):
@@ -61,10 +61,7 @@ class AuthorizationController(object):
     def reset_password(req: request):
         from app.Controllers import UserController
         request_body = req.get_json()
-        check_email = ValidationController.validate_email(request_body.get('email'))
-        # invalid
-        if isinstance(check_email, Response):
-            return check_email
+        ValidationController.validate_email(request_body.get('email'))
 
         with session_scope():
             logger.info(f"received password reset for {request_body.get('email')}")
