@@ -198,14 +198,10 @@ class AuthenticationController(object):
         logger.info(f"login requested for {email}")
 
         # validate email
-        email_validate_res = ValidationController.validate_email(email)
-        if isinstance(email_validate_res, Response):
-            return email_validate_res
+        ValidationController.validate_email(email)
 
         # validate password
-        password_validate_res = ValidationController.validate_password(password)
-        if isinstance(password_validate_res, Response):
-            return password_validate_res
+        ValidationController.validate_password(password)
 
         # get user
         if UserController.user_exists(email):

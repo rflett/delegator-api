@@ -6,7 +6,6 @@ from flask import request, Response
 from sqlalchemy import exists, and_, func
 
 from app import logger, session_scope, g_response, j_response
-from app.Exceptions import AuthorizationError, AuthenticationError
 from app.Controllers import AuthorizationController
 from app.Models import TaskType, TaskTypeEscalation, Notification
 from app.Models.Enums import Events, Operations, Resources
@@ -112,19 +111,13 @@ class TaskTypeController(object):
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import TaskType
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.TASK_TYPES
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.TASK_TYPES
+        )
 
         with session_scope() as session:
             task_type_query = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
@@ -143,25 +136,16 @@ class TaskTypeController(object):
         from app.Controllers import AuthorizationController, ValidationController, AuthenticationController
         from app.Models import TaskType
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.CREATE,
-                resource=Resources.TASK_TYPE
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.CREATE,
+            resource=Resources.TASK_TYPE
+        )
 
         # validate task_type
         validate_res = ValidationController.validate_create_task_type_request(req_user.org_id, req.get_json())
-
-        if isinstance(validate_res, Response):
-            return validate_res
 
         if isinstance(validate_res, str):
             # it will be a string it's new
@@ -192,14 +176,11 @@ class TaskTypeController(object):
         elif isinstance(validate_res, TaskType):
             # it will be a TaskType object if it exists already and needs to be enabled
             with session_scope():
-                try:
-                    AuthorizationController.authorize_request(
-                        auth_user=req_user,
-                        operation=Operations.ENABLE,
-                        resource=Resources.TASK_TYPE
-                    )
-                except AuthorizationError as e:
-                    return g_response(str(e), 400)
+                AuthorizationController.authorize_request(
+                    auth_user=req_user,
+                    operation=Operations.ENABLE,
+                    resource=Resources.TASK_TYPE
+                )
 
                 validate_res.disabled = None
 
@@ -222,10 +203,7 @@ class TaskTypeController(object):
         from app.Controllers import ValidationController, AuthenticationController
         from app.Controllers.ValidationController import _check_task_type_id
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         request_body = req.get_json()
         total_updated = total_created = total_deleted = 0
@@ -239,23 +217,15 @@ class TaskTypeController(object):
             org_id=req_user.org_id,
             should_exist=True
         )
-        if isinstance(task_type_id, Response):
-            return task_type_id
 
         valid_escalations = ValidationController.validate_upsert_task_escalation(task_type_id, escalations)
-        # invalid
-        if isinstance(valid_escalations, Response):
-            return valid_escalations
 
         # AUTHORIZATION
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.UPSERT,
-                resource=Resources.TASK_TYPE_ESCALATION
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.UPSERT,
+            resource=Resources.TASK_TYPE_ESCALATION
+        )
 
         # UPSERT
         for escalation in valid_escalations:
@@ -351,24 +321,15 @@ class TaskTypeController(object):
         """ Disables a task type """
         from app.Controllers import AuthorizationController, ValidationController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.DISABLE,
-                resource=Resources.TASK_TYPE
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.DISABLE,
+            resource=Resources.TASK_TYPE
+        )
 
         valid_dtt = ValidationController.validate_disable_task_type_request(req_user.org_id, task_type_id)
-        # invalid
-        if isinstance(valid_dtt, Response):
-            return valid_dtt
 
         with session_scope():
             valid_dtt.disabled = datetime.datetime.utcnow()

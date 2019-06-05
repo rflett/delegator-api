@@ -3,8 +3,7 @@ import json
 from flask import request, Response
 from sqlalchemy import and_
 
-import app.Exceptions
-from app import logger, session_scope, j_response, g_response
+from app import logger, session_scope, j_response
 from app.Models.Enums import Operations, Resources
 
 
@@ -20,19 +19,13 @@ class RoleController(object):
         from app.Models import User
         from app.Models.RBAC import Role
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except app.Exceptions.AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.ROLES
-            )
-        except app.Exceptions.AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.ROLES
+        )
 
         with session_scope() as session:
             roles_qry = session.query(Role)\

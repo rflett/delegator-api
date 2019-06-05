@@ -6,7 +6,6 @@ from sqlalchemy import exists, func
 
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthorizationController
-from app.Exceptions import AuthenticationError, AuthorizationError
 from app.Models import User, Notification
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
@@ -90,25 +89,17 @@ class UserController(object):
     def create_user(req: request) -> Response:
         """ Creates a user from a request """
         from app.Controllers import AuthenticationController, ValidationController
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.CREATE,
-                resource=Resources.USER
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.CREATE,
+            resource=Resources.USER
+        )
 
         # validate user
         user_attrs = ValidationController.validate_create_user_request(req.get_json())
-        # invalid
-        if isinstance(user_attrs, Response):
-            return user_attrs
 
         with session_scope() as session:
             user = User(
@@ -188,25 +179,16 @@ class UserController(object):
         """ Updates a user, requires the full user object in the response body.  """
         from app.Controllers import ValidationController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         user_attrs = ValidationController.validate_update_user_request(req.get_json())
-        # invalid
-        if isinstance(user_attrs, Response):
-            return user_attrs
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.UPDATE,
-                resource=Resources.USER,
-                affected_user_id=user_attrs.get('id')
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.UPDATE,
+            resource=Resources.USER,
+            affected_user_id=user_attrs.get('id')
+        )
 
         user_to_update = UserController.get_user_by_id(user_attrs.get('id'))
 
@@ -239,20 +221,14 @@ class UserController(object):
         """ Deletes a user """
         from app.Controllers import AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.DELETE,
-                resource=Resources.USER,
-                affected_user_id=user_id
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.DELETE,
+            resource=Resources.USER,
+            affected_user_id=user_id
+        )
 
         user_to_delete = UserController.get_user_by_id(user_id)
 
@@ -278,31 +254,22 @@ class UserController(object):
         """ Get a single user by email or ID """
         from app.Controllers import AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         # is the identifier an email or user_id?
         try:
             user_identifier = int(user_identifier)
         except ValueError:
             from app.Controllers import ValidationController
-            validate_identifier = ValidationController.validate_email(user_identifier)
-            if isinstance(validate_identifier, Response):
-                return validate_identifier
-            else:
+            if ValidationController.validate_email(user_identifier):
                 user_identifier = str(user_identifier)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.USER,
-                affected_user_id=user_identifier
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.USER,
+            affected_user_id=user_identifier
+        )
 
         try:
             user = _get_user(user_identifier)
@@ -326,19 +293,13 @@ class UserController(object):
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import User
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.USERS
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.USERS
+        )
 
         with session_scope() as session:
             users_qry = session.query(User) \
@@ -358,19 +319,13 @@ class UserController(object):
         """ Returns the pages a user can access """
         from app.Controllers import AuthorizationController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.PAGES
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.PAGES
+        )
 
         with session_scope() as session:
             pages_qry = session.query(Permission.resource_id).filter(
@@ -396,20 +351,14 @@ class UserController(object):
         """ Returns the user's settings """
         from app.Controllers import AuthorizationController, SettingsController, AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.USER_SETTINGS,
-                affected_user_id=req_user.id
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.USER_SETTINGS,
+            affected_user_id=req_user.id
+        )
 
         req_user.log(
             operation=Operations.GET,
@@ -425,20 +374,14 @@ class UserController(object):
         from app.Controllers import AuthorizationController, ValidationController, SettingsController, \
             AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.UPDATE,
-                resource=Resources.USER_SETTINGS,
-                affected_user_id=req_user.id
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.UPDATE,
+            resource=Resources.USER_SETTINGS,
+            affected_user_id=req_user.id
+        )
 
         user_setting = ValidationController.validate_update_user_settings_request(req_user.id, req.get_json())
 
@@ -456,20 +399,14 @@ class UserController(object):
         """ Returns the activity for a user """
         from app.Controllers import AuthenticationController
 
-        try:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
-        except AuthenticationError as e:
-            return g_response(str(e), 400)
+        req_user = AuthenticationController.get_user_from_request(req.headers)
 
         # is the identifier an email or user_id?
         try:
             user_identifier = int(user_identifier)
         except ValueError:
             from app.Controllers import ValidationController
-            validate_identifier = ValidationController.validate_email(user_identifier)
-            if isinstance(validate_identifier, Response):
-                return validate_identifier
-            else:
+            if ValidationController.validate_email(user_identifier):
                 user_identifier = str(user_identifier)
 
         try:
@@ -477,15 +414,12 @@ class UserController(object):
         except ValueError as e:
             return g_response(str(e), 400)
 
-        try:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.GET,
-                resource=Resources.USER_ACTIVITY,
-                affected_user_id=user.id
-            )
-        except AuthorizationError as e:
-            return g_response(str(e), 400)
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.USER_ACTIVITY,
+            affected_user_id=user.id
+        )
 
         req_user.log(
             operation=Operations.GET,

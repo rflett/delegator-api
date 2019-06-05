@@ -18,13 +18,9 @@ class SignupController(object):
 
         # validate org
         org_name = ValidationController.validate_create_org_request(request_body)
-        if isinstance(org_name, Response):
-            return org_name
 
         # validate user
         valid_user = ValidationController.validate_create_signup_user(request_body)
-        if isinstance(valid_user, Response):
-            return valid_user
 
         try:
             new_org = OrganisationController.create_org(org_name=org_name)

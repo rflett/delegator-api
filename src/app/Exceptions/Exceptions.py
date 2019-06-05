@@ -8,3 +8,7 @@ class AuthenticationError(Error):
 
 class AuthorizationError(Error):
     pass
+
+
+class ValidationError(Error):
+    pass
