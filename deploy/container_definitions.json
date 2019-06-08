@@ -16,11 +16,10 @@
             { "name" : "APP_ENV", "value" : "Staging" }
         ],
         "logConfiguration": {
-            "logDriver": "awslogs",
+            "logDriver": "syslog",
             "options": {
-                "awslogs-group": "api",
-                "awslogs-region": "ap-southeast-2",
-                "awslogs-stream-prefix": "api"
+                "syslog-address": "udp://127.0.0.1:514",
+                "tag": "api-staging"
             }
         }
     }

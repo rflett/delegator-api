@@ -34,11 +34,10 @@ class SignupController(object):
         except Exception as e:
             logger.error(str(e))
             # the org was actually created, but the user failed, so delete the org and default task type
-            if new_org.status_code == 201:
-                with session_scope() as session:
-                    from app.Models import TaskType
-                    session.query(TaskType).filter(TaskType.org_id == new_org.id).delete()
-                    session.delete(new_org)
-                    logger.info(f"deleted the new organisation {new_org.name} "
-                                f"since there was an issue creating the user")
+            with session_scope() as session:
+                from app.Models import TaskType
+                session.query(TaskType).filter(TaskType.org_id == new_org.id).delete()
+                session.delete(new_org)
+                logger.info(f"deleted the new organisation {new_org.name} "
+                            f"since there was an issue creating the user")
             return g_response("There was an issue creating the user", 500)
