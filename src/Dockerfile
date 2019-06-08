@@ -23,4 +23,4 @@ EXPOSE 5000
 COPY api.py config.py /api/
 COPY app /api/app
 
-CMD ["pipenv", "run", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--log-level", "debug", "api:app"]
+CMD ["pipenv", "run", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--log-level", "debug", "--access-logfile", "-", "api:app"]
