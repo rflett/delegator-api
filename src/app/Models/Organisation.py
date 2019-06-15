@@ -32,7 +32,5 @@ class Organisation(db.Model):
         :return: The dict repr of an Organisation object
         """
         return {
-            "name": self.name,
-            "jwt_aud": self.jwt_aud,
-            "jwt_secret": self.jwt_secret
+            "name": self.name
         }
