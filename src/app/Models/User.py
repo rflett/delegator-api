@@ -244,32 +244,12 @@ class User(db.Model):
                 .first()
 
         user, role, org = user_qry
-        extras = {}
 
-        # prepend role attrs with role_
-        for k, v in role.as_dict().items():
-            # key exclusions
-            if k not in ['id', 'rank']:
-                extras[f'role_{k}'] = v
+        user_dict = user.as_dict()
+        user_dict['role'] = role.as_dict()
+        user_dict['settings'] = SettingsController.get_user_settings(user.id).as_dict()
 
-        # prepend org attrs with org_
-        for k, v in org.as_dict().items():
-            # key exclusions
-            if k not in ['id', 'jwt_aud', 'jwt_secret']:
-                extras[f'org_{k}'] = v
-
-        # get settings
-        extras['settings'] = SettingsController.get_user_settings(user.id).as_dict()
-
-        # merge role with user, with return dict sorted
-        return dict(
-                sorted(
-                    {
-                        **user.as_dict(),
-                        **extras
-                    }.items()
-                )
-        )
+        return user_dict
 
     def activity(self) -> list:
         """ Returns the activity of a user"""

@@ -93,7 +93,7 @@ def create_user():
 @requires_jwt
 @handle_exceptions
 def get_users():
-    return UserController.get_all_users(request)
+    return UserController.get_users(request)
 
 
 @app.route('/users', methods=['PUT'])

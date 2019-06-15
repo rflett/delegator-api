@@ -6,37 +6,6 @@ from sqlalchemy.orm import aliased
 from app import db, session_scope, logger, task_activity_table, app
 
 
-def _get_fat_task(task_id: int) -> dict:
-    """
-    Creates a nice dict of a task
-    """
-    from app.Models import User, TaskStatus, TaskType, TaskPriority
-
-    with session_scope() as session:
-        task_assignee, task_created_by = aliased(User), aliased(User)
-        tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority) \
-            .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
-            .join(task_created_by, task_created_by.id == Task.created_by) \
-            .join(Task.created_bys) \
-            .join(Task.task_statuses) \
-            .join(Task.task_types) \
-            .join(Task.task_priorities) \
-            .filter(Task.id == task_id) \
-            .first()
-
-    t, ta, tcb, ts, tt, tp = tasks_qry
-
-    task_dict = t.as_dict()
-
-    task_dict['assignee'] = ta.as_dict() if ta is not None else None
-    task_dict['created_by'] = tcb.as_dict()
-    task_dict['status'] = ts.as_dict()
-    task_dict['type'] = tt.as_dict()
-    task_dict['priority'] = tp.as_dict()
-
-    return task_dict
-
-
 class Task(db.Model):
     __tablename__ = "tasks"
 
@@ -154,7 +123,31 @@ class Task(db.Model):
 
     def fat_dict(self) -> dict:
         """ Returns a full task dict with all of its FK's joined. """
-        return _get_fat_task(self.id)
+        from app.Models import User, TaskStatus, TaskType, TaskPriority
+
+        with session_scope() as session:
+            task_assignee, task_created_by = aliased(User), aliased(User)
+            tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority) \
+                .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
+                .join(task_created_by, task_created_by.id == Task.created_by) \
+                .join(Task.created_bys) \
+                .join(Task.task_statuses) \
+                .join(Task.task_types) \
+                .join(Task.task_priorities) \
+                .filter(Task.id == self.id) \
+                .first()
+
+        t, ta, tcb, ts, tt, tp = tasks_qry
+
+        task_dict = t.as_dict()
+
+        task_dict['assignee'] = ta.as_dict() if ta is not None else None
+        task_dict['created_by'] = tcb.as_dict()
+        task_dict['status'] = ts.as_dict()
+        task_dict['type'] = tt.as_dict()
+        task_dict['priority'] = tp.as_dict()
+
+        return task_dict
 
     def activity(self) -> list:
         """ Returns the activity of a task. """

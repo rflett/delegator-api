@@ -284,14 +284,15 @@ class UserController(object):
             return g_response(str(e), 400)
 
     @staticmethod
-    def get_all_users(req: request) -> Response:
+    def get_users(req: request) -> Response:
         """
         Get all users
         :param req:     The request object
         :return:
         """
         from app.Controllers import AuthorizationController, AuthenticationController
-        from app.Models import User
+        from app.Models import User, Organisation
+        from app.Models.RBAC import Role
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -302,16 +303,24 @@ class UserController(object):
         )
 
         with session_scope() as session:
-            users_qry = session.query(User) \
+            users_qry = session.query(User, Role, Organisation) \
+                .join(User.roles) \
+                .join(User.orgs) \
                 .filter(User.org_id == req_user.org_id) \
                 .all()
 
-        users = [u.fat_dict() for u in users_qry]
+        users = []
+
+        for user, role, org in users_qry:
+            user_dict = user.as_dict()
+            user_dict['role'] = role.as_dict()
+            users.append(user_dict)
+
+        logger.info(f"found {len(users)} users: {json.dumps(users)}")
         req_user.log(
             operation=Operations.GET,
             resource=Resources.USERS
         )
-        logger.info(f"found {len(users)} users: {json.dumps(users)}")
         return j_response(users)
 
     @staticmethod
