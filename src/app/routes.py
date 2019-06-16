@@ -243,6 +243,13 @@ def drop_task(task_id):
     return TaskController.drop_task(task_id, request)
 
 
+@app.route('/task/cancel/<int:task_id>', methods=['POST'])
+@requires_jwt
+@handle_exceptions
+def cancel_task(task_id):
+    return TaskController.cancel_task(task_id, request)
+
+
 @app.route('/task/transition', methods=['POST'])
 @requires_jwt
 @handle_exceptions

@@ -418,6 +418,24 @@ class ValidationController(object):
             raise ValidationError("Task does not exist.")
 
     @staticmethod
+    def validate_cancel_task(org_id: int, task_id: int) -> Task:
+        """
+        Validates the cancel task request
+        :param org_id:  The task's org id
+        :param task_id: The id of the task to cancel
+        :return:        Task object
+        :raises:        ValidationError
+        """
+        from app.Controllers import TaskController
+
+        task_id = _check_int(param=task_id, param_name='task_id')
+
+        try:
+            return TaskController.get_task_by_id(task_id, org_id)
+        except ValueError:
+            raise ValidationError("Task does not exist.")
+
+    @staticmethod
     def validate_transition_task(org_id: int, request_body: dict) -> tuple:
         """ Validates the transition task request """
         from app.Controllers import TaskController

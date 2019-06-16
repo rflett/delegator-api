@@ -1,5 +1,6 @@
 class Operations(str):
     ASSIGN = 'ASSIGN'
+    CANCEL = 'CANCEL'
     CREATE = 'CREATE'
     DELAY = 'DELAY'
     DELETE = 'DELETE'

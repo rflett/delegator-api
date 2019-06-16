@@ -499,6 +499,55 @@
 					"response": []
 				},
 				{
+					"name": "Cancel Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(204);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/task/cancel/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"task",
+								"cancel",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Upsert Task Escalation",
 					"event": [
 						{
