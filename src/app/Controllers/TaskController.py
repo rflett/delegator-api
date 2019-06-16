@@ -493,6 +493,35 @@ class TaskController(object):
         return g_response(status=204)
 
     @staticmethod
+    def cancel_task(task_id, req: request) -> Response:
+        """ Drops a task, which sets it to READY and removes the assignee """
+        from app.Controllers import ValidationController, AuthenticationController
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        task_to_cancel = ValidationController.validate_cancel_task(req_user.org_id, task_id)
+
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.CANCEL,
+            resource=Resources.TASK,
+            affected_user_id=task_to_cancel.assignee
+        )
+
+        _transition_task(
+            task=task_to_cancel,
+            status=TaskStatuses.CANCELLED,
+            req_user=req_user
+        )
+        req_user.log(
+            operation=Operations.CANCEL,
+            resource=Resources.TASK,
+            resource_id=task_id
+        )
+        logger.info(f"user {req_user.id} cancelled task {task_to_cancel.id}")
+        return g_response(status=204)
+
+    @staticmethod
     def transition_task(req: request) -> Response:
         """ Transitions the status of a task """
         from app.Controllers import ValidationController, AuthenticationController

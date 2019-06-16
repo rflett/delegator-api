@@ -607,6 +607,22 @@ Overview of the BackBurner API.
 + Response 204 (application/json)
 
 
+## Task Cancelling [/task/cancel/{task_id}]
+
++ Parameters
+    + task_id - The task id
+
+
+### Cancel Task [POST]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+        
++ Response 204 (application/json)
+
+
 ## Task Transitioning [/task/transition]
 
 ### Transition Task [POST]
