@@ -542,8 +542,37 @@ class TaskController(object):
             status=task_status,
             req_user=req_user
         )
-
         return g_response(status=204)
+
+    @staticmethod
+    def get_available_transitions(task_id: int, req: request) -> Response:
+        """ Transitions the status of a task """
+        from app.Controllers import ValidationController, AuthenticationController
+        from app.Models import TaskStatus
+        from app.Models.Enums import TaskStatuses
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        task = ValidationController.validate_get_transitions(req_user.org_id, task_id)
+
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.TASK_TRANSITIONS
+        )
+
+        valid_transitions = {
+            TaskStatuses.READY: [TaskStatuses.INPROGRESS, TaskStatuses.CANCELLED],
+            TaskStatuses.INPROGRESS: [TaskStatuses.COMPLETED],
+            TaskStatuses.DELAYED: [TaskStatuses.INPROGRESS]
+        }
+
+        search = valid_transitions.get(task.status, [])
+
+        with session_scope() as session:
+            task_status_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
+
+        return j_response([ts.as_dict() for ts in task_status_qry])
 
     @staticmethod
     def delay_task(req: request) -> Response:

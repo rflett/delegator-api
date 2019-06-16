@@ -642,6 +642,30 @@ Overview of the BackBurner API.
 + Response 204 (application/json)
 
 
+## Task Available Transitions [/task/transition/{task_id}]
+
+### View Available Transitions [GET]
+
++ Request (application/json)
+    + Headers
+            
+            Authorization: Bearer JWT
+
++ Response 200 (application/json)
+    + Body
+
+            [
+                {
+                    "status": "INPROGRESS",
+                    "label": "In Progress"
+                },
+                {
+                    "status": "CANCELLED",
+                    "label": "Cancelled"
+                }
+            ]
+
+
 ## Task Delaying [/task/delay]
 
 ### Delay Task [POST]

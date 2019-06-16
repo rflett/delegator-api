@@ -452,6 +452,24 @@ class ValidationController(object):
         return task, task_status
 
     @staticmethod
+    def validate_get_transitions(org_id: int, task_id: int) -> Task:
+        """
+        Validates the get task available task transitions request
+        :param org_id:  Org id of the task
+        :param task_id: The task id
+        :return:        Task object
+        :raises:        ValidationError
+        """
+        from app.Controllers import TaskController
+
+        task_id = _check_int(param=task_id, param_name='task_id')
+
+        try:
+            return TaskController.get_task_by_id(task_id, org_id)
+        except ValueError:
+            raise ValidationError("Task does not exist.")
+
+    @staticmethod
     def validate_update_user_settings_request(user_id: int, request_body: dict) -> UserSetting:
         """ Validates updating user settings """
         from decimal import Decimal
