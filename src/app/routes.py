@@ -257,6 +257,13 @@ def transition_task():
     return TaskController.transition_task(request)
 
 
+@app.route('/task/transition/<int:task_id>', methods=['GET'])
+@requires_jwt
+@handle_exceptions
+def get_available_transitions(task_id):
+    return TaskController.get_available_transitions(task_id, request)
+
+
 @app.route('/task/delay', methods=['POST'])
 @requires_jwt
 @handle_exceptions
