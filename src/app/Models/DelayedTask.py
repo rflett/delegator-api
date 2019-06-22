@@ -11,6 +11,7 @@ class DelayedTask(db.Model):
     # https://docs.sqlalchemy.org/en/13/faq/ormconfiguration.html#how-do-i-map-a-table-that-has-no-primary-key
     delayed_at = db.Column('delayed_at', db.DateTime, default=datetime.datetime.utcnow, primary_key=True)
     delayed_by = db.Column('delayed_by', db.Integer, db.ForeignKey('users.id'))
+    reason = db.Column('reason', db.Text, default=None)
     snoozed = db.Column('snoozed', db.DateTime, default=None)
     expired = db.Column('expired', db.DateTime, default=None)
 
@@ -23,6 +24,7 @@ class DelayedTask(db.Model):
             delay_for: int,
             delayed_at: datetime.datetime,
             delayed_by: int,
+            reason: str = None,
             snoozed: typing.Union[datetime.datetime, None] = None,
             expired: typing.Union[datetime.datetime, None] = None
     ):
@@ -30,6 +32,7 @@ class DelayedTask(db.Model):
         self.delay_for = delay_for
         self.delayed_at = delayed_at
         self.delayed_by = delayed_by
+        self.reason = reason
         self.snoozed = snoozed
         self.expired = expired
 
@@ -39,6 +42,7 @@ class DelayedTask(db.Model):
             "delay_for": self.delay_for,
             "delayed_at": self.delayed_at,
             "delayed_by": self.delayed_by,
+            "reason": self.reason,
             "snoozed": self.snoozed,
             "expired": self.expired
         }

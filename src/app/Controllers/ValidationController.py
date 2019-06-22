@@ -544,9 +544,13 @@ class ValidationController(object):
 
         delay_for = _check_int(request_body.get('delay_for'), 'delay_for')
 
+        reason = request_body.get('reason')
+        if reason is not None:
+            reason = _check_str(reason, 'reason')
+
         try:
             task = TaskController.get_task_by_id(task_id, org_id)
         except ValueError:
             raise ValidationError("Task does not exist.")
 
-        return task, delay_for
+        return task, delay_for, reason
