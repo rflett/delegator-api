@@ -582,7 +582,7 @@ class TaskController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        task, delay_for = ValidationController.validate_delay_task_request(req_user.org_id, request.get_json())
+        task, delay_for, reason = ValidationController.validate_delay_task_request(req_user.org_id, request.get_json())
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -606,12 +606,15 @@ class TaskController(object):
                 delay.delay_for = delay_for
                 delay.delayed_at = datetime.datetime.utcnow()
                 delay.snoozed = None
+                if reason is not None:
+                    delay.reason = reason
             else:
                 delayed_task = DelayedTask(
                     task_id=task.id,
                     delay_for=delay_for,
                     delayed_at=datetime.datetime.utcnow(),
-                    delayed_by=req_user.id
+                    delayed_by=req_user.id,
+                    reason=reason
                 )
                 session.add(delayed_task)
 
