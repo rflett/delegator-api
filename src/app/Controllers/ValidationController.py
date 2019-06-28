@@ -288,7 +288,7 @@ class ValidationController(object):
 
         user_attrs = {
             "email": _check_user_id(request_body.get('email'), should_exist=False),
-            "role": _check_user_role(request_body.get('role_name')),
+            "role": _check_user_role(request_body.get('role_id')),
             "first_name": _check_str(request_body.get('first_name'), 'first_name'),
             "last_name": _check_str(request_body.get('last_name'), 'last_name'),
             "job_title":  _check_user_job_title(request_body.get('job_title')),
