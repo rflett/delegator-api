@@ -171,7 +171,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"email\": \"james@happypath.com.au\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_name\": \"USER\",\n\t\"job_title\": \"Developer\"\n}"
+							"raw": "{\n\t\"email\": \"james@happypath.com.au\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_id\": \"USER\",\n\t\"job_title\": \"Developer\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -483,7 +483,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"task_id\": 1,\n\t\"delay_for\": 30\n}"
+							"raw": "{\n\t\"task_id\": 1,\n\t\"delay_for\": 30,\n\t\"reason\": \"because I'm lazy\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/task/delay",
@@ -1450,7 +1450,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"id\": 2,\n\t\"first_name\": \"James\",\n\t\"last_name\": \"W. Turner\",\n\t\"role_name\": \"MANAGER\",\n\t\"job_title\": \"Promoted from Scrub\"\n}"
+							"raw": "{\n\t\"id\": 2,\n\t\"first_name\": \"James\",\n\t\"last_name\": \"W. Turner\",\n\t\"role_id\": \"MANAGER\",\n\t\"job_title\": \"Promoted from Scrub\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
