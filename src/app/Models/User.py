@@ -47,9 +47,15 @@ class User(db.Model):
     failed_login_attempts = db.Column('failed_login_attempts', db.Integer, default=0)
     failed_login_time = db.Column('failed_login_time', db.DateTime, default=None)
     created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
+    created_by = db.Column('created_by', db.Integer, db.ForeignKey('users.id'))
+    updated_at = db.Column('updated_at', db.DateTime, default=datetime.datetime.utcnow)
+    updated_by = db.Column('updated_by', db.Integer, db.ForeignKey('users.id'))
+    password_last_changed = db.Column('password_last_changed', db.DateTime, default=datetime.datetime.utcnow)
 
     orgs = db.relationship("Organisation")
     roles = db.relationship("Role")
+    created_bys = db.relationship("User", foreign_keys=[created_by])
+    updated_bys = db.relationship("User", foreign_keys=[updated_by])
 
     def __init__(
             self,
@@ -60,6 +66,7 @@ class User(db.Model):
             password: str,
             job_title: str,
             role: str,
+            created_by: typing.Union[int, None] = None,
             disabled: typing.Union[datetime.datetime, None] = None,
             deleted: typing.Union[datetime.datetime, None] = None
     ):
@@ -70,6 +77,7 @@ class User(db.Model):
         self.password = _hash_password(password)
         self.job_title = job_title
         self.role = role
+        self.created_by = created_by
         self.disabled = disabled
         self.deleted = deleted
 
@@ -228,7 +236,11 @@ class User(db.Model):
             "role": self.role,
             "disabled": disabled,
             "job_title": self.job_title,
-            "deleted": deleted
+            "deleted": deleted,
+            "created_at": self.created_at.strftime(app.config['RESPONSE_DATE_FORMAT']),
+            "created_by": self.created_by,
+            "updated_at": self.updated_at.strftime(app.config['RESPONSE_DATE_FORMAT']),
+            "updated_by": self.updated_by
         }
 
     def fat_dict(self) -> dict:
@@ -245,7 +257,17 @@ class User(db.Model):
 
         user, role, org = user_qry
 
+        with session_scope() as session:
+            created_by = session.query(User) \
+                .filter(User.id == user.created_by) \
+                .first()
+            updated_by = session.query(User) \
+                .filter(User.id == user.updated_by) \
+                .first()
+
         user_dict = user.as_dict()
+        user_dict['created_by'] = created_by.name()
+        user_dict['updated_by'] = updated_by.name() if updated_by is not None else None
         user_dict['role'] = role.as_dict()
         user_dict['settings'] = SettingsController.get_user_settings(user.id).as_dict()
 
