@@ -1,3 +1,4 @@
+import datetime
 import json
 import typing
 
@@ -110,7 +111,8 @@ class UserController(object):
                 password='secret',
                 role=user_attrs.get('role'),
                 job_title=user_attrs.get('job_title'),
-                disabled=user_attrs.get('disabled')
+                disabled=user_attrs.get('disabled'),
+                created_by=req_user.id
             )
             session.add(user)
 
@@ -152,6 +154,9 @@ class UserController(object):
                 job_title=valid_user.get('job_title')
             )
             session.add(user)
+
+        with session_scope():
+            user.created_by = user.id
 
         # create user settings
         user.create_settings()
@@ -196,6 +201,8 @@ class UserController(object):
         with session_scope():
             for k, v in user_attrs.items():
                 user_to_update.__setattr__(k, v)
+            user_to_update.updated_at = datetime.datetime.utcnow()
+            user_to_update.updated_by = req_user.id
 
         Notification(
             org_id=user_to_update.org_id,
@@ -313,7 +320,17 @@ class UserController(object):
         users = []
 
         for user, role, org in users_qry:
+            with session_scope() as session:
+                created_by = session.query(User) \
+                    .filter(User.id == user.created_by) \
+                    .first()
+                updated_by = session.query(User) \
+                    .filter(User.id == user.updated_by) \
+                    .first()
+
             user_dict = user.as_dict()
+            user_dict['created_by'] = created_by.name()
+            user_dict['updated_by'] = updated_by.name() if updated_by is not None else None
             user_dict['role'] = role.as_dict()
             users.append(user_dict)
 
