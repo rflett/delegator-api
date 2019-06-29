@@ -109,7 +109,8 @@ class UserController(object):
                 last_name=user_attrs.get('last_name'),
                 password='secret',
                 role=user_attrs.get('role'),
-                job_title=user_attrs.get('job_title')
+                job_title=user_attrs.get('job_title'),
+                disabled=user_attrs.get('disabled')
             )
             session.add(user)
 
@@ -278,8 +279,8 @@ class UserController(object):
                 resource=Resources.USER,
                 resource_id=user.id
             )
-            logger.info(f"found user {user.as_dict()}")
-            return j_response(user.as_dict())
+            logger.info(f"found user {user.fat_dict()}")
+            return j_response(user.fat_dict())
         except ValueError as e:
             return g_response(str(e), 400)
 

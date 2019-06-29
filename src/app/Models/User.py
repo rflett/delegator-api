@@ -264,6 +264,8 @@ class User(db.Model):
         for item in activity.get('Items'):
             try:
                 del item['id']
+                activity_timestamp_date = datetime.datetime.strptime(item['activity_timestamp'], "%Y%m%dT%H%M%S.%fZ")
+                item['activity_timestamp'] = activity_timestamp_date.strftime(app.config['RESPONSE_DATE_FORMAT'])
                 log.append(item)
             except KeyError:
                 logger.error(f"Key 'id' was missing from activity item. Table:{user_activity_table.name} Item:{item}")

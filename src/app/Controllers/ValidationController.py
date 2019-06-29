@@ -60,9 +60,9 @@ def _check_user_id(
 ) -> typing.Union[None, str, int]:
     from app.Controllers import UserController
     if isinstance(identifier, bool):
-        raise ValidationError(f"Bad org_id, expected int|str got {type(identifier)}.")
+        raise ValidationError(f"Bad user_id, expected int|str got {type(identifier)}.")
     if not isinstance(identifier, (int, str)):
-        raise ValidationError(f"Bad org_id, expected int|str got {type(identifier)}.")
+        raise ValidationError(f"Bad user_id, expected int|str got {type(identifier)}.")
 
     # optionally check if it exists or not
     if should_exist is not None:
@@ -288,7 +288,7 @@ class ValidationController(object):
 
         user_attrs = {
             "email": _check_user_id(request_body.get('email'), should_exist=False),
-            "role": _check_user_role(request_body.get('role_name')),
+            "role": _check_user_role(request_body.get('role_id')),
             "first_name": _check_str(request_body.get('first_name'), 'first_name'),
             "last_name": _check_str(request_body.get('last_name'), 'last_name'),
             "job_title":  _check_user_job_title(request_body.get('job_title')),
@@ -321,7 +321,7 @@ class ValidationController(object):
             "id": _check_user_id(request_body.get('id'), should_exist=True),
             "first_name": _check_str(request_body.get('first_name'), 'first_name'),
             "last_name": _check_str(request_body.get('last_name'), 'last_name'),
-            "role": _check_user_role(request_body.get('role_name')),
+            "role": _check_user_role(request_body.get('role_id')),
             "job_title": _check_user_job_title(request_body.get('job_title')),
             "disabled": _check_user_disabled(request_body.get('disabled'))
         }
