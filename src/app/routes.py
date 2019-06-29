@@ -34,10 +34,13 @@ def handle_exceptions(f):
         try:
             return f(*args, **kwargs)
         except ValidationError as e:
+            logger.info(str(e))
             return g_response(msg=str(e), status=400)
         except AuthenticationError as e:
+            logger.info(str(e))
             return g_response(msg=str(e), status=401)
         except AuthorizationError as e:
+            logger.info(str(e))
             return g_response(msg=str(e), status=403)
         except Exception as e:
             logger.error(traceback.format_exc())
