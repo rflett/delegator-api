@@ -6,7 +6,7 @@ from flask import request, Response
 from sqlalchemy import exists, and_, func
 
 from app import logger, session_scope, g_response, j_response
-from app.Controllers import AuthorizationController
+from app.Exceptions import ValidationError
 from app.Models import TaskType, TaskTypeEscalation, Notification
 from app.Models.Enums import Events, Operations, Resources
 
@@ -120,7 +120,14 @@ class TaskTypeController(object):
         )
 
         with session_scope() as session:
-            task_type_query = session.query(TaskType).filter(TaskType.org_id == req_user.org_id).all()
+            task_type_query = session\
+                .query(TaskType)\
+                .filter(
+                    and_(
+                        TaskType.org_id == req_user.org_id,
+                        TaskType.disabled == None  # noqa
+                    ))\
+                .all()
 
         task_types = [tt.fat_dict() for tt in task_type_query]
         logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
@@ -137,6 +144,7 @@ class TaskTypeController(object):
         from app.Models import TaskType
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
+        request_body = req.get_json()
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -144,8 +152,11 @@ class TaskTypeController(object):
             resource=Resources.TASK_TYPE
         )
 
+        """
+        This will create or re-enable the task type.
+        """
         # validate task_type
-        validate_res = ValidationController.validate_create_task_type_request(req_user.org_id, req.get_json())
+        validate_res = ValidationController.validate_create_task_type_request(req_user.org_id, request_body)
 
         if isinstance(validate_res, str):
             # it will be a string it's new
@@ -172,149 +183,140 @@ class TaskTypeController(object):
                 resource_id=task_type.id
             )
             logger.info(f"created task type {task_type.as_dict()}")
-            return g_response("Successfully created task type", 201)
         elif isinstance(validate_res, TaskType):
-            # it will be a TaskType object if it exists already and needs to be enabled
-            with session_scope():
-                AuthorizationController.authorize_request(
-                    auth_user=req_user,
+            if validate_res.disabled is not None:
+                # It will need to be enabled
+                with session_scope():
+                    AuthorizationController.authorize_request(
+                        auth_user=req_user,
+                        operation=Operations.ENABLE,
+                        resource=Resources.TASK_TYPE
+                    )
+
+                    validate_res.disabled = None
+
+                Notification(
+                    org_id=validate_res.org_id,
+                    event=Events.tasktype_enabled,
+                    event_id=validate_res.id
+                ).publish()
+                req_user.log(
                     operation=Operations.ENABLE,
-                    resource=Resources.TASK_TYPE
+                    resource=Resources.TASK_TYPE,
+                    resource_id=validate_res.id
                 )
+                logger.info(f"enabled task type {validate_res.as_dict()}")
 
-                validate_res.disabled = None
-
-            Notification(
-                org_id=validate_res.org_id,
-                event=Events.tasktype_enabled,
-                event_id=validate_res.id
-            ).publish()
-            req_user.log(
-                operation=Operations.ENABLE,
-                resource=Resources.TASK_TYPE,
-                resource_id=validate_res.id
-            )
-            logger.info(f"enabled task type {validate_res.as_dict()}")
-            return g_response("Successfully enabled task type", 201)
-
-    @staticmethod
-    def upsert_task_escalations(req: request) -> Response:
-        """ Updates a task. Requires the full task object in the request. """
-        from app.Controllers import ValidationController, AuthenticationController
-        from app.Controllers.ValidationController import _check_task_type_id
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
-
-        request_body = req.get_json()
+        """
+        This will manage the escalations for the task, if there were any.
+        """
         total_updated = total_created = total_deleted = 0
 
         # VALIDATION
         escalations = request_body.get('escalation_policies')
-        if escalations is None or not isinstance(escalations, list):
-            return g_response("Missing escalations", 400)
-        task_type_id = _check_task_type_id(
-            task_type_id=request_body.get('task_type_id'),
-            org_id=req_user.org_id,
-            should_exist=True
-        )
+        if escalations is None:
+            # All good!
+            return g_response("Successfully created task type", 201)
+        elif not isinstance(escalations, list):
+            raise ValidationError("escalations property is not a list.")
+        else:
+            # There's probably escalations so proceed with checking and applying them
+            # Get the task type ID from before
+            if isinstance(validate_res, str):
+                task_type_id = task_type.id
+            else:
+                task_type_id = validate_res.id
 
-        valid_escalations = ValidationController.validate_upsert_task_escalation(task_type_id, escalations)
+            valid_escalations = ValidationController.validate_upsert_task_escalation(task_type_id, escalations)
 
-        # AUTHORIZATION
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.UPSERT,
-            resource=Resources.TASK_TYPE_ESCALATION
-        )
-
-        # UPSERT
-        for escalation in valid_escalations:
-            if escalation.get('action') == 'create':
-                total_created += 1
-                with session_scope() as session:
-                    new_escalation = TaskTypeEscalation(
-                        task_type_id=task_type_id,
-                        display_order=escalation.get('display_order'),
-                        delay=escalation.get('delay'),
-                        from_priority=escalation.get('from_priority'),
-                        to_priority=escalation.get('to_priority')
-                    )
-                    session.add(new_escalation)
-
-                Notification(
-                    org_id=req_user.org_id,
-                    event=Events.tasktype_escalation_created,
-                    event_id=task_type_id
-                ).publish()
-                Notification(
-                    org_id=req_user.org_id,
-                    event=Events.user_created_tasktype_escalation,
-                    event_id=req_user.id,
-                    event_friendly=f"Created escalation for task type "
-                    f"{_get_task_type_by_id(req_user.org_id, task_type_id).label}."
-                ).publish()
-                req_user.log(
-                    operation=Operations.CREATE,
-                    resource=Resources.TASK_TYPE_ESCALATION,
-                    resource_id=task_type_id
-                )
-                logger.info(f"created task type escalation {new_escalation.as_dict()}")
-
-            elif escalation.get('action') == 'update':
-                total_updated += 1
-                escalation_to_update = _get_task_type_escalation(
-                    task_type_id=task_type_id,
-                    display_order=escalation.get('display_order')
-                )
-                with session_scope():
-                    for k, v in escalation.items():
-                        escalation_to_update.__setattr__(k, v)
+            # UPSERT
+            for escalation in valid_escalations:
+                if escalation.get('action') == 'create':
+                    total_created += 1
+                    with session_scope() as session:
+                        new_escalation = TaskTypeEscalation(
+                            task_type_id=task_type_id,
+                            display_order=escalation.get('display_order'),
+                            delay=escalation.get('delay'),
+                            from_priority=escalation.get('from_priority'),
+                            to_priority=escalation.get('to_priority')
+                        )
+                        session.add(new_escalation)
 
                     Notification(
                         org_id=req_user.org_id,
-                        event=Events.tasktype_escalation_updated,
+                        event=Events.tasktype_escalation_created,
                         event_id=task_type_id
                     ).publish()
                     Notification(
                         org_id=req_user.org_id,
                         event=Events.user_created_tasktype_escalation,
                         event_id=req_user.id,
-                        event_friendly=f"Updated escalation for task type "
+                        event_friendly=f"Created escalation for task type "
                         f"{_get_task_type_by_id(req_user.org_id, task_type_id).label}."
                     ).publish()
                     req_user.log(
-                        operation=Operations.UPDATE,
+                        operation=Operations.CREATE,
                         resource=Resources.TASK_TYPE_ESCALATION,
                         resource_id=task_type_id
                     )
-                logger.info(f"updated task type escalation {escalation_to_update.as_dict()}")
+                    logger.info(f"created task type escalation {new_escalation.as_dict()}")
 
-        # DELETE MISMATCH
-        # get escalations in request as a set of tuples
-        request_escalations = {(task_type_id, e.get('display_order')) for e in valid_escalations}
-
-        with session_scope() as session:
-            # get escalations which exist in the db as a set of tuples
-            db_esc_qry = session.query(TaskTypeEscalation.task_type_id, TaskTypeEscalation.display_order)\
-                .filter(TaskTypeEscalation.task_type_id == task_type_id).all()
-            db_escalations = {e for e in db_esc_qry}
-
-            # remove those that exist in the db that didn't in the request
-            to_remove = db_escalations - request_escalations
-            for r in to_remove:
-                total_deleted += 1
-                session.query(TaskTypeEscalation).filter(
-                    and_(
-                        TaskTypeEscalation.task_type_id == r[0],
-                        TaskTypeEscalation.display_order == r[1]
+                elif escalation.get('action') == 'update':
+                    total_updated += 1
+                    escalation_to_update = _get_task_type_escalation(
+                        task_type_id=task_type_id,
+                        display_order=escalation.get('display_order')
                     )
-                ).delete(synchronize_session=False)
-                logger.info(f"deleted task type escalation with task_type_id:{r[0]}, display_order:{r[1]}")
+                    with session_scope():
+                        for k, v in escalation.items():
+                            escalation_to_update.__setattr__(k, v)
 
-        logger.info(f"upsert task type escalations finished. "
-                    f"created:{total_created}, updated:{total_updated}, deleted:{total_deleted}")
-        # SUCCESS
-        return g_response(status=204)
+                        Notification(
+                            org_id=req_user.org_id,
+                            event=Events.tasktype_escalation_updated,
+                            event_id=task_type_id
+                        ).publish()
+                        Notification(
+                            org_id=req_user.org_id,
+                            event=Events.user_created_tasktype_escalation,
+                            event_id=req_user.id,
+                            event_friendly=f"Updated escalation for task type "
+                            f"{_get_task_type_by_id(req_user.org_id, task_type_id).label}."
+                        ).publish()
+                        req_user.log(
+                            operation=Operations.UPDATE,
+                            resource=Resources.TASK_TYPE_ESCALATION,
+                            resource_id=task_type_id
+                        )
+                    logger.info(f"updated task type escalation {escalation_to_update.as_dict()}")
+
+            # DELETE MISMATCH
+            # get escalations in request as a set of tuples
+            request_escalations = {(task_type_id, e.get('display_order')) for e in valid_escalations}
+
+            with session_scope() as session:
+                # get escalations which exist in the db as a set of tuples
+                db_esc_qry = session.query(TaskTypeEscalation.task_type_id, TaskTypeEscalation.display_order)\
+                    .filter(TaskTypeEscalation.task_type_id == task_type_id).all()
+                db_escalations = {e for e in db_esc_qry}
+
+                # remove those that exist in the db that didn't in the request
+                to_remove = db_escalations - request_escalations
+                for r in to_remove:
+                    total_deleted += 1
+                    session.query(TaskTypeEscalation).filter(
+                        and_(
+                            TaskTypeEscalation.task_type_id == r[0],
+                            TaskTypeEscalation.display_order == r[1]
+                        )
+                    ).delete(synchronize_session=False)
+                    logger.info(f"deleted task type escalation with task_type_id:{r[0]}, display_order:{r[1]}")
+
+            logger.info(f"upsert task type escalations finished. "
+                        f"created:{total_created}, updated:{total_updated}, deleted:{total_deleted}")
+            # SUCCESS
+            return g_response(status=204)
 
     @staticmethod
     def disable_task_type(task_type_id: int, req: request) -> Response:
