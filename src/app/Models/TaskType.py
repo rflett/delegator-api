@@ -51,7 +51,7 @@ class TaskType(db.Model):
 
         return {
             "id": self.id,
-            "type": self.label,
+            "label": self.label,
             "org_id": self.org_id,
             "disabled": disabled
         }

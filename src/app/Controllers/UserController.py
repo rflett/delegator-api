@@ -3,7 +3,7 @@ import json
 import typing
 
 from flask import request, Response
-from sqlalchemy import exists, func
+from sqlalchemy import exists, func, and_
 
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthorizationController
@@ -20,7 +20,7 @@ def _get_user_by_email(email: str) -> User:
     :return:                The User
     """
     with session_scope() as session:
-        ret = session.query(User).filter(User.email == email).first()
+        ret = session.query(User).filter(and_(User.email == email, User.deleted == None)).first()  # noqa
     if ret is None:
         logger.info(f"User with email {email} does not exist.")
         raise ValueError(f"User with email {email} does not exist.")
@@ -36,7 +36,7 @@ def _get_user_by_id(user_id: int) -> User:
     :return:                The User
     """
     with session_scope() as session:
-        ret = session.query(User).filter(User.id == user_id).first()
+        ret = session.query(User).filter(and_(User.id == user_id, User.deleted == None)).first()  # noqa
     if ret is None:
         logger.info(f"User with id {user_id} does not exist.")
         raise ValueError(f"User with id {user_id} does not exist.")
@@ -314,7 +314,12 @@ class UserController(object):
             users_qry = session.query(User, Role, Organisation) \
                 .join(User.roles) \
                 .join(User.orgs) \
-                .filter(User.org_id == req_user.org_id) \
+                .filter(
+                    and_(
+                        User.org_id == req_user.org_id,
+                        User.deleted == None  # noqa
+                    )
+                ) \
                 .all()
 
         users = []

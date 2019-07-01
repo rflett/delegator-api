@@ -253,11 +253,7 @@ class ValidationController(object):
 
         try:
             task_type = TaskTypeController.get_task_type_by_label(label, org_id)
-            if task_type.disabled is not None:
-                # enable it instead of creating
-                return task_type
-            else:
-                raise ValidationError(f"Task type {task_type.label} already exists.")
+            return task_type
         except ValueError:
             # it doesn't exist, so create it
             return label

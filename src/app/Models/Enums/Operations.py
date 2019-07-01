@@ -10,4 +10,3 @@ class Operations(str):
     GET = 'GET'
     TRANSITION = 'TRANSITION'
     UPDATE = 'UPDATE'
-    UPSERT = 'UPSERT'
