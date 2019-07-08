@@ -1,5 +1,7 @@
 import datetime
+import typing
 from collections import namedtuple
+from dateutil import tz
 
 from flask import request, Response
 
@@ -21,7 +23,8 @@ def clean_qry(qry) -> list:
     return records
 
 
-def completed_tasks(org_id: int) -> list:
+def completed_tasks(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
+    start_period, end_period = period
     with session_scope() as session:
         qry = session.execute(
             """
@@ -33,17 +36,17 @@ def completed_tasks(org_id: int) -> list:
                          ON t.type = tt.id
                          INNER JOIN users u
                          ON u.id = t.finished_by
-            WHERE t.finished_at IS NOT NULL
+            WHERE t.finished_at BETWEEN :start_period AND :end_period
             AND t.org_id = :org_id
-            ORDER BY t.finished_at ASC
             """,
-            {'org_id': org_id}
+            {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
         )
 
     return clean_qry(qry)
 
 
-def delayed_tasks(org_id: int) -> list:
+def delayed_tasks(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
+    start_period, end_period = period
     with session_scope() as session:
         qry = session.execute(
             """
@@ -57,16 +60,17 @@ def delayed_tasks(org_id: int) -> list:
                          ON td.task_id = t.id
                          INNER JOIN task_types tt
                          ON t.type = tt.id
-            WHERE u.org_id = :org_id
-            ORDER BY td.delayed_at ASC
+            WHERE td.delayed_at BETWEEN :start_period AND :end_period
+            AND u.org_id = :org_id
             """,
-            {'org_id': org_id}
+            {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
         )
 
     return clean_qry(qry)
 
 
-def dropped_tasks(org_id: int) -> list:
+def dropped_tasks(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
+    start_period, end_period = period
     with session_scope() as session:
         qry = session.execute(
             """
@@ -80,12 +84,12 @@ def dropped_tasks(org_id: int) -> list:
                                ON t.id = r.resource_id
                                INNER JOIN users u
                                ON r.user_id = u.id
-            WHERE r.operation = 'DROP'
+            WHERE r.created_at BETWEEN :start_period AND :end_period
+            AND r.operation = 'DROP'
             AND r.resource = 'TASK'
             AND t.org_id = :org_id
-            ORDER BY r.created_at ASC
             """,
-            {'org_id': org_id}
+            {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
         )
 
     return clean_qry(qry)
@@ -140,7 +144,8 @@ def task_priorities(org_id: int) -> list:
     return clean_qry(qry)
 
 
-def tasks_created(org_id: int) -> list:
+def tasks_created(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
+    start_period, end_period = period
     with session_scope() as session:
         qry = session.execute(
             """
@@ -152,10 +157,11 @@ def tasks_created(org_id: int) -> list:
                          ON u.id = t.created_by
                          INNER JOIN task_types tt
                          ON t.type = tt.id
-            WHERE u.org_id = :org_id
+            WHERE t.created_at BETWEEN :start_period AND :end_period
+            AND u.org_id = :org_id
             ORDER BY t.created_at ASC
             """,
-            {'org_id': org_id}
+            {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
         )
 
     return clean_qry(qry)
@@ -226,4 +232,34 @@ class ReportController(object):
         }
 
         logger.debug("retrieved reports")
+        return j_response(reports)
+
+    @staticmethod
+    def get_trends(req: request) -> Response:
+        """ Get completed tasks """
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.REPORTS_PAGE
+        )
+
+        now = datetime.datetime.utcnow()
+        today_so_far = datetime.datetime(now.year, now.month, now.day, tzinfo=tz.tzutc())
+        this_week_so_far = today_so_far - datetime.timedelta(days=now.weekday())
+
+        reports = []
+        periods = [('today_so_far', today_so_far), ('this_week_so_far', this_week_so_far)]
+
+        for period in periods:
+            reports.append({
+                "period": period[0],
+                "created": len(tasks_created(req_user.org_id, (period[1], now))),
+                "completed": len(completed_tasks(req_user.org_id, (period[1], now))),
+                "delayed": len(delayed_tasks(req_user.org_id, (period[1], now))),
+                "dropped": len(dropped_tasks(req_user.org_id, (period[1], now)))
+            })
+
         return j_response(reports)

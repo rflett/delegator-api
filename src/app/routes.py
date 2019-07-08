@@ -293,3 +293,11 @@ def update_org_settings():
 @handle_exceptions
 def get_all_reports():
     return ReportController.get_all(request)
+
+
+@app.route('/reporting/trends', methods=['GET'])
+@requires_jwt
+@handle_exceptions
+def get_report_trends():
+    return ReportController.get_trends(request)
+
