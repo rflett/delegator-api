@@ -30,7 +30,7 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
             task.finished_at = datetime.datetime.utcnow()
 
         # start task once
-        if status == TaskStatuses.INPROGRESS and task.started_at is not None:
+        if status == TaskStatuses.INPROGRESS and task.started_at is None:
             task.started_at = datetime.datetime.utcnow()
 
         task.status = status

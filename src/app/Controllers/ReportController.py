@@ -161,38 +161,19 @@ def tasks_created(org_id: int) -> list:
     return clean_qry(qry)
 
 
-def time_to_start(org_id: int) -> list:
+def time_to_start_and_finish(org_id: int) -> list:
     with session_scope() as session:
         qry = session.execute(
             """
-            SELECT tt.label AS task_type, EXTRACT(EPOCH FROM (t.started_at - t.created_at)) AS time_to_start
-            FROM tasks t INNER JOIN task_types tt
-                         ON t.type = tt.id
-            WHERE t.started_at IS NOT NULL
-            AND t.org_id = :org_id
-            ORDER BY time_to_start DESC
-            """,
-            {'org_id': org_id}
-        )
-
-    return clean_qry(qry)
-
-
-def time_to_finish(org_id: int) -> list:
-    with session_scope() as session:
-        qry = session.execute(
-            """
-            SELECT u.id AS user_id,
-                   u.first_name || ' ' || u.last_name AS name,
-                   t.id AS task_id,
-                   tt.label AS task_type,
-                   EXTRACT(EPOCH FROM (t.finished_at - t.created_at)) AS time_to_finish
-            FROM users u INNER JOIN tasks t
+            SELECT tt.label AS task_type,
+                   AVG(EXTRACT(EPOCH FROM (t.started_at - t.created_at))) AS time_to_start,
+                   AVG(EXTRACT(EPOCH FROM (t.finished_at - t.created_at))) AS time_to_finish
+            FROM users u RIGHT JOIN tasks t
                          ON u.id = t.finished_by
                          INNER JOIN task_types tt
                          ON t.type = tt.id
-            WHERE t.finished_at IS NOT NULL
-            AND u.org_id = :org_id
+            WHERE t.org_id = :org_id
+            GROUP BY tt.label
             ORDER BY time_to_finish DESC
             """,
             {'org_id': org_id}
@@ -240,8 +221,7 @@ class ReportController(object):
             "task_statuses": task_statuses(req_user.org_id),
             "task_priorities": task_priorities(req_user.org_id),
             "tasks_created": tasks_created(req_user.org_id),
-            "time_to_start": time_to_start(req_user.org_id),
-            "time_to_finish": time_to_finish(req_user.org_id),
+            "time_to_start_and_finish": time_to_start_and_finish(req_user.org_id),
             "delays_per_task": delays_per_task(req_user.org_id),
         }
 
