@@ -95,55 +95,6 @@ def dropped_tasks(org_id: int, period: typing.Tuple[datetime.datetime, datetime.
     return clean_qry(qry)
 
 
-def task_statuses(org_id: int) -> list:
-    with session_scope() as session:
-        qry = session.execute(
-            """
-            SELECT u.id AS user_id,
-                   u.first_name || ' ' || u.last_name AS name,
-                   tt.label AS task_type,
-                   ts.label AS "status",
-                   t.status_changed_at AS status_changed_at
-            FROM users u RIGHT JOIN tasks t
-                         ON u.id = t.assignee
-                         INNER JOIN task_types tt
-                         ON t.type = tt.id
-                         INNER JOIN task_statuses ts
-                         ON t.status = ts.status
-            WHERE t.status <> 'COMPLETED'
-            AND u.org_id = :org_id
-            ORDER BY t.status_changed_at ASC
-            """,
-            {'org_id': org_id}
-        )
-
-    return clean_qry(qry)
-
-
-def task_priorities(org_id: int) -> list:
-    with session_scope() as session:
-        qry = session.execute(
-            """
-            SELECT u.id AS user_id,
-                   u.first_name || ' ' || u.last_name AS name,
-                   tt.label AS task_type,
-                   tp.label AS "priority",
-                   t.priority_changed_at AS priority_changed_at
-            FROM users u RIGHT JOIN tasks t
-                         ON u.id = t.assignee
-                         INNER JOIN task_types tt
-                         ON t.type = tt.id
-                         INNER JOIN task_priorities tp
-                         ON t.priority = tp.priority
-            WHERE u.org_id = :org_id
-            ORDER BY t.priority_changed_at ASC
-            """,
-            {'org_id': org_id}
-        )
-
-    return clean_qry(qry)
-
-
 def tasks_created(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
     start_period, end_period = period
     with session_scope() as session:
@@ -167,87 +118,6 @@ def tasks_created(org_id: int, period: typing.Tuple[datetime.datetime, datetime.
     return clean_qry(qry)
 
 
-def time_to_start_and_finish(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
-    start_period, end_period = period
-    with session_scope() as session:
-        qry = session.execute(
-            """
-            SELECT tt.label AS task_type,
-                   AVG(EXTRACT(EPOCH FROM (t.started_at - t.created_at))) AS time_to_start,
-                   AVG(EXTRACT(EPOCH FROM (t.finished_at - t.created_at))) AS time_to_finish
-            FROM tasks t INNER JOIN task_types tt
-                         ON t.type = tt.id
-            WHERE t.created_at BETWEEN :start_period AND :end_period
-            AND t.started_at BETWEEN :start_period AND :end_period
-            AND t.finished_at BETWEEN :start_period AND :end_period
-            AND t.org_id = :org_id
-            GROUP BY tt.label
-            ORDER BY time_to_finish DESC
-            """,
-            {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
-        )
-
-    return clean_qry(qry)
-
-
-def five_slowest(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
-    start_period, end_period = period
-    with session_scope() as session:
-        qry = session.execute(
-            """
-            SELECT t.description AS description
-                   u.first_name || ' ' || u.last_name AS finished_by,
-                   tt.label AS task_type,
-                   AVG(EXTRACT(EPOCH FROM (t.finished_at - t.created_at))) AS time_to_finish
-            FROM users u RIGHT JOIN tasks t
-                         ON u.id = t.finished_by
-                         INNER JOIN task_types tt
-                         ON t.type = tt.id
-            WHERE t.created_at BETWEEN :start_period AND :end_period
-            AND t.finished_at BETWEEN :start_period AND :end_period
-            AND t.org_id = :org_id
-            ORDER BY time_to_finish DESC
-            LIMIT 5
-            """,
-            {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
-        )
-
-    return clean_qry(qry)
-
-
-def average_time_to_start(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
-    start_period, end_period = period
-    with session_scope() as session:
-        qry = session.execute(
-            """
-            SELECT AVG(EXTRACT(EPOCH FROM (t.started_at - t.created_at))) AS time_to_start,
-            FROM tasks t
-            WHERE t.created_at BETWEEN :start_period AND :end_period
-            AND t.started_at BETWEEN :start_period AND :end_period
-            AND t.org_id = :org_id
-            """,
-            {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
-        )
-
-    return clean_qry(qry)
-
-
-def delays_per_task(org_id: int) -> list:
-    with session_scope() as session:
-        qry = session.execute(
-            """
-            SELECT t.id, SUM(td.delay_for) AS delayed_for
-            FROM tasks_delayed td INNER JOIN tasks t
-                                  ON td.task_id = t.id
-            WHERE t.org_id = :org_id
-            GROUP BY t.id
-            """,
-            {'org_id': org_id}
-        )
-
-    return clean_qry(qry)
-
-
 class ReportController(object):
     @staticmethod
     def get_trends(req: request) -> Response:
@@ -262,17 +132,23 @@ class ReportController(object):
         )
 
         now = datetime.datetime.utcnow()
-        today_so_far = datetime.datetime(now.year, now.month, now.day, tzinfo=tz.tzutc())
-        yesterday = now - datetime.timedelta(days=1)
-        this_week_so_far = today_so_far - datetime.timedelta(days=now.weekday())
-        this_month_so_far = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+        start_of_today = datetime.datetime(now.year, now.month, now.day, tzinfo=tz.tzutc())
+        yesterday = now - datetime.timedelta(
+            days=1,
+            hours=now.hour,
+            minutes=now.minute,
+            seconds=now.second,
+            microseconds=now.microsecond
+        )
+        start_of_this_week = start_of_today - datetime.timedelta(days=now.weekday())
+        start_of_this_month = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
 
         reports = []
         periods = [
-            ('today_so_far', today_so_far),
+            ('today_so_far', start_of_today),
             ('yesterday', yesterday),
-            ('this_week_so_far', this_week_so_far),
-            ('this_month_so_far', this_month_so_far)
+            ('this_week_so_far', start_of_this_week),
+            ('start_of_this_month', start_of_this_month)
         ]
 
         for period in periods:
@@ -287,7 +163,7 @@ class ReportController(object):
         return j_response(reports)
 
     @staticmethod
-    def get_time_to_start_and_finish(req: request) -> Response:
+    def get_start_and_finish_times(req: request) -> Response:
         """ Get time to start and time to finish for tasks """
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -299,10 +175,28 @@ class ReportController(object):
         )
 
         now = datetime.datetime.utcnow()
-        this_month_so_far = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+        start_of_this_month = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+
+        with session_scope() as session:
+            qry = session.execute(
+                """
+                SELECT tt.label AS task_type,
+                       AVG(EXTRACT(EPOCH FROM (t.started_at - t.created_at))) AS time_to_start,
+                       AVG(EXTRACT(EPOCH FROM (t.finished_at - t.created_at))) AS time_to_finish
+                FROM tasks t INNER JOIN task_types tt
+                             ON t.type = tt.id
+                WHERE t.created_at BETWEEN :start_period AND :end_period
+                AND t.started_at BETWEEN :start_period AND :end_period
+                AND t.finished_at BETWEEN :start_period AND :end_period
+                AND t.org_id = :org_id
+                GROUP BY tt.label
+                ORDER BY time_to_finish DESC
+                """,
+                {'org_id': req_user.org_id, 'start_period': start_of_this_month, 'end_period': now}
+            )
 
         return j_response({
-            "time_to_start_and_finish": time_to_start_and_finish(req_user.org_id, (this_month_so_far, now))
+            "time_to_start_and_finish": clean_qry(qry)
         })
 
     @staticmethod
@@ -318,10 +212,30 @@ class ReportController(object):
         )
 
         now = datetime.datetime.utcnow()
-        this_month_so_far = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+        start_of_this_month = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+
+        with session_scope() as session:
+            qry = session.execute(
+                """
+                SELECT t.description AS description
+                       u.first_name || ' ' || u.last_name AS finished_by,
+                       tt.label AS task_type,
+                       AVG(EXTRACT(EPOCH FROM (t.finished_at - t.created_at))) AS time_to_finish
+                FROM users u RIGHT JOIN tasks t
+                             ON u.id = t.finished_by
+                             INNER JOIN task_types tt
+                             ON t.type = tt.id
+                WHERE t.created_at BETWEEN :start_period AND :end_period
+                AND t.finished_at BETWEEN :start_period AND :end_period
+                AND t.org_id = :org_id
+                ORDER BY time_to_finish DESC
+                LIMIT 5
+                """,
+                {'org_id': req_user.org_id, 'start_period': start_of_this_month, 'end_period': now}
+            )
 
         return j_response({
-            'top_five_slowest_tasks': five_slowest(req_user.org_id, (this_month_so_far, now))
+            'top_five_slowest_tasks': clean_qry(qry)
         })
 
     @staticmethod
@@ -337,10 +251,22 @@ class ReportController(object):
         )
 
         now = datetime.datetime.utcnow()
-        this_month_so_far = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+        start_of_this_month = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+
+        with session_scope() as session:
+            qry = session.execute(
+                """
+                SELECT AVG(EXTRACT(EPOCH FROM (t.started_at - t.created_at))) AS time_to_start,
+                FROM tasks t
+                WHERE t.created_at BETWEEN :start_period AND :end_period
+                AND t.started_at BETWEEN :start_period AND :end_period
+                AND t.org_id = :org_id
+                """,
+                {'org_id': req_user.org_id, 'start_period': start_of_this_month, 'end_period': now}
+            )
 
         return j_response({
-            'average_time_to_start': average_time_to_start(req_user.org_id, (this_month_so_far, now))
+            'average_time_to_start': clean_qry(qry)
         })
 
     @staticmethod
@@ -356,8 +282,123 @@ class ReportController(object):
         )
 
         now = datetime.datetime.utcnow()
-        this_month_so_far = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+        start_of_this_month = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
 
         return j_response({
-            'top_five_slowest_tasks': completed_tasks(req_user.org_id, (this_month_so_far, now))
+            'top_five_slowest_tasks': completed_tasks(req_user.org_id, (start_of_this_month, now))
+        })
+
+    @staticmethod
+    def tasks_by_priority(req: request) -> Response:
+        """ Get the average time to start a task """
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.REPORTS_PAGE
+        )
+
+        now = datetime.datetime.utcnow()
+        start_of_this_month = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+
+        with session_scope() as session:
+            qry = session.execute(
+                """
+                SELECT u.id AS user_id,
+                       u.first_name || ' ' || u.last_name AS name,
+                       tt.label AS task_type,
+                       tp.label AS "priority",
+                       t.priority_changed_at AS priority_changed_at
+                FROM users u RIGHT JOIN tasks t
+                             ON u.id = t.assignee
+                             INNER JOIN task_types tt
+                             ON t.type = tt.id
+                             INNER JOIN task_priorities tp
+                             ON t.priority = tp.priority
+                WHERE t.priority_changed_at BETWEEN :start_period AND :end_period
+                AND u.org_id = :org_id
+                ORDER BY t.priority_changed_at ASC
+                """,
+                {'org_id': req_user.org_id, 'start_period': start_of_this_month, 'end_period': now}
+            )
+
+        return j_response({
+            'tasks_by_priority': clean_qry(qry)
+        })
+
+    @staticmethod
+    def tasks_by_status(req: request) -> Response:
+        """ Get the average time to start a task """
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.REPORTS_PAGE
+        )
+
+        now = datetime.datetime.utcnow()
+        start_of_this_month = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+
+        with session_scope() as session:
+            qry = session.execute(
+                """
+                SELECT u.id AS user_id,
+                       u.first_name || ' ' || u.last_name AS name,
+                       tt.label AS task_type,
+                       ts.label AS "status",
+                       t.status_changed_at AS status_changed_at
+                FROM users u RIGHT JOIN tasks t
+                             ON u.id = t.assignee
+                             INNER JOIN task_types tt
+                             ON t.type = tt.id
+                             INNER JOIN task_statuses ts
+                             ON t.status = ts.status
+                WHERE t.status_changed_at BETWEEN :start_period AND :end_period
+                AND t.status <> 'COMPLETED'
+                AND u.org_id = :org_id
+                ORDER BY t.status_changed_at ASC
+                """,
+                {'org_id': req_user.org_id, 'start_period': start_of_this_month, 'end_period': now}
+            )
+
+        return j_response({
+            'tasks_by_status': clean_qry(qry)
+        })
+
+    @staticmethod
+    def delays_per_task_type(req: request) -> Response:
+        """ Get time to start and time to finish for tasks """
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.REPORTS_PAGE
+        )
+
+        now = datetime.datetime.utcnow()
+        start_of_this_month = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
+
+        with session_scope() as session:
+            qry = session.execute(
+                """
+                SELECT tt.label, SUM(td.delay_for) AS delayed_for
+                FROM tasks_delayed td INNER JOIN tasks t
+                                      ON td.task_id = t.id
+                                      INNER JOIN task_types tt
+                                      ON t.type = tt.id
+                WHERE t.delayed_at BETWEEN :start_period AND :end_period
+                AND t.org_id = :org_id
+                GROUP BY t.id
+                """,
+                {'org_id': req_user.org_id, 'start_period': start_of_this_month, 'end_period': now}
+            )
+
+        return j_response({
+            "delays_per_task_type": clean_qry(qry)
         })
