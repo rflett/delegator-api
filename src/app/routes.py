@@ -288,57 +288,8 @@ def update_org_settings():
     return OrganisationController.update_org_settings(request)
 
 
-@app.route('/reporting/trends', methods=['GET'])
+@app.route('/reporting/all', methods=['GET'])
 @requires_jwt
 @handle_exceptions
 def get_report_trends():
-    return ReportController.get_trends(request)
-
-
-@app.route('/reporting/times', methods=['GET'])
-@requires_jwt
-@handle_exceptions
-def get_start_and_finish_times():
-    return ReportController.get_start_and_finish_times(request)
-
-
-@app.route('/reporting/slowest', methods=['GET'])
-@requires_jwt
-@handle_exceptions
-def top_five_slowest_tasks():
-    return ReportController.top_five_slowest_tasks(request)
-
-
-@app.route('/reporting/timetostart', methods=['GET'])
-@requires_jwt
-@handle_exceptions
-def average_time_to_start_a_task():
-    return ReportController.average_time_to_start_a_task(request)
-
-
-@app.route('/reporting/completed', methods=['GET'])
-@requires_jwt
-@handle_exceptions
-def total_tasks_completed():
-    return ReportController.total_tasks_completed(request)
-
-
-@app.route('/reporting/priority', methods=['GET'])
-@requires_jwt
-@handle_exceptions
-def tasks_by_priority():
-    return ReportController.tasks_by_priority(request)
-
-
-@app.route('/reporting/status', methods=['GET'])
-@requires_jwt
-@handle_exceptions
-def tasks_by_status():
-    return ReportController.tasks_by_status(request)
-
-
-@app.route('/reporting/delays', methods=['GET'])
-@requires_jwt
-@handle_exceptions
-def delays_per_task_type():
-    return ReportController.delays_per_task_type(request)
+    return ReportController.get_all(request)
