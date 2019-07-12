@@ -118,7 +118,6 @@ def tasks_created(org_id: int, period: typing.Tuple[datetime.datetime, datetime.
 
 def get_trends(org_id) -> list:
     """ Get completed tasks """
-
     now = datetime.datetime.utcnow()
     start_of_today = datetime.datetime(now.year, now.month, now.day, tzinfo=tz.tzutc())
     yesterday = now - datetime.timedelta(
@@ -132,21 +131,23 @@ def get_trends(org_id) -> list:
     start_of_this_month = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
 
     reports = []
-    periods = [
-        ('today_so_far', start_of_today),
-        ('yesterday', yesterday),
-        ('this_week_so_far', start_of_this_week),
-        ('start_of_this_month', start_of_this_month)
-    ]
-
-    for period in periods:
-        reports.append({
-            "period": period[0],
-            "created": len(tasks_created(org_id, (period[1], now))),
-            "completed": len(completed_tasks(org_id, (period[1], now))),
-            "delayed": len(delayed_tasks(org_id, (period[1], now))),
-            "dropped": len(dropped_tasks(org_id, (period[1], now)))
-        })
+    trends = {
+        "Created": tasks_created,
+        "Completed": completed_tasks,
+        "Delayed": delayed_tasks,
+        "Dropped": dropped_tasks
+    }
+    times = {
+        "today": start_of_today,
+        "yesterday": yesterday,
+        "this_week": start_of_this_week,
+        "this_month": start_of_this_month
+    }
+    for title, func in trends.items():
+        trend = {"title": title}
+        for period, _date in times.items():
+            trend[period] = len(func(org_id, (_date, now)))
+        reports.append(trend)
 
     return reports
 
@@ -162,8 +163,8 @@ def get_start_and_finish_times(org_id: int, start_period: datetime.datetime, end
             FROM tasks t INNER JOIN task_types tt
                          ON t.type = tt.id
             WHERE t.created_at BETWEEN :start_period AND :end_period
-            AND t.started_at BETWEEN :start_period AND :end_period
-            AND t.finished_at BETWEEN :start_period AND :end_period
+            AND t.started_at BETWEEN :start_period AND :end_period OR t.started_at IS NULL
+            AND t.finished_at BETWEEN :start_period AND :end_period OR t.finished_at IS NULL
             AND t.org_id = :org_id
             GROUP BY tt.label
             ORDER BY time_to_finish DESC
