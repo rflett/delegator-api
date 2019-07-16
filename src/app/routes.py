@@ -291,5 +291,5 @@ def update_org_settings():
 @app.route('/reporting/all', methods=['GET'])
 @requires_jwt
 @handle_exceptions
-def get_all_reports():
+def get_report_trends():
     return ReportController.get_all(request)
