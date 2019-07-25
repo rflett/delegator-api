@@ -378,7 +378,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"task_id\": 1,\n\t\"task_status\": \"INPROGRESS\"\n}"
+							"raw": "{\n\t\"task_id\": 1,\n\t\"task_status\": \"IN_PROGRESS\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/task/transition",
@@ -1441,7 +1441,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"INPROGRESS\",\n\t\"time_estimate\": 300,\n\t\"due_time\": \"2019-10-31T21:00:00Z+10:00\",\n\t\"assignee\": 2,\n\t\"priority\": 1\n}\n"
+							"raw": "{\n\t\"id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"IN_PROGRESS\",\n\t\"time_estimate\": 300,\n\t\"due_time\": \"2019-10-31T21:00:00Z+10:00\",\n\t\"assignee\": 2,\n\t\"priority\": 1\n}\n"
 						},
 						"url": {
 							"raw": "{{host}}/tasks",
