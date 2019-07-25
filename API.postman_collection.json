@@ -971,7 +971,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"INPROGRESS\",\n\t\"time_estimate\": 300,\n\t\"due_time\": \"2019-03-31 21:00:00\",\n\t\"assignee\": 2,\n\t\"priority\": 1\n}\n"
+							"raw": "{\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"IN_PROGRESS\",\n\t\"time_estimate\": 300,\n\t\"due_time\": \"2019-03-31 21:00:00\",\n\t\"assignee\": 2,\n\t\"priority\": 1\n}\n"
 						},
 						"url": {
 							"raw": "{{host}}/task/1",
