@@ -274,7 +274,7 @@ def delays_per_task_type(org_id: int, start_period: datetime.datetime, end_perio
     with session_scope() as session:
         qry = session.execute(
             """
-            SELECT tt.label AS task_type, 
+            SELECT tt.label AS task_type,
                    SUM(td.delay_for) AS delayed_for
             FROM tasks_delayed td INNER JOIN tasks t
                                   ON td.task_id = t.id

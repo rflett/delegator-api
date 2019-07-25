@@ -11,6 +11,15 @@ from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Notifi
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
 
 
+def _pretty_status_label(status: str) -> str:
+    """ Converts a task status from IN_PROGRESS to 'In Progress' """
+    if "_" in status:
+        words = status.lower().split('_')
+        return " ".join([w.capitalize() for w in words])
+    else:
+        return status.lower().capitalize()
+
+
 def _transition_task(task: Task, status: str, req_user: User) -> None:
     """ Common function for transitioning a task """
     with session_scope() as session:
@@ -30,23 +39,26 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
             task.finished_at = datetime.datetime.utcnow()
 
         # start task once
-        if status == TaskStatuses.INPROGRESS and task.started_at is None:
+        if status == TaskStatuses.IN_PROGRESS and task.started_at is None:
             task.started_at = datetime.datetime.utcnow()
 
         task.status = status
         task.status_changed_at = datetime.datetime.utcnow()
 
+    old_status_label = _pretty_status_label(old_status)
+    new_status_label = _pretty_status_label(status)
+
     Notification(
         org_id=task.org_id,
         event=f'task_transitioned_{task.status.lower()}',
         event_id=task.id,
-        event_friendly=f"Transitioned from {old_status.lower()} to {status.lower()}."
+        event_friendly=f"Transitioned from {old_status_label} to {new_status_label}."
     ).publish()
     Notification(
         org_id=req_user.org_id,
         event=Events.user_transitioned_task,
         event_id=req_user.id,
-        event_friendly=f"Transitioned {task.label()} from {old_status.lower()} to {status.lower()}."
+        event_friendly=f"Transitioned {task.label()} from {old_status_label} to {new_status_label}."
     ).publish()
     req_user.log(
         operation=Operations.TRANSITION,
@@ -562,9 +574,9 @@ class TaskController(object):
         )
 
         valid_transitions = {
-            TaskStatuses.READY: [TaskStatuses.INPROGRESS, TaskStatuses.CANCELLED],
-            TaskStatuses.INPROGRESS: [TaskStatuses.COMPLETED],
-            TaskStatuses.DELAYED: [TaskStatuses.INPROGRESS]
+            TaskStatuses.READY: [TaskStatuses.IN_PROGRESS, TaskStatuses.CANCELLED],
+            TaskStatuses.IN_PROGRESS: [TaskStatuses.COMPLETED],
+            TaskStatuses.DELAYED: [TaskStatuses.IN_PROGRESS]
         }
 
         search = valid_transitions.get(task.status, [])
