@@ -6,6 +6,7 @@ from sqlalchemy import exists, and_
 from sqlalchemy.orm import aliased
 
 from app import logger, session_scope, g_response, j_response
+from app.Exceptions import ValidationError
 from app.Controllers import AuthorizationController
 from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Notification, TaskType
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
@@ -27,6 +28,9 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
 
         if status == old_status:
             return
+
+        if old_status == TaskStatuses.READY and task.assignee is None and status != TaskStatuses.CANCELLED:
+            raise ValidationError("Cannot move task out of ready because it's not assigned to anyone.")
 
         # remove delayed task
         if old_status == TaskStatuses.DELAYED and status != TaskStatuses.DELAYED:
@@ -221,7 +225,7 @@ class TaskController(object):
         with session_scope() as session:
             task_st_qry = session.query(TaskStatus).all()
 
-        task_statuses = [ts.as_dict() for ts in task_st_qry]
+        task_statuses = [ts.as_dict() for ts in task_st_qry if ts.status not in ["DELAYED", "CANCELLED"]]
         logger.debug(f"found {len(task_statuses)} task statuses: {json.dumps(task_statuses)}")
         req_user.log(
             operation=Operations.GET,
@@ -576,18 +580,43 @@ class TaskController(object):
             resource=Resources.TASK_TRANSITIONS
         )
 
-        valid_transitions = {
-            TaskStatuses.READY: [TaskStatuses.IN_PROGRESS, TaskStatuses.CANCELLED],
-            TaskStatuses.IN_PROGRESS: [TaskStatuses.COMPLETED],
-            TaskStatuses.DELAYED: [TaskStatuses.IN_PROGRESS]
-        }
+        ret = []
 
-        search = valid_transitions.get(task.status, [])
+        if task.assignee is None:
+            valid_transitions = {
+                TaskStatuses.READY: [TaskStatuses.READY]
+            }
+            search = valid_transitions.get(task.status, [])
 
-        with session_scope() as session:
-            task_status_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
+            with session_scope() as session:
+                enabled_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
+                disabled_qry = session.query(TaskStatus).filter(~TaskStatus.status.in_(search)).all()
 
-        return j_response([ts.as_dict() for ts in task_status_qry])
+            # Enabled options
+            ret += [ts.as_dict() for ts in enabled_qry]
+
+            # Disabled options
+            ret += [ts.as_dict(disabled=True, tooltip="No one is assigned to this task.") for ts in disabled_qry]
+
+        else:
+            valid_transitions = {
+                TaskStatuses.READY: [TaskStatuses.READY, TaskStatuses.IN_PROGRESS, TaskStatuses.CANCELLED],
+                TaskStatuses.IN_PROGRESS: [TaskStatuses.IN_PROGRESS, TaskStatuses.COMPLETED],
+                TaskStatuses.DELAYED: [TaskStatuses.DELAYED, TaskStatuses.IN_PROGRESS]
+            }
+            search = valid_transitions.get(task.status, [])
+
+            with session_scope() as session:
+                enabled_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
+                disabled_qry = session.query(TaskStatus).filter(~TaskStatus.status.in_(search)).all()
+
+            # Enabled options
+            ret += [ts.as_dict() for ts in enabled_qry if ts.status not in ["DELAYED", "CANCELLED"]]
+
+            # Disabled options
+            ret += [ts.as_dict(disabled=True) for ts in disabled_qry if ts.status not in ["DELAYED", "CANCELLED"]]
+
+        return j_response(ret)
 
     @staticmethod
     def delay_task(req: request) -> Response:

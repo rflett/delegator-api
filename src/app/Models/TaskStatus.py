@@ -1,3 +1,4 @@
+import typing
 from app import db
 
 
@@ -15,11 +16,13 @@ class TaskStatus(db.Model):
         self.status = status
         self.label = label
 
-    def as_dict(self) -> dict:
+    def as_dict(self, disabled: bool = False, tooltip: typing.Union[str, None] = None) -> dict:
         """
         :return: dict repr of a TaskStatus object
         """
         return {
             "status": self.status,
-            "label": self.label
+            "label": self.label,
+            "disabled": disabled,
+            "tooltip": tooltip
         }
