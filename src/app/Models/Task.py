@@ -126,9 +126,11 @@ class Task(db.Model):
         from app.Models import User, TaskStatus, TaskType, TaskPriority
 
         with session_scope() as session:
-            task_assignee, task_created_by = aliased(User), aliased(User)
-            tasks_qry = session.query(Task, task_assignee, task_created_by, TaskStatus, TaskType, TaskPriority) \
+            task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
+            tasks_qry = session\
+                .query(Task, task_assignee, task_created_by, task_finished_by, TaskStatus, TaskType, TaskPriority) \
                 .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
+                .outerjoin(task_finished_by, task_finished_by.id == Task.finished_by) \
                 .join(task_created_by, task_created_by.id == Task.created_by) \
                 .join(Task.created_bys) \
                 .join(Task.task_statuses) \
@@ -137,12 +139,13 @@ class Task(db.Model):
                 .filter(Task.id == self.id) \
                 .first()
 
-        t, ta, tcb, ts, tt, tp = tasks_qry
+        t, ta, tcb, tfb, ts, tt, tp = tasks_qry
 
         task_dict = t.as_dict()
 
         task_dict['assignee'] = ta.as_dict() if ta is not None else None
         task_dict['created_by'] = tcb.as_dict()
+        task_dict['finished_by'] = tfb.as_dict()
         task_dict['status'] = ts.as_dict()
         task_dict['type'] = tt.as_dict()
         task_dict['priority'] = tp.as_dict()
