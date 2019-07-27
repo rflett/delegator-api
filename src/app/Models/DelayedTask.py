@@ -37,12 +37,22 @@ class DelayedTask(db.Model):
         self.expired = expired
 
     def as_dict(self):
+        if self.snoozed is None:
+            snoozed = None
+        else:
+            snoozed = self.snoozed.strftime(app.config['RESPONSE_DATE_FORMAT'])
+
+        if self.expired is None:
+            expired = None
+        else:
+            expired = self.expired.strftime(app.config['RESPONSE_DATE_FORMAT'])
+
         return {
             "task_id": self.task_id,
             "delay_for": self.delay_for,
             "delayed_at": self.delayed_at.strftime(app.config['RESPONSE_DATE_FORMAT']),
             "delayed_by": self.delayed_by,
             "reason": self.reason,
-            "snoozed": self.snoozed,
-            "expired": self.expired
+            "snoozed": snoozed,
+            "expired": expired
         }
