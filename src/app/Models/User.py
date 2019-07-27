@@ -164,7 +164,7 @@ class User(db.Model):
         with session_scope() as session:
             session.add(audit_log)
         logger.info(f"user with id {self.id} did {operation} on {resource} with "
-                    f"and id of {resource_id}")
+                    f"a resource_id of {resource_id}")
 
     def reset_password(self, password) -> None:
         """
