@@ -671,6 +671,34 @@ class TaskController(object):
         return g_response(status=204)
 
     @staticmethod
+    def get_delayed_task(task_id: int, req: request) -> Response:
+        """ Returns the activity for a user """
+        from app.Controllers import TaskController, AuthenticationController
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.TASK
+        )
+
+        try:
+            task = TaskController.get_task_by_id(task_id, req_user.org_id)
+            req_user.log(
+                operation=Operations.GET,
+                resource=Resources.TASK,
+                resource_id=task.id
+            )
+            logger.info(f"getting activity for task with id {task.id}")
+            if task.has_been_delayed():
+                return j_response(task.delayed_info())
+            else:
+                raise ValidationError("Task has not been delayed before.")
+        except ValueError as e:
+            return g_response(str(e), 400)
+
+    @staticmethod
     def get_task_activity(task_identifier: int, req: request) -> Response:
         """ Returns the activity for a user """
         from app.Controllers import TaskController, AuthenticationController

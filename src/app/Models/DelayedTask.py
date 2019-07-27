@@ -1,6 +1,6 @@
 import datetime
 import typing
-from app import db
+from app import app, db
 
 
 class DelayedTask(db.Model):
@@ -16,7 +16,7 @@ class DelayedTask(db.Model):
     expired = db.Column('expired', db.DateTime, default=None)
 
     tasks = db.relationship("Task")
-    users = db.relationship("User")
+    users = db.relationship("User", foreign_keys=[delayed_by])
 
     def __init__(
             self,
@@ -40,7 +40,7 @@ class DelayedTask(db.Model):
         return {
             "task_id": self.task_id,
             "delay_for": self.delay_for,
-            "delayed_at": self.delayed_at,
+            "delayed_at": self.delayed_at.strftime(app.config['RESPONSE_DATE_FORMAT']),
             "delayed_by": self.delayed_by,
             "reason": self.reason,
             "snoozed": self.snoozed,

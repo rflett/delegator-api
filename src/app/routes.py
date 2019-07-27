@@ -267,6 +267,13 @@ def delay_task():
     return TaskController.delay_task(request)
 
 
+@app.route('/task/delay/<int:task_id>', methods=['GET'])
+@requires_jwt
+@handle_exceptions
+def get_delayed_task(task_id):
+    return TaskController.get_delayed_task(task_id, request)
+
+
 @app.route('/task/activity/<int:task_id>', methods=['GET'])
 @requires_jwt
 @handle_exceptions

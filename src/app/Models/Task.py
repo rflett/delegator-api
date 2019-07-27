@@ -2,8 +2,10 @@ import datetime
 
 from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
+from sqlalchemy import exists, and_
 
 from app import db, session_scope, logger, task_activity_table, app
+from app.Models import DelayedTask
 
 
 class Task(db.Model):
@@ -145,7 +147,7 @@ class Task(db.Model):
 
         task_dict['assignee'] = ta.as_dict() if ta is not None else None
         task_dict['created_by'] = tcb.as_dict()
-        task_dict['finished_by'] = tfb.as_dict()
+        task_dict['finished_by'] = tfb.as_dict() if tfb is not None else None
         task_dict['status'] = ts.as_dict()
         task_dict['type'] = tt.as_dict()
         task_dict['priority'] = tp.as_dict()
@@ -175,3 +177,25 @@ class Task(db.Model):
         """ Gets the label of its task type """
         from app.Controllers import TaskTypeController
         return TaskTypeController.get_task_type_by_id(self.org_id, self.type).label
+
+    def has_been_delayed(self) -> bool:
+        """ Checks to see if a task has been delayed before at all """
+        with session_scope() as session:
+            return session.query(exists().where(and_(DelayedTask.task_id == self.id))).scalar()
+
+    def delayed_info(self) -> dict:
+        """ Gets the latest delayed information about a task """
+        from app.Models import Task, DelayedTask, User
+
+        with session_scope() as session:
+            delayed_qry = session.query(Task, DelayedTask, User)\
+                .join(DelayedTask.tasks)\
+                .join(DelayedTask.users)\
+                .filter(DelayedTask.task_id == self.id)\
+                .first()
+
+        task, delayed_task, user = delayed_qry
+
+        delayed_task_dict = delayed_task.as_dict()
+        delayed_task_dict['delayed_by'] = user.as_dict()
+        return delayed_task_dict
