@@ -302,8 +302,16 @@ def get_report_trends():
     return ReportController.get_all(request)
 
 
-@app.route('/notifications/register', methods=['POST'])
+@app.route('/notification_token', methods=['POST'])
 @requires_jwt
 @handle_exceptions
 def register_token():
     return NotificationController.register_token(request)
+
+
+@app.route('/notification_token', methods=['DELETE'])
+@requires_jwt
+@handle_exceptions
+def deregister_token():
+    return NotificationController.deregister_token(request)
+

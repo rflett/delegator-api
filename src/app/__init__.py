@@ -63,6 +63,7 @@ notification_tokens_table = dyn_db.Table(app.config['NOTIFICATION_TOKENS_TABLE']
 # sns
 sns = boto3.resource('sns')
 api_events_sns_topic = sns.Topic(app.config['EVENTS_SNS_TOPIC_ARN'])
+app_notifications_sns_topic = sns.Topic(app.config['APP_NOTIFICATIONS_SNS_TOPIC_ARN'])
 
 
 @contextmanager

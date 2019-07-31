@@ -7,7 +7,7 @@ from sqlalchemy.orm import aliased
 
 from app import logger, session_scope, g_response, j_response
 from app.Exceptions import ValidationError
-from app.Controllers import AuthorizationController
+from app.Controllers import AuthorizationController, NotificationController
 from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Activity, TaskType
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
 
@@ -313,7 +313,7 @@ class TaskController(object):
         :param req: The request
         :return:        A response
         """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController, AuthenticationController, UserController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -373,6 +373,13 @@ class TaskController(object):
                 task=task,
                 assignee=task_attrs.get('assignee'),
                 req_user=req_user
+            )
+        else:
+            NotificationController.push(
+                message_body={
+                    "msg": f"{task.label()} task has been created."
+                },
+                user_ids=UserController.all_user_ids(req_user.org_id)
             )
 
         return g_response("Successfully created task", 201)

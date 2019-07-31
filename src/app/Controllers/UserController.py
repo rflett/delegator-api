@@ -87,6 +87,14 @@ class UserController(object):
         return _get_user_by_id(user_id)
 
     @staticmethod
+    def all_user_ids(org_id: int) -> typing.List[int]:
+        """ Returns a list of all user ids """
+        with session_scope() as session:
+            user_ids_qry = session.query(User.id).filter(User.org_id == org_id).all()
+
+        return [user_id[0] for user_id in user_ids_qry]
+
+    @staticmethod
     def create_user(req: request) -> Response:
         """ Creates a user from a request """
         from app.Controllers import AuthenticationController, ValidationController

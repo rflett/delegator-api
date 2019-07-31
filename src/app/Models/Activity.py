@@ -1,15 +1,14 @@
 import _thread
 import json
-import typing
 from dataclasses import dataclass
 from datetime import datetime
 
-from app import api_events_sns_topic, logger
+from app import api_events_sns_topic
 
 
 def do_publish(message: dict, event: str) -> None:
     """ Publishes an event to SNS """
-    res = api_events_sns_topic.publish(
+    api_events_sns_topic.publish(
         TopicArn=api_events_sns_topic.arn,
         Message=json.dumps({
             'default': json.dumps(message)
@@ -24,13 +23,8 @@ def do_publish(message: dict, event: str) -> None:
                 'DataType': 'String',
                 'StringValue': event.split('_')[0]
             },
-            'push': {
-                'DataType': 'String',
-                'StringValue': message.get('push', 'false')
-            }
         }
     )
-    logger.info(f"published event with messageid {res.get('MessageId')}")
 
 
 @dataclass
@@ -39,8 +33,6 @@ class Activity(object):
     event: str
     event_id: int
     event_friendly: str = ""
-    push_details: typing.Union[dict, None] = None
-    push: str = 'false'
 
     def __post_init__(self):
         self.event_time = datetime.utcnow().strftime("%Y%m%dT%H%M%S.%fZ")
