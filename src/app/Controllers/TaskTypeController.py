@@ -7,7 +7,7 @@ from sqlalchemy import exists, and_, func
 
 from app import logger, session_scope, g_response, j_response
 from app.Exceptions import ValidationError
-from app.Models import TaskType, TaskTypeEscalation, Notification
+from app.Models import TaskType, TaskTypeEscalation, Activity
 from app.Models.Enums import Events, Operations, Resources
 
 
@@ -166,12 +166,12 @@ class TaskTypeController(object):
                     org_id=req_user.org_id
                 )
                 session.add(task_type)
-            Notification(
+            Activity(
                 org_id=task_type.org_id,
                 event=Events.tasktype_created,
                 event_id=task_type.id,
             ).publish()
-            Notification(
+            Activity(
                 org_id=req_user.org_id,
                 event=Events.user_created_tasktype,
                 event_id=req_user.id,
@@ -195,7 +195,7 @@ class TaskTypeController(object):
 
                     validate_res.disabled = None
 
-                Notification(
+                Activity(
                     org_id=validate_res.org_id,
                     event=Events.tasktype_enabled,
                     event_id=validate_res.id
@@ -243,12 +243,12 @@ class TaskTypeController(object):
                         )
                         session.add(new_escalation)
 
-                    Notification(
+                    Activity(
                         org_id=req_user.org_id,
                         event=Events.tasktype_escalation_created,
                         event_id=task_type_id
                     ).publish()
-                    Notification(
+                    Activity(
                         org_id=req_user.org_id,
                         event=Events.user_created_tasktype_escalation,
                         event_id=req_user.id,
@@ -272,12 +272,12 @@ class TaskTypeController(object):
                         for k, v in escalation.items():
                             escalation_to_update.__setattr__(k, v)
 
-                        Notification(
+                        Activity(
                             org_id=req_user.org_id,
                             event=Events.tasktype_escalation_updated,
                             event_id=task_type_id
                         ).publish()
-                        Notification(
+                        Activity(
                             org_id=req_user.org_id,
                             event=Events.user_created_tasktype_escalation,
                             event_id=req_user.id,
@@ -336,12 +336,12 @@ class TaskTypeController(object):
         with session_scope():
             valid_dtt.disabled = datetime.datetime.utcnow()
 
-        Notification(
+        Activity(
             org_id=valid_dtt.org_id,
             event=Events.tasktype_disabled,
             event_id=valid_dtt.id,
         ).publish()
-        Notification(
+        Activity(
             org_id=req_user.org_id,
             event=Events.user_disabled_tasktype,
             event_id=req_user.id,

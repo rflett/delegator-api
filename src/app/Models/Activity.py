@@ -34,7 +34,7 @@ def do_publish(message: dict, event: str) -> None:
 
 
 @dataclass
-class Notification(object):
+class Activity(object):
     org_id: int
     event: str
     event_id: int
@@ -56,7 +56,5 @@ class Notification(object):
             'event': self.event,
             'event_id': self.event_id,
             'event_time': self.event_time,
-            'event_friendly': self.event_friendly,
-            'push_details': self.push_details,
-            'push': self.push
+            'event_friendly': self.event_friendly
         }

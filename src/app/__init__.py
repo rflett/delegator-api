@@ -58,6 +58,7 @@ user_settings_table = dyn_db.Table(app.config['USER_SETTINGS_TABLE'])
 org_settings_table = dyn_db.Table(app.config['ORG_SETTINGS_TABLE'])
 user_activity_table = dyn_db.Table(app.config['USER_ACTIVITY_TABLE'])
 task_activity_table = dyn_db.Table(app.config['TASK_ACTIVITY_TABLE'])
+notification_tokens_table = dyn_db.Table(app.config['NOTIFICATION_TOKENS_TABLE'])
 
 # sns
 sns = boto3.resource('sns')

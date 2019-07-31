@@ -7,7 +7,7 @@ from sqlalchemy import exists, func, and_
 
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthorizationController
-from app.Models import User, Notification
+from app.Models import User, Activity
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
 
@@ -124,13 +124,13 @@ class UserController(object):
             resource=Resources.USER,
             resource_id=user.id
         )
-        Notification(
+        Activity(
             org_id=user.org_id,
             event=Events.user_created,
             event_id=user.id,
             event_friendly=f"Created by {req_user.name()}."
         ).publish()
-        Notification(
+        Activity(
             org_id=req_user.org_id,
             event=Events.user_created_user,
             event_id=req_user.id,
@@ -172,7 +172,7 @@ class UserController(object):
             resource_id=user.id
         )
         # publish event
-        Notification(
+        Activity(
             org_id=user.org_id,
             event=Events.user_created,
             event_id=user.id,
@@ -204,13 +204,13 @@ class UserController(object):
             user_to_update.updated_at = datetime.datetime.utcnow()
             user_to_update.updated_by = req_user.id
 
-        Notification(
+        Activity(
             org_id=user_to_update.org_id,
             event=Events.user_updated,
             event_id=user_to_update.id,
             event_friendly=f"Updated by {req_user.name()}"
         ).publish()
-        Notification(
+        Activity(
             org_id=req_user.org_id,
             event=Events.user_updated_user,
             event_id=req_user.id,
@@ -241,7 +241,7 @@ class UserController(object):
         user_to_delete = UserController.get_user_by_id(user_id)
 
         with session_scope():
-            Notification(
+            Activity(
                 org_id=req_user.org_id,
                 event=Events.user_deleted_user,
                 event_id=req_user.id,
