@@ -6,12 +6,19 @@ from dateutil import tz
 from flask import request, Response
 
 import app.Exceptions
-from app import r_cache, j_response, logger, session_scope, app  # noqa
+from app import j_response, session_scope, app
 from app.Controllers import AuthenticationController, AuthorizationController
 from app.Models.Enums import Operations, Resources
 
 
 def clean_qry(qry) -> list:
+    """
+    Takes a SQLAlchemy Query, converts named tuples to dicts, and returns a list of them.
+    It also converts any SQL dates in the query to the correct date format for sending responses.
+
+    :param qry: The query to convert to a list of dicts from named tuples
+    :return:    The list of dicts
+    """
     Record = namedtuple('Record', qry.keys())
     records = [dict(Record(*r)._asdict()) for r in qry.fetchall()]
 
@@ -24,6 +31,12 @@ def clean_qry(qry) -> list:
 
 
 def completed_tasks(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
+    """Return a list of completed tasks between a period for an organisation.
+
+    :param org_id: The organisation id
+    :param period: The period that the finished_at should be between
+    :return:       A list of tasks that were completed between the period.
+    """
     start_period, end_period = period
     with session_scope() as session:
         qry = session.execute(
@@ -45,6 +58,12 @@ def completed_tasks(org_id: int, period: typing.Tuple[datetime.datetime, datetim
 
 
 def delayed_tasks(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
+    """Return a list of tasks that were delayed in a period
+
+    :param org_id: The organisation id
+    :param period: The period that delayed_at should be between
+    :return:       A list of delayed tasks
+    """
     start_period, end_period = period
     with session_scope() as session:
         qry = session.execute(
@@ -68,6 +87,12 @@ def delayed_tasks(org_id: int, period: typing.Tuple[datetime.datetime, datetime.
 
 
 def dropped_tasks(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
+    """Return a list of tasks that were dropped in a period
+
+    :param org_id: The organisation id
+    :param period: The period in which tasks were dropped_at
+    :return:       A list of dropped tasks
+    """
     start_period, end_period = period
     with session_scope() as session:
         qry = session.execute(
@@ -94,6 +119,12 @@ def dropped_tasks(org_id: int, period: typing.Tuple[datetime.datetime, datetime.
 
 
 def tasks_created(org_id: int, period: typing.Tuple[datetime.datetime, datetime.datetime]) -> list:
+    """Return a list of tasks that were created between a period.
+
+    :param org_id: The organisation id
+    :param period: The period in which the task was created
+    :return:       A list of tasks
+    """
     start_period, end_period = period
     with session_scope() as session:
         qry = session.execute(
@@ -117,9 +148,19 @@ def tasks_created(org_id: int, period: typing.Tuple[datetime.datetime, datetime.
 
 
 def get_trends(org_id) -> list:
-    """ Get completed tasks """
+    """
+    Return a list of tasks that were created, completed, delayed and dropped, within several periods.
+    The different periods that this is calcuated is 'today', 'yesterday', 'since the start of this week' and 'since
+    the start of this month'
+
+    :param org_id: The organisation id
+    :return:       A list of counts of the number of tasks in different states
+    """
+    # get the time right now
     now = datetime.datetime.utcnow()
+    # get the time for the start of today
     start_of_today = datetime.datetime(now.year, now.month, now.day, tzinfo=tz.tzutc())
+    # get the time of the start of yesterday
     yesterday = now - datetime.timedelta(
         days=1,
         hours=now.hour,
@@ -127,22 +168,30 @@ def get_trends(org_id) -> list:
         seconds=now.second,
         microseconds=now.microsecond
     )
+    # get the time for the start of this week
     start_of_this_week = start_of_today - datetime.timedelta(days=now.weekday())
+    # get the time for the start of the month
     start_of_this_month = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())
 
+    # return object
     reports = []
+
+    # each dict item of the return list, created, completed, delayed and dropped tasks
+    # this is a dict with the key being the 'trend' and the value being the function that calculates the trend
     trends = {
         "Created": tasks_created,
         "Completed": completed_tasks,
         "Delayed": delayed_tasks,
         "Dropped": dropped_tasks
     }
+    # dict of times as calculated earlier
     times = {
         "today": start_of_today,
         "yesterday": yesterday,
         "this_week": start_of_this_week,
         "this_month": start_of_this_month
     }
+    # for each trend, get the count of tasks in each 'category' for each 'time period'
     for title, func in trends.items():
         trend = {"title": title}
         for period, _date in times.items():
@@ -153,7 +202,7 @@ def get_trends(org_id) -> list:
 
 
 def get_start_and_finish_times(org_id: int, start_period: datetime.datetime, end_period: datetime.datetime) -> list:
-    """ Get time to start and time to finish for tasks """
+    """Get time to start and time to finish for tasks """
     with session_scope() as session:
         qry = session.execute(
             """
@@ -176,7 +225,7 @@ def get_start_and_finish_times(org_id: int, start_period: datetime.datetime, end
 
 
 def top_five_slowest_tasks(org_id: int, start_period: datetime.datetime, end_period: datetime.datetime) -> list:
-    """ Get the 5 tasks with longest time to finish """
+    """Get the 5 tasks with longest time to finish """
     with session_scope() as session:
         qry = session.execute(
             """
@@ -202,7 +251,7 @@ def top_five_slowest_tasks(org_id: int, start_period: datetime.datetime, end_per
 
 
 def average_time_to_start_a_task(org_id: int, start_period: datetime.datetime, end_period: datetime.datetime) -> int:
-    """ Get the average time to start a task """
+    """Get the average time to start a task """
     with session_scope() as session:
         qry = session.execute(
             """
@@ -219,7 +268,7 @@ def average_time_to_start_a_task(org_id: int, start_period: datetime.datetime, e
 
 
 def tasks_by_priority(org_id: int, start_period: datetime.datetime, end_period: datetime.datetime) -> list:
-    """ Get the average time to start a task """
+    """Get a list of tasks grouped by their priority"""
     with session_scope() as session:
         qry = session.execute(
             """
@@ -244,7 +293,7 @@ def tasks_by_priority(org_id: int, start_period: datetime.datetime, end_period: 
 
 
 def tasks_by_status(org_id: int, start_period: datetime.datetime, end_period: datetime.datetime) -> list:
-    """ Get the average time to start a task """
+    """Get a list of tasks grouped by their status """
     with session_scope() as session:
         qry = session.execute(
             """
@@ -270,7 +319,10 @@ def tasks_by_status(org_id: int, start_period: datetime.datetime, end_period: da
 
 
 def delays_per_task_type(org_id: int, start_period: datetime.datetime, end_period: datetime.datetime) -> list:
-    """ Get time to start and time to finish for tasks """
+    """
+    Calculate the amount of delay that each task has had. This just querys the total delay time for each task - not
+    if it was actually resumed before the delay period finished. It's an upper bound - not the exact delay period.
+     """
     with session_scope() as session:
         qry = session.execute(
             """
@@ -293,7 +345,7 @@ def delays_per_task_type(org_id: int, start_period: datetime.datetime, end_perio
 class ReportController(object):
     @staticmethod
     def get_all(req: request) -> Response:
-        """ Get time to start and time to finish for tasks """
+        """Returns all of the report queries """
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
