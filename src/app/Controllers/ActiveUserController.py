@@ -1,5 +1,4 @@
 import datetime
-import json
 
 from flask import request, Response
 
@@ -9,20 +8,20 @@ from app.Models.Enums import Operations, Resources
 
 
 def _purge_inactive_users() -> None:
-    """ Removes users which have been inactive for longer than the threshold. """
+    """ Removes users from the active users table which have been inactive for longer than the TTL. """
     with session_scope() as session:
         inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=app.config['INACTIVE_USER_TTL'])
         delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
-        logger.info(f"purged {delete_inactive} users who have not been active since {inactive_cutoff}")
+        logger.info(f"Purged {len(delete_inactive)} users who have not been active for {inactive_cutoff}s.")
 
 
 class ActiveUserController(object):
-
     @staticmethod
     def user_is_active(user: User) -> None:
-        """
-        Marks a user as active if they are not active already. If they're already active then update them.
-        A cron job should come through and remove active users that have been inactive for the TTL.
+        """Marks a user as active if they are not active already. If they're already active then update them.
+
+        :param user: The user to mark as active
+        :return:
         """
         with session_scope() as session:
             already_active = session.query(ActiveUser).filter(ActiveUser.user_id == user.id).first()
@@ -36,22 +35,30 @@ class ActiveUserController(object):
                     last_active=datetime.datetime.utcnow()
                 )
                 session.add(active_user)
-                logger.debug(f"user {user.id} was not active, but has now been marked as active")
+                logger.debug(f"User {user.id} was not active, but has now been marked as active")
             else:
                 # user is active, so update
                 already_active.last_active = datetime.datetime.utcnow()
-                logger.debug(f"user {user.id} was active, and has been marked as active again")
+                logger.debug(f"User {user.id} was active, and has been marked as active again")
 
     @staticmethod
     def user_is_inactive(user: User) -> None:
-        """ Mark user as inactive by deleting their record in the active users table """
+        """Mark user as inactive by deleting their record in the active users table
+
+        :param user: The user to mark as inactive
+        :return:
+        """
         with session_scope() as session:
             session.query(ActiveUser).filter(ActiveUser.user_id == user.id).delete()
-            logger.debug(f"user {user.id} marked as inactive")
+            logger.debug(f"User {user.id} marked as inactive.")
 
     @staticmethod
     def get_active_users(req: request) -> Response:
-        """ Returns all active users for an organisation """
+        """Returns all active users in the organisation of the requesting user.
+
+         :param req: The HTTP request
+         :return:    HTTP 200 Response
+         """
         from app.Controllers import AuthenticationController, AuthorizationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -65,13 +72,15 @@ class ActiveUserController(object):
         # remove inactive users
         _purge_inactive_users()
 
+        # query db for active users
         with session_scope() as session:
             active_users_qry = session.query(ActiveUser).filter(ActiveUser.org_id == req_user.org_id).all()
 
+        # convert to list of active user dicts
         active_users = [au.as_dict() for au in active_users_qry]
         req_user.log(
             operation=Operations.GET,
             resource=Resources.ACTIVE_USERS
         )
-        logger.debug(f"found {len(active_users)} active users: {json.dumps(active_users)}")
+        logger.debug(f"Found {len(active_users)} active users.")
         return j_response(active_users)

@@ -1,9 +1,9 @@
 import datetime
-import json
 import typing
 
 from flask import request, Response
 from sqlalchemy import exists, func, and_
+from sqlalchemy.orm import aliased
 
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthorizationController
@@ -13,9 +13,9 @@ from app.Models.RBAC import Permission
 
 
 def _get_user_by_email(email: str) -> User:
-    """
-    Gets a user by their email address
-    :param email:          The user's email
+    """Gets a user by their email address
+
+    :param email:           The user's email
     :raises ValueError:     If the user doesn't exist.
     :return:                The User
     """
@@ -29,8 +29,8 @@ def _get_user_by_email(email: str) -> User:
 
 
 def _get_user_by_id(user_id: int) -> User:
-    """
-    Gets a user by their id
+    """Gets a user by their id
+
     :param user_id:         The user's id
     :raises ValueError:     If the user doesn't exist.
     :return:                The User
@@ -45,26 +45,24 @@ def _get_user_by_id(user_id: int) -> User:
 
 
 def _get_user(user_identifier: typing.Union[str, int]) -> User:
-    """
-    Gets a user by their id or email
+    """Gets a user by their id or email
+
     :param user_identifier: The user id or email
     :raises ValueError:     If the user doesn't exist.
     """
     if isinstance(user_identifier, str):
-        logger.info("user_identifier is a str so getting user by email")
         return _get_user_by_email(user_identifier)
     elif isinstance(user_identifier, int):
-        logger.info("user_identifier is an int so getting user by id")
         return _get_user_by_id(user_identifier)
     else:
-        raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
+        raise ValueError(f"Bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
 
 
 class UserController(object):
     @staticmethod
     def user_exists(user_identifier: typing.Union[str, int]) -> bool:
-        """
-        Checks to see if a user exists
+        """Checks to see if a user exists
+
         :param user_identifier: The user id or email
         :raises ValueError:     If the user doesn't exist.
         """
@@ -80,15 +78,17 @@ class UserController(object):
 
     @staticmethod
     def get_user_by_email(email: str) -> User:
+        """Public method for getting a user by their email """
         return _get_user_by_email(email)
 
     @staticmethod
     def get_user_by_id(user_id: int) -> User:
+        """Public method for getting a user by their id """
         return _get_user_by_id(user_id)
 
     @staticmethod
     def create_user(req: request) -> Response:
-        """ Creates a user from a request """
+        """Create a user """
         from app.Controllers import AuthenticationController, ValidationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -124,6 +124,8 @@ class UserController(object):
             resource=Resources.USER,
             resource_id=user.id
         )
+
+        # notifications
         Notification(
             org_id=user.org_id,
             event=Events.user_created,
@@ -136,13 +138,13 @@ class UserController(object):
             event_id=req_user.id,
             event_friendly=f"Created {user.name()}."
         ).publish()
-        logger.info(f"user {req_user.id} created user {user.as_dict()}")
+        logger.info(f"User {req_user.id} created user {user.id}")
 
         return g_response("Successfully created user", 201)
 
     @staticmethod
     def create_signup_user(org_id: int, valid_user: dict) -> None:
-        """ Creates a user from the signup page """
+        """Creates a user from the signup page """
         with session_scope() as session:
             user = User(
                 org_id=org_id,
@@ -163,26 +165,22 @@ class UserController(object):
 
         user.log(
             operation=Operations.CREATE,
-            resource=Resources.ORGANISATION,
-            resource_id=org_id
-        )
-        user.log(
-            operation=Operations.CREATE,
             resource=Resources.USER,
             resource_id=user.id
         )
-        # publish event
+
+        # notifications
         Notification(
             org_id=user.org_id,
             event=Events.user_created,
             event_id=user.id,
             event_friendly=f"Created by {user.name()}"
         ).publish()
-        logger.info(f"user {user.id} created user {user.as_dict()}")
+        logger.info(f"User {user.id} signed up.")
 
     @staticmethod
     def update_user(req: request) -> Response:
-        """ Updates a user, requires the full user object in the response body.  """
+        """Update a user. """
         from app.Controllers import ValidationController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -196,14 +194,17 @@ class UserController(object):
             affected_user_id=user_attrs.get('id')
         )
 
+        # get the user to update
         user_to_update = UserController.get_user_by_id(user_attrs.get('id'))
 
+        # for all attributes in the request, update them on the user if they exist
         with session_scope():
             for k, v in user_attrs.items():
                 user_to_update.__setattr__(k, v)
             user_to_update.updated_at = datetime.datetime.utcnow()
             user_to_update.updated_by = req_user.id
 
+        # notifications
         Notification(
             org_id=user_to_update.org_id,
             event=Events.user_updated,
@@ -221,12 +222,12 @@ class UserController(object):
             resource=Resources.USER,
             resource_id=user_to_update.id
         )
-        logger.info(f"user {req_user.id} updated user {user_to_update.as_dict()}")
+        logger.info(f"User {req_user.id} updated user {user_to_update.id}")
         return g_response(status=204)
 
     @staticmethod
     def delete_user(user_id: int, req: request) -> Response:
-        """ Deletes a user """
+        """Deletes a user """
         from app.Controllers import AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -238,28 +239,30 @@ class UserController(object):
             affected_user_id=user_id
         )
 
+        # get the user
         user_to_delete = UserController.get_user_by_id(user_id)
 
         with session_scope():
+            # delete the user
+            user_to_delete.anonymize()
             Notification(
                 org_id=req_user.org_id,
                 event=Events.user_deleted_user,
                 event_id=req_user.id,
                 event_friendly=f"Deleted user id {user_to_delete.id}."
             ).publish()
-            user_to_delete.anonymize()
 
         req_user.log(
             operation=Operations.DELETE,
             resource=Resources.USER,
             resource_id=user_to_delete.id
         )
-        logger.info(f"user {req_user.id} deleted user id {user_to_delete.id}")
+        logger.info(f"User {req_user.id} deleted user {user_to_delete.id}.")
         return g_response(status=204)
 
     @staticmethod
     def get_user(user_identifier: typing.Union[int, str], req: request) -> Response:
-        """ Get a single user by email or ID """
+        """Get a single user by email or ID """
         from app.Controllers import AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -286,18 +289,14 @@ class UserController(object):
                 resource=Resources.USER,
                 resource_id=user.id
             )
-            logger.info(f"found user {user.fat_dict()}")
+            logger.info(f"Found user {user.id}")
             return j_response(user.fat_dict())
         except ValueError as e:
             return g_response(str(e), 400)
 
     @staticmethod
     def get_users(req: request) -> Response:
-        """
-        Get all users
-        :param req:     The request object
-        :return:
-        """
+        """Get all users """
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import User, Organisation
         from app.Models.RBAC import Role
@@ -310,10 +309,14 @@ class UserController(object):
             resource=Resources.USERS
         )
 
+        # query for all users in the requesting user's organisation
         with session_scope() as session:
-            users_qry = session.query(User, Role, Organisation) \
+            created_by, updated_by = aliased(User), aliased(User)
+            users_qry = session.query(User, Role, Organisation, created_by, updated_by) \
                 .join(User.roles) \
                 .join(User.orgs) \
+                .join(User.created_by, created_by.id == User.created_by)\
+                .outerjoin(User.updated_by, updated_by.id == User.updated_by)\
                 .filter(
                     and_(
                         User.org_id == req_user.org_id,
@@ -322,24 +325,18 @@ class UserController(object):
                 ) \
                 .all()
 
+        # return object
         users = []
 
+        # get objects for each sub object of the user
         for user, role, org in users_qry:
-            with session_scope() as session:
-                created_by = session.query(User) \
-                    .filter(User.id == user.created_by) \
-                    .first()
-                updated_by = session.query(User) \
-                    .filter(User.id == user.updated_by) \
-                    .first()
-
             user_dict = user.as_dict()
             user_dict['created_by'] = created_by.name()
             user_dict['updated_by'] = updated_by.name() if updated_by is not None else None
             user_dict['role'] = role.as_dict()
             users.append(user_dict)
 
-        logger.info(f"found {len(users)} users: {json.dumps(users)}")
+        logger.info(f"found {len(users)} users.")
         req_user.log(
             operation=Operations.GET,
             resource=Resources.USERS
@@ -348,7 +345,7 @@ class UserController(object):
 
     @staticmethod
     def user_pages(req: request) -> Response:
-        """ Returns the pages a user can access """
+        """Returns the pages a user can access """
         from app.Controllers import AuthorizationController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -359,6 +356,7 @@ class UserController(object):
             resource=Resources.PAGES
         )
 
+        # query for permissions that have the resource id like %_PAGE
         with session_scope() as session:
             pages_qry = session.query(Permission.resource_id).filter(
                 Permission.role_id == req_user.role,
@@ -375,12 +373,12 @@ class UserController(object):
                 operation=Operations.GET,
                 resource=Resources.PAGES
             )
-            logger.info(f"found {len(pages)} pages: {pages}")
+            logger.info(f"found {len(pages)} pages.")
             return j_response(sorted(pages))
 
     @staticmethod
     def get_user_settings(req: request) -> Response:
-        """ Returns the user's settings """
+        """Returns the user's settings """
         from app.Controllers import AuthorizationController, SettingsController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -402,7 +400,7 @@ class UserController(object):
 
     @staticmethod
     def update_user_settings(req: request) -> Response:
-        """ Returns the user's settings """
+        """Updates the user's settings """
         from app.Controllers import AuthorizationController, ValidationController, SettingsController, \
             AuthenticationController
 
@@ -428,7 +426,7 @@ class UserController(object):
 
     @staticmethod
     def get_user_activity(user_identifier: typing.Union[str, int], req: request) -> Response:
-        """ Returns the activity for a user """
+        """Returns the activity for a user """
         from app.Controllers import AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)

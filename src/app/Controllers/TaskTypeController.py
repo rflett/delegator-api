@@ -1,6 +1,4 @@
 import datetime
-import json
-import typing
 
 from flask import request, Response
 from sqlalchemy import exists, and_, func
@@ -12,7 +10,7 @@ from app.Models.Enums import Events, Operations, Resources
 
 
 def _get_task_type_escalation(task_type_id: int, display_order: int):
-    """ Gets a task type escalation """
+    """Gets a task type escalation """
     with session_scope() as session:
         ret = session.query(TaskTypeEscalation).filter(
             and_(
@@ -21,7 +19,7 @@ def _get_task_type_escalation(task_type_id: int, display_order: int):
             )
         ).first()
     if ret is None:
-        logger.info(f"No task type escalation with task_type_id {task_type_id} and display order {display_order}")
+        logger.info(f"No task type escalation for task_type {task_type_id} and display order {display_order}.")
         raise ValueError(f"No task type escalation with "
                          f"task_type_id {task_type_id} and display order {display_order}")
     else:
@@ -29,69 +27,37 @@ def _get_task_type_escalation(task_type_id: int, display_order: int):
 
 
 def _get_task_type_by_id(org_id: int, task_type_id: int) -> TaskType:
-    """ Gets a task type by its id """
+    """Gets a task type by its id """
     with session_scope() as session:
         ret = session.query(TaskType).filter(and_(TaskType.id == task_type_id, TaskType.org_id == org_id)).first()
     if ret is None:
-        logger.info(f"Task Type with id {task_type_id} does not exist.")
-        raise ValueError(f"Task Type with id {task_type_id} does not exist.")
+        logger.info(f"Task type with id {task_type_id} does not exist.")
+        raise ValueError(f"Task type with id {task_type_id} does not exist.")
     else:
         return ret
 
 
 class TaskTypeController(object):
     @staticmethod
-    def task_type_enabled(task_type_identifier: typing.Union[str, int], org_identifier: int) -> bool:
-        """ Checks to see if a task type is enabled. """
+    def task_type_exists(task_type_identifier: int) -> bool:
+        """Checks to see if a task type exists. """
         with session_scope() as session:
             if isinstance(task_type_identifier, int):
-                logger.info(f"task type identifier is an int so finding by id")
-                return session.query(exists().where(
-                    and_(
-                        TaskType.id == task_type_identifier,
-                        TaskType.disabled == None  # noqa
-                    )
-                )).scalar()
-            elif isinstance(task_type_identifier, str):
-                logger.info(f"task type identifier is a str so finding by type")
-                return session.query(exists().where(
-                    and_(
-                        TaskType.label == task_type_identifier,
-                        TaskType.org_id == org_identifier,
-                        TaskType.disabled == None  # noqa
-                    )
-                )).scalar()
-
-    @staticmethod
-    def task_type_exists(
-            task_type_identifier: typing.Union[str, int],
-            org_identifier: int
-    ) -> bool:
-        """ Checks to see if a task type exists. """
-        with session_scope() as session:
-            if isinstance(task_type_identifier, int):
-                logger.info(f"task type identifier is an int so finding by id")
                 return session.query(exists().where(
                     TaskType.id == task_type_identifier
                 )
                 ).scalar()
-            elif isinstance(task_type_identifier, str):
-                logger.info(f"task type identifier is a str so finding by type")
-                return session.query(exists().where(
-                    and_(
-                        func.lower(TaskType.label) == func.lower(task_type_identifier),
-                        TaskType.org_id == org_identifier
-                    )
-                )).scalar()
+            else:
+                raise ValidationError("Task type id not supplied.")
 
     @staticmethod
     def get_task_type_by_id(org_id: int, task_type_id: int) -> TaskType:
-        """ Gets a task type by its id """
+        """Gets a task type by its id """
         return _get_task_type_by_id(org_id, task_type_id)
 
     @staticmethod
     def get_task_type_by_label(label: str, org_id: int) -> TaskType:
-        """ Gets a task type by its label """
+        """Gets a task type by its label """
         with session_scope() as session:
             ret = session.query(TaskType).filter(
                 and_(
@@ -100,14 +66,14 @@ class TaskTypeController(object):
                 )
             ).first()
         if ret is None:
-            logger.info(f"Task Type with label {label} does not exist in org {org_id}.")
-            raise ValueError(f"Task Type with label {label} does not existin org {org_id}")
+            logger.info(f"Task type with label {label} does not exist in org {org_id}.")
+            raise ValueError(f"Task type with label {label} does not exist in org {org_id}.")
         else:
             return ret
 
     @staticmethod
     def get_task_types(req: request) -> Response:
-        """ Returns all task types """
+        """Returns all task types """
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import TaskType
 
@@ -130,7 +96,6 @@ class TaskTypeController(object):
                 .all()
 
         task_types = [tt.fat_dict() for tt in task_type_query]
-        logger.debug(f"found {len(task_types)} task types: {json.dumps(task_types)}")
         req_user.log(
             operation=Operations.GET,
             resource=Resources.TASK_TYPES
@@ -139,7 +104,7 @@ class TaskTypeController(object):
 
     @staticmethod
     def create_task_type(req: request) -> Response:
-        """ Create a task type """
+        """Create a task type """
         from app.Controllers import AuthorizationController, ValidationController, AuthenticationController
         from app.Models import TaskType
 
@@ -152,20 +117,18 @@ class TaskTypeController(object):
             resource=Resources.TASK_TYPE
         )
 
-        """
-        This will create or re-enable the task type.
-        """
-        # validate task_type
+        # validate task type request
         validate_res = ValidationController.validate_create_task_type_request(req_user.org_id, request_body)
 
         if isinstance(validate_res, str):
-            # it will be a string it's new
+            # create the task type because it doesn't exist
             with session_scope() as session:
                 task_type = TaskType(
                     label=validate_res,
                     org_id=req_user.org_id
                 )
                 session.add(task_type)
+            # notifications
             Notification(
                 org_id=task_type.org_id,
                 event=Events.tasktype_created,
@@ -184,8 +147,9 @@ class TaskTypeController(object):
             )
             logger.info(f"created task type {task_type.as_dict()}")
         elif isinstance(validate_res, TaskType):
+            # enable the task type because it exists
             if validate_res.disabled is not None:
-                # It will need to be enabled
+                # it's disabled, so it will need to be enabled
                 with session_scope():
                     AuthorizationController.authorize_request(
                         auth_user=req_user,
@@ -195,6 +159,7 @@ class TaskTypeController(object):
 
                     validate_res.disabled = None
 
+                # notifications
                 Notification(
                     org_id=validate_res.org_id,
                     event=Events.tasktype_enabled,
@@ -205,23 +170,21 @@ class TaskTypeController(object):
                     resource=Resources.TASK_TYPE,
                     resource_id=validate_res.id
                 )
-                logger.info(f"enabled task type {validate_res.as_dict()}")
+                logger.info(f"Enabled task type {validate_res.as_dict()}")
 
-        """
-        This will manage the escalations for the task, if there were any.
-        """
+        # counter for number of task types created/updated/deleted in this request
         total_updated = total_created = total_deleted = 0
 
         # VALIDATION
         escalations = request_body.get('escalation_policies')
         if escalations is None:
-            # All good!
+            # there are no esclations to handle
             return g_response("Successfully created task type", 201)
         elif not isinstance(escalations, list):
+            # the escalations were not provided as a list
             raise ValidationError("escalations property is not a list.")
         else:
-            # There's probably escalations so proceed with checking and applying them
-            # Get the task type ID from before
+            # there's escalations in the request, so add and remove them as required
             if isinstance(validate_res, str):
                 task_type_id = task_type.id
             else:
@@ -320,7 +283,7 @@ class TaskTypeController(object):
 
     @staticmethod
     def disable_task_type(task_type_id: int, req: request) -> Response:
-        """ Disables a task type """
+        """Disables a task type """
         from app.Controllers import AuthorizationController, ValidationController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -336,6 +299,7 @@ class TaskTypeController(object):
         with session_scope():
             valid_dtt.disabled = datetime.datetime.utcnow()
 
+        # notifications
         Notification(
             org_id=valid_dtt.org_id,
             event=Events.tasktype_disabled,
@@ -345,12 +309,11 @@ class TaskTypeController(object):
             org_id=req_user.org_id,
             event=Events.user_disabled_tasktype,
             event_id=req_user.id,
-            event_friendly=f"Disabled task type {valid_dtt.label}"
+            event_friendly=f"Disabled task type {valid_dtt.label}."
         ).publish()
         req_user.log(
             operation=Operations.DISABLE,
             resource=Resources.TASK_TYPE,
             resource_id=valid_dtt.id
         )
-        logger.info(f"disabled task type {valid_dtt.as_dict()}")
         return g_response(status=204)
