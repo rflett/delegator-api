@@ -7,7 +7,7 @@ from sqlalchemy.orm import aliased
 
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthorizationController
-from app.Models import User, Notification
+from app.Models import User, Activity
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
 
@@ -87,6 +87,14 @@ class UserController(object):
         return _get_user_by_id(user_id)
 
     @staticmethod
+    def all_user_ids(org_id: int) -> typing.List[int]:
+        """ Returns a list of all user ids """
+        with session_scope() as session:
+            user_ids_qry = session.query(User.id).filter(User.org_id == org_id).all()
+
+        return [user_id[0] for user_id in user_ids_qry]
+
+    @staticmethod
     def create_user(req: request) -> Response:
         """Create a user """
         from app.Controllers import AuthenticationController, ValidationController
@@ -124,15 +132,13 @@ class UserController(object):
             resource=Resources.USER,
             resource_id=user.id
         )
-
-        # notifications
-        Notification(
+        Activity(
             org_id=user.org_id,
             event=Events.user_created,
             event_id=user.id,
             event_friendly=f"Created by {req_user.name()}."
         ).publish()
-        Notification(
+        Activity(
             org_id=req_user.org_id,
             event=Events.user_created_user,
             event_id=req_user.id,
@@ -168,9 +174,8 @@ class UserController(object):
             resource=Resources.USER,
             resource_id=user.id
         )
-
-        # notifications
-        Notification(
+        # publish event
+        Activity(
             org_id=user.org_id,
             event=Events.user_created,
             event_id=user.id,
@@ -204,14 +209,13 @@ class UserController(object):
             user_to_update.updated_at = datetime.datetime.utcnow()
             user_to_update.updated_by = req_user.id
 
-        # notifications
-        Notification(
+        Activity(
             org_id=user_to_update.org_id,
             event=Events.user_updated,
             event_id=user_to_update.id,
             event_friendly=f"Updated by {req_user.name()}"
         ).publish()
-        Notification(
+        Activity(
             org_id=req_user.org_id,
             event=Events.user_updated_user,
             event_id=req_user.id,
@@ -243,9 +247,7 @@ class UserController(object):
         user_to_delete = UserController.get_user_by_id(user_id)
 
         with session_scope():
-            # delete the user
-            user_to_delete.anonymize()
-            Notification(
+            Activity(
                 org_id=req_user.org_id,
                 event=Events.user_deleted_user,
                 event_id=req_user.id,

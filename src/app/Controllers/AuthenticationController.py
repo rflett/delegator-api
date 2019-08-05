@@ -8,7 +8,7 @@ from flask import Response, request
 
 from app import logger, app, g_response, session_scope
 from app.Exceptions import AuthenticationError
-from app.Models import User, FailedLogin, Notification
+from app.Models import User, FailedLogin, Activity
 from app.Models.Enums import Events
 
 
@@ -230,7 +230,7 @@ class AuthenticationController(object):
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
                 user.is_active()
-                Notification(
+                Activity(
                     org_id=user.org_id,
                     event=Events.user_login,
                     event_id=user.id,
@@ -270,7 +270,7 @@ class AuthenticationController(object):
         else:
             user = UserController.get_user_by_id(payload.get('claims').get('user_id'))
             user.is_inactive()
-            Notification(
+            Activity(
                 org_id=user.org_id,
                 event=Events.user_logout,
                 event_id=user.id,

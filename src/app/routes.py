@@ -7,7 +7,7 @@ from app import app, g_response, logger
 from app.Exceptions import AuthenticationError, AuthorizationError, ValidationError
 from app.Controllers import AuthorizationController, UserController, SignupController, TaskController, \
     VersionController, ActiveUserController, OrganisationController, TaskTypeController, AuthenticationController, \
-    RoleController, ReportController
+    RoleController, ReportController, NotificationController
 
 
 def requires_jwt(f):
@@ -300,3 +300,18 @@ def update_org_settings():
 @handle_exceptions
 def get_report_trends():
     return ReportController.get_all(request)
+
+
+@app.route('/notification_token', methods=['POST'])
+@requires_jwt
+@handle_exceptions
+def register_token():
+    return NotificationController.register_token(request)
+
+
+@app.route('/notification_token', methods=['DELETE'])
+@requires_jwt
+@handle_exceptions
+def deregister_token():
+    return NotificationController.deregister_token(request)
+

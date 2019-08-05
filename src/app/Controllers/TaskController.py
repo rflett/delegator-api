@@ -6,8 +6,8 @@ from sqlalchemy.orm import aliased
 
 from app import logger, session_scope, g_response, j_response
 from app.Exceptions import ValidationError
-from app.Controllers import AuthorizationController
-from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Notification, TaskType
+from app.Controllers import AuthorizationController, NotificationController
+from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Activity, TaskType
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
 
 
@@ -55,14 +55,13 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
     old_status_label = _pretty_status_label(old_status)
     new_status_label = _pretty_status_label(status)
 
-    # notifications
-    Notification(
+    Activity(
         org_id=task.org_id,
         event=f'task_transitioned_{task.status.lower()}',
         event_id=task.id,
         event_friendly=f"Transitioned from {old_status_label} to {new_status_label}."
     ).publish()
-    Notification(
+    Activity(
         org_id=req_user.org_id,
         event=Events.user_transitioned_task,
         event_id=req_user.id,
@@ -86,21 +85,19 @@ def _assign_task(task: Task, assignee: int, req_user: User) -> None:
 
     # get the assigned user
     assigned_user = UserController.get_user_by_id(assignee)
-
-    # notifications
-    Notification(
+    Activity(
         org_id=task.org_id,
         event=Events.task_assigned,
         event_id=task.id,
         event_friendly=f"{assigned_user.name()} assigned to task by {req_user.name()}."
     ).publish()
-    Notification(
+    Activity(
         org_id=req_user.org_id,
         event=Events.user_assigned_task,
         event_id=req_user.id,
         event_friendly=f"Assigned {assigned_user.name()} to {task.label()}."
     ).publish()
-    Notification(
+    Activity(
         org_id=assigned_user.org_id,
         event=Events.user_assigned_to_task,
         event_id=assigned_user.id,
@@ -126,20 +123,19 @@ def _unassign_task(task: Task, req_user: User) -> None:
         with session_scope():
             task.assignee = None
 
-        # notifications
-        Notification(
+        Activity(
             org_id=task.org_id,
             event=Events.task_unassigned,
             event_id=task.id,
             event_friendly=f"{old_assignee.name()} unassigned from task by {req_user.name()}."
         ).publish()
-        Notification(
+        Activity(
             org_id=req_user.org_id,
             event=Events.user_unassigned_task,
             event_id=req_user.id,
             event_friendly=f"Unassigned {old_assignee.name()} from {task.label()}."
         ).publish()
-        Notification(
+        Activity(
             org_id=old_assignee.org_id,
             event=Events.user_unassigned_from_task,
             event_id=old_assignee.id,
@@ -348,14 +344,13 @@ class TaskController(object):
             )
             session.add(task)
 
-        # notifications
-        Notification(
+        Activity(
             org_id=task.org_id,
             event=Events.task_created,
             event_id=task.id,
             event_friendly=f"Created by {req_user.name()}."
         ).publish()
-        Notification(
+        Activity(
             org_id=req_user.org_id,
             event=Events.user_created_task,
             event_id=req_user.id,
@@ -381,6 +376,13 @@ class TaskController(object):
                 task=task,
                 assignee=task_attrs.get('assignee'),
                 req_user=req_user
+            )
+        else:
+            NotificationController.push(
+                message_body={
+                    "msg": f"{task.label()} task has been created."
+                },
+                user_ids=UserController.all_user_ids(req_user.org_id)
             )
 
         return g_response("Successfully created task", 201)
@@ -451,8 +453,8 @@ class TaskController(object):
             for k, v in task_attrs.items():
                 task_to_update.__setattr__(k, v)
 
-        # notifications
-        Notification(
+        # publish event
+        Activity(
             org_id=task_to_update.org_id,
             event=Events.task_updated,
             event_id=task_to_update.id,

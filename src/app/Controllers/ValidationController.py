@@ -552,3 +552,31 @@ class ValidationController(object):
             raise ValidationError("Task does not exist.")
 
         return task, delay_for, reason
+
+    @staticmethod
+    def validate_register_token_request(request_body: dict) -> tuple:
+        """ Validate the request payload for registering a notification token """
+        from app.Models.Enums import NotificationTokens
+
+        token_type = _check_str(request_body.get('token_type'), 'token_type')
+
+        if token_type not in NotificationTokens.TOKENS:
+            raise ValidationError(f"Token type {token_type} not supported: "
+                                  f"supported types are: {NotificationTokens.TOKENS}")
+
+        token = _check_str(request_body.get('token'), 'token')
+
+        return token_type, token
+
+    @staticmethod
+    def validate_deregister_token_request(request_body: dict) -> str:
+        """ Validate the request payload for registering a notification token """
+        from app.Models.Enums import NotificationTokens
+
+        token_type = _check_str(request_body.get('token_type'), 'token_type')
+
+        if token_type in NotificationTokens.TOKENS:
+            return token_type
+        else:
+            raise ValidationError(f"Token type {token_type} not supported: "
+                                  f"supported types are: {NotificationTokens.TOKENS}")

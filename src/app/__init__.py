@@ -58,10 +58,12 @@ user_settings_table = dyn_db.Table(app.config['USER_SETTINGS_TABLE'])
 org_settings_table = dyn_db.Table(app.config['ORG_SETTINGS_TABLE'])
 user_activity_table = dyn_db.Table(app.config['USER_ACTIVITY_TABLE'])
 task_activity_table = dyn_db.Table(app.config['TASK_ACTIVITY_TABLE'])
+notification_tokens_table = dyn_db.Table(app.config['NOTIFICATION_TOKENS_TABLE'])
 
 # sns
 sns = boto3.resource('sns')
 api_events_sns_topic = sns.Topic(app.config['EVENTS_SNS_TOPIC_ARN'])
+app_notifications_sns_topic = sns.Topic(app.config['APP_NOTIFICATIONS_SNS_TOPIC_ARN'])
 
 
 @contextmanager
