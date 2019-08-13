@@ -236,6 +236,7 @@ class AuthenticationController(object):
                     event_id=user.id,
                     event_friendly="Logged in."
                 ).publish()
+
                 # return the user dict and their JWT token
                 return Response(
                     json.dumps({

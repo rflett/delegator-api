@@ -16,6 +16,7 @@ class Config(object):
     NOTIFICATION_TOKENS_TABLE = 'backburner-notification-tokens-staging'
     REQUEST_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
     RESPONSE_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
+    DYN_DB_ACTIVITY_DATE_FORMAT = '%Y%m%dT%H%M%S.%fZ'
 
 
 class Ci(Config):

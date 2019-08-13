@@ -784,6 +784,6 @@ class TaskController(object):
                 resource_id=task.id
             )
             logger.info(f"Getting activity for task with id {task.id}")
-            return j_response(task.activity())
+            return j_response(task.activity(req_user.orgs.product_tiers.task_activity_log_history))
         except ValueError as e:
             return g_response(str(e), 400)

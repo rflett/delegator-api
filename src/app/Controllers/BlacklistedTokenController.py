@@ -27,7 +27,6 @@ class BlacklistedTokenController(object):
             logger.warning(f"Token pair {blacklist_id} is blacklisted.")
             return True
         else:
-            logger.debug(f"Token pair {blacklist_id} is not blacklisted.")
             return False
 
     @staticmethod
