@@ -313,12 +313,9 @@ class UserController(object):
 
         # query for all users in the requesting user's organisation
         with session_scope() as session:
-            created_by, updated_by = aliased(User), aliased(User)
-            users_qry = session.query(User, Role, Organisation, created_by, updated_by) \
+            users_qry = session.query(User, Role, Organisation) \
                 .join(User.roles) \
                 .join(User.orgs) \
-                .join(User.created_by, created_by.id == User.created_by)\
-                .outerjoin(User.updated_by, updated_by.id == User.updated_by)\
                 .filter(
                     and_(
                         User.org_id == req_user.org_id,
@@ -327,12 +324,19 @@ class UserController(object):
                 ) \
                 .all()
 
-        # return object
         users = []
 
-        # get objects for each sub object of the user
         for user, role, org in users_qry:
+            with session_scope() as session:
+                created_by = session.query(User) \
+                    .filter(User.id == user.created_by) \
+                    .first()
+                updated_by = session.query(User) \
+                    .filter(User.id == user.updated_by) \
+                    .first()
+
             user_dict = user.as_dict()
+            # TODO change to user not their name?
             user_dict['created_by'] = created_by.name()
             user_dict['updated_by'] = updated_by.name() if updated_by is not None else None
             user_dict['role'] = role.as_dict()

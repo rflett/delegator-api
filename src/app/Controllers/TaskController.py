@@ -103,6 +103,10 @@ def _assign_task(task: Task, assignee: int, req_user: User) -> None:
         event_id=assigned_user.id,
         event_friendly=f"Assigned to {task.label()} by {req_user.name()}."
     ).publish()
+    NotificationController.push(
+        msg="You've been assigned a task!",
+        user_ids=assigned_user.id
+    )
     req_user.log(
         operation=Operations.ASSIGN,
         resource=Resources.TASK,
@@ -151,8 +155,17 @@ def _unassign_task(task: Task, req_user: User) -> None:
 
 def _change_task_priority(org_id: int, task_id: int, priority: int) -> None:
     """Common function for changing a tasks priority"""
+    from app.Controllers import UserController
+
     with session_scope():
         task_to_change = TaskController.get_task_by_id(task_id, org_id)
+        if priority > task_to_change.priority:
+            # task priority is increasing
+            NotificationController.push(
+                msg=f"{task_to_change.label()} task has been escalated.",
+                user_ids=UserController.all_user_ids(org_id)
+            )
+
         task_to_change.priority = priority
         task_to_change.priority_changed_at = datetime.datetime.utcnow()
 
@@ -316,7 +329,7 @@ class TaskController(object):
     @staticmethod
     def create_task(req: request) -> Response:
         """Creates a task"""
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController, AuthenticationController, UserController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -379,9 +392,7 @@ class TaskController(object):
             )
         else:
             NotificationController.push(
-                message_body={
-                    "msg": f"{task.label()} task has been created."
-                },
+                msg=f"{task.label()} task has been created.",
                 user_ids=UserController.all_user_ids(req_user.org_id)
             )
 
@@ -497,7 +508,7 @@ class TaskController(object):
         Drops a task, which sets it to READY and removes the assignee
         if the task is IN_PROGRESS and has an assignee
         """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController, AuthenticationController, UserController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -516,6 +527,11 @@ class TaskController(object):
             task=task_to_drop,
             status=TaskStatuses.READY,
             req_user=req_user
+        )
+
+        NotificationController.push(
+            msg=f"{task_to_drop.label()} has been dropped.",
+            user_ids=UserController.all_user_ids(req_user.org_id)
         )
 
         req_user.log(
@@ -553,6 +569,11 @@ class TaskController(object):
             resource=Resources.TASK,
             resource_id=task_id
         )
+        if task_to_cancel.assignee is not None:
+            NotificationController.push(
+                msg=f"{task_to_cancel.label()} cancelled.",
+                user_ids=task_to_cancel.assignee
+            )
         logger.info(f"User {req_user.id} cancelled task {task_to_cancel.id}")
         return g_response(status=204)
 
@@ -691,6 +712,17 @@ class TaskController(object):
                     reason=reason
                 )
                 session.add(delayed_task)
+
+        if req_user.id == task.assignee:
+            NotificationController.push(
+                msg=f"{task.label()} has been delayed.",
+                user_ids=task.created_by
+            )
+        else:
+            NotificationController.push(
+                msg=f"{task.label()} has been delayed.",
+                user_ids=task.assignee
+            )
 
         req_user.log(
             operation=Operations.DELAY,

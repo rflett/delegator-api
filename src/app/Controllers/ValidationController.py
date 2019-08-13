@@ -118,7 +118,7 @@ def _check_task_type_id(task_type_id: int, org_id: int, should_exist: typing.Opt
 
     # optionally check if it exists or not
     if should_exist is not None:
-        task_exists = TaskTypeController.task_type_exists(task_type_id, org_id)
+        task_exists = TaskTypeController.task_type_exists(task_type_id)
         if should_exist:
             if not task_exists:
                 logger.info(f"task type id {task_type_id} doesn't exist")

@@ -4,21 +4,22 @@ import typing
 
 from flask import request, Response
 
-from app import logger, g_response, notification_tokens_table, app_notifications_sns_topic
+from app import logger, g_response, notification_tokens_table, app_notifications_sqs
 
 
-def do_push(message_body: dict, user_ids: typing.List[int]) -> None:
+def do_push(msg: str, user_ids: typing.Union[int, typing.List[int]]) -> None:
     """ Publishes the notification to SNS """
-    app_notifications_sns_topic.publish(
-        TopicArn=app_notifications_sns_topic.arn,
-        Message=json.dumps({
-            'default': json.dumps({
-                "message_body": message_body,
-                "user_ids": user_ids
-            })
-        }),
-        MessageStructure='json'
+    if isinstance(user_ids, int):
+        user_ids = [user_ids]
+
+    app_notifications_sqs.send_message(
+        MessageBody=json.dumps({
+            "msg": msg,
+            "user_ids": user_ids
+        })
     )
+
+    logger.info(f"Pushed notification to SQS for {len(user_ids)} users.")
 
 
 class NotificationController(object):
@@ -72,6 +73,6 @@ class NotificationController(object):
         return g_response(status=204)
 
     @staticmethod
-    def push(message_body: dict, user_ids: typing.List[int]) -> None:
+    def push(msg: str, user_ids: typing.Union[int, typing.List[int]]) -> None:
         """ Publish the message to SNS for pushing to the user """
-        _thread.start_new_thread(do_push, (message_body, user_ids))
+        _thread.start_new_thread(do_push, (msg, user_ids))
