@@ -2,6 +2,7 @@ from app.Controllers.ActiveUserController import ActiveUserController
 from app.Controllers.AuthenticationController import AuthenticationController
 from app.Controllers.AuthorizationController import AuthorizationController
 from app.Controllers.BlacklistedTokenController import BlacklistedTokenController
+from app.Controllers.NotificationController import NotificationController
 from app.Controllers.OrganisationController import OrganisationController
 from app.Controllers.ReportController import ReportController
 from app.Controllers.RoleController import RoleController
@@ -18,6 +19,7 @@ __all__ = [
     AuthenticationController,
     AuthorizationController,
     BlacklistedTokenController,
+    NotificationController,
     OrganisationController,
     ReportController,
     RoleController,

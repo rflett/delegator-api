@@ -1,5 +1,4 @@
 import datetime
-import json
 
 from flask import request, Response
 from sqlalchemy import exists, and_
@@ -7,13 +6,13 @@ from sqlalchemy.orm import aliased
 
 from app import logger, session_scope, g_response, j_response
 from app.Exceptions import ValidationError
-from app.Controllers import AuthorizationController
-from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Notification, TaskType
+from app.Controllers import AuthorizationController, NotificationController
+from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Activity, TaskType
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
 
 
 def _pretty_status_label(status: str) -> str:
-    """ Converts a task status from IN_PROGRESS to 'In Progress' """
+    """Converts a task status from IN_PROGRESS to 'In Progress' """
     if "_" in status:
         words = status.lower().split('_')
         return " ".join([w.capitalize() for w in words])
@@ -22,43 +21,47 @@ def _pretty_status_label(status: str) -> str:
 
 
 def _transition_task(task: Task, status: str, req_user: User) -> None:
-    """ Common function for transitioning a task """
+    """Common function for transitioning a task """
     with session_scope() as session:
         old_status = task.status
 
+        # don't do anything if the statuses are the same
         if status == old_status:
             return
 
+        # don't transition a task if it's not assigned to anyone - unless it's being cancelled
         if old_status == TaskStatuses.READY and task.assignee is None and status != TaskStatuses.CANCELLED:
             raise ValidationError("Cannot move task out of ready because it's not assigned to anyone.")
 
-        # remove delayed task
+        # remove delayed task if the new status isn't DELAYED
         if old_status == TaskStatuses.DELAYED and status != TaskStatuses.DELAYED:
             delayed_task = session.query(DelayedTask).filter(DelayedTask.task_id == task.id).first()
             delayed_task.expired = datetime.datetime.utcnow()
 
-        # finished task
+        # assign finished_by and _at if the task is being completed
         if status == TaskStatuses.COMPLETED:
             task.finished_by = req_user.id
             task.finished_at = datetime.datetime.utcnow()
 
-        # start task once
+        # assign started_at if the task is being started for the first time
         if status == TaskStatuses.IN_PROGRESS and task.started_at is None:
             task.started_at = datetime.datetime.utcnow()
 
+        # update task status and status_changed_at
         task.status = status
         task.status_changed_at = datetime.datetime.utcnow()
 
+    # get the pretty labels for the old and new status
     old_status_label = _pretty_status_label(old_status)
     new_status_label = _pretty_status_label(status)
 
-    Notification(
+    Activity(
         org_id=task.org_id,
         event=f'task_transitioned_{task.status.lower()}',
         event_id=task.id,
         event_friendly=f"Transitioned from {old_status_label} to {new_status_label}."
     ).publish()
-    Notification(
+    Activity(
         org_id=req_user.org_id,
         event=Events.user_transitioned_task,
         event_id=req_user.id,
@@ -69,34 +72,41 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
         resource=Resources.TASK,
         resource_id=task.id
     )
-    logger.info(f"user {req_user.id} transitioned task {task.id} from {old_status} to {status}")
+    logger.info(f"User {req_user.id} transitioned task {task.id} from {old_status} to {status}")
 
 
 def _assign_task(task: Task, assignee: int, req_user: User) -> None:
-    """ Common function for assigning a task """
+    """Common function for assigning a task """
     from app.Controllers import UserController
+
+    # set the task assignee
     with session_scope():
         task.assignee = assignee
 
+    # get the assigned user
     assigned_user = UserController.get_user_by_id(assignee)
-    Notification(
+    Activity(
         org_id=task.org_id,
         event=Events.task_assigned,
         event_id=task.id,
         event_friendly=f"{assigned_user.name()} assigned to task by {req_user.name()}."
     ).publish()
-    Notification(
+    Activity(
         org_id=req_user.org_id,
         event=Events.user_assigned_task,
         event_id=req_user.id,
         event_friendly=f"Assigned {assigned_user.name()} to {task.label()}."
     ).publish()
-    Notification(
+    Activity(
         org_id=assigned_user.org_id,
         event=Events.user_assigned_to_task,
         event_id=assigned_user.id,
         event_friendly=f"Assigned to {task.label()} by {req_user.name()}."
     ).publish()
+    NotificationController.push(
+        msg="You've been assigned a task!",
+        user_ids=assigned_user.id
+    )
     req_user.log(
         operation=Operations.ASSIGN,
         resource=Resources.TASK,
@@ -106,28 +116,30 @@ def _assign_task(task: Task, assignee: int, req_user: User) -> None:
 
 
 def _unassign_task(task: Task, req_user: User) -> None:
-    """ Common function for assigning a task """
+    """Common function for unassigning a task """
     from app.Controllers import UserController
 
+    # only proceed if the task is assigned to someone
     if task.assignee is not None:
+        # get the old assignee
         old_assignee = UserController.get_user_by_id(task.assignee)
 
         with session_scope():
             task.assignee = None
 
-        Notification(
+        Activity(
             org_id=task.org_id,
             event=Events.task_unassigned,
             event_id=task.id,
             event_friendly=f"{old_assignee.name()} unassigned from task by {req_user.name()}."
         ).publish()
-        Notification(
+        Activity(
             org_id=req_user.org_id,
             event=Events.user_unassigned_task,
             event_id=req_user.id,
             event_friendly=f"Unassigned {old_assignee.name()} from {task.label()}."
         ).publish()
-        Notification(
+        Activity(
             org_id=old_assignee.org_id,
             event=Events.user_unassigned_from_task,
             event_id=old_assignee.id,
@@ -138,43 +150,52 @@ def _unassign_task(task: Task, req_user: User) -> None:
             resource=Resources.TASK,
             resource_id=task.id
         )
-        logger.info(f"unassigned user {old_assignee.id} from task {task.id}")
+        logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
 
 
 def _change_task_priority(org_id: int, task_id: int, priority: int) -> None:
-    """ Common function for assigning a task """
+    """Common function for changing a tasks priority"""
+    from app.Controllers import UserController
+
     with session_scope():
         task_to_change = TaskController.get_task_by_id(task_id, org_id)
+        if priority > task_to_change.priority:
+            # task priority is increasing
+            NotificationController.push(
+                msg=f"{task_to_change.label()} task has been escalated.",
+                user_ids=UserController.all_user_ids(org_id)
+            )
+
         task_to_change.priority = priority
         task_to_change.priority_changed_at = datetime.datetime.utcnow()
 
-    logger.info(f"changed task {task_id} priority to {priority}")
+    logger.info(f"Changed task {task_id} priority to {priority}")
 
 
 class TaskController(object):
     @staticmethod
     def task_exists(task_id: int, org_id: int) -> bool:
-        """ Checks to see if a task type exists. """
+        """Checks to see if a task exists. """
         with session_scope() as session:
             return session.query(exists().where(and_(Task.id == task_id, Task.org_id == org_id))).scalar()
 
     @staticmethod
     def task_status_exists(task_status: str) -> bool:
-        """ Checks to see if a task type exists. """
+        """Checks to see if a task status exists. """
         with session_scope() as session:
             ret = session.query(exists().where(TaskStatus.status == task_status)).scalar()
         return ret
 
     @staticmethod
     def task_priority_exists(task_priority: int) -> bool:
-        """ Checks to see if a task type exists. """
+        """Checks to see if a task priority exists. """
         with session_scope() as session:
             ret = session.query(exists().where(TaskPriority.priority == task_priority)).scalar()
         return ret
 
     @staticmethod
     def get_task_by_id(task_id: int, org_id: int) -> Task:
-        """ Gets a task by its id """
+        """Gets a task by its id """
         with session_scope() as session:
             ret = session.query(Task).filter(and_(Task.id == task_id, Task.org_id == org_id)).first()
         if ret is None:
@@ -185,7 +206,7 @@ class TaskController(object):
 
     @staticmethod
     def get_task_priorities(req: request) -> Response:
-        """ Returns all task priorities """
+        """Returns all task priorities """
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import TaskPriority
 
@@ -201,7 +222,7 @@ class TaskController(object):
             task_pr_qry = session.query(TaskPriority).all()
 
         task_priorities = [tp.as_dict() for tp in task_pr_qry]
-        logger.debug(f"found {len(task_priorities)} task_priorities: {json.dumps(task_priorities)}")
+        logger.debug(f"Found {len(task_priorities)} task_priorities.")
         req_user.log(
             operation=Operations.GET,
             resource=Resources.TASK_PRIORITIES
@@ -210,7 +231,7 @@ class TaskController(object):
 
     @staticmethod
     def get_task_statuses(req: request) -> Response:
-        """ Returns all task statuses """
+        """Returns all task statuses """
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import TaskStatus
 
@@ -226,7 +247,7 @@ class TaskController(object):
             task_st_qry = session.query(TaskStatus).all()
 
         task_statuses = [ts.as_dict() for ts in task_st_qry if ts.status not in ["DELAYED", "CANCELLED"]]
-        logger.debug(f"found {len(task_statuses)} task statuses: {json.dumps(task_statuses)}")
+        logger.debug(f"Found {len(task_statuses)} task statuses.")
         req_user.log(
             operation=Operations.GET,
             resource=Resources.TASK_STATUSES
@@ -235,7 +256,7 @@ class TaskController(object):
 
     @staticmethod
     def get_task(task_id: int, req: request) -> Response:
-        """ Get a single task. """
+        """Get a single task by its id """
         from app.Controllers import TaskController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -248,7 +269,6 @@ class TaskController(object):
 
         try:
             task = TaskController.get_task_by_id(task_id, req_user.org_id)
-            logger.debug(f"found task {task.fat_dict()}")
             req_user.log(
                 operation=Operations.GET,
                 resource=Resources.TASK,
@@ -256,12 +276,12 @@ class TaskController(object):
             )
             return j_response(task.fat_dict())
         except ValueError:
-            logger.info(f"task with id {task_id} does not exist")
+            logger.info(f"Task with id {task_id} does not exist.")
             return g_response("Task does not exist.", 400)
 
     @staticmethod
     def get_tasks(req: request) -> Response:
-        """ Get all users """
+        """Get all tasks in an organisation """
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import Task
 
@@ -273,6 +293,7 @@ class TaskController(object):
             resource=Resources.TASKS
         )
 
+        # join across all related tables to get full info
         with session_scope() as session:
             task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
             tasks_qry = session\
@@ -299,7 +320,6 @@ class TaskController(object):
             task_dict['priority'] = tp.as_dict()
             tasks.append(task_dict)
 
-        logger.debug(f"found {len(tasks)} tasks")
         req_user.log(
             operation=Operations.GET,
             resource=Resources.TASKS
@@ -308,12 +328,8 @@ class TaskController(object):
 
     @staticmethod
     def create_task(req: request) -> Response:
-        """
-        Creates a task
-        :param req: The request
-        :return:        A response
-        """
-        from app.Controllers import ValidationController, AuthenticationController
+        """Creates a task"""
+        from app.Controllers import ValidationController, AuthenticationController, UserController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -341,13 +357,13 @@ class TaskController(object):
             )
             session.add(task)
 
-        Notification(
+        Activity(
             org_id=task.org_id,
             event=Events.task_created,
             event_id=task.id,
             event_friendly=f"Created by {req_user.name()}."
         ).publish()
-        Notification(
+        Activity(
             org_id=req_user.org_id,
             event=Events.user_created_task,
             event_id=req_user.id,
@@ -360,7 +376,7 @@ class TaskController(object):
         )
         logger.info(f"created task {task.as_dict()}")
 
-        # optionally assign the task
+        # optionally assign the task if an assignee was present in the create task request
         if task_attrs.get('assignee') is not None:
             AuthorizationController.authorize_request(
                 auth_user=req_user,
@@ -374,12 +390,17 @@ class TaskController(object):
                 assignee=task_attrs.get('assignee'),
                 req_user=req_user
             )
+        else:
+            NotificationController.push(
+                msg=f"{task.label()} task has been created.",
+                user_ids=UserController.all_user_ids(req_user.org_id)
+            )
 
         return g_response("Successfully created task", 201)
 
     @staticmethod
     def update_task(req: request) -> Response:
-        """ Updates a task. Requires the full task object in the request. """
+        """Update a task """
         from app.Controllers import ValidationController, TaskController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -395,7 +416,8 @@ class TaskController(object):
         # update the task
         task_to_update = TaskController.get_task_by_id(task_attrs.get('id'), req_user.org_id)
 
-        # assigning
+        # if the assignee isn't the same as before then assign someone to it, if the new assignee is null or
+        # omitted from the request, then assign the task
         assignee = task_attrs.pop('assignee', None)
         if task_to_update.assignee != assignee:
             AuthorizationController.authorize_request(
@@ -435,30 +457,30 @@ class TaskController(object):
                 priority=task_priority
             )
 
-        # update other values
+        # for each value in the request body, if the task has that attribute, update it
+        # previous attributes such as priority and status have been popped from the request dict so will not be updated
+        # again here
         with session_scope():
             for k, v in task_attrs.items():
                 task_to_update.__setattr__(k, v)
 
         # publish event
-        Notification(
+        Activity(
             org_id=task_to_update.org_id,
             event=Events.task_updated,
             event_id=task_to_update.id,
             event_friendly=f"Updated by {req_user.name()}."
         ).publish()
-
         req_user.log(
             operation=Operations.UPDATE,
             resource=Resources.TASK,
             resource_id=task_to_update.id
         )
-        logger.info(f"updated task {task_to_update.as_dict()}")
         return g_response(status=204)
 
     @staticmethod
     def assign_task(req: request) -> Response:
-        """ Assigns a user to task """
+        """Assigns a user to task """
         from app.Controllers import ValidationController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -482,8 +504,11 @@ class TaskController(object):
 
     @staticmethod
     def drop_task(task_id, req: request) -> Response:
-        """ Drops a task, which sets it to READY and removes the assignee """
-        from app.Controllers import ValidationController, AuthenticationController
+        """
+        Drops a task, which sets it to READY and removes the assignee
+        if the task is IN_PROGRESS and has an assignee
+        """
+        from app.Controllers import ValidationController, AuthenticationController, UserController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -497,23 +522,30 @@ class TaskController(object):
         )
 
         _unassign_task(task_to_drop, req_user)
+
         _transition_task(
             task=task_to_drop,
             status=TaskStatuses.READY,
             req_user=req_user
         )
+
+        NotificationController.push(
+            msg=f"{task_to_drop.label()} has been dropped.",
+            user_ids=UserController.all_user_ids(req_user.org_id)
+        )
+
         req_user.log(
             operation=Operations.DROP,
             resource=Resources.TASK,
             resource_id=task_id
         )
-        logger.info(f"user {req_user.id} dropped task {task_to_drop.id} "
-                    f"which was assigned to {task_to_drop.assignee}")
+        logger.info(f"User {req_user.id} dropped task {task_to_drop.id} "
+                    f"which was assigned to {task_to_drop.assignee}.")
         return g_response(status=204)
 
     @staticmethod
     def cancel_task(task_id, req: request) -> Response:
-        """ Drops a task, which sets it to READY and removes the assignee """
+        """Cancels a task """
         from app.Controllers import ValidationController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -537,12 +569,17 @@ class TaskController(object):
             resource=Resources.TASK,
             resource_id=task_id
         )
-        logger.info(f"user {req_user.id} cancelled task {task_to_cancel.id}")
+        if task_to_cancel.assignee is not None:
+            NotificationController.push(
+                msg=f"{task_to_cancel.label()} cancelled.",
+                user_ids=task_to_cancel.assignee
+            )
+        logger.info(f"User {req_user.id} cancelled task {task_to_cancel.id}")
         return g_response(status=204)
 
     @staticmethod
     def transition_task(req: request) -> Response:
-        """ Transitions the status of a task """
+        """Transitions the status of a task """
         from app.Controllers import ValidationController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -565,7 +602,7 @@ class TaskController(object):
 
     @staticmethod
     def get_available_transitions(task_id: int, req: request) -> Response:
-        """ Transitions the status of a task """
+        """Returns the statuses that a task could be transitioned to, based on the state of the task. """
         from app.Controllers import ValidationController, AuthenticationController
         from app.Models import TaskStatus
         from app.Models.Enums import TaskStatuses
@@ -582,45 +619,57 @@ class TaskController(object):
 
         ret = []
 
+        # handle case where no-one is assigned to the task
         if task.assignee is None:
+            # you can move from ready to ready, cancelled and dropped are not included because they are handled
+            # separately
             valid_transitions = {
                 TaskStatuses.READY: [TaskStatuses.READY]
             }
+
+            # search list for querying db
             search = valid_transitions.get(task.status, [])
 
             with session_scope() as session:
+                # will return all the attributes for the ready status
                 enabled_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
+                # will return all other statuses
                 disabled_qry = session.query(TaskStatus).filter(~TaskStatus.status.in_(search)).all()
 
-            # Enabled options
+            # enabled options
             ret += [ts.as_dict() for ts in enabled_qry]
 
-            # Disabled options
+            # disabled options
             ret += [ts.as_dict(disabled=True, tooltip="No one is assigned to this task.") for ts in disabled_qry]
 
         else:
+            # if someone is assigned to the task, then these are the available transitions
             valid_transitions = {
                 TaskStatuses.READY: [TaskStatuses.READY, TaskStatuses.IN_PROGRESS, TaskStatuses.CANCELLED],
                 TaskStatuses.IN_PROGRESS: [TaskStatuses.IN_PROGRESS, TaskStatuses.COMPLETED],
                 TaskStatuses.DELAYED: [TaskStatuses.DELAYED, TaskStatuses.IN_PROGRESS]
             }
+
+            # search list for querying db
             search = valid_transitions.get(task.status, [])
 
             with session_scope() as session:
+                # will return all atributes for the enabled tasks
                 enabled_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
+                # will return atributes for all other tasks
                 disabled_qry = session.query(TaskStatus).filter(~TaskStatus.status.in_(search)).all()
 
-            # Enabled options
+            # enabled options
             ret += [ts.as_dict() for ts in enabled_qry if ts.status not in ["DELAYED", "CANCELLED"]]
 
-            # Disabled options
+            # disabled options
             ret += [ts.as_dict(disabled=True) for ts in disabled_qry if ts.status not in ["DELAYED", "CANCELLED"]]
 
         return j_response(ret)
 
     @staticmethod
     def delay_task(req: request) -> Response:
-        """ Transitions the status of a task """
+        """Delays a task """
         from app.Controllers import ValidationController, AuthenticationController
         from app.Models import DelayedTask
 
@@ -636,16 +685,18 @@ class TaskController(object):
         )
 
         with session_scope() as session:
-            # set task to delayed
+            # transition a task to delayed
             _transition_task(
                 task=task,
                 status=TaskStatuses.DELAYED,
                 req_user=req_user
             )
-            # created delayed until
+            # check to see if the task has been delayed previously
             delay = session.query(DelayedTask).filter(
                     DelayedTask.task_id == task.id
                 ).first()
+
+            # if the task has been delayed before, update it, otherwise create it
             if delay is not None:
                 delay.delay_for = delay_for
                 delay.delayed_at = datetime.datetime.utcnow()
@@ -662,17 +713,28 @@ class TaskController(object):
                 )
                 session.add(delayed_task)
 
+        if req_user.id == task.assignee:
+            NotificationController.push(
+                msg=f"{task.label()} has been delayed.",
+                user_ids=task.created_by
+            )
+        else:
+            NotificationController.push(
+                msg=f"{task.label()} has been delayed.",
+                user_ids=task.assignee
+            )
+
         req_user.log(
             operation=Operations.DELAY,
             resource=Resources.TASK,
             resource_id=task.id
         )
-        logger.info(f"user {req_user.id} delayed task {task.id} for {delay_for}")
+        logger.info(f"User {req_user.id} delayed task {task.id} for {delay_for}s.")
         return g_response(status=204)
 
     @staticmethod
     def get_delayed_task(task_id: int, req: request) -> Response:
-        """ Returns the activity for a user """
+        """Returns the delayed info for a task """
         from app.Controllers import TaskController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -684,13 +746,15 @@ class TaskController(object):
         )
 
         try:
+            # get the task
             task = TaskController.get_task_by_id(task_id, req_user.org_id)
             req_user.log(
                 operation=Operations.GET,
                 resource=Resources.TASK,
                 resource_id=task.id
             )
-            logger.info(f"getting activity for task with id {task.id}")
+            # if the task has been delayed return the delay info, otherwise return a validation error because the
+            # task hasn't been delayed before.
             if task.has_been_delayed():
                 return j_response(task.delayed_info())
             else:
@@ -700,7 +764,7 @@ class TaskController(object):
 
     @staticmethod
     def get_task_activity(task_identifier: int, req: request) -> Response:
-        """ Returns the activity for a user """
+        """Returns the activity for a task """
         from app.Controllers import TaskController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -712,13 +776,14 @@ class TaskController(object):
         )
 
         try:
+            # get the task
             task = TaskController.get_task_by_id(task_identifier, req_user.org_id)
             req_user.log(
                 operation=Operations.GET,
                 resource=Resources.TASK_ACTIVITY,
                 resource_id=task.id
             )
-            logger.info(f"getting activity for task with id {task.id}")
+            logger.info(f"Getting activity for task with id {task.id}")
             return j_response(task.activity())
         except ValueError as e:
             return g_response(str(e), 400)

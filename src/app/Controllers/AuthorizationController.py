@@ -2,12 +2,14 @@ import json
 import random
 import string
 import typing
+
+from flask import request
+
 from app import logger, g_response, session_scope
 from app.Controllers import ValidationController
 from app.Exceptions import AuthorizationError
 from app.Models import User
 from app.Models.Enums import ResourceScopes
-from flask import request
 
 
 class AuthorizationController(object):
@@ -18,14 +20,13 @@ class AuthorizationController(object):
             resource: str,
             affected_user_id: typing.Union[int, None] = None
     ) -> None:
-        """
-        Checks to see if the user in the request has authorization to perform the request operation on a
-        particular resource.
+        """ Check to see if a user is authorized to perform an action
+
         :param auth_user:           The user to authorize
         :param operation:           The operation to perform
-        :param resource:            The resource to affect
-        :param affected_user_id:
-        :raises:                    AuthorizationError if the user is unauthorized
+        :param resource:            The resource affected
+        :param affected_user_id:    If the resource is a user, their user_id
+        :return:
         """
         from app.Controllers import UserController
 
@@ -34,24 +35,30 @@ class AuthorizationController(object):
 
         # check users scope
         user_permission_scope = auth_user.can(operation, resource)
-        if user_permission_scope is False:
-            logger.info(f"user id {auth_user.id} cannot perform {operation} on {resource}")
-            raise AuthorizationError(f"No permissions to {operation} {resource}")
 
+        # no user scope
+        if user_permission_scope is False:
+            logger.info(f"User {auth_user.id} cannot perform {operation} on {resource}.")
+            raise AuthorizationError(f"No permissions to {operation} {resource}.")
+
+        # scope of self - they can do things against this resource if they own it
         if user_permission_scope == ResourceScopes.SELF:
             if auth_user.id != affected_user_id:
-                msg = f"user id {auth_user.id} cannot perform {operation} on {resource} because their scope " \
-                    f"is {user_permission_scope} but the affected user is {affected_user_id}"
+                msg = f"User id {auth_user.id} cannot perform {operation} on {resource} because their scope " \
+                    f"is {user_permission_scope} but the affected user is {affected_user_id}."
                 logger.info(msg)
                 raise AuthorizationError(msg)
+
+        # scope of org - they can do things against this resource as long as it's in the same org
         elif user_permission_scope == ResourceScopes.ORG:
             if affected_user_id is not None:
+                # get the affected user's org_id
                 try:
                     affected_user_org_id = UserController.get_user_by_id(affected_user_id).org_id
                 except ValueError as e:
                     raise AuthorizationError(e)
                 if auth_user.org_id != affected_user_org_id:
-                    msg = f"user id {auth_user.id} cannot perform {operation} on {resource} because their scope " \
+                    msg = f"User id {auth_user.id} cannot perform {operation} on {resource} because their scope " \
                         f"is {user_permission_scope} but the affected user is {affected_user_id} which is " \
                         f"in org {affected_user_org_id}"
                     logger.info(msg)
@@ -59,6 +66,7 @@ class AuthorizationController(object):
 
     @staticmethod
     def reset_password(req: request):
+        """ TODO remove and make it an email based reset. """
         from app.Controllers import UserController
         request_body = req.get_json()
         ValidationController.validate_email(request_body.get('email'))

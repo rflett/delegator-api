@@ -6,7 +6,6 @@ from app import j_response
 
 
 class VersionController(object):
-
     @staticmethod
     def get_version_details() -> Response:
         """ Returns details of the running application for debugging/verification """

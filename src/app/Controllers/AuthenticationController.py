@@ -8,7 +8,7 @@ from flask import Response, request
 
 from app import logger, app, g_response, session_scope
 from app.Exceptions import AuthenticationError
-from app.Models import User, FailedLogin, Notification
+from app.Models import User, FailedLogin, Activity
 from app.Models.Enums import Events
 
 
@@ -17,42 +17,38 @@ def _failed_login_attempt(email: str) -> Response:
     Checks to see if the email passed has failed to log in before due to it not existing. If this is the case
     it will update the failed logins table and increment the attempts and time. Checks are done against
     login limits to prevent excessive attempts to find email addresses.
+
     :param email:   The email that failed to login
-    :return:        A Flask Response
+    :return:        HTTP 401 response
     """
-    # check if it's failed before
-    logger.info(f"attempted to login with non existing email {email}")
     with session_scope() as session:
+        # check if it's failed before
         failed_email = session.query(FailedLogin).filter(FailedLogin.email == email).first()
         if failed_email is not None:
-            # it's failed before so increment
-            logger.info(f"email {email} has failed to log in "
-                        f"{failed_email.failed_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
-
             # check if it has breached the limits
             if failed_email.failed_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
                 # check timeout
                 diff = (datetime.datetime.utcnow() - failed_email.failed_time).seconds
                 if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
-                    logger.info(f"email last failed {diff}s ago. "
-                                f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
+                    logger.info(f"Email last failed {diff}s ago. "
+                                f"Timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
                     return g_response("Too many incorrect attempts.", 401)
                 else:
                     # reset
-                    logger.info(f"email last failed {diff}s ago. "
-                                f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
+                    logger.info(f"Email last failed {diff}s ago. "
+                                f"Timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s, resetting timeout.")
                     session.delete(failed_email)
                     return g_response("Email incorrect.", 401)
             else:
-                # increment
+                # increment failed attempts
                 failed_email.failed_attempts += 1
                 failed_email.failed_time = datetime.datetime.utcnow()
-                logger.info(f"incorrect email attempt for user {email}, "
+                logger.info(f"Incorrect email attempt for user, "
                             f"total failed attempts: {failed_email.failed_attempts}")
                 return g_response("Email incorrect.", 401)
         else:
             # hasn't failed before, so create it
-            logger.info(f"first login failure for email {email}")
+            logger.info("User failed to log in.")
             new_failure = FailedLogin(email=email)
             session.add(new_failure)
             return g_response("Email incorrect.", 401)
@@ -60,15 +56,15 @@ def _failed_login_attempt(email: str) -> Response:
 
 def _generate_jwt_token(user: User) -> str:
     """
-    Creates a JWT token containing a relevant payload for the {user}.
-    The jti is a uniqie identifier for the token.
+    Creates a JWT token containing a relevant payload for the user.
+    The jti is a unique identifier for the token.
     The exp is the time after which the token is no longer valid.
-    :param user:    The user to generate the token for.
-    :return:        The token as a string.
+
+    :param user:    The user to generate the token for
+    :return:        The token as a string
     """
     payload = user.claims()
     if payload is None:
-        logger.debug("user claims is empty")
         payload = {}
     return jwt.encode(
         payload={
@@ -84,55 +80,49 @@ def _generate_jwt_token(user: User) -> str:
 def _validate_jwt(token: str) -> dict:
     """
     Validates a JWT token. The token will be decoded without any secret keys, to ensure it is actually
-    a JWT token. Once the decode is successfull the userid will be pulled out of the token and
-    then checked against what is in the database. If the user object can be retrieved (and hence their orgs
-    secret key), then try and decode the JWT again with the secret key.
-    If this works, then the token is good, and JWT payload.
-    :param token:   The JWT token as a string.
+    a JWT token. Once the decode is successful the user_id will be pulled out of the token so that their org's
+    JWT secret. This secret is then used to verify the JWT.
+
+    :param token:   The JWT token as a string
     :return:        JWT payload if decode was successful
-    :raises:        AuthenticationError if decode was unsuccessful
     """
-    from app.Controllers import BlacklistedTokenController
+    from app.Controllers import BlacklistedTokenController, UserController
     try:
+        # decode the token without verifying against the org key
         suspect_jwt = jwt.decode(jwt=token, algorithms='HS256', verify=False)
 
         # check if aud:jti is blacklisted
-        blacklist_id = f"{suspect_jwt.get('aud')}:{suspect_jwt.get('jti')}"
+        blacklist_id = suspect_jwt['aud'] + ':' + suspect_jwt['jti']
         if BlacklistedTokenController.is_token_blacklisted(blacklist_id):
-            raise AuthenticationError("Token is blacklist.")
+            raise AuthenticationError("JWT token has been blacklisted.")
 
-        # check user_id exists, is valid
-        user_id = suspect_jwt.get('claims').get('user_id')
-        if user_id is not None:
-            from app.Controllers import UserController
+        # get user_id from claims
+        try:
+            user_id = suspect_jwt['claims']['user_id']
             user = UserController.get_user_by_id(user_id)
-            logger.debug(f"found user {user.id} in jwt claim. attempting to decode jwt.")
             return jwt.decode(jwt=token, key=user.jwt_secret(), audience=user.jwt_aud(), algorithms='HS256')
-        else:
-            logger.info(f"user {suspect_jwt.get('claims').get('user_id')} does not exist")
+        except KeyError:
             _blacklist_token(token)
-            raise AuthenticationError(f"user {suspect_jwt.get('claims').get('user_id')} does not exist")
+            raise AuthenticationError("JWT token has been blacklisted.")
 
     except Exception as e:
         logger.error(str(e))
-        logger.info(f"decoding raised {e}, likely failed to decode jwt due to user secret/aud issue")
+        logger.info(f"Decoding raised {e}, we probably failed to decode the JWT due to a user secret/aud issue.")
         _blacklist_token(token)
-        raise AuthenticationError(str(e))
+        raise AuthenticationError("JWT token has been blacklisted.")
 
 
 def _blacklist_token(token: str) -> None:
     """
     Blacklists a JWT token. This involves getting the audience and unique id (aud and jti)
     and putting them in the blacklisted tokens table.
+
     :param token: The token to invalidate.
     """
     from app.Controllers import BlacklistedTokenController
     payload = jwt.decode(jwt=token, algorithms='HS256', verify=False)
-    if payload.get('jti') is None:
-        logger.info(f"no jti in token")
-        pass
-    blacklist_id = f"{payload.get('aud')}:{payload.get('jti')}"
-    BlacklistedTokenController.blacklist_token(blacklist_id, payload.get('exp'))
+    blacklist_id = payload['aud'] + ':' + payload['jti']
+    BlacklistedTokenController.blacklist_token(blacklist_id, payload['exp'])
 
 
 class AuthenticationController(object):
@@ -140,30 +130,25 @@ class AuthenticationController(object):
     def check_authorization_header(auth: str) -> typing.Union[bool, Response]:
         """
         Checks to make sure there is a JWT token in the Bearer token. Does not validate it.
-        :param auth:    The Authorization header from the request.
-        :return:        True if the token exists and is a JWT, or an unauthenticated response.
-        """
-        if auth is None:
-            logger.info('missing authorization header')
-            return g_response("Missing Authorization header.", 401)
-        elif not isinstance(auth, str):
-            logger.info(f"Expected Authorization header type str got {type(auth)}.")
-            return g_response(f"Expected Authorization header type str got {type(auth)}.", 401)
 
+        :param auth:    The Authorization header from the request.
+        :return:        True if the token exists and is a JWT, or HTTP 401 Response
+        """
         try:
             token = auth.replace('Bearer ', '')
             jwt.decode(jwt=token, algorithms='HS256', verify=False)
             return True
-        except Exception as e:
+        except TypeError as e:
             logger.error(str(e))
-            return g_response("Invalid token.", 401)
+            return g_response("Invalid Authorization header.", 401)
 
     @staticmethod
-    def get_user_from_request(request_headers: dict) -> typing.Union[User, Response]:
+    def get_user_from_request(request_headers: dict) -> User:
         """
         Get the user object that is claimed in the JWT payload.
-        :param request_headers: The Flask request headers
-        :return:                A User object if a user is found, or a Flask Response
+
+        :param request_headers: The HTTP request headers
+        :return:                A User object if a user is found
         """
         from app.Controllers import UserController
 
@@ -174,28 +159,24 @@ class AuthenticationController(object):
 
         # get user
         try:
-            return UserController.get_user_by_id(payload.get('claims').get('user_id'))
-        except Exception as e:
+            return UserController.get_user_by_id(payload['claims']['user_id'])
+        except (TypeError, KeyError) as e:
             logger.error(str(e))
-            raise AuthenticationError(str(e))
-
-    @staticmethod
-    def validate_jwt(token: str) -> typing.Union[bool, dict]:
-        return _validate_jwt(token)
+            raise AuthenticationError("Unable to obtain user from the request.")
 
     @staticmethod
     def login(req: request) -> Response:
-        """
-        Logic for logging a user in. It will validate the request params and then return
-        a JWT token with the user details.
-        :param req: The request data as a dict
-        :return:    Response
+        """ Log a user in.
+
+        :param req: The HTTP request
+        :return:    An HTTP 200 or 401 response
         """
         from app.Controllers import ValidationController, UserController
+
+        # get params from http request
         request_body = req.get_json()
         email = request_body.get('email')
         password = request_body.get('password')
-        logger.info(f"login requested for {email}")
 
         # validate email
         ValidationController.validate_email(email)
@@ -209,23 +190,23 @@ class AuthenticationController(object):
                 user = session.merge(UserController.get_user_by_email(email))
                 user.clear_failed_logins()
         else:
-            # failed email attempt
+            # user doesn't exist so mark as a failed attempt against the email
             return _failed_login_attempt(email)
 
         # don't let them log in if they are disabled
         if user.disabled is not None:
-            logger.info(f"Disabled user {email} tried to log in.")
+            logger.info(f"Disabled user {user.id} tried to log in.")
             return g_response(f"Cannot log in since this account has been disabled. Please consult your "
-                              f"administrator for assistance.", 401)
+                              f"Administrator for assistance.", 401)
 
-        # don't let them log in if they are deleted (shouldn't happen but good to check)
+        # don't let them log in if they are deleted (unlikely to happen)
         if user.deleted is not None:
-            logger.warning(f"Deleted user tried to log in.")
+            logger.warning(f"Deleted user {user.id} tried to log in.")
             return g_response(f"Email or password incorrect", 401)
 
         # check login attempts
         if user.failed_login_attempts > 0:
-            logger.info(f"user {user.id} has failed to log in "
+            logger.info(f"User {user.id} has failed to log in "
                         f"{user.failed_login_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
             if user.failed_login_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
                 # check timeout
@@ -236,25 +217,26 @@ class AuthenticationController(object):
                     return g_response("Too many incorrect password attempts.", 401)
                 else:
                     with session_scope():
-                        # reset
-                        logger.info(f"user last failed {diff}s ago. "
-                                    f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. resetting timeout.")
+                        # reset timeout
+                        logger.info(f"User last failed {diff}s ago. "
+                                    f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. Resetting timeout.")
                         user.failed_login_attempts = 0
                         user.failed_login_time = None
 
         with session_scope():
             # check password
             if user.password_correct(password):
-                logger.info(f"user {user.id} logged in")
+                # reset failed attempts
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
                 user.is_active()
-                Notification(
+                Activity(
                     org_id=user.org_id,
                     event=Events.user_login,
                     event_id=user.id,
                     event_friendly="Logged in."
                 ).publish()
+                # return the user dict and their JWT token
                 return Response(
                     json.dumps({
                         **user.fat_dict(),
@@ -266,18 +248,17 @@ class AuthenticationController(object):
                     }
                 )
             else:
-                logger.info(f"incorrect password attempt for user {user.id}")
+                logger.info(f"Incorrect password attempt for user {user.id}.")
                 user.failed_login_attempts += 1
                 user.failed_login_time = datetime.datetime.utcnow()
                 return g_response("Password incorrect.", 401)
 
     @staticmethod
     def logout(headers: dict) -> Response:
-        """
-        Logic for logging a user out. Basically checks the headers,
-        gets the user, and then invalidates the JWT token.
-        :param headers: The request headers as a dict.
-        :return:        Response
+        """ Log a user out.
+
+        :param headers: The HTTP request headers
+        :return:        An HTTP 401 or 200 response
         """
         from app.Controllers import UserController
 
@@ -289,7 +270,7 @@ class AuthenticationController(object):
         else:
             user = UserController.get_user_by_id(payload.get('claims').get('user_id'))
             user.is_inactive()
-            Notification(
+            Activity(
                 org_id=user.org_id,
                 event=Events.user_logout,
                 event_id=user.id,

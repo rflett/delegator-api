@@ -17,6 +17,7 @@ class SettingsController(object):
     @staticmethod
     def set_user_settings(settings: UserSetting) -> None:
         """ Updates DynamoDB table with UserSetting as dict"""
+        # TODO should be changed to update_item
         user_settings_table.put_item(
             Item=settings.as_dict(),
             ReturnValues='NONE'
@@ -34,6 +35,7 @@ class SettingsController(object):
     @staticmethod
     def set_org_settings(settings: OrgSetting) -> None:
         """ Updates DynamoDB table with OrgSetting as dict"""
+        # TODO should be changed to update_item
         org_settings_table.put_item(
             Item=settings.as_dict(),
             ReturnValues='NONE'
