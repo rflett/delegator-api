@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 
-from app import api_events_sns_topic
+from app import api_events_sns_topic, app
 
 
 def do_publish(message: dict, event: str) -> None:
@@ -35,7 +35,7 @@ class Activity(object):
     event_friendly: str = ""
 
     def __post_init__(self):
-        self.event_time = datetime.utcnow().strftime("%Y%m%dT%H%M%S.%fZ")
+        self.event_time = datetime.utcnow().strftime(app.config['DYN_DB_ACTIVITY_DATE_FORMAT'])
 
     def publish(self) -> None:
         """ Publishes an event to SNS """

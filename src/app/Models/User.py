@@ -52,7 +52,7 @@ class User(db.Model):
     updated_by = db.Column('updated_by', db.Integer, db.ForeignKey('users.id'))
     password_last_changed = db.Column('password_last_changed', db.DateTime, default=datetime.datetime.utcnow)
 
-    orgs = db.relationship("Organisation")
+    orgs = db.relationship("Organisation", backref="users")
     roles = db.relationship("Role")
     created_bys = db.relationship("User", foreign_keys=[created_by])
     updated_bys = db.relationship("User", foreign_keys=[updated_by])
@@ -246,16 +246,14 @@ class User(db.Model):
     def fat_dict(self) -> dict:
         """ Returns a full user dict with all of its FK's joined. """
         from app.Controllers import SettingsController
-        from app.Models import Organisation
 
         with session_scope() as session:
-            user_qry = session.query(User, Role, Organisation) \
+            user_qry = session.query(User, Role) \
                 .join(User.roles) \
-                .join(User.orgs) \
                 .filter(User.id == self.id) \
                 .first()
 
-        user, role, org = user_qry
+        user, role = user_qry
 
         with session_scope() as session:
             created_by = session.query(User) \

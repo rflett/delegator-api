@@ -4,7 +4,7 @@ from functools import wraps
 from flask import Response, request
 
 from app import app, g_response, logger
-from app.Exceptions import AuthenticationError, AuthorizationError, ValidationError
+from app.Exceptions import AuthenticationError, AuthorizationError, ValidationError, ProductTierLimitError
 from app.Controllers import AuthorizationController, UserController, SignupController, TaskController, \
     VersionController, ActiveUserController, OrganisationController, TaskTypeController, AuthenticationController, \
     RoleController, ReportController, NotificationController
@@ -39,7 +39,7 @@ def handle_exceptions(f):
         except AuthenticationError as e:
             logger.info(str(e))
             return g_response(msg=str(e), status=401)
-        except AuthorizationError as e:
+        except (AuthorizationError, ProductTierLimitError) as e:
             logger.info(str(e))
             return g_response(msg=str(e), status=403)
         except Exception as e:
@@ -314,4 +314,3 @@ def register_token():
 @handle_exceptions
 def deregister_token():
     return NotificationController.deregister_token(request)
-

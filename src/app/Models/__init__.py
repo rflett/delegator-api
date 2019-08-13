@@ -5,6 +5,7 @@ from app.Models.FailedLogin import FailedLogin
 from app.Models.Activity import Activity
 from app.Models.Organisation import Organisation
 from app.Models.OrgSetting import OrgSetting
+from app.Models.ProductTier import ProductTier
 from app.Models.Task import Task
 from app.Models.TaskPriority import TaskPriority
 from app.Models.TaskStatus import TaskStatus
@@ -21,6 +22,7 @@ __all__ = [
     Activity,
     Organisation,
     OrgSetting,
+    ProductTier,
     Task,
     TaskPriority,
     TaskStatus,
