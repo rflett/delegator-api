@@ -314,4 +314,3 @@ def register_token():
 @handle_exceptions
 def deregister_token():
     return NotificationController.deregister_token(request)
-

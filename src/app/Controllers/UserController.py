@@ -3,7 +3,6 @@ import typing
 
 from flask import request, Response
 from sqlalchemy import exists, func, and_
-from sqlalchemy.orm import aliased
 
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthorizationController
