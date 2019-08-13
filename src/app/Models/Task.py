@@ -168,7 +168,6 @@ class Task(db.Model):
             KeyConditionExpression=Key('id').eq(self.id) & Key('activity_timestamp').gte(start_of_history_str)
         )
 
-        # 20190727T043329.150281Z
         logger.info(f"Found {activity.get('Count')} activity items for task id {self.id}")
 
         log = []
