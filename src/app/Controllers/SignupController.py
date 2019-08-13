@@ -31,7 +31,7 @@ class SignupController(object):
             # create the organisation
             with session_scope() as session:
                 organisation = Organisation(org_name)
-                session.add(Organisation(org_name))
+                session.add(organisation)
 
             # add default task type
             with session_scope() as session:

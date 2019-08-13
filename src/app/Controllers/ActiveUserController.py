@@ -35,11 +35,9 @@ class ActiveUserController(object):
                     last_active=datetime.datetime.utcnow()
                 )
                 session.add(active_user)
-                logger.debug(f"User {user.id} was not active, but has now been marked as active")
             else:
                 # user is active, so update
                 already_active.last_active = datetime.datetime.utcnow()
-                logger.debug(f"User {user.id} was active, and has been marked as active again")
 
     @staticmethod
     def user_is_inactive(user: User) -> None:
@@ -50,7 +48,6 @@ class ActiveUserController(object):
         """
         with session_scope() as session:
             session.query(ActiveUser).filter(ActiveUser.user_id == user.id).delete()
-            logger.debug(f"User {user.id} marked as inactive.")
 
     @staticmethod
     def get_active_users(req: request) -> Response:

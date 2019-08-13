@@ -4,15 +4,20 @@ class Error(Exception):
 
 
 class AuthenticationError(Error):
-    """Error for when there's issues related ot authentication"""
+    """Error for when there's issues related to authentication"""
     pass
 
 
 class AuthorizationError(Error):
-    """Error for when there's issues related ot authorization"""
+    """Error for when there's issues related to authorization"""
     pass
 
 
 class ValidationError(Error):
-    """Error for when there's issues related ot validation"""
+    """Error for when there's issues related to validation"""
+    pass
+
+
+class ProductTierLimitError(Error):
+    """Error for when a user tries to do something that is outside of their product tier"""
     pass

@@ -154,13 +154,22 @@ class Task(db.Model):
 
         return task_dict
 
-    def activity(self) -> list:
+    def activity(self, max_days_of_history: int) -> list:
         """ Returns the activity of a task. """
+        start_of_history = datetime.datetime.utcnow() - datetime.timedelta(days=max_days_of_history)
+        start_of_history_str = start_of_history.strftime(app.config['DYN_DB_ACTIVITY_DATE_FORMAT'])
+
+        logger.info(f"Retrieving {max_days_of_history} days of history "
+                    f"({start_of_history.strftime('%Y-%m-%d %H:%M:%S')} "
+                    f"to {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}) for task {self.id}. ")
+
         activity = task_activity_table.query(
             Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('id').eq(self.id)
+            KeyConditionExpression=Key('id').eq(self.id) & Key('activity_timestamp').gte(start_of_history_str)
         )
-        logger.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
+
+        # 20190727T043329.150281Z
+        logger.info(f"Found {activity.get('Count')} activity items for task id {self.id}")
 
         log = []
 

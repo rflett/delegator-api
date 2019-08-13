@@ -5,9 +5,9 @@ from dateutil import tz
 
 from flask import request, Response
 
-import app.Exceptions
 from app import j_response, session_scope, app
 from app.Controllers import AuthenticationController, AuthorizationController
+from app.Exceptions import ProductTierLimitError
 from app.Models.Enums import Operations, Resources
 
 
@@ -354,6 +354,10 @@ class ReportController(object):
             operation=Operations.GET,
             resource=Resources.REPORTS_PAGE
         )
+
+        # Check if the user's product tier includes viewing reports
+        if not req_user.orgs.product_tiers.view_reports_page:
+            raise ProductTierLimitError(f"You cannot view reports on the {req_user.orgs.product_tiers.name} plan.")
 
         # TODO get from request instead
         end_period = now = datetime.datetime.utcnow()

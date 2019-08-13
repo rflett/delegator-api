@@ -6,6 +6,7 @@ from sqlalchemy import exists, func, and_
 
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthorizationController
+from app.Exceptions import ProductTierLimitError
 from app.Models import User, Activity
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
@@ -105,6 +106,17 @@ class UserController(object):
             operation=Operations.CREATE,
             resource=Resources.USER
         )
+
+        # Check that the user hasn't surpassed limits on their product tier
+        with session_scope() as session:
+            existing_user_count = session.query(User).filter_by(org_id=req_user.org_id).count()
+
+        if existing_user_count >= req_user.orgs.product_tiers.max_users:
+            product_tier_name = req_user.orgs.product_tiers.name
+            logger.info(f"Organisation {req_user.orgs.name} has reached the user limit "
+                        f"for their product tier {product_tier_name}.")
+            raise ProductTierLimitError(f"You have reached the limit of users you can create "
+                                        f"on the {product_tier_name} plan.")
 
         # validate user
         user_attrs = ValidationController.validate_create_user_request(req.get_json())
@@ -299,7 +311,7 @@ class UserController(object):
     def get_users(req: request) -> Response:
         """Get all users """
         from app.Controllers import AuthorizationController, AuthenticationController
-        from app.Models import User, Organisation
+        from app.Models import User
         from app.Models.RBAC import Role
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
@@ -312,9 +324,8 @@ class UserController(object):
 
         # query for all users in the requesting user's organisation
         with session_scope() as session:
-            users_qry = session.query(User, Role, Organisation) \
+            users_qry = session.query(User, Role) \
                 .join(User.roles) \
-                .join(User.orgs) \
                 .filter(
                     and_(
                         User.org_id == req_user.org_id,
@@ -325,7 +336,7 @@ class UserController(object):
 
         users = []
 
-        for user, role, org in users_qry:
+        for user, role in users_qry:
             with session_scope() as session:
                 created_by = session.query(User) \
                     .filter(User.id == user.created_by) \
@@ -373,6 +384,10 @@ class UserController(object):
                 for page in permission:
                     # strip _PAGE
                     pages.append(page.split('_PAGE')[0])
+
+            # Check if the user's product tier includes viewing reports
+            if not req_user.orgs.product_tiers.view_reports_page:
+                pages.remove('REPORTS')
 
             req_user.log(
                 operation=Operations.GET,
@@ -435,6 +450,11 @@ class UserController(object):
         from app.Controllers import AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        # Check if the user's product tier includes viewing user activity
+        if not req_user.orgs.product_tiers.view_user_activity:
+            raise ProductTierLimitError(f"You cannot view user activity "
+                                        f"on the {req_user.orgs.product_tiers.name} plan.")
 
         # is the identifier an email or user_id?
         try:
