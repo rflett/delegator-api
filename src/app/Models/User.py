@@ -123,32 +123,13 @@ class User(db.Model):
         :return: A dict of claims.
         """
         return {
-            "aud": self.jwt_aud(),
+            "aud": self.orgs.jwt_aud,
             "claims": {
                 "role": self.role,
                 "org": self.org_id,
                 "user_id": self.id
             }
         }
-
-    def jwt_aud(self) -> str:
-        """
-        Gets the JWT aud for this users organisation. The aud (audience claim) is unique per
-        organisation, and identifies the org.
-        :return: The aud claim
-        """
-        from app.Controllers import OrganisationController
-        user_org = OrganisationController.get_org_by_id(self.org_id)
-        return user_org.jwt_aud
-
-    def jwt_secret(self) -> str:
-        """
-        Gets the JWT secret for this users organisation
-        :return:        The JWT secret.
-        """
-        from app.Controllers import OrganisationController
-        user_org = OrganisationController.get_org_by_id(self.org_id)
-        return user_org.jwt_secret
 
     def log(self, operation: str, resource: str, resource_id: typing.Union[int, None] = None) -> None:
         """
