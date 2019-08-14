@@ -15,8 +15,8 @@ class DelayedTask(db.Model):
     snoozed = db.Column('snoozed', db.DateTime, default=None)
     expired = db.Column('expired', db.DateTime, default=None)
 
-    tasks = db.relationship("Task")
-    users = db.relationship("User", foreign_keys=[delayed_by])
+    tasks = db.relationship("Task", backref="tasks")
+    users = db.relationship("User", foreign_keys=[delayed_by], backref="users")
 
     def __init__(
             self,

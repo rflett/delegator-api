@@ -193,17 +193,12 @@ class Task(db.Model):
 
     def delayed_info(self) -> dict:
         """ Gets the latest delayed information about a task """
-        from app.Models import Task, DelayedTask, User
+        from app.Models import DelayedTask
 
         with session_scope() as session:
-            delayed_qry = session.query(Task, DelayedTask, User)\
-                .join(DelayedTask.tasks)\
-                .join(DelayedTask.users)\
-                .filter(DelayedTask.task_id == self.id)\
-                .first()
-
-        task, delayed_task, user = delayed_qry
+            delayed_task = session.query(DelayedTask).filter_by(task_id=self.id).first()
 
         delayed_task_dict = delayed_task.as_dict()
-        delayed_task_dict['delayed_by'] = user.as_dict()
+        delayed_task_dict['delayed_by'] = delayed_task.users.as_dict()
+
         return delayed_task_dict

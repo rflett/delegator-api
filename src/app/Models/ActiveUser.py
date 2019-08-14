@@ -1,7 +1,6 @@
 import datetime
 
 from app import db
-from app.Models import User, Organisation  # noqa
 
 
 class ActiveUser(db.Model):

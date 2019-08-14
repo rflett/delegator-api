@@ -24,7 +24,7 @@ class ActiveUserController(object):
         :return:
         """
         with session_scope() as session:
-            already_active = session.query(ActiveUser).filter(ActiveUser.user_id == user.id).first()
+            already_active = session.query(ActiveUser).filter_by(user_id=user.id).first()
             if already_active is None:
                 # user is not active, so create
                 active_user = ActiveUser(
