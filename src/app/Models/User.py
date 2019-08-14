@@ -53,7 +53,7 @@ class User(db.Model):
     password_last_changed = db.Column('password_last_changed', db.DateTime, default=datetime.datetime.utcnow)
 
     orgs = db.relationship("Organisation", backref="users")
-    roles = db.relationship("Role")
+    roles = db.relationship("Role", backref="rbac_roles")
     created_bys = db.relationship("User", foreign_keys=[created_by])
     updated_bys = db.relationship("User", foreign_keys=[updated_by])
 
@@ -229,26 +229,18 @@ class User(db.Model):
         from app.Controllers import SettingsController
 
         with session_scope() as session:
-            user_qry = session.query(User, Role) \
-                .join(User.roles) \
-                .filter(User.id == self.id) \
-                .first()
-
-        user, role = user_qry
-
-        with session_scope() as session:
             created_by = session.query(User) \
-                .filter(User.id == user.created_by) \
+                .filter(User.id == self.created_by) \
                 .first()
             updated_by = session.query(User) \
-                .filter(User.id == user.updated_by) \
+                .filter(User.id == self.updated_by) \
                 .first()
 
-        user_dict = user.as_dict()
+        user_dict = self.as_dict()
+        user_dict['role'] = self.roles.as_dict()
         user_dict['created_by'] = created_by.name()
         user_dict['updated_by'] = updated_by.name() if updated_by is not None else None
-        user_dict['role'] = role.as_dict()
-        user_dict['settings'] = SettingsController.get_user_settings(user.id).as_dict()
+        user_dict['settings'] = SettingsController.get_user_settings(self.id).as_dict()
 
         return user_dict
 

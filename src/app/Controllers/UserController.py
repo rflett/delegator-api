@@ -312,7 +312,6 @@ class UserController(object):
         """Get all users """
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import User
-        from app.Models.RBAC import Role
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -324,19 +323,18 @@ class UserController(object):
 
         # query for all users in the requesting user's organisation
         with session_scope() as session:
-            users_qry = session.query(User, Role) \
-                .join(User.roles) \
+            users_qry = session.query(User)\
                 .filter(
                     and_(
                         User.org_id == req_user.org_id,
                         User.deleted == None  # noqa
                     )
-                ) \
+                )\
                 .all()
 
         users = []
 
-        for user, role in users_qry:
+        for user in users_qry:
             with session_scope() as session:
                 created_by = session.query(User) \
                     .filter(User.id == user.created_by) \
@@ -349,7 +347,7 @@ class UserController(object):
             # TODO change to user not their name?
             user_dict['created_by'] = created_by.name()
             user_dict['updated_by'] = updated_by.name() if updated_by is not None else None
-            user_dict['role'] = role.as_dict()
+            user_dict['role'] = user.roles.as_dict()
             users.append(user_dict)
 
         logger.info(f"found {len(users)} users.")
