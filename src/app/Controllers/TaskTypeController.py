@@ -1,7 +1,7 @@
 import datetime
 
 from flask import request, Response
-from sqlalchemy import exists, and_, func
+from sqlalchemy import exists, func
 
 from app import logger, session_scope, g_response, j_response
 from app.Exceptions import ValidationError
@@ -12,11 +12,9 @@ from app.Models.Enums import Events, Operations, Resources
 def _get_task_type_escalation(task_type_id: int, display_order: int):
     """Gets a task type escalation """
     with session_scope() as session:
-        ret = session.query(TaskTypeEscalation).filter(
-            and_(
-                TaskTypeEscalation.task_type_id == task_type_id,
-                TaskTypeEscalation.display_order == display_order
-            )
+        ret = session.query(TaskTypeEscalation).filter_by(
+                task_type_id=task_type_id,
+                display_order=display_order
         ).first()
     if ret is None:
         logger.info(f"No task type escalation for task_type {task_type_id} and display order {display_order}.")
@@ -29,7 +27,10 @@ def _get_task_type_escalation(task_type_id: int, display_order: int):
 def _get_task_type_by_id(org_id: int, task_type_id: int) -> TaskType:
     """Gets a task type by its id """
     with session_scope() as session:
-        ret = session.query(TaskType).filter(and_(TaskType.id == task_type_id, TaskType.org_id == org_id)).first()
+        ret = session.query(TaskType).filter_by(
+            id=task_type_id,
+            org_id=org_id
+        ).first()
     if ret is None:
         logger.info(f"Task type with id {task_type_id} does not exist.")
         raise ValueError(f"Task type with id {task_type_id} does not exist.")
@@ -59,10 +60,8 @@ class TaskTypeController(object):
         """Gets a task type by its label """
         with session_scope() as session:
             ret = session.query(TaskType).filter(
-                and_(
-                    func.lower(TaskType.label) == func.lower(label),
-                    TaskType.org_id == org_id
-                )
+                func.lower(TaskType.label) == func.lower(label),
+                TaskType.org_id == org_id
             ).first()
         if ret is None:
             logger.info(f"Task type with label {label} does not exist in org {org_id}.")
@@ -87,12 +86,10 @@ class TaskTypeController(object):
         with session_scope() as session:
             task_type_query = session\
                 .query(TaskType)\
-                .filter(
-                    and_(
-                        TaskType.org_id == req_user.org_id,
-                        TaskType.disabled == None  # noqa
-                    ))\
-                .all()
+                .filter_by(
+                    org_id=req_user.org_id,
+                    disabled=None
+                ).all()
 
         task_types = [tt.fat_dict() for tt in task_type_query]
         req_user.log(
@@ -265,11 +262,9 @@ class TaskTypeController(object):
                 to_remove = db_escalations - request_escalations
                 for r in to_remove:
                     total_deleted += 1
-                    session.query(TaskTypeEscalation).filter(
-                        and_(
-                            TaskTypeEscalation.task_type_id == r[0],
-                            TaskTypeEscalation.display_order == r[1]
-                        )
+                    session.query(TaskTypeEscalation).filter_by(
+                        task_type_id=r[0],
+                        display_order=r[1]
                     ).delete(synchronize_session=False)
                     logger.info(f"deleted task type escalation with task_type_id:{r[0]}, display_order:{r[1]}")
 

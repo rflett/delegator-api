@@ -11,7 +11,7 @@ from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
 from app import db, session_scope, logger, user_activity_table, app
-from app.Models.RBAC import Role, Log, Permission
+from app.Models.RBAC import Log, Permission
 
 
 def _hash_password(password: str) -> str:

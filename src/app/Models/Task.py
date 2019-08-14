@@ -2,7 +2,7 @@ import datetime
 
 from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
-from sqlalchemy import exists, and_
+from sqlalchemy import exists
 
 from app import db, session_scope, logger, task_activity_table, app
 from app.Models import DelayedTask
@@ -184,7 +184,7 @@ class Task(db.Model):
     def has_been_delayed(self) -> bool:
         """ Checks to see if a task has been delayed before at all """
         with session_scope() as session:
-            return session.query(exists().where(and_(DelayedTask.task_id == self.id))).scalar()
+            return session.query(exists().where(DelayedTask.task_id == self.id)).scalar()
 
     def delayed_info(self) -> dict:
         """ Gets the latest delayed information about a task """

@@ -1,7 +1,6 @@
 from flask import request, Response
-from sqlalchemy import and_
 
-from app import session_scope, j_response, logger
+from app import session_scope, j_response
 from app.Models.Enums import Operations, Resources
 
 

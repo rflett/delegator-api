@@ -1,7 +1,7 @@
 import datetime
 
 from flask import request, Response
-from sqlalchemy import exists, and_
+from sqlalchemy import exists
 from sqlalchemy.orm import aliased
 
 from app import logger, session_scope, g_response, j_response
@@ -176,7 +176,7 @@ class TaskController(object):
     def task_exists(task_id: int, org_id: int) -> bool:
         """Checks to see if a task exists. """
         with session_scope() as session:
-            return session.query(exists().where(and_(Task.id == task_id, Task.org_id == org_id))).scalar()
+            return session.query(exists().where(Task.id == task_id, Task.org_id == org_id)).scalar()
 
     @staticmethod
     def task_status_exists(task_status: str) -> bool:
@@ -196,7 +196,10 @@ class TaskController(object):
     def get_task_by_id(task_id: int, org_id: int) -> Task:
         """Gets a task by its id """
         with session_scope() as session:
-            ret = session.query(Task).filter(and_(Task.id == task_id, Task.org_id == org_id)).first()
+            ret = session.query(Task).filter_by(
+                id=task_id,
+                org_id=org_id
+            ).first()
         if ret is None:
             logger.info(f"Task with id {task_id} does not exist.")
             raise ValueError(f"Task with id {task_id} does not exist.")
