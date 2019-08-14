@@ -45,8 +45,7 @@ class TaskTypeController(object):
             if isinstance(task_type_identifier, int):
                 return session.query(exists().where(
                     TaskType.id == task_type_identifier
-                )
-                ).scalar()
+                )).scalar()
             else:
                 raise ValidationError("Task type id not supplied.")
 
