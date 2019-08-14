@@ -179,8 +179,7 @@ class Task(db.Model):
 
     def label(self) -> str:
         """ Gets the label of its task type """
-        from app.Controllers import TaskTypeController
-        return TaskTypeController.get_task_type_by_id(self.org_id, self.type).label
+        return self.task_types.label
 
     def has_been_delayed(self) -> bool:
         """ Checks to see if a task has been delayed before at all """
