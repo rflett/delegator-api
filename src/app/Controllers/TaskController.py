@@ -1,13 +1,13 @@
 import datetime
 
 from flask import request, Response
-from sqlalchemy import exists, and_
+from sqlalchemy import exists
 from sqlalchemy.orm import aliased
 
 from app import logger, session_scope, g_response, j_response
 from app.Exceptions import ValidationError
 from app.Controllers import AuthorizationController, NotificationController
-from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Activity, TaskType
+from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Activity
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
 
 
@@ -35,7 +35,7 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
 
         # remove delayed task if the new status isn't DELAYED
         if old_status == TaskStatuses.DELAYED and status != TaskStatuses.DELAYED:
-            delayed_task = session.query(DelayedTask).filter(DelayedTask.task_id == task.id).first()
+            delayed_task = session.query(DelayedTask).filter_by(task_id=task.id).first()
             delayed_task.expired = datetime.datetime.utcnow()
 
         # assign finished_by and _at if the task is being completed
@@ -153,23 +153,22 @@ def _unassign_task(task: Task, req_user: User) -> None:
         logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
 
 
-def _change_task_priority(org_id: int, task_id: int, priority: int) -> None:
+def _change_task_priority(org_id: int, task: Task, priority: int) -> None:
     """Common function for changing a tasks priority"""
     from app.Controllers import UserController
 
     with session_scope():
-        task_to_change = TaskController.get_task_by_id(task_id, org_id)
-        if priority > task_to_change.priority:
+        if priority > task.priority:
             # task priority is increasing
             NotificationController.push(
-                msg=f"{task_to_change.label()} task has been escalated.",
+                msg=f"{task.label()} task has been escalated.",
                 user_ids=UserController.all_user_ids(org_id)
             )
 
-        task_to_change.priority = priority
-        task_to_change.priority_changed_at = datetime.datetime.utcnow()
+        task.priority = priority
+        task.priority_changed_at = datetime.datetime.utcnow()
 
-    logger.info(f"Changed task {task_id} priority to {priority}")
+    logger.info(f"Changed task {task.id} priority to {priority}")
 
 
 class TaskController(object):
@@ -177,7 +176,7 @@ class TaskController(object):
     def task_exists(task_id: int, org_id: int) -> bool:
         """Checks to see if a task exists. """
         with session_scope() as session:
-            return session.query(exists().where(and_(Task.id == task_id, Task.org_id == org_id))).scalar()
+            return session.query(exists().where(Task.id == task_id, Task.org_id == org_id)).scalar()
 
     @staticmethod
     def task_status_exists(task_status: str) -> bool:
@@ -197,7 +196,10 @@ class TaskController(object):
     def get_task_by_id(task_id: int, org_id: int) -> Task:
         """Gets a task by its id """
         with session_scope() as session:
-            ret = session.query(Task).filter(and_(Task.id == task_id, Task.org_id == org_id)).first()
+            ret = session.query(Task).filter_by(
+                id=task_id,
+                org_id=org_id
+            ).first()
         if ret is None:
             logger.info(f"Task with id {task_id} does not exist.")
             raise ValueError(f"Task with id {task_id} does not exist.")
@@ -297,27 +299,24 @@ class TaskController(object):
         with session_scope() as session:
             task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
             tasks_qry = session\
-                .query(Task, task_assignee, task_created_by, task_finished_by, TaskStatus, TaskType, TaskPriority) \
+                .query(Task, task_assignee, task_created_by, task_finished_by) \
                 .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
                 .outerjoin(task_finished_by, task_finished_by.id == Task.finished_by) \
                 .join(task_created_by, task_created_by.id == Task.created_by) \
                 .join(Task.created_bys) \
-                .join(Task.task_statuses) \
-                .join(Task.task_types) \
-                .join(Task.task_priorities) \
                 .filter(Task.org_id == req_user.org_id) \
                 .all()
 
         tasks = []
 
-        for t, ta, tcb, tfb, ts, tt, tp in tasks_qry:
+        for t, ta, tcb, tfb in tasks_qry:
             task_dict = t.as_dict()
             task_dict['assignee'] = ta.as_dict() if ta is not None else None
             task_dict['created_by'] = tcb.as_dict()
             task_dict['finished_by'] = tfb.as_dict() if tfb is not None else None
-            task_dict['status'] = ts.as_dict()
-            task_dict['type'] = tt.as_dict()
-            task_dict['priority'] = tp.as_dict()
+            task_dict['status'] = t.task_statuses.as_dict()
+            task_dict['type'] = t.task_types.as_dict()
+            task_dict['priority'] = t.task_priorities.as_dict()
             tasks.append(task_dict)
 
         req_user.log(
@@ -453,7 +452,7 @@ class TaskController(object):
         if task_to_update.priority != task_priority:
             _change_task_priority(
                 org_id=req_user.org_id,
-                task_id=task_to_update.id,
+                task=task_to_update,
                 priority=task_priority
             )
 
@@ -654,9 +653,9 @@ class TaskController(object):
             search = valid_transitions.get(task.status, [])
 
             with session_scope() as session:
-                # will return all atributes for the enabled tasks
+                # will return all attributes for the enabled tasks
                 enabled_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
-                # will return atributes for all other tasks
+                # will return attributes for all other tasks
                 disabled_qry = session.query(TaskStatus).filter(~TaskStatus.status.in_(search)).all()
 
             # enabled options
@@ -692,9 +691,7 @@ class TaskController(object):
                 req_user=req_user
             )
             # check to see if the task has been delayed previously
-            delay = session.query(DelayedTask).filter(
-                    DelayedTask.task_id == task.id
-                ).first()
+            delay = session.query(DelayedTask).filter_by(task_id=task.id).first()
 
             # if the task has been delayed before, update it, otherwise create it
             if delay is not None:
@@ -718,7 +715,7 @@ class TaskController(object):
                 msg=f"{task.label()} has been delayed.",
                 user_ids=task.created_by
             )
-        else:
+        elif req_user.id == task.created_by:
             NotificationController.push(
                 msg=f"{task.label()} has been delayed.",
                 user_ids=task.assignee

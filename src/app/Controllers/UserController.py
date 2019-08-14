@@ -2,7 +2,7 @@ import datetime
 import typing
 
 from flask import request, Response
-from sqlalchemy import exists, func, and_
+from sqlalchemy import exists, func
 
 from app import logger, g_response, session_scope, j_response
 from app.Controllers import AuthorizationController
@@ -20,7 +20,10 @@ def _get_user_by_email(email: str) -> User:
     :return:                The User
     """
     with session_scope() as session:
-        ret = session.query(User).filter(and_(User.email == email, User.deleted == None)).first()  # noqa
+        ret = session.query(User).filter_by(
+            email=email,
+            deleted=None
+        ).first()
     if ret is None:
         logger.info(f"User with email {email} does not exist.")
         raise ValueError(f"User with email {email} does not exist.")
@@ -36,7 +39,10 @@ def _get_user_by_id(user_id: int) -> User:
     :return:                The User
     """
     with session_scope() as session:
-        ret = session.query(User).filter(and_(User.id == user_id, User.deleted == None)).first()  # noqa
+        ret = session.query(User).filter_by(
+            id=user_id,
+            deleted=None
+        ).first()
     if ret is None:
         logger.info(f"User with id {user_id} does not exist.")
         raise ValueError(f"User with id {user_id} does not exist.")
@@ -90,7 +96,7 @@ class UserController(object):
     def all_user_ids(org_id: int) -> typing.List[int]:
         """ Returns a list of all user ids """
         with session_scope() as session:
-            user_ids_qry = session.query(User.id).filter(User.org_id == org_id).all()
+            user_ids_qry = session.query(User.id).filter_by(org_id=org_id).all()
 
         return [user_id[0] for user_id in user_ids_qry]
 
@@ -312,7 +318,6 @@ class UserController(object):
         """Get all users """
         from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import User
-        from app.Models.RBAC import Role
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -324,32 +329,24 @@ class UserController(object):
 
         # query for all users in the requesting user's organisation
         with session_scope() as session:
-            users_qry = session.query(User, Role) \
-                .join(User.roles) \
-                .filter(
-                    and_(
-                        User.org_id == req_user.org_id,
-                        User.deleted == None  # noqa
-                    )
-                ) \
-                .all()
+            users_qry = session.query(User)\
+                .filter_by(
+                    org_id=req_user.org_id,
+                    deleted=None
+                ).all()
 
         users = []
 
-        for user, role in users_qry:
+        for user in users_qry:
             with session_scope() as session:
-                created_by = session.query(User) \
-                    .filter(User.id == user.created_by) \
-                    .first()
-                updated_by = session.query(User) \
-                    .filter(User.id == user.updated_by) \
-                    .first()
+                created_by = session.query(User).filter_by(id=user.created_by).first()
+                updated_by = session.query(User).filter_by(id=user.updated_by).first()
 
             user_dict = user.as_dict()
             # TODO change to user not their name?
             user_dict['created_by'] = created_by.name()
             user_dict['updated_by'] = updated_by.name() if updated_by is not None else None
-            user_dict['role'] = role.as_dict()
+            user_dict['role'] = user.roles.as_dict()
             users.append(user_dict)
 
         logger.info(f"found {len(users)} users.")

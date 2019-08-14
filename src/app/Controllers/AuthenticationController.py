@@ -23,7 +23,7 @@ def _failed_login_attempt(email: str) -> Response:
     """
     with session_scope() as session:
         # check if it's failed before
-        failed_email = session.query(FailedLogin).filter(FailedLogin.email == email).first()
+        failed_email = session.query(FailedLogin).filter_by(email=email).first()
         if failed_email is not None:
             # check if it has breached the limits
             if failed_email.failed_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
@@ -72,7 +72,7 @@ def _generate_jwt_token(user: User) -> str:
             "jti": str(uuid.uuid4()),
             "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=app.config['TOKEN_TTL_IN_MINUTES'])
         },
-        key=user.jwt_secret(),
+        key=user.orgs.jwt_secret,
         algorithm='HS256'
     ).decode("utf-8")
 
@@ -100,7 +100,7 @@ def _validate_jwt(token: str) -> dict:
         try:
             user_id = suspect_jwt['claims']['user_id']
             user = UserController.get_user_by_id(user_id)
-            return jwt.decode(jwt=token, key=user.jwt_secret(), audience=user.jwt_aud(), algorithms='HS256')
+            return jwt.decode(jwt=token, key=user.orgs.jwt_secret, audience=user.orgs.jwt_aud, algorithms='HS256')
         except KeyError:
             _blacklist_token(token)
             raise AuthenticationError("JWT token has been blacklisted.")

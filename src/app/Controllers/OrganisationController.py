@@ -29,34 +29,6 @@ class OrganisationController(object):
                 raise ValueError(f"Bad org_identifier, expected Union[str, int] got {type(org_identifier)}")
 
     @staticmethod
-    def get_org_by_id(org_id: int) -> Organisation:
-        """Gets an organisation by its id.
-
-        :param org_id: The id of the organisation
-        """
-        with session_scope() as session:
-            ret = session.query(Organisation).filter(Organisation.id == org_id).first()
-        if ret is None:
-            logger.info(f"Org {org_id} does not exist.")
-            raise ValueError(f"Org {org_id} does not exist.")
-        else:
-            return ret
-
-    @staticmethod
-    def get_org_by_name(name: str) -> Organisation:
-        """Gets an organisation by its name.
-
-        :param name: The name of the organisation
-        """
-        with session_scope() as session:
-            ret = session.query(Organisation).filter(Organisation.name == name).first()
-        if ret is None:
-            logger.info(f"Org {name} does not exist.")
-            raise ValueError(f"Org {name} does not exist.")
-        else:
-            return ret
-
-    @staticmethod
     def get_org_settings(req: request) -> Response:
         """Get the org's settings
 

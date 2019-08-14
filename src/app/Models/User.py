@@ -11,7 +11,7 @@ from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
 from app import db, session_scope, logger, user_activity_table, app
-from app.Models.RBAC import Role, Log, Permission
+from app.Models.RBAC import Log, Permission
 
 
 def _hash_password(password: str) -> str:
@@ -53,7 +53,7 @@ class User(db.Model):
     password_last_changed = db.Column('password_last_changed', db.DateTime, default=datetime.datetime.utcnow)
 
     orgs = db.relationship("Organisation", backref="users")
-    roles = db.relationship("Role")
+    roles = db.relationship("Role", backref="rbac_roles")
     created_bys = db.relationship("User", foreign_keys=[created_by])
     updated_bys = db.relationship("User", foreign_keys=[updated_by])
 
@@ -89,10 +89,10 @@ class User(db.Model):
         :return:            True if they can do the thing, or False.
         """
         with session_scope() as session:
-            permission = session.query(Permission).filter(
-                Permission.role_id == self.role,
-                Permission.operation_id == operation,
-                Permission.resource_id == resource
+            permission = session.query(Permission).filter_by(
+                role_id=self.role,
+                operation_id=operation,
+                resource_id=resource
             ).first()
 
         if permission is None:
@@ -123,32 +123,13 @@ class User(db.Model):
         :return: A dict of claims.
         """
         return {
-            "aud": self.jwt_aud(),
+            "aud": self.orgs.jwt_aud,
             "claims": {
                 "role": self.role,
                 "org": self.org_id,
                 "user_id": self.id
             }
         }
-
-    def jwt_aud(self) -> str:
-        """
-        Gets the JWT aud for this users organisation. The aud (audience claim) is unique per
-        organisation, and identifies the org.
-        :return: The aud claim
-        """
-        from app.Controllers import OrganisationController
-        user_org = OrganisationController.get_org_by_id(self.org_id)
-        return user_org.jwt_aud
-
-    def jwt_secret(self) -> str:
-        """
-        Gets the JWT secret for this users organisation
-        :return:        The JWT secret.
-        """
-        from app.Controllers import OrganisationController
-        user_org = OrganisationController.get_org_by_id(self.org_id)
-        return user_org.jwt_secret
 
     def log(self, operation: str, resource: str, resource_id: typing.Union[int, None] = None) -> None:
         """
@@ -198,7 +179,7 @@ class User(db.Model):
             failed_email = session.query(exists().where(FailedLogin.email == self.email)).scalar()
 
             if failed_email:
-                session.query(FailedLogin).filter(FailedLogin.email == self.email).delete()
+                session.query(FailedLogin).filter_by(email=self.email).delete()
 
             logger.info(f"cleared failed logins for {self.email}")
 
@@ -248,26 +229,14 @@ class User(db.Model):
         from app.Controllers import SettingsController
 
         with session_scope() as session:
-            user_qry = session.query(User, Role) \
-                .join(User.roles) \
-                .filter(User.id == self.id) \
-                .first()
+            created_by = session.query(User).filter_by(id=self.created_by).first()
+            updated_by = session.query(User).filter_by(id=self.updated_by).first()
 
-        user, role = user_qry
-
-        with session_scope() as session:
-            created_by = session.query(User) \
-                .filter(User.id == user.created_by) \
-                .first()
-            updated_by = session.query(User) \
-                .filter(User.id == user.updated_by) \
-                .first()
-
-        user_dict = user.as_dict()
+        user_dict = self.as_dict()
+        user_dict['role'] = self.roles.as_dict()
         user_dict['created_by'] = created_by.name()
         user_dict['updated_by'] = updated_by.name() if updated_by is not None else None
-        user_dict['role'] = role.as_dict()
-        user_dict['settings'] = SettingsController.get_user_settings(user.id).as_dict()
+        user_dict['settings'] = SettingsController.get_user_settings(self.id).as_dict()
 
         return user_dict
 

@@ -11,7 +11,7 @@ def _purge_inactive_users() -> None:
     """ Removes users from the active users table which have been inactive for longer than the TTL. """
     with session_scope() as session:
         inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=app.config['INACTIVE_USER_TTL'])
-        delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
+        delete_inactive = session.query(ActiveUser).filter_by(ActiveUser.last_active < inactive_cutoff).delete()
         logger.info(f"Purged {len(delete_inactive)} users who have not been active for {inactive_cutoff}s.")
 
 
@@ -24,7 +24,7 @@ class ActiveUserController(object):
         :return:
         """
         with session_scope() as session:
-            already_active = session.query(ActiveUser).filter(ActiveUser.user_id == user.id).first()
+            already_active = session.query(ActiveUser).filter_by(user_id=user.id).first()
             if already_active is None:
                 # user is not active, so create
                 active_user = ActiveUser(
@@ -47,7 +47,7 @@ class ActiveUserController(object):
         :return:
         """
         with session_scope() as session:
-            session.query(ActiveUser).filter(ActiveUser.user_id == user.id).delete()
+            session.query(ActiveUser).filter_by(user_id=user.id).delete()
 
     @staticmethod
     def get_active_users(req: request) -> Response:
@@ -71,7 +71,7 @@ class ActiveUserController(object):
 
         # query db for active users
         with session_scope() as session:
-            active_users_qry = session.query(ActiveUser).filter(ActiveUser.org_id == req_user.org_id).all()
+            active_users_qry = session.query(ActiveUser).filter_by(org_id=req_user.org_id).all()
 
         # convert to list of active user dicts
         active_users = [au.as_dict() for au in active_users_qry]

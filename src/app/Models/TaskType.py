@@ -4,22 +4,6 @@ import typing
 from app import db, session_scope, app
 
 
-def _get_fat_task_type(task_type) -> dict:
-    """ Creates a nice dict of a task type """
-    from app.Models import TaskTypeEscalation
-    task_type_dict = task_type.as_dict()
-
-    # get task type escalations
-    with session_scope() as session:
-        tte_qry = session.query(TaskTypeEscalation).filter(TaskTypeEscalation.task_type_id == task_type.id).all()
-        escalation_policies = [escalation.as_dict() for escalation in tte_qry]
-
-    # sort by display order
-    task_type_dict['escalation_policies'] = list(sorted(escalation_policies, key=lambda i: i['display_order']))
-
-    return task_type_dict
-
-
 class TaskType(db.Model):
     __tablename__ = "task_types"
 
@@ -57,4 +41,15 @@ class TaskType(db.Model):
         }
 
     def fat_dict(self) -> dict:
-        return _get_fat_task_type(self)
+        from app.Models import TaskTypeEscalation
+        task_type_dict = self.as_dict()
+
+        # get task type escalations
+        with session_scope() as session:
+            tte_qry = session.query(TaskTypeEscalation).filter_by(task_type_id=self.id).all()
+            escalation_policies = [escalation.as_dict() for escalation in tte_qry]
+
+        # sort by display order
+        task_type_dict['escalation_policies'] = list(sorted(escalation_policies, key=lambda i: i['display_order']))
+
+        return task_type_dict
