@@ -28,13 +28,13 @@ class Task(db.Model):
     status_changed_at = db.Column('status_changed_at', db.DateTime)
     priority_changed_at = db.Column('priority_changed_at', db.DateTime)
 
-    orgs = db.relationship("Organisation")
+    orgs = db.relationship("Organisation", backref="organisations")
     assignees = db.relationship("User", foreign_keys=[assignee])
     created_bys = db.relationship("User", foreign_keys=[created_by])
     finished_bys = db.relationship("User", foreign_keys=[finished_by])
-    task_statuses = db.relationship("TaskStatus")
-    task_types = db.relationship("TaskType")
-    task_priorities = db.relationship("TaskPriority")
+    task_statuses = db.relationship("TaskStatus", backref="task_statuses")
+    task_types = db.relationship("TaskType", backref="task_types")
+    task_priorities = db.relationship("TaskPriority", backref="task_priorities")
 
     def __init__(
         self,
@@ -125,32 +125,28 @@ class Task(db.Model):
 
     def fat_dict(self) -> dict:
         """ Returns a full task dict with all of its FK's joined. """
-        from app.Models import User, TaskStatus, TaskType, TaskPriority
+        from app.Models import User
 
         with session_scope() as session:
             task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
             tasks_qry = session\
-                .query(Task, task_assignee, task_created_by, task_finished_by, TaskStatus, TaskType, TaskPriority) \
+                .query(Task, task_assignee, task_created_by, task_finished_by) \
                 .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
                 .outerjoin(task_finished_by, task_finished_by.id == Task.finished_by) \
                 .join(task_created_by, task_created_by.id == Task.created_by) \
-                .join(Task.created_bys) \
-                .join(Task.task_statuses) \
-                .join(Task.task_types) \
-                .join(Task.task_priorities) \
                 .filter(Task.id == self.id) \
                 .first()
 
-        t, ta, tcb, tfb, ts, tt, tp = tasks_qry
+        t, ta, tcb, tfb = tasks_qry
 
-        task_dict = t.as_dict()
+        task_dict = self.as_dict()
 
         task_dict['assignee'] = ta.as_dict() if ta is not None else None
         task_dict['created_by'] = tcb.as_dict()
         task_dict['finished_by'] = tfb.as_dict() if tfb is not None else None
-        task_dict['status'] = ts.as_dict()
-        task_dict['type'] = tt.as_dict()
-        task_dict['priority'] = tp.as_dict()
+        task_dict['status'] = self.task_statuses.as_dict()
+        task_dict['type'] = self.task_types.as_dict()
+        task_dict['priority'] = self.task_priorities.as_dict()
 
         return task_dict
 

@@ -7,7 +7,7 @@ from sqlalchemy.orm import aliased
 from app import logger, session_scope, g_response, j_response
 from app.Exceptions import ValidationError
 from app.Controllers import AuthorizationController, NotificationController
-from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Activity, TaskType
+from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Activity
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
 
 
@@ -153,23 +153,22 @@ def _unassign_task(task: Task, req_user: User) -> None:
         logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
 
 
-def _change_task_priority(org_id: int, task_id: int, priority: int) -> None:
+def _change_task_priority(org_id: int, task: Task, priority: int) -> None:
     """Common function for changing a tasks priority"""
     from app.Controllers import UserController
 
     with session_scope():
-        task_to_change = TaskController.get_task_by_id(task_id, org_id)
-        if priority > task_to_change.priority:
+        if priority > task.priority:
             # task priority is increasing
             NotificationController.push(
-                msg=f"{task_to_change.label()} task has been escalated.",
+                msg=f"{task.label()} task has been escalated.",
                 user_ids=UserController.all_user_ids(org_id)
             )
 
-        task_to_change.priority = priority
-        task_to_change.priority_changed_at = datetime.datetime.utcnow()
+        task.priority = priority
+        task.priority_changed_at = datetime.datetime.utcnow()
 
-    logger.info(f"Changed task {task_id} priority to {priority}")
+    logger.info(f"Changed task {task.id} priority to {priority}")
 
 
 class TaskController(object):
@@ -297,27 +296,24 @@ class TaskController(object):
         with session_scope() as session:
             task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
             tasks_qry = session\
-                .query(Task, task_assignee, task_created_by, task_finished_by, TaskStatus, TaskType, TaskPriority) \
+                .query(Task, task_assignee, task_created_by, task_finished_by) \
                 .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
                 .outerjoin(task_finished_by, task_finished_by.id == Task.finished_by) \
                 .join(task_created_by, task_created_by.id == Task.created_by) \
                 .join(Task.created_bys) \
-                .join(Task.task_statuses) \
-                .join(Task.task_types) \
-                .join(Task.task_priorities) \
                 .filter(Task.org_id == req_user.org_id) \
                 .all()
 
         tasks = []
 
-        for t, ta, tcb, tfb, ts, tt, tp in tasks_qry:
+        for t, ta, tcb, tfb in tasks_qry:
             task_dict = t.as_dict()
             task_dict['assignee'] = ta.as_dict() if ta is not None else None
             task_dict['created_by'] = tcb.as_dict()
             task_dict['finished_by'] = tfb.as_dict() if tfb is not None else None
-            task_dict['status'] = ts.as_dict()
-            task_dict['type'] = tt.as_dict()
-            task_dict['priority'] = tp.as_dict()
+            task_dict['status'] = t.task_statuses.as_dict()
+            task_dict['type'] = t.task_types.as_dict()
+            task_dict['priority'] = t.task_priorities.as_dict()
             tasks.append(task_dict)
 
         req_user.log(
@@ -453,7 +449,7 @@ class TaskController(object):
         if task_to_update.priority != task_priority:
             _change_task_priority(
                 org_id=req_user.org_id,
-                task_id=task_to_update.id,
+                task=task_to_update,
                 priority=task_priority
             )
 
