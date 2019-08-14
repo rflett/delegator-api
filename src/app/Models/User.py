@@ -89,10 +89,10 @@ class User(db.Model):
         :return:            True if they can do the thing, or False.
         """
         with session_scope() as session:
-            permission = session.query(Permission).filter(
-                Permission.role_id == self.role,
-                Permission.operation_id == operation,
-                Permission.resource_id == resource
+            permission = session.query(Permission).filter_by(
+                role_id=self.role,
+                operation_id=operation,
+                resource_id=resource
             ).first()
 
         if permission is None:
@@ -179,7 +179,7 @@ class User(db.Model):
             failed_email = session.query(exists().where(FailedLogin.email == self.email)).scalar()
 
             if failed_email:
-                session.query(FailedLogin).filter(FailedLogin.email == self.email).delete()
+                session.query(FailedLogin).filter_by(email=self.email).delete()
 
             logger.info(f"cleared failed logins for {self.email}")
 
@@ -229,12 +229,8 @@ class User(db.Model):
         from app.Controllers import SettingsController
 
         with session_scope() as session:
-            created_by = session.query(User) \
-                .filter(User.id == self.created_by) \
-                .first()
-            updated_by = session.query(User) \
-                .filter(User.id == self.updated_by) \
-                .first()
+            created_by = session.query(User).filter_by(id=self.created_by).first()
+            updated_by = session.query(User).filter_by(id=self.updated_by).first()
 
         user_dict = self.as_dict()
         user_dict['role'] = self.roles.as_dict()

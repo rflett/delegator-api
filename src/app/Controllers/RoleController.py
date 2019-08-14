@@ -22,10 +22,7 @@ class RoleController(object):
 
         with session_scope() as session:
             roles_qry = session.query(Role)\
-                .filter(
-                    Role.rank >=
-                    req_user.roles.rank
-                ).all()
+                .filter(Role.rank >= req_user.roles.rank).all()
 
         roles = [r.as_dict() for r in roles_qry]
         req_user.log(

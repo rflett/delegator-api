@@ -35,7 +35,7 @@ def _transition_task(task: Task, status: str, req_user: User) -> None:
 
         # remove delayed task if the new status isn't DELAYED
         if old_status == TaskStatuses.DELAYED and status != TaskStatuses.DELAYED:
-            delayed_task = session.query(DelayedTask).filter(DelayedTask.task_id == task.id).first()
+            delayed_task = session.query(DelayedTask).filter_by(task_id=task.id).first()
             delayed_task.expired = datetime.datetime.utcnow()
 
         # assign finished_by and _at if the task is being completed
@@ -650,9 +650,9 @@ class TaskController(object):
             search = valid_transitions.get(task.status, [])
 
             with session_scope() as session:
-                # will return all atributes for the enabled tasks
+                # will return all attributes for the enabled tasks
                 enabled_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
-                # will return atributes for all other tasks
+                # will return attributes for all other tasks
                 disabled_qry = session.query(TaskStatus).filter(~TaskStatus.status.in_(search)).all()
 
             # enabled options
@@ -688,9 +688,7 @@ class TaskController(object):
                 req_user=req_user
             )
             # check to see if the task has been delayed previously
-            delay = session.query(DelayedTask).filter(
-                    DelayedTask.task_id == task.id
-                ).first()
+            delay = session.query(DelayedTask).filter_by(task_id=task.id).first()
 
             # if the task has been delayed before, update it, otherwise create it
             if delay is not None:
@@ -714,7 +712,7 @@ class TaskController(object):
                 msg=f"{task.label()} has been delayed.",
                 user_ids=task.created_by
             )
-        else:
+        elif req_user.id == task.created_by:
             NotificationController.push(
                 msg=f"{task.label()} has been delayed.",
                 user_ids=task.assignee

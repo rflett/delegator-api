@@ -23,7 +23,7 @@ def _failed_login_attempt(email: str) -> Response:
     """
     with session_scope() as session:
         # check if it's failed before
-        failed_email = session.query(FailedLogin).filter(FailedLogin.email == email).first()
+        failed_email = session.query(FailedLogin).filter_by(email=email).first()
         if failed_email is not None:
             # check if it has breached the limits
             if failed_email.failed_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:

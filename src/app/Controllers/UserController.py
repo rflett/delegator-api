@@ -90,7 +90,7 @@ class UserController(object):
     def all_user_ids(org_id: int) -> typing.List[int]:
         """ Returns a list of all user ids """
         with session_scope() as session:
-            user_ids_qry = session.query(User.id).filter(User.org_id == org_id).all()
+            user_ids_qry = session.query(User.id).filter_by(org_id=org_id).all()
 
         return [user_id[0] for user_id in user_ids_qry]
 
@@ -336,12 +336,8 @@ class UserController(object):
 
         for user in users_qry:
             with session_scope() as session:
-                created_by = session.query(User) \
-                    .filter(User.id == user.created_by) \
-                    .first()
-                updated_by = session.query(User) \
-                    .filter(User.id == user.updated_by) \
-                    .first()
+                created_by = session.query(User).filter_by(id=user.created_by).first()
+                updated_by = session.query(User).filter_by(id=user.updated_by).first()
 
             user_dict = user.as_dict()
             # TODO change to user not their name?

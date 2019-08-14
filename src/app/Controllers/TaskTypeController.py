@@ -258,7 +258,7 @@ class TaskTypeController(object):
             with session_scope() as session:
                 # get escalations which exist in the db as a set of tuples
                 db_esc_qry = session.query(TaskTypeEscalation.task_type_id, TaskTypeEscalation.display_order)\
-                    .filter(TaskTypeEscalation.task_type_id == task_type_id).all()
+                    .filter_by(task_type_id=task_type_id).all()
                 db_escalations = {e for e in db_esc_qry}
 
                 # remove those that exist in the db that didn't in the request

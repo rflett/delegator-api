@@ -46,7 +46,7 @@ class TaskType(db.Model):
 
         # get task type escalations
         with session_scope() as session:
-            tte_qry = session.query(TaskTypeEscalation).filter(TaskTypeEscalation.task_type_id == self.id).all()
+            tte_qry = session.query(TaskTypeEscalation).filter_by(task_type_id=self.id).all()
             escalation_policies = [escalation.as_dict() for escalation in tte_qry]
 
         # sort by display order

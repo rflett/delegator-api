@@ -53,7 +53,7 @@ class SignupController(object):
             # the org was actually created, but the user failed, so delete the org and default task type
             with session_scope() as session:
                 from app.Models import TaskType
-                session.query(TaskType).filter(TaskType.org_id == organisation.id).delete()
+                session.query(TaskType).filter_by(org_id=organisation.id).delete()
                 session.delete(organisation)
                 logger.info(f"Deleted the new organisation {organisation.name} "
                             f"since there was an issue creating the user.")
