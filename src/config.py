@@ -17,6 +17,7 @@ class Config(object):
     REQUEST_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
     RESPONSE_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
     DYN_DB_ACTIVITY_DATE_FORMAT = '%Y%m%dT%H%M%S.%fZ'
+    CHARGEBEE_API_KEY = 'test_UcEwg6dgVTAmGwWnH06bQtifSYphNqxR'
 
 
 class Ci(Config):

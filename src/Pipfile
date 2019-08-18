@@ -20,6 +20,7 @@ redis = "*"
 flask-sqlalchemy = "*"
 flask-profiler = "*"
 werkzeug = "==0.15.4"
+chargebee = "*"
 
 [requires]
 python_version = "3.7"

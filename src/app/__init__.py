@@ -6,6 +6,7 @@ from logging.handlers import SysLogHandler
 from os import getenv
 
 import boto3
+import chargebee
 import flask_profiler
 import redis
 from flask import Flask, Response
@@ -137,6 +138,12 @@ def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) ->
         **kwargs
     )
 
+
+# chargebee
+chargebee.configure(
+    api_key=app.config['CHARGEBEE_API_KEY'],
+    site='backburner-test'
+)
 
 # routes
 from app import routes  # noqa

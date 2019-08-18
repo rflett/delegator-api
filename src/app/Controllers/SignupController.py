@@ -1,6 +1,7 @@
 from flask import request, Response
 
 from app import logger, g_response, session_scope
+from app.Controllers import ChargebeeController
 from app.Models import Organisation
 
 
@@ -21,7 +22,7 @@ class SignupController(object):
         request_body = req.get_json()
 
         # validate org
-        org_name = ValidationController.validate_create_org_request(request_body)
+        org_name, subscription_details = ValidationController.validate_create_org_request(request_body)
 
         # validate user
         valid_user = ValidationController.validate_create_signup_user(request_body)
@@ -30,7 +31,12 @@ class SignupController(object):
         try:
             # create the organisation
             with session_scope() as session:
-                organisation = Organisation(org_name)
+                organisation = Organisation(
+                    name=org_name,
+                    product_tier=subscription_details['plan_id'],
+                    chargebee_customer_id=subscription_details['customer_id'],
+                    chargebee_subscription_id=subscription_details['subscription_id']
+                )
                 session.add(organisation)
 
             # add default task type
