@@ -183,16 +183,17 @@ class User(db.Model):
 
             logger.info(f"cleared failed logins for {self.email}")
 
-    def anonymize(self) -> None:
-        """ Removes any PII from the user object """
+    def delete(self) -> None:
+        """ Deletes the user """
+        from app.Controllers import ChargebeeController
+
         def make_random() -> str:
             return ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
 
-        self.first_name = make_random()
-        self.last_name = make_random()
         self.email = f"{make_random()}@{make_random()}.com"
         self.password = _hash_password(make_random())
         self.deleted = datetime.datetime.utcnow()
+        ChargebeeController.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
 
     def as_dict(self) -> dict:
         """
