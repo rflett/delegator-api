@@ -103,7 +103,7 @@ class UserController(object):
     @staticmethod
     def create_user(req: request) -> Response:
         """Create a user """
-        from app.Controllers import AuthenticationController, ValidationController
+        from app.Controllers import AuthenticationController, ValidationController, ChargebeeController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -143,6 +143,9 @@ class UserController(object):
 
         # create user settings
         user.create_settings()
+
+        # increment chargebee subscription plan_quantity
+        ChargebeeController.increment_plan_quantity(user.orgs.chargebee_subscription_id)
 
         req_user.log(
             operation=Operations.CREATE,
@@ -263,12 +266,14 @@ class UserController(object):
         # get the user
         user_to_delete = UserController.get_user_by_id(user_id)
 
+        user_to_delete.delete()
+
         with session_scope():
             Activity(
                 org_id=req_user.org_id,
                 event=Events.user_deleted_user,
                 event_id=req_user.id,
-                event_friendly=f"Deleted user id {user_to_delete.id}."
+                event_friendly=f"Deleted user {user_to_delete.name()}."
             ).publish()
 
         req_user.log(

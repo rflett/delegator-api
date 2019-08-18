@@ -8,7 +8,8 @@ from validate_email import validate_email
 
 from app import logger, app, session_scope
 from app.Exceptions import ValidationError
-from app.Models import TaskType, TaskTypeEscalation, Task, OrgSetting, UserSetting
+from app.Models import TaskType, TaskTypeEscalation, Task, OrgSetting, UserSetting, Organisation
+from app.Models.Enums import NotificationTokens
 from app.Models.RBAC import Role
 
 
@@ -324,9 +325,9 @@ class ValidationController(object):
         }
 
     @staticmethod
-    def validate_create_org_request(request_body: dict) -> str:
+    def validate_create_org_request(request_body: dict) -> tuple:
         """ Validates a create org request body """
-        from app.Controllers import OrganisationController
+        from app.Controllers import OrganisationController, ChargebeeController
 
         org_name = request_body.get('name', request_body.get('org_name'))
 
@@ -336,7 +337,27 @@ class ValidationController(object):
         if OrganisationController.org_exists(org_name):
             raise ValidationError("Organisation already exists")
 
-        return org_name
+        # get the chargebee subscription info
+        # with the customer from the subscription, make sure we don't have them already as a customer
+        try:
+            # TODO remove fallback
+            subscription_id = request_body.get('subscription_id', '2sUBzx5vRZMD2gy13jF')
+            subscription_details = ChargebeeController.get_subscription_details(subscription_id)
+
+            with session_scope() as session:
+                customer_exists = session.query(
+                    exists().where(
+                        Organisation.chargebee_customer_id == subscription_details['customer_id']
+                    )
+                ).scalar()
+            if customer_exists:
+                # TODO raise the error
+                logger.warning("The customer subscribed to this subscription already exists.")
+                # raise ValidationError("The customer subscribed to this subscription already exists.")
+        except KeyError:
+            raise ValidationError("Subscription ID is missing.")
+
+        return org_name, subscription_details
 
     @staticmethod
     def validate_create_task_request(org_id: int, request_body: dict) -> dict:
@@ -554,8 +575,6 @@ class ValidationController(object):
     @staticmethod
     def validate_register_token_request(request_body: dict) -> tuple:
         """ Validate the request payload for registering a notification token """
-        from app.Models.Enums import NotificationTokens
-
         token_type = _check_str(request_body.get('token_type'), 'token_type')
 
         if token_type not in NotificationTokens.TOKENS:
@@ -569,8 +588,6 @@ class ValidationController(object):
     @staticmethod
     def validate_deregister_token_request(request_body: dict) -> str:
         """ Validate the request payload for registering a notification token """
-        from app.Models.Enums import NotificationTokens
-
         token_type = _check_str(request_body.get('token_type'), 'token_type')
 
         if token_type in NotificationTokens.TOKENS:

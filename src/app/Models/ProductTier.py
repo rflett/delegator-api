@@ -4,7 +4,7 @@ from app import db
 class ProductTier(db.Model):
     __tablename__ = "product_tiers"
 
-    id = db.Column('id', db.Integer, primary_key=True)
+    plan_id = db.Column('plan_id', db.String, primary_key=True)
     name = db.Column('name', db.String)
     max_users = db.Column('max_users', db.Integer)
     task_activity_log_history = db.Column('task_activity_log_history', db.Integer)
