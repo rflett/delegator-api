@@ -1,7 +1,6 @@
 from flask import request, Response
 
 from app import logger, g_response, session_scope
-from app.Controllers import ChargebeeController
 from app.Models import Organisation
 
 

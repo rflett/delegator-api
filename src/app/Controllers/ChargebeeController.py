@@ -1,6 +1,5 @@
 import chargebee
 
-from app import logger
 from app.Exceptions import ValidationError
 
 

@@ -7,7 +7,7 @@ from app import app, g_response, logger
 from app.Exceptions import AuthenticationError, AuthorizationError, ValidationError, ProductTierLimitError
 from app.Controllers import AuthorizationController, UserController, SignupController, TaskController, \
     VersionController, ActiveUserController, OrganisationController, TaskTypeController, AuthenticationController, \
-    RoleController, ReportController, NotificationController, ChargebeeController
+    RoleController, ReportController, NotificationController
 
 
 def requires_jwt(f):
