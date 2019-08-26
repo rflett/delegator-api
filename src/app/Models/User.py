@@ -7,10 +7,13 @@ import random
 import string
 import typing
 
+import requests
+from flask import Response
 from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
-from app import db, session_scope, logger, user_activity_table, app
+from app import db, session_scope, logger, user_activity_table, app, j_response
+
 from app.Models.RBAC import Log, Permission
 
 
@@ -185,15 +188,24 @@ class User(db.Model):
 
     def delete(self) -> None:
         """ Deletes the user """
-        from app.Controllers import ChargebeeController
-
         def make_random() -> str:
             return ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
 
         self.email = f"{make_random()}@{make_random()}.com"
         self.password = _hash_password(make_random())
         self.deleted = datetime.datetime.utcnow()
-        ChargebeeController.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
+
+        # decrement chargebee subscription plan_quantity
+        r = requests.delete(
+            url=f"{app.config['SUBSCRIPTION_API_URL']}/subscription/quantity/{self.orgs.chargebee_subscription_id}",
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': app.config['SUBSCRIPTION_API_KEY']
+            },
+            timeout=10
+        )
+        if r.status_code != 204:
+            logger.error(r.text)
 
     def as_dict(self) -> dict:
         """

@@ -1,6 +1,7 @@
 import traceback
 from functools import wraps
 
+import requests
 from flask import Response, request
 
 from app import app, g_response, logger
@@ -27,19 +28,37 @@ def requires_jwt(f):
     return decorated
 
 
+def requires_token_auth(f):
+    """Checks that a request contains a valid auth token"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.headers.get('Authorization', None)
+        if auth != app.config['BACKBURNER_API_KEY']:
+            raise AuthenticationError("Unauthorized.")
+        else:
+            return f(*args, **kwargs)
+    return decorated
+
+
 def handle_exceptions(f):
     """ Handles custom exceptions and unexpected errors """
     @wraps(f)
     def decorated(*args, **kwargs):
         try:
             return f(*args, **kwargs)
+        except requests.Timeout as e:
+            logger.error(str(e))
+            return g_response(msg=str(e), status=202)
         except ValidationError as e:
             logger.info(str(e))
             return g_response(msg=str(e), status=400)
         except AuthenticationError as e:
             logger.info(str(e))
             return g_response(msg=str(e), status=401)
-        except (AuthorizationError, ProductTierLimitError) as e:
+        except ProductTierLimitError as e:
+            logger.info(str(e))
+            return g_response(msg=str(e), status=402)
+        except AuthorizationError as e:
             logger.info(str(e))
             return g_response(msg=str(e), status=403)
         except Exception as e:
@@ -295,10 +314,17 @@ def update_org_settings():
     return OrganisationController.update_org_settings(request)
 
 
+@app.route('/org/subscription', methods=['PUT'])
+@handle_exceptions
+@requires_token_auth
+def update_subscription():
+    return OrganisationController.update_subscription(request)
+
+
 @app.route('/reporting/all', methods=['GET'])
 @requires_jwt
 @handle_exceptions
-def get_report_trends():
+def get_all_reports():
     return ReportController.get_all(request)
 
 

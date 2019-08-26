@@ -81,3 +81,20 @@ class OrganisationController(object):
         )
 
         return g_response(status=204)
+
+    @staticmethod
+    def update_subscription(req: request) -> Response:
+        """Update the orgs plan id
+
+        :param req: The HTTP request
+        :return:    HTTP 204 response
+        """
+        from app.Controllers import ValidationController
+
+        chargebee_customer_id, plan_id = ValidationController.validate_update_org_subscription(req.get_json())
+
+        with session_scope() as session:
+            org = session.query(Organisation).filter_by(chargebee_customer_id=chargebee_customer_id).first()
+            org.product_tier = plan_id
+
+        return g_response(status=204)

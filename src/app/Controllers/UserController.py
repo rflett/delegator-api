@@ -1,10 +1,11 @@
 import datetime
+import requests
 import typing
 
 from flask import request, Response
 from sqlalchemy import exists, func
 
-from app import logger, g_response, session_scope, j_response
+from app import logger, g_response, session_scope, j_response, app
 from app.Controllers import AuthorizationController
 from app.Exceptions import ProductTierLimitError
 from app.Models import User, Activity
@@ -145,7 +146,16 @@ class UserController(object):
         user.create_settings()
 
         # increment chargebee subscription plan_quantity
-        ChargebeeController.increment_plan_quantity(user.orgs.chargebee_subscription_id)
+        r = requests.put(
+            url=f"{app.config['SUBSCRIPTION_API_URL']}/subscription/quantity/{user.orgs.chargebee_subscription_id}",
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': app.config['SUBSCRIPTION_API_KEY']
+            },
+            timeout=10
+        )
+        if r.status_code != 204:
+            logger.error(r.text)
 
         req_user.log(
             operation=Operations.CREATE,
