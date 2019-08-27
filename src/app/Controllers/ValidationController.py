@@ -325,9 +325,9 @@ class ValidationController(object):
         }
 
     @staticmethod
-    def validate_create_org_request(request_body: dict) -> tuple:
+    def validate_create_org_request(request_body: dict) -> str:
         """ Validates a create org request body """
-        from app.Controllers import OrganisationController, ChargebeeController
+        from app.Controllers import OrganisationController
 
         org_name = request_body.get('name', request_body.get('org_name'))
 
@@ -337,27 +337,7 @@ class ValidationController(object):
         if OrganisationController.org_exists(org_name):
             raise ValidationError("Organisation already exists")
 
-        # get the chargebee subscription info
-        # with the customer from the subscription, make sure we don't have them already as a customer
-        try:
-            # TODO remove fallback
-            subscription_id = request_body.get('subscription_id', '2sUBzx5vRZMD2gy13jF')
-            subscription_details = ChargebeeController.get_subscription_details(subscription_id)
-
-            with session_scope() as session:
-                customer_exists = session.query(
-                    exists().where(
-                        Organisation.chargebee_customer_id == subscription_details['customer_id']
-                    )
-                ).scalar()
-            if customer_exists:
-                # TODO raise the error
-                logger.warning("The customer subscribed to this subscription already exists.")
-                # raise ValidationError("The customer subscribed to this subscription already exists.")
-        except KeyError:
-            raise ValidationError("Subscription ID is missing.")
-
-        return org_name, subscription_details
+        return org_name
 
     @staticmethod
     def validate_create_task_request(org_id: int, request_body: dict) -> dict:
@@ -595,3 +575,18 @@ class ValidationController(object):
         else:
             raise ValidationError(f"Token type {token_type} not supported: "
                                   f"supported types are: {NotificationTokens.TOKENS}")
+
+    @staticmethod
+    def validate_update_org_subscription(request_body: dict) -> tuple:
+        """Validate the payload for the update org subscription endpoint"""
+        chargebee_customer_id = _check_str(request_body.get('chargebee_customer_id'), 'chargebee_customer_id')
+        plan_id = _check_str(request_body.get('plan_id'), 'plan_id')
+
+        with session_scope() as session:
+            customer_id_exists = session.query(exists().where(
+                Organisation.chargebee_customer_id == chargebee_customer_id
+            )).scalar()
+            if customer_id_exists:
+                return chargebee_customer_id, plan_id
+            else:
+                raise ValidationError("Customer ID doesn't exist")

@@ -9,7 +9,6 @@ verify_ssl = true
 flask = "*"
 flake8 = "*"
 gunicorn = "*"
-pytest = "*"
 pip = "*"
 pyjwt = "*"
 psycopg2 = "*"
@@ -20,7 +19,7 @@ redis = "*"
 flask-sqlalchemy = "*"
 flask-profiler = "*"
 werkzeug = "==0.15.4"
-chargebee = "*"
+requests = "*"
 
 [requires]
 python_version = "3.7"

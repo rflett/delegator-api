@@ -4,7 +4,7 @@ from flask import request, Response
 from sqlalchemy import exists, and_
 from sqlalchemy.orm import aliased
 
-from app import logger, session_scope, g_response, j_response
+from app import logger, session_scope, g_response, j_response, subscription_api
 from app.Exceptions import ValidationError
 from app.Controllers import AuthorizationController, NotificationController
 from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Activity
@@ -772,6 +772,9 @@ class TaskController(object):
             resource=Resources.TASK_ACTIVITY
         )
 
+        plan_limits = subscription_api.get_limits(req_user.orgs.chargebee_subscription_id)
+        activity_log_history_limit = plan_limits.get('task_activity_log_history', 7)
+
         try:
             # get the task
             task = TaskController.get_task_by_id(task_identifier, req_user.org_id)
@@ -781,6 +784,6 @@ class TaskController(object):
                 resource_id=task.id
             )
             logger.info(f"Getting activity for task with id {task.id}")
-            return j_response(task.activity(req_user.orgs.product_tiers.task_activity_log_history))
+            return j_response(task.activity(activity_log_history_limit))
         except ValueError as e:
             return g_response(str(e), 400)

@@ -5,7 +5,7 @@ from dateutil import tz
 
 from flask import request, Response
 
-from app import j_response, session_scope, app
+from app import j_response, session_scope, app, subscription_api
 from app.Controllers import AuthenticationController, AuthorizationController
 from app.Exceptions import ProductTierLimitError
 from app.Models.Enums import Operations, Resources
@@ -355,9 +355,8 @@ class ReportController(object):
             resource=Resources.REPORTS_PAGE
         )
 
-        # Check if the user's product tier includes viewing reports
-        if not req_user.orgs.product_tiers.view_reports_page:
-            raise ProductTierLimitError(f"You cannot view reports on the {req_user.orgs.product_tiers.name} plan.")
+        if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_reports_page', False):
+            raise ProductTierLimitError(f"You cannot view reports your current plan.")
 
         # TODO get from request instead
         end_period = now = datetime.datetime.utcnow()
