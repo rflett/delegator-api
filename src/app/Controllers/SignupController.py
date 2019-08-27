@@ -1,6 +1,6 @@
 from flask import request, Response
 
-from app import logger, g_response, session_scope
+from app import logger, g_response, session_scope, j_response, subscription_api
 from app.Models import Organisation
 
 
@@ -60,6 +60,6 @@ class SignupController(object):
                             f"since there was an issue creating the user.")
             return g_response("There was an issue creating the user.", 500)
 
-        # TODO return the chargebee subscription hosted page
+        hosted_page_url = subscription_api.get_hosted_page(request_body.get('plan_id'), valid_user['email'])
 
-        return g_response("Successfully signed up.", 200)
+        return j_response({"url": hosted_page_url}, 200)

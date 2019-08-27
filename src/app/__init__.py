@@ -12,6 +12,8 @@ from flask import Flask, Response
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 
+from app.ApiWrappers import SubscriptionApi
+
 # flask conf
 app = Flask(__name__)
 app.config.from_object(f"config.{getenv('APP_ENV', 'Local')}")
@@ -67,6 +69,12 @@ api_events_sns_topic = sns.Topic(app.config['EVENTS_SNS_TOPIC_ARN'])
 # sqs
 sqs = boto3.resource('sqs')
 app_notifications_sqs = sqs.Queue(app.config['APP_NOTIFICATIONS_SQS'])
+
+# api wrappers
+subscription_api = SubscriptionApi(
+    url=app.config['SUBSCRIPTION_API_URL'],
+    key=app.config['SUBSCRIPTION_API_KEY']
+)
 
 
 @contextmanager

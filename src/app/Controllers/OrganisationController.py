@@ -4,6 +4,7 @@ from flask import request, Response
 from sqlalchemy import exists, func
 
 from app import session_scope, logger, g_response, j_response
+from app.Exceptions import ValidationError
 from app.Models import Organisation
 from app.Models.Enums import Operations, Resources
 
@@ -83,18 +84,21 @@ class OrganisationController(object):
         return g_response(status=204)
 
     @staticmethod
-    def update_subscription(req: request) -> Response:
-        """Update the orgs plan id
+    def update_subscription_info(req: request) -> Response:
+        """Set the subscription_id for an org"""
+        from app.Controllers import UserController
+        request_body = req.get_json()
 
-        :param req: The HTTP request
-        :return:    HTTP 204 response
-        """
-        from app.Controllers import ValidationController
+        try:
+            email = request_body['email']
+            subscription_id = request_body['subscription_id']
+        except KeyError:
+            raise ValidationError("Missing email or subscription_id from body")
 
-        chargebee_customer_id, plan_id = ValidationController.validate_update_org_subscription(req.get_json())
-
-        with session_scope() as session:
-            org = session.query(Organisation).filter_by(chargebee_customer_id=chargebee_customer_id).first()
-            org.product_tier = plan_id
-
-        return g_response(status=204)
+        with session_scope():
+            try:
+                org = UserController.get_user_by_email(email).orgs
+                org.chargebee_subscription_id = subscription_id
+                return j_response()
+            except ValueError:
+                raise ValidationError("Email doesn't exist.")

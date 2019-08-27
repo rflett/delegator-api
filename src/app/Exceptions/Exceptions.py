@@ -21,3 +21,8 @@ class ValidationError(Error):
 class ProductTierLimitError(Error):
     """Error for when a user tries to do something that is outside of their product tier"""
     pass
+
+
+class WrapperCallFailedException(Error):
+    """Error when a call to another API via a wrapper fails"""
+    pass

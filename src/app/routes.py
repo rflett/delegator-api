@@ -5,7 +5,8 @@ import requests
 from flask import Response, request
 
 from app import app, g_response, logger
-from app.Exceptions import AuthenticationError, AuthorizationError, ValidationError, ProductTierLimitError
+from app.Exceptions import AuthenticationError, AuthorizationError, ValidationError, \
+    ProductTierLimitError, WrapperCallFailedException
 from app.Controllers import AuthorizationController, UserController, SignupController, TaskController, \
     VersionController, ActiveUserController, OrganisationController, TaskTypeController, AuthenticationController, \
     RoleController, ReportController, NotificationController
@@ -61,6 +62,9 @@ def handle_exceptions(f):
         except AuthorizationError as e:
             logger.info(str(e))
             return g_response(msg=str(e), status=403)
+        except WrapperCallFailedException as e:
+            logger.error(str(e))
+            return g_response(msg=str(e), status=500)
         except Exception as e:
             logger.error(traceback.format_exc())
             return g_response(msg=str(e), status=500)
@@ -314,11 +318,11 @@ def update_org_settings():
     return OrganisationController.update_org_settings(request)
 
 
-@app.route('/org/subscription', methods=['PUT'])
-@handle_exceptions
+@app.route('/org/subscription', methods=['POST'])
 @requires_token_auth
-def update_subscription():
-    return OrganisationController.update_subscription(request)
+@handle_exceptions
+def update_org_subscription_info():
+    return OrganisationController.update_subscription_info(request)
 
 
 @app.route('/reporting/all', methods=['GET'])
