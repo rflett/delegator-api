@@ -17,21 +17,25 @@ class Config(object):
     REQUEST_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
     RESPONSE_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
     DYN_DB_ACTIVITY_DATE_FORMAT = '%Y%m%dT%H%M%S.%fZ'
-    CHARGEBEE_API_KEY = 'test_UcEwg6dgVTAmGwWnH06bQtifSYphNqxR'
+    BACKBURNER_API_KEY = 'Skj170raAe2SsWQm4Ny'
+    SUBSCRIPTION_API_KEY = 'DWrcxyZsqJ64d1WGUiN'
 
 
 class Ci(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@postgres:5432/backburner"
     R_CACHE_HOST = "redis"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
+    SUBSCRIPTION_API_URL = "http://api:5001"
 
 
 class Local(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@localhost:5432/backburner"
     R_CACHE_HOST = "localhost"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
+    SUBSCRIPTION_API_URL = "http://localhost:5001"
 
 
 class Staging(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@127.0.0.1:5432/backburner"
     R_CACHE_HOST = "127.0.0.1"
+    SUBSCRIPTION_API_URL = "http://127.0.0.1:5001"

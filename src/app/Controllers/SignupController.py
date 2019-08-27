@@ -1,6 +1,6 @@
 from flask import request, Response
 
-from app import logger, g_response, session_scope
+from app import logger, g_response, session_scope, j_response, subscription_api
 from app.Models import Organisation
 
 
@@ -21,7 +21,7 @@ class SignupController(object):
         request_body = req.get_json()
 
         # validate org
-        org_name, subscription_details = ValidationController.validate_create_org_request(request_body)
+        org_name = ValidationController.validate_create_org_request(request_body)
 
         # validate user
         valid_user = ValidationController.validate_create_signup_user(request_body)
@@ -31,10 +31,7 @@ class SignupController(object):
             # create the organisation
             with session_scope() as session:
                 organisation = Organisation(
-                    name=org_name,
-                    product_tier=subscription_details['plan_id'],
-                    chargebee_customer_id=subscription_details['customer_id'],
-                    chargebee_subscription_id=subscription_details['subscription_id']
+                    name=org_name
                 )
                 session.add(organisation)
 
@@ -49,10 +46,9 @@ class SignupController(object):
             logger.error(str(e))
             return g_response("There was an issue creating the organisation.", 500)
 
+        # try and create the user since the org was created successfully
         try:
-            # try and create the user since the org was created successfully
             UserController.create_signup_user(org_id=organisation.id, valid_user=valid_user)
-            return g_response("Successfully signed up.", 200)
         except Exception as e:
             logger.error(str(e))
             # the org was actually created, but the user failed, so delete the org and default task type
@@ -63,3 +59,7 @@ class SignupController(object):
                 logger.info(f"Deleted the new organisation {organisation.name} "
                             f"since there was an issue creating the user.")
             return g_response("There was an issue creating the user.", 500)
+
+        hosted_page_url = subscription_api.get_hosted_page(request_body.get('plan_id'), valid_user['email'])
+
+        return j_response({"url": hosted_page_url}, 200)

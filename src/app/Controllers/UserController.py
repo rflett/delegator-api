@@ -4,7 +4,7 @@ import typing
 from flask import request, Response
 from sqlalchemy import exists, func
 
-from app import logger, g_response, session_scope, j_response
+from app import logger, g_response, session_scope, j_response, subscription_api
 from app.Controllers import AuthorizationController
 from app.Exceptions import ProductTierLimitError
 from app.Models import User, Activity
@@ -103,7 +103,7 @@ class UserController(object):
     @staticmethod
     def create_user(req: request) -> Response:
         """Create a user """
-        from app.Controllers import AuthenticationController, ValidationController, ChargebeeController
+        from app.Controllers import AuthenticationController, ValidationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -117,12 +117,11 @@ class UserController(object):
         with session_scope() as session:
             existing_user_count = session.query(User).filter_by(org_id=req_user.org_id).count()
 
-        if existing_user_count >= req_user.orgs.product_tiers.max_users:
-            product_tier_name = req_user.orgs.product_tiers.name
-            logger.info(f"Organisation {req_user.orgs.name} has reached the user limit "
-                        f"for their product tier {product_tier_name}.")
-            raise ProductTierLimitError(f"You have reached the limit of users you can create "
-                                        f"on the {product_tier_name} plan.")
+        max_users = subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('max_users', 10)
+
+        if existing_user_count >= max_users:
+            logger.info(f"Organisation {req_user.orgs.name} has reached the user limit for their product tier.")
+            raise ProductTierLimitError(f"You have reached the limit of users you can create.")
 
         # validate user
         user_attrs = ValidationController.validate_create_user_request(req.get_json())
@@ -145,7 +144,7 @@ class UserController(object):
         user.create_settings()
 
         # increment chargebee subscription plan_quantity
-        ChargebeeController.increment_plan_quantity(user.orgs.chargebee_subscription_id)
+        subscription_api.increment_plan_quantity(user.orgs.chargebee_subscription_id)
 
         req_user.log(
             operation=Operations.CREATE,
@@ -387,8 +386,7 @@ class UserController(object):
                     # strip _PAGE
                     pages.append(page.split('_PAGE')[0])
 
-            # Check if the user's product tier includes viewing reports
-            if not req_user.orgs.product_tiers.view_reports_page:
+            if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_reports_page', False):
                 pages.remove('REPORTS')
 
             req_user.log(
@@ -453,10 +451,8 @@ class UserController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        # Check if the user's product tier includes viewing user activity
-        if not req_user.orgs.product_tiers.view_user_activity:
-            raise ProductTierLimitError(f"You cannot view user activity "
-                                        f"on the {req_user.orgs.product_tiers.name} plan.")
+        if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_user_activity', False):
+            raise ProductTierLimitError(f"You cannot view user activity on your plan.")
 
         # is the identifier an email or user_id?
         try:
