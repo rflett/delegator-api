@@ -2,12 +2,10 @@ import json
 import logging
 import typing
 from contextlib import contextmanager
-from logging.handlers import SysLogHandler
 from os import getenv
 
 import boto3
 import flask_profiler
-import redis
 from flask import Flask, Response
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy

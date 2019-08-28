@@ -3,7 +3,7 @@ import dateutil
 import typing
 
 from flask import Response
-from sqlalchemy import exists
+from sqlalchemy import exists, and_
 from validate_email import validate_email
 
 from app import logger, app, session_scope
@@ -198,8 +198,10 @@ def _check_task_priority(priority: int) -> int:
 def _check_escalation(task_type_id: int, display_order: int, should_exist: bool) -> None:
     with session_scope() as session:
         escalation_exists = session.query(exists().where(
-                TaskTypeEscalation.task_type_id == task_type_id,
-                TaskTypeEscalation.display_order == display_order
+                and_(
+                    TaskTypeEscalation.task_type_id == task_type_id,
+                    TaskTypeEscalation.display_order == display_order
+                )
             )).scalar()
         if should_exist:
             if not escalation_exists:
