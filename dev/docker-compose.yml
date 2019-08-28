@@ -1,23 +1,33 @@
 version: '3.7'
 services:
-  # api:
-  #   image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest
-  #   depends_on:
-  #     - postgres
-  #     - redis
-  #   environment:
-  #     APP_ENV: Ci
-  #   ports:
-  #     - 5000:5000
+  backburner-api:
+    image: backburner_api
+    build:
+      cache_from: 
+        - backburner_api
+      context: ../src/
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      APP_ENV: Ci
+      AWS_DEFAULT_REGION: ap-southeast-2
+    ports:
+      - 5000:5000
 
-  # reporting-cruncher:
-  #   image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/reporting-cruncher:latest
-  #   depends_on:
-  #     - redis
-  #   environment:
-  #     APP_ENV: Ci
-  #   ports:
-  #     - 5005:5005
+  subscription-api:
+    image: subscription_api
+    build:
+      cache_from: 
+        - subscription_api
+      context: ../../subscription-api/src/
+    depends_on:
+      - redis
+    environment:
+      APP_ENV: Ci
+    ports:
+      - 5001:5001
 
   # task_escalator:
   #   # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/task-escalator:latest
@@ -28,14 +38,14 @@ services:
   #   depends_on:
   #     - postgres
   
-  task_reminder:
-    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/task-reminder:latest
-    build:
-      context: ../../task-reminder/src
-    environment:
-      DATABASE_URI: backburner:backburner@postgres/backburner
-    depends_on:
-      - postgres
+  # task_reminder:
+  #   # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/task-reminder:latest
+  #   build:
+  #     context: ../../task-reminder/src
+  #   environment:
+  #     DATABASE_URI: backburner:backburner@postgres/backburner
+  #   depends_on:
+  #     - postgres
 
   # pg_hero:
   #   image: ankane/pghero:latest
@@ -54,7 +64,9 @@ services:
     ports:
       - 5432:5432
 
-  # redis:
-  #   image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/reporting-cache:latest
-  #   ports:
-  #     - 6379:6379
+  redis:
+    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/redis:latest
+    build:
+      context: ../../containers/redis
+    ports:
+      - 6379:6379

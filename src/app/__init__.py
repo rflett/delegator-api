@@ -37,19 +37,12 @@ app.config["flask_profiler"] = {
 CORS(app)
 
 # logging conf
-log_handler = SysLogHandler()
-log_handler.setLevel(app.config['LOG_LEVEL'])
-app.logger.addHandler(log_handler)
-logger = app.logger
+logger = logging.getLogger()
+for handler in logger.handlers:
+    logger.removeHandler(handler)
 
-# gunicorn logging
-if getenv('APP_ENV', 'Local') != 'Local':
-    gunicorn_logger = logging.getLogger('gunicorn.error')
-    app.logger.handlers = gunicorn_logger.handlers
-    app.logger.setLevel(gunicorn_logger.level)
-
-# redis conf
-r_cache = redis.Redis(host=app.config['R_CACHE_HOST'], port=6379, db=0, charset="utf-8", decode_responses=True)
+log_format = '%(asctime)s backburner-api %(levelname)s %(message)s'
+logging.basicConfig(format=log_format, level=logging.INFO)
 
 # db conf
 db = SQLAlchemy(app)
@@ -147,6 +140,7 @@ def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) ->
 
 # routes
 from app import routes  # noqa
+
 
 if getenv('APP_ENV') != 'Ci':
     flask_profiler.init_app(app)

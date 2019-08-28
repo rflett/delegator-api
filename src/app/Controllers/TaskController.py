@@ -772,7 +772,7 @@ class TaskController(object):
             resource=Resources.TASK_ACTIVITY
         )
 
-        plan_limits = subscription_api.get_limits(req_user.orgs.chargebee_subscription_id)
+        plan_limits = subscription_api.get_limits(req_user.orgs.chargebee_customer_id)
         activity_log_history_limit = plan_limits.get('task_activity_log_history', 7)
 
         try:

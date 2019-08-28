@@ -117,7 +117,7 @@ class UserController(object):
         with session_scope() as session:
             existing_user_count = session.query(User).filter_by(org_id=req_user.org_id).count()
 
-        max_users = subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('max_users', 10)
+        max_users = subscription_api.get_limits(req_user.orgs.chargebee_customer_id).get('max_users', 10)
 
         if existing_user_count >= max_users:
             logger.info(f"Organisation {req_user.orgs.name} has reached the user limit for their product tier.")
@@ -144,7 +144,7 @@ class UserController(object):
         user.create_settings()
 
         # increment chargebee subscription plan_quantity
-        subscription_api.increment_plan_quantity(user.orgs.chargebee_subscription_id)
+        subscription_api.increment_plan_quantity(user.orgs.chargebee_customer_id)
 
         req_user.log(
             operation=Operations.CREATE,
@@ -386,7 +386,7 @@ class UserController(object):
                     # strip _PAGE
                     pages.append(page.split('_PAGE')[0])
 
-            if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_reports_page', False):
+            if not subscription_api.get_limits(req_user.orgs.chargebee_customer_id).get('view_reports_page', False):
                 pages.remove('REPORTS')
 
             req_user.log(
@@ -451,7 +451,7 @@ class UserController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_user_activity', False):
+        if not subscription_api.get_limits(req_user.orgs.chargebee_customer_id).get('view_user_activity', False):
             raise ProductTierLimitError(f"You cannot view user activity on your plan.")
 
         # is the identifier an email or user_id?

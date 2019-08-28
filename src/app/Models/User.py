@@ -193,7 +193,7 @@ class User(db.Model):
         self.password = _hash_password(make_random())
         self.deleted = datetime.datetime.utcnow()
 
-        subscription_api.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
+        subscription_api.decrement_plan_quantity(self.orgs.chargebee_customer_id)
 
     def as_dict(self) -> dict:
         """
