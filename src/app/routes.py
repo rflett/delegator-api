@@ -255,6 +255,13 @@ def assign_task():
     return TaskController.assign_task(request)
 
 
+@app.route('/task/priority', methods=['PUT'])
+@requires_token_auth
+@handle_exceptions
+def change_priority():
+    return TaskController.change_priority(request)
+
+
 @app.route('/task/drop/<int:task_id>', methods=['POST'])
 @requires_jwt
 @handle_exceptions

@@ -153,7 +153,7 @@ def _unassign_task(task: Task, req_user: User) -> None:
         logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
 
 
-def _change_task_priority(org_id: int, task: Task, priority: int) -> None:
+def _change_task_priority(task: Task, priority: int) -> None:
     """Common function for changing a tasks priority"""
     from app.Controllers import UserController
 
@@ -162,7 +162,7 @@ def _change_task_priority(org_id: int, task: Task, priority: int) -> None:
             # task priority is increasing
             NotificationController.push(
                 msg=f"{task.label()} task has been escalated.",
-                user_ids=UserController.all_user_ids(org_id)
+                user_ids=UserController.all_user_ids(task.org_id)
             )
 
         task.priority = priority
@@ -195,6 +195,7 @@ class TaskController(object):
     @staticmethod
     def get_task_by_id(task_id: int, org_id: int) -> Task:
         """Gets a task by its id """
+        # TODO I don't think we need the org_id as a param here
         with session_scope() as session:
             ret = session.query(Task).filter_by(
                 id=task_id,
@@ -451,7 +452,6 @@ class TaskController(object):
         task_priority = task_attrs.pop('priority')
         if task_to_update.priority != task_priority:
             _change_task_priority(
-                org_id=req_user.org_id,
                 task=task_to_update,
                 priority=task_priority
             )
@@ -787,3 +787,25 @@ class TaskController(object):
             return j_response(task.activity(activity_log_history_limit))
         except ValueError as e:
             return g_response(str(e), 400)
+
+    @staticmethod
+    def change_priority(req: request) -> Response:
+        """ Change a tasks priority """
+        from app.Controllers import TaskController
+
+        request_body = req.get_json()
+        params = {
+            "org_id": request_body.get('org_id'),
+            "task_id": request_body.get('task_id'),
+            "priority": request_body.get('priority'),
+        }
+        for k, v in params.items():
+            if v is None:
+                raise ValidationError(f"Missing {k} from request")
+
+        task = TaskController.get_task_by_id(params['task_id'], params['org_id'])
+        _change_task_priority(
+            task=task,
+            priority=params['priority']
+        )
+        return j_response()
