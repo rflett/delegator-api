@@ -509,8 +509,10 @@ class ValidationController(object):
 
             with session_scope() as session:
                 escalation_exists = session.query(exists().where(
-                        TaskTypeEscalation.task_type_id == task_type_id,
-                        TaskTypeEscalation.display_order == esc_attrs['display_order']
+                        and_(
+                            TaskTypeEscalation.task_type_id == task_type_id,
+                            TaskTypeEscalation.display_order == esc_attrs['display_order']
+                        )
                     )).scalar()
 
                 if escalation_exists:
