@@ -25,7 +25,7 @@ class Ci(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@postgres:5432/backburner"
     R_CACHE_HOST = "redis"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
-    SUBSCRIPTION_API_URL = "http://api:5001"
+    SUBSCRIPTION_API_URL = "http://subscription-api:5001"
 
 
 class Local(Config):

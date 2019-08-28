@@ -91,14 +91,14 @@ class OrganisationController(object):
 
         try:
             email = request_body['email']
-            subscription_id = request_body['subscription_id']
+            customer_id = request_body['customer_id']
         except KeyError:
             raise ValidationError("Missing email or subscription_id from body")
 
         with session_scope():
             try:
                 org = UserController.get_user_by_email(email).orgs
-                org.chargebee_subscription_id = subscription_id
+                org.chargebee_customer_id = customer_id
                 return j_response()
             except ValueError:
                 raise ValidationError("Email doesn't exist.")

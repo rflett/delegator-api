@@ -355,7 +355,7 @@ class ReportController(object):
             resource=Resources.REPORTS_PAGE
         )
 
-        if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_reports_page', False):
+        if not subscription_api.get_limits(req_user.orgs.chargebee_customer_id).get('view_reports_page', False):
             raise ProductTierLimitError(f"You cannot view reports your current plan.")
 
         # TODO get from request instead
