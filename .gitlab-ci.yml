@@ -86,7 +86,7 @@ Integration:
       -F ref=master 
       -F variables[IMAGE]=$AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG
       -F variables[DEPLOY_ENV]=$DEPLOY_ENV 
-      -F variables[PROJECT]=backburner-api
+      -F variables[PROJECT]=$CI_PROJECT_NAME
       https://gitlab.com/api/v4/projects/14042887/trigger/pipeline"
 
 Staging:
