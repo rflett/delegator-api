@@ -6,9 +6,6 @@ ENV AWS_DEFAULT_REGION=ap-southeast-2
 ENV FLASK_ENV=production
 ENV FLASK_APP=api.py
 
-ARG COMMIT_SHA=local
-ENV COMMIT_SHA=${COMMIT_SHA}
-
 EXPOSE 5000
 
 # app dir
@@ -21,6 +18,10 @@ RUN pipenv install
 
 # copy project src
 COPY . .
+
+# version
+ARG COMMIT_SHA=local
+ENV COMMIT_SHA=${COMMIT_SHA}
 
 # run
 CMD ["pipenv", "run", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--log-level", "warning", "--access-logfile", "-", "--access-logformat", "%(h)s %(t)s %(D)s backburner-api %(r)s %(s)s", "api:app"]
