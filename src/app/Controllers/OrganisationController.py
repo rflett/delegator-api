@@ -1,6 +1,8 @@
+import datetime
 import typing
 
 from flask import request, Response
+
 from sqlalchemy import exists, func
 
 from app import session_scope, logger, g_response, j_response
@@ -87,13 +89,12 @@ class OrganisationController(object):
     def update_subscription_info(req: request) -> Response:
         """Set the subscription_id for an org"""
         from app.Controllers import UserController
-        request_body = req.get_json()
-
         try:
+            request_body = req.get_json()
             email = request_body['email']
             customer_id = request_body['customer_id']
         except KeyError:
-            raise ValidationError("Missing email or subscription_id from body")
+            raise ValidationError("Missing email or customer_id from request")
 
         with session_scope():
             try:
@@ -102,3 +103,72 @@ class OrganisationController(object):
                 return j_response()
             except ValueError:
                 raise ValidationError("Email doesn't exist.")
+
+    @staticmethod
+    def lock_organisation(customer_id: str, req: request) -> Response:
+        """Lock an organisation due to a billing issue."""
+        locked_reason = req.get_json().get('locked_reason')
+        with session_scope() as session:
+            # get the org from the customer id
+            org = session.query(Organisation).filter_by(chargebee_customer_id=customer_id).first()
+            if org is None:
+                raise ValidationError(f"Org with customer_id {customer_id} doesn't exist")
+            else:
+                # set the users old role
+                session.execute(
+                    """
+                    UPDATE users
+                    SET role_before_locked = role
+                    WHERE org_id = :org_id
+                    """,
+                    {'org_id': org.id}
+                )
+                # lock users
+                session.execute(
+                    """
+                    UPDATE users
+                    SET role = 'LOCKED'
+                    WHERE org_id = :org_id
+                    """,
+                    {'org_id': org.id}
+                )
+                # lock org
+                org.locked = datetime.datetime.utcnow()
+                org.locked_reason = locked_reason
+
+        return j_response()
+
+    @staticmethod
+    def unlock_organisation(customer_id: str) -> Response:
+        """Unlock an organisation after the billing issue has been rectified"""
+        with session_scope() as session:
+            # get the org from the customer id
+            org = session.query(Organisation).filter_by(chargebee_customer_id=customer_id).first()
+            if org is None:
+                raise ValidationError(f"Org with customer_id {customer_id} doesn't exist")
+            elif org.locked is None:
+                raise ValidationError(f"Org hasn't been locked")
+            else:
+                # set the users role to their role before they were locked
+                session.execute(
+                    """
+                    UPDATE users
+                    SET role = role_before_locked
+                    WHERE org_id = :org_id
+                    AND role_before_locked IS NOT NULL
+                    """,
+                    {'org_id': org.id}
+                )
+                # clear old locked role
+                session.execute(
+                    """
+                    UPDATE users
+                    SET role_before_locked = NULL
+                    WHERE org_id = :org_id
+                    """,
+                    {'org_id': org.id}
+                )
+                # lock org
+                org.locked = None
+
+        return j_response()
