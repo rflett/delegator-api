@@ -7,7 +7,6 @@ verify_ssl = true
 
 [packages]
 flask = "*"
-flake8 = "*"
 gunicorn = "*"
 pip = "*"
 pyjwt = "*"
@@ -15,7 +14,6 @@ psycopg2 = "*"
 validate-email = "*"
 boto3 = "*"
 flask-cors = "*"
-redis = "*"
 flask-sqlalchemy = "*"
 flask-profiler = "*"
 werkzeug = "==0.15.4"
