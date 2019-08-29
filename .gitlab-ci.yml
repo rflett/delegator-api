@@ -1,15 +1,17 @@
+
 stages:
-  - lint
-  - build
-  - integrationTest
-  - deploy
+  - Lint
+  - Build
+  - Test
+  - Deploy
 
 variables:
   AMZ_REGISTRY: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com
   GITLAB_REGISTRY: registry.gitlab.com/backburner/containers
+  IMAGE_TAG: $CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
 
-flake8:
-  stage: lint
+Flake8:
+  stage: Lint
   allow_failure: true
   image: $GITLAB_REGISTRY/python:latest
   only:
@@ -17,8 +19,8 @@ flake8:
   script:
     - flake8 src/
 
-build:
-  stage: build
+Build:
+  stage: Build
   image: $GITLAB_REGISTRY/docker:latest
   only:
     - master
@@ -30,14 +32,15 @@ build:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
     # build, tag, and push commit
-    - docker build --cache-from $AMZ_REGISTRY/api:latest --build-arg COMMIT_SHA=$CI_COMMIT_SHA -t $AMZ_REGISTRY/api:$CI_COMMIT_SHA src/
-    - docker push $AMZ_REGISTRY/api:$CI_COMMIT_SHA
+    - docker pull $AMZ_REGISTRY/$CI_PROJECT_NAME:latest
+    - docker build --build-arg COMMIT_SHA=$CI_COMMIT_SHORT_SHA -t $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG --cache-from $AMZ_REGISTRY/$CI_PROJECT_NAME:latest src/
+    - docker push $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG
     # tag and push latest
-    - docker tag $AMZ_REGISTRY/api:$CI_COMMIT_SHA $AMZ_REGISTRY/api:latest
-    - docker push $AMZ_REGISTRY/api:latest
+    - docker tag $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG $AMZ_REGISTRY/$CI_PROJECT_NAME:latest
+    - docker push $AMZ_REGISTRY/$CI_PROJECT_NAME:latest
 
-integrationTest:
-  stage: integrationTest
+Integration:
+  stage: Test
   image: $GITLAB_REGISTRY/docker:latest
   when: manual
   only:
@@ -69,15 +72,24 @@ integrationTest:
       $AMZ_REGISTRY/newman:latest 
       newman run /newman/integration.postman_collection.json
 
-staging:
-  stage: deploy
-  image: $GITLAB_REGISTRY/python:latest
+.deploy:
+  stage: Deploy
+  environment:
+    name: $DEPLOY_ENV
+    url: https://api-$DEPLOY_ENV.backburner.online/v
   only:
     - master
-  tags:
-    - docker
   script:
-    - python deploy/deploy.py api staging
-  environment:
-    name: staging
-    url: https://api-staging.backburner.online
+    - "curl 
+      -X POST
+      -F token=4087c68b61838a88958e72580177a2 
+      -F ref=master 
+      -F variables[IMAGE]=$AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG
+      -F variables[DEPLOY_ENV]=$DEPLOY_ENV 
+      -F variables[PROJECT]=backburner-api
+      https://gitlab.com/api/v4/projects/14042887/trigger/pipeline"
+
+Staging:
+  extends: .deploy
+  variables:
+    DEPLOY_ENV: staging
