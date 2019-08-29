@@ -12,8 +12,8 @@ services:
       - redis
     environment:
       APP_ENV: Ci
-      AWS_ACCESS_KEY_ID: AKIAQD6RWHWI6G4NMHNT
-      AWS_SECRET_ACCESS_KEY: 05U/Neq8bbST3OmFlyOZDHtvjxtv1ZxPEfaLfy2C
+      AWS_ACCESS_KEY_ID: REDACTED
+      AWS_SECRET_ACCESS_KEY: REDACTED
       AWS_DEFAULT_REGION: ap-southeast-2
     ports:
       - 5000:5000
