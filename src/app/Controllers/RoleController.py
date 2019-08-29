@@ -1,4 +1,5 @@
 from flask import request, Response
+from sqlalchemy import and_
 
 from app import session_scope, j_response
 from app.Models.Enums import Operations, Resources
@@ -20,8 +21,8 @@ class RoleController(object):
         )
 
         with session_scope() as session:
-            roles_qry = session.query(Role)\
-                .filter(Role.rank >= req_user.roles.rank).all()
+            # rank > 99 are reserved for admin duties
+            roles_qry = session.query(Role).filter(and_(Role.rank >= req_user.roles.rank, Role.rank <= 99)).all()
 
         roles = [r.as_dict() for r in roles_qry]
         req_user.log(

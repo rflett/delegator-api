@@ -70,17 +70,11 @@ def handle_exceptions(f):
             return g_response(msg=str(e), status=500)
     return decorated
 
-
+# Unauthenticated routes
 @app.route('/health', methods=['GET'])
 @handle_exceptions
 def health():
     return g_response("yeet")
-
-
-@app.route('/v', methods=['GET'])
-@handle_exceptions
-def version_info():
-    return VersionController.get_version_details()
 
 
 @app.route('/login', methods=['POST'])
@@ -89,6 +83,42 @@ def login():
     return AuthenticationController.login(request)
 
 
+@app.route('/v', methods=['GET'])
+@handle_exceptions
+def version_info():
+    return VersionController.get_version_details()
+
+
+# Authenticated with Authorization token
+@app.route('/org/lock/<customer_id>', methods=['PUT'])
+@requires_token_auth
+@handle_exceptions
+def lock_organisation(customer_id):
+    return OrganisationController.lock_organisation(customer_id, request)
+
+
+@app.route('/org/lock/<customer_id>', methods=['DELETE'])
+@requires_token_auth
+@handle_exceptions
+def unlock_organisation(customer_id):
+    return OrganisationController.unlock_organisation(customer_id)
+
+
+@app.route('/org/subscription', methods=['POST'])
+@requires_token_auth
+@handle_exceptions
+def update_org_subscription_info():
+    return OrganisationController.update_subscription_info(request)
+
+
+@app.route('/task/priority', methods=['PUT'])
+@requires_token_auth
+@handle_exceptions
+def change_priority():
+    return TaskController.change_priority(request)
+
+
+# Authenticated with user JWT
 @app.route('/logout', methods=['POST'])
 @requires_jwt
 @handle_exceptions
@@ -255,13 +285,6 @@ def assign_task():
     return TaskController.assign_task(request)
 
 
-@app.route('/task/priority', methods=['PUT'])
-@requires_token_auth
-@handle_exceptions
-def change_priority():
-    return TaskController.change_priority(request)
-
-
 @app.route('/task/drop/<int:task_id>', methods=['POST'])
 @requires_jwt
 @handle_exceptions
@@ -323,13 +346,6 @@ def get_org_settings():
 @handle_exceptions
 def update_org_settings():
     return OrganisationController.update_org_settings(request)
-
-
-@app.route('/org/subscription', methods=['POST'])
-@requires_token_auth
-@handle_exceptions
-def update_org_subscription_info():
-    return OrganisationController.update_subscription_info(request)
 
 
 @app.route('/reporting/all', methods=['GET'])

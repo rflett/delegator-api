@@ -43,6 +43,7 @@ class User(db.Model):
     password = db.Column('password', db.String)
     job_title = db.Column('job_title', db.String)
     role = db.Column('role', db.String, db.ForeignKey('rbac_roles.id'))
+    role_before_locked = db.Column('role_before_locked', db.String, db.ForeignKey('rbac_roles.id'), default=None)
     disabled = db.Column('disabled', db.DateTime, default=None)
     deleted = db.Column('deleted', db.DateTime, default=None)
     failed_login_attempts = db.Column('failed_login_attempts', db.Integer, default=0)
@@ -54,7 +55,7 @@ class User(db.Model):
     password_last_changed = db.Column('password_last_changed', db.DateTime, default=datetime.datetime.utcnow)
 
     orgs = db.relationship("Organisation", backref="users")
-    roles = db.relationship("Role", backref="rbac_roles")
+    roles = db.relationship("Role", backref="rbac_roles", foreign_keys=[role])
     created_bys = db.relationship("User", foreign_keys=[created_by])
     updated_bys = db.relationship("User", foreign_keys=[updated_by])
 
@@ -67,6 +68,7 @@ class User(db.Model):
             password: str,
             job_title: str,
             role: str,
+            role_before_locked: str = None,
             created_by: typing.Union[int, None] = None,
             disabled: typing.Union[datetime.datetime, None] = None,
             deleted: typing.Union[datetime.datetime, None] = None
@@ -78,6 +80,7 @@ class User(db.Model):
         self.password = _hash_password(password)
         self.job_title = job_title
         self.role = role
+        self.role_before_locked = role_before_locked
         self.created_by = created_by
         self.disabled = disabled
         self.deleted = deleted
@@ -216,6 +219,7 @@ class User(db.Model):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "role": self.role,
+            "role_before_locked": self.role_before_locked,
             "disabled": disabled,
             "job_title": self.job_title,
             "deleted": deleted,
