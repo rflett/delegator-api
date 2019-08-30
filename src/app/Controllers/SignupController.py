@@ -60,6 +60,9 @@ class SignupController(object):
                             f"since there was an issue creating the user.")
             return g_response("There was an issue creating the user.", 500)
 
-        hosted_page_url = subscription_api.get_hosted_page(request_body.get('plan_id'), valid_user['email'])
+        hosted_page_url = subscription_api.get_hosted_page(
+            plan_id=request_body.get('plan_id'),
+            user_dict=valid_user
+        )
 
         return j_response({"url": hosted_page_url}, 200)

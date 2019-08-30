@@ -8,7 +8,7 @@ from validate_email import validate_email
 
 from app import logger, app, session_scope
 from app.Exceptions import ValidationError
-from app.Models import TaskType, TaskTypeEscalation, Task, OrgSetting, UserSetting, Organisation
+from app.Models import TaskType, TaskTypeEscalation, Task, OrgSetting, UserSetting
 from app.Models.Enums import NotificationTokens
 from app.Models.RBAC import Role
 
