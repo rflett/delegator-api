@@ -171,6 +171,31 @@ def _change_task_priority(task: Task, priority: int) -> None:
     logger.info(f"Changed task {task.id} priority to {priority}")
 
 
+def _drop(task: Task, req_user: User) -> None:
+    """Drops a task"""
+    from app.Controllers import UserController
+    _unassign_task(task, req_user)
+
+    _transition_task(
+        task=task,
+        status=TaskStatuses.READY,
+        req_user=req_user
+    )
+
+    NotificationController.push(
+        msg=f"{task.label()} has been dropped.",
+        user_ids=UserController.all_user_ids(req_user.org_id)
+    )
+
+    req_user.log(
+        operation=Operations.DROP,
+        resource=Resources.TASK,
+        resource_id=task.id
+    )
+    logger.info(f"User {req_user.id} dropped task {task.id} "
+                f"which was assigned to {task.assignee}.")
+
+
 class TaskController(object):
     @staticmethod
     def task_exists(task_id: int, org_id: int) -> bool:
@@ -502,44 +527,20 @@ class TaskController(object):
         return g_response(status=204)
 
     @staticmethod
-    def drop_task(task_id, req: request) -> Response:
+    def drop_task(task_id, req: request = None, req_user: User = None) -> Response:
         """
         Drops a task, which sets it to READY and removes the assignee
         if the task is IN_PROGRESS and has an assignee
         """
-        from app.Controllers import ValidationController, AuthenticationController, UserController
+        from app.Controllers import ValidationController, AuthenticationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        if req_user is None:
+            req_user = AuthenticationController.get_user_from_request(req.headers)
 
         task_to_drop = ValidationController.validate_drop_task(req_user.org_id, task_id)
 
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.DROP,
-            resource=Resources.TASK,
-            affected_user_id=task_to_drop.assignee
-        )
+        _drop(task_to_drop, req_user)
 
-        _unassign_task(task_to_drop, req_user)
-
-        _transition_task(
-            task=task_to_drop,
-            status=TaskStatuses.READY,
-            req_user=req_user
-        )
-
-        NotificationController.push(
-            msg=f"{task_to_drop.label()} has been dropped.",
-            user_ids=UserController.all_user_ids(req_user.org_id)
-        )
-
-        req_user.log(
-            operation=Operations.DROP,
-            resource=Resources.TASK,
-            resource_id=task_id
-        )
-        logger.info(f"User {req_user.id} dropped task {task_to_drop.id} "
-                    f"which was assigned to {task_to_drop.assignee}.")
         return g_response(status=204)
 
     @staticmethod
@@ -772,7 +773,7 @@ class TaskController(object):
             resource=Resources.TASK_ACTIVITY
         )
 
-        plan_limits = subscription_api.get_limits(req_user.orgs.chargebee_customer_id)
+        plan_limits = subscription_api.get_limits(req_user.orgs.chargebee_subscription_id)
         activity_log_history_limit = plan_limits.get('task_activity_log_history', 7)
 
         try:

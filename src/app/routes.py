@@ -104,11 +104,18 @@ def unlock_organisation(customer_id):
     return OrganisationController.unlock_organisation(customer_id)
 
 
+@app.route('/org/customer', methods=['POST'])
+@requires_token_auth
+@handle_exceptions
+def update_org_customer_id():
+    return OrganisationController.update_org_customer_id(request)
+
+
 @app.route('/org/subscription', methods=['POST'])
 @requires_token_auth
 @handle_exceptions
-def update_org_subscription_info():
-    return OrganisationController.update_subscription_info(request)
+def update_org_subscription_id():
+    return OrganisationController.update_org_subscription_id(request)
 
 
 @app.route('/task/priority', methods=['PUT'])
@@ -289,7 +296,7 @@ def assign_task():
 @requires_jwt
 @handle_exceptions
 def drop_task(task_id):
-    return TaskController.drop_task(task_id, request)
+    return TaskController.drop_task(task_id=task_id, req=request)
 
 
 @app.route('/task/cancel/<int:task_id>', methods=['POST'])

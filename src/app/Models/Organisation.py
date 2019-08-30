@@ -12,6 +12,7 @@ class Organisation(db.Model):
     id = db.Column('id', db.Integer, primary_key=True)
     name = db.Column('name', db.String)
     chargebee_customer_id = db.Column('chargebee_customer_id', db.String, default=None)
+    chargebee_subscription_id = db.Column('chargebee_subscription_id', db.String, default=None)
     locked = db.Column('locked', db.DateTime)
     locked_reason = db.Column('locked_reason', db.String, default=None)
     jwt_aud = db.Column('jwt_aud', db.String)
@@ -22,11 +23,13 @@ class Organisation(db.Model):
                  name: str,
                  product_tier: str = None,
                  chargebee_customer_id: str = None,
+                 chargebee_subscription_id: str = None,
                  locked: datetime = None,
                  locked_reason: str = None):
         self.name = name
         self.product_tier = product_tier
         self.chargebee_customer_id = chargebee_customer_id
+        self.chargebee_subscription_id = chargebee_subscription_id
         self.locked = locked
         self.locked_reason = locked_reason
         self.jwt_aud = str(uuid.uuid4())
@@ -52,6 +55,7 @@ class Organisation(db.Model):
             "name": self.name,
             "product_tier": self.product_tier,
             "chargebee_customer_id": self.chargebee_customer_id,
+            "chargebee_subscription_id": self.chargebee_subscription_id,
             "locked": locked,
             "locked_reason": self.locked_reason
         }

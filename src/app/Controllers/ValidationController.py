@@ -579,18 +579,3 @@ class ValidationController(object):
         else:
             raise ValidationError(f"Token type {token_type} not supported: "
                                   f"supported types are: {NotificationTokens.TOKENS}")
-
-    @staticmethod
-    def validate_update_org_subscription(request_body: dict) -> tuple:
-        """Validate the payload for the update org subscription endpoint"""
-        chargebee_customer_id = _check_str(request_body.get('chargebee_customer_id'), 'chargebee_customer_id')
-        plan_id = _check_str(request_body.get('plan_id'), 'plan_id')
-
-        with session_scope() as session:
-            customer_id_exists = session.query(exists().where(
-                Organisation.chargebee_customer_id == chargebee_customer_id
-            )).scalar()
-            if customer_id_exists:
-                return chargebee_customer_id, plan_id
-            else:
-                raise ValidationError("Customer ID doesn't exist")
