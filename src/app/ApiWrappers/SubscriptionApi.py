@@ -24,7 +24,7 @@ class SubscriptionApi(object):
         else:
             raise WrapperCallFailedException(f"Subscription API - {r.status_code}")
 
-    def get_hosted_page(self, plan_id: str, email: str) -> str:
+    def get_hosted_page(self, plan_id: str, user_dict: dict) -> str:
         """Get a hosted plan page for a new user"""
         r = requests.post(
             url=f"{self.url}/hosted-page",
@@ -34,7 +34,9 @@ class SubscriptionApi(object):
             },
             data=json.dumps({
                 "plan_id": plan_id,
-                "email": email
+                "email": user_dict['email'],
+                "first_name": user_dict['first_name'],
+                "last_name": user_dict['last_name']
             }),
             timeout=10
         )
