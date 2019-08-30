@@ -5,7 +5,7 @@ from sqlalchemy.orm import aliased
 from sqlalchemy import exists
 
 from app import db, session_scope, logger, task_activity_table, app
-from app.Models import DelayedTask
+from app.Models import DelayedTask, User
 
 
 class Task(db.Model):
@@ -197,3 +197,11 @@ class Task(db.Model):
         delayed_task_dict['delayed_by'] = delayed_task.users.as_dict()
 
         return delayed_task_dict
+
+    def drop(self, req_user: User) -> None:
+        """ Drops this task """
+        from app.Controllers import TaskController
+        TaskController.drop_task(
+            task_id=self.id,
+            req_user=req_user
+        )

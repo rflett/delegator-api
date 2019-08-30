@@ -187,8 +187,10 @@ class User(db.Model):
 
             logger.info(f"cleared failed logins for {self.email}")
 
-    def delete(self) -> None:
+    def delete(self, req_user) -> None:
         """ Deletes the user """
+        from app.Models import Task
+
         def make_random() -> str:
             return ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
 
@@ -196,7 +198,13 @@ class User(db.Model):
         self.password = _hash_password(make_random())
         self.deleted = datetime.datetime.utcnow()
 
-        subscription_api.decrement_plan_quantity(self.orgs.chargebee_customer_id)
+        subscription_api.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
+
+        # drop their tasks
+        with session_scope() as session:
+            users_tasks = session.query(Task).filter_by(assignee=self.id).all()
+        for task in users_tasks:
+            task.drop(req_user)
 
     def as_dict(self) -> dict:
         """

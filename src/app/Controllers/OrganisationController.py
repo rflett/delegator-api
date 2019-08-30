@@ -86,7 +86,7 @@ class OrganisationController(object):
         return g_response(status=204)
 
     @staticmethod
-    def update_subscription_info(req: request) -> Response:
+    def update_org_customer_id(req: request) -> Response:
         """Set the subscription_id for an org"""
         from app.Controllers import UserController
         try:
@@ -103,6 +103,24 @@ class OrganisationController(object):
                 return j_response()
             except ValueError:
                 raise ValidationError("Email doesn't exist.")
+
+    @staticmethod
+    def update_org_subscription_id(req: request) -> Response:
+        """Set the subscription_id for an org"""
+        try:
+            request_body = req.get_json()
+            customer_id = request_body['customer_id']
+            subscription_id = request_body['subscription_id']
+        except KeyError:
+            raise ValidationError("Missing subscription_id or customer_id from request")
+
+        with session_scope() as session:
+            org = session.query(Organisation).filter_by(chargebee_customer_id=customer_id).first()
+            if org is None:
+                raise ValidationError(f"There is no organisation with customer id {customer_id}")
+            else:
+                org.chargebee_subscription_id = subscription_id
+                return j_response()
 
     @staticmethod
     def lock_organisation(customer_id: str, req: request) -> Response:

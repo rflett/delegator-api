@@ -7,7 +7,7 @@ from sqlalchemy import exists, func
 from app import logger, g_response, session_scope, j_response, subscription_api
 from app.Controllers import AuthorizationController
 from app.Exceptions import ProductTierLimitError
-from app.Models import User, Activity
+from app.Models import User, Activity, Task
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
 
@@ -117,7 +117,7 @@ class UserController(object):
         with session_scope() as session:
             existing_user_count = session.query(User).filter_by(org_id=req_user.org_id).count()
 
-        max_users = subscription_api.get_limits(req_user.orgs.chargebee_customer_id).get('max_users', 10)
+        max_users = subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('max_users', 10)
 
         if existing_user_count >= max_users:
             logger.info(f"Organisation {req_user.orgs.name} has reached the user limit for their product tier.")
@@ -144,7 +144,7 @@ class UserController(object):
         user.create_settings()
 
         # increment chargebee subscription plan_quantity
-        subscription_api.increment_plan_quantity(user.orgs.chargebee_customer_id)
+        subscription_api.increment_plan_quantity(user.orgs.chargebee_subscription_id)
 
         req_user.log(
             operation=Operations.CREATE,
@@ -221,6 +221,22 @@ class UserController(object):
         # get the user to update
         user_to_update = UserController.get_user_by_id(user_attrs.get('id'))
 
+        # if the task is going to be disabled
+        if user_to_update.disabled is None and user_attrs['disabled'] is not None:
+            # decrement plan quantity
+            subscription_api.decrement_plan_quantity(user_to_update.orgs.chargebee_subscription_id)
+
+            # drop the tasks
+            with session_scope() as session:
+                users_tasks = session.query(Task).filter_by(assignee=user_to_update.id).all()
+            for task in users_tasks:
+                task.drop(req_user)
+
+        # user is being re-enabled
+        elif user_to_update.disabled is not None and user_attrs['disabled'] is None:
+            # increment plan quantity
+            subscription_api.increment_plan_quantity(user_to_update.orgs.chargebee_subscription_id)
+
         # for all attributes in the request, update them on the user if they exist
         with session_scope():
             for k, v in user_attrs.items():
@@ -265,7 +281,7 @@ class UserController(object):
         # get the user
         user_to_delete = UserController.get_user_by_id(user_id)
 
-        user_to_delete.delete()
+        user_to_delete.delete(req_user)
 
         with session_scope():
             Activity(
@@ -386,7 +402,7 @@ class UserController(object):
                     # strip _PAGE
                     pages.append(page.split('_PAGE')[0])
 
-            if not subscription_api.get_limits(req_user.orgs.chargebee_customer_id).get('view_reports_page', False):
+            if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_reports_page', False):
                 pages.remove('REPORTS')
 
             req_user.log(
@@ -451,7 +467,7 @@ class UserController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        if not subscription_api.get_limits(req_user.orgs.chargebee_customer_id).get('view_user_activity', False):
+        if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_user_activity', False):
             raise ProductTierLimitError(f"You cannot view user activity on your plan.")
 
         # is the identifier an email or user_id?
