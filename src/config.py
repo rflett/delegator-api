@@ -38,4 +38,4 @@ class Local(Config):
 class Staging(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@postgres-staging.backburner:5432/backburner"
     R_CACHE_HOST = "redis-staging.backburner"
-    SUBSCRIPTION_API_URL = "http://subscription-api-staging.local"
+    SUBSCRIPTION_API_URL = "https://subscription-api-staging.backburner.online"
