@@ -1,4 +1,5 @@
 import datetime
+from os import getenv
 
 from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
@@ -6,6 +7,7 @@ from sqlalchemy import exists
 
 from app import db, session_scope, logger, task_activity_table, app
 from app.Models import DelayedTask, User
+from app.Models.LocalMockData import MockActivity
 
 
 class Task(db.Model):
@@ -158,6 +160,10 @@ class Task(db.Model):
         logger.info(f"Retrieving {max_days_of_history} days of history "
                     f"({start_of_history.strftime('%Y-%m-%d %H:%M:%S')} "
                     f"to {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}) for task {self.id}. ")
+
+        if getenv('APP_ENV', 'Local') == 'Local':
+            activity = MockActivity()
+            return activity.data
 
         activity = task_activity_table.query(
             Select='ALL_ATTRIBUTES',
