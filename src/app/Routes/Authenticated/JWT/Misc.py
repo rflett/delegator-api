@@ -25,5 +25,3 @@ def get_roles():
 @handle_exceptions
 def get_all_reports():
     return ReportController.get_all(request)
-
-

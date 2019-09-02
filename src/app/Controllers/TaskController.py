@@ -311,7 +311,7 @@ class TaskController(object):
     @staticmethod
     def get_tasks(req: request) -> Response:
         """Get all tasks in an organisation """
-        from app.Controllers import AuthorizationController, AuthenticationController, ValidationController
+        from app.Controllers import AuthorizationController, AuthenticationController
         from app.Models import Task
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
