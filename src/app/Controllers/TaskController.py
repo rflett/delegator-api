@@ -1,7 +1,8 @@
 import datetime
+from dateutil import tz
 
 from flask import request, Response
-from sqlalchemy import exists, and_
+from sqlalchemy import exists, and_, or_
 from sqlalchemy.orm import aliased
 
 from app import logger, session_scope, g_response, j_response, subscription_api
@@ -321,6 +322,10 @@ class TaskController(object):
             resource=Resources.TASKS
         )
 
+        # start_period, end_period = ValidationController.validate_time_period(req.get_json())
+        end_period = now = datetime.datetime.utcnow()
+        start_period = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())  # start_of_this_month
+
         # join across all related tables to get full info
         with session_scope() as session:
             task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
@@ -330,8 +335,18 @@ class TaskController(object):
                 .outerjoin(task_finished_by, task_finished_by.id == Task.finished_by) \
                 .join(task_created_by, task_created_by.id == Task.created_by) \
                 .join(Task.created_bys) \
-                .filter(Task.org_id == req_user.org_id) \
-                .all()
+                .filter(
+                    and_(
+                        Task.org_id == req_user.org_id,
+                        or_(
+                            and_(
+                                Task.finished_at >= start_period,
+                                Task.finished_at <= end_period
+                            ),
+                            Task.finished_at == None  # noqa
+                        )
+                    )
+                ).all()
 
         tasks = []
 

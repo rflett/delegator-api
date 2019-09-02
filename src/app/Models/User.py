@@ -6,13 +6,14 @@ import os
 import random
 import string
 import typing
+from os import getenv
 
 from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
 from app import db, session_scope, logger, user_activity_table, app, subscription_api
-
 from app.Models.RBAC import Log, Permission
+from app.Models.LocalMockData import MockActivity
 
 
 def _hash_password(password: str) -> str:
@@ -255,6 +256,10 @@ class User(db.Model):
 
     def activity(self) -> list:
         """ Returns the activity of a user"""
+        if getenv('APP_ENV', 'Local') == 'Local':
+            activity = MockActivity()
+            return activity.data
+
         activity = user_activity_table.query(
             Select='ALL_ATTRIBUTES',
             KeyConditionExpression=Key('id').eq(self.id)

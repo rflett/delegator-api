@@ -137,8 +137,7 @@ def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) ->
     )
 
 # routes
-from app import routes  # noqa
+from app import Routes  # noqa
 
-
-if getenv('APP_ENV') != 'Ci':
+if getenv('APP_ENV') not in ['Ci', 'Local']:
     flask_profiler.init_app(app)

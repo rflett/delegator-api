@@ -579,3 +579,28 @@ class ValidationController(object):
         else:
             raise ValidationError(f"Token type {token_type} not supported: "
                                   f"supported types are: {NotificationTokens.TOKENS}")
+
+    @staticmethod
+    def validate_time_period(request_body: dict) -> typing.Tuple[datetime.datetime, datetime.datetime]:
+        """ Validate that two dates are a valid comparision period """
+        # check they exist in the request and can be converted to dates
+        try:
+            _start_period = _check_str(request_body['start_period'], 'start_period')
+            _end_period = _check_str(request_body['end_period'], 'end_period')
+            start_period = datetime.datetime.strptime(_start_period, app.config['REQUEST_DATE_FORMAT'])
+            end_period = datetime.datetime.strptime(_end_period, app.config['REQUEST_DATE_FORMAT'])
+        except KeyError as e:
+            raise ValidationError(f"Missing {e} from request body")
+        except ValueError:
+            raise ValidationError("Couldn't convert start_period|end_period to datetime.datetime, make sure they're "
+                                  f"in the format {app.config['REQUEST_DATE_FORMAT']}")
+
+        # start must be before end
+        if end_period < start_period:
+            raise ValidationError("start_period must be before end_period")
+
+        # start period can't be in the future
+        if start_period > datetime.datetime.utcnow():
+            raise ValidationError("start_period is in the future")
+
+        return start_period, end_period
