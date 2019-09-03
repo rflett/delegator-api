@@ -1,11 +1,11 @@
 version: '3.7'
 services:
   backburner-api:
-    image: backburner_api
-    build:
-      cache_from: 
-        - backburner_api
-      context: ../src/
+    image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest
+    # build:
+    #   cache_from: 
+    #     - backburner_api
+    #   context: ../src/
     restart: always
     depends_on:
       - postgres
@@ -19,11 +19,11 @@ services:
       - 5000:5000
 
   subscription-api:
-    image: subscription_api
-    build:
-      cache_from: 
-        - subscription_api
-      context: ../../subscription-api/src/
+    image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/subscription-api:latest
+    # build:
+    #   cache_from: 
+    #     - subscription_api
+    #   context: ../../subscription-api/src/
     depends_on:
       - redis
     environment:
