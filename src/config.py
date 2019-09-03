@@ -23,19 +23,16 @@ class Config(object):
 
 class Ci(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@postgres:5432/backburner"
-    R_CACHE_HOST = "redis"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     SUBSCRIPTION_API_URL = "http://subscription-api:5001"
 
 
 class Local(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@localhost:5432/backburner"
-    R_CACHE_HOST = "localhost"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     SUBSCRIPTION_API_URL = "http://localhost:5001"
 
 
 class Staging(Config):
-    SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@postgres-staging.backburner:5432/backburner"
-    R_CACHE_HOST = "redis-staging.backburner"
+    SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@databurner-staging.chfhv11pwxcu.ap-southeast-2.rds.amazonaws.com:5432/backburner"
     SUBSCRIPTION_API_URL = "https://subscription-api-staging.backburner.online"
