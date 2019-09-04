@@ -2,12 +2,17 @@ import _thread
 import json
 from dataclasses import dataclass
 from datetime import datetime
+from os import getenv
 
-from app import api_events_sns_topic, app
+from app import api_events_sns_topic, app, logger
 
 
 def do_publish(message: dict, event: str) -> None:
     """ Publishes an event to SNS """
+    if getenv('APP_ENV', 'Local') == 'Local':
+        logger.info(f"WOULD have published message {event}")
+        return None
+
     api_events_sns_topic.publish(
         TopicArn=api_events_sns_topic.arn,
         Message=json.dumps({

@@ -37,7 +37,8 @@ class TaskType(db.Model):
             "id": self.id,
             "label": self.label,
             "org_id": self.org_id,
-            "disabled": disabled
+            "disabled": disabled,
+            "tooltip": "Type has been disabled" if disabled else None
         }
 
     def fat_dict(self) -> dict:
