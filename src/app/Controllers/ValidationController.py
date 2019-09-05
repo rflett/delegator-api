@@ -2,8 +2,7 @@ import datetime
 import dateutil
 import typing
 
-from flask import Response
-from sqlalchemy import exists, and_
+from sqlalchemy import exists, and_, func
 from validate_email import validate_email
 
 from app import logger, app, session_scope
@@ -114,12 +113,12 @@ def _check_task_id(task_id: int, org_id: int) -> int:
 
 
 def _check_task_type_id(task_type_id: int, org_id: int, should_exist: typing.Optional[bool] = None) -> int:
-    from app.Controllers import TaskTypeController
     task_type_id = _check_int(task_type_id, 'task_type_id')
 
     # optionally check if it exists or not
     if should_exist is not None:
-        task_exists = TaskTypeController.task_type_exists(task_type_id)
+        with session_scope() as session:
+            task_exists = session.query(exists().where(TaskType.id == task_type_id)).scalar()
         if should_exist:
             if not task_exists:
                 logger.info(f"task type id {task_type_id} doesn't exist")
@@ -245,35 +244,107 @@ class ValidationController(object):
         return password
 
     @staticmethod
-    def validate_create_task_type_request(org_id: int, request_body: dict) -> typing.Union[TaskType, str]:
-        """
-        Validates a create task type request body
-        """
-        from app.Controllers import TaskTypeController
-
+    def validate_create_task_type_request(
+            org_id: int,
+            request_body: dict) -> typing.Tuple[str, typing.Optional[TaskType]]:
+        """ Validates a create task type request body """
         label = _check_str(request_body.get('label'), 'label')
 
-        try:
-            task_type = TaskTypeController.get_task_type_by_label(label, org_id)
-            return task_type
-        except ValueError:
-            # it doesn't exist, so create it
-            return label
+        # check if it exists and needs enabling
+        with session_scope() as session:
+            task_type = session.query(TaskType).filter(
+                func.lower(TaskType.label) == func.lower(label),
+                TaskType.org_id == org_id
+            ).first()
+            if task_type is None:
+                return label, None
+            else:
+                return label, task_type
+
+    @staticmethod
+    def validate_update_task_type_request(
+            org_id: int,
+            request_body: dict) -> typing.Tuple[TaskType, list]:
+        """ Validates an update task type request body """
+        # check label and that escalations are in the request
+        label = _check_str(request_body.get('label'), 'label')
+
+        # check that the task type exists
+        with session_scope() as session:
+            task_type = session.query(TaskType).filter_by(id=request_body['id'], org_id=org_id).first()
+            if task_type is None:
+                raise ValidationError(f"Task type {label} doesn't exist.")
+
+            if task_type.disabled is not None:
+                raise ValidationError(f"Task type {label} is disabled.")
+
+            # check if it's a new label and it already exists
+            label_exists = session.query(exists().where(
+                and_(
+                    func.lower(TaskType.label) == func.lower(label),
+                    TaskType.org_id == org_id
+                )
+            )).scalar()
+
+            if task_type.label != label and label_exists:
+                raise ValidationError(f"{task_type.label} cannot be renamed to {label} because a task type with "
+                                      f"this name already exists.")
+
+        # check the escalations
+        if not isinstance(request_body.get('escalation_policies'), list):
+            raise ValidationError(f"Missing escalation_policies from update task type request")
+
+        valid_escalations = []
+
+        for escalation in request_body['escalation_policies']:
+            esc_attrs = {
+                "display_order": _check_int(escalation.get('display_order'), 'display_order'),
+                "delay": _check_int(escalation.get('delay'), 'delay'),
+                "from_priority": _check_task_priority(escalation.get('from_priority')),
+                "to_priority": _check_task_priority(escalation.get('to_priority'))
+            }
+
+            with session_scope() as session:
+                escalation_exists = session.query(exists().where(
+                    and_(
+                        TaskTypeEscalation.task_type_id == task_type.id,
+                        TaskTypeEscalation.display_order == esc_attrs['display_order']
+                    )
+                )).scalar()
+
+                if escalation_exists:
+                    # validate update
+                    _check_escalation(
+                        task_type_id=task_type.id,
+                        display_order=esc_attrs['display_order'],
+                        should_exist=True
+                    )
+                    esc_attrs['action'] = 'update'
+                else:
+                    # validate create
+                    _check_escalation(
+                        task_type_id=task_type.id,
+                        display_order=esc_attrs['display_order'],
+                        should_exist=False
+                    )
+                    esc_attrs['action'] = 'create'
+
+            valid_escalations.append(esc_attrs)
+
+        return task_type, valid_escalations
 
     @staticmethod
     def validate_disable_task_type_request(org_id: int, task_type_id: int) -> TaskType:
         """ Validates the disable task request """
-        from app.Controllers import TaskTypeController
-
         type_id = _check_int(task_type_id, 'task_type_id')
 
-        try:
-            task_type = TaskTypeController.get_task_type_by_id(org_id, type_id)
-        except ValueError as e:
-            logger.info(str(e))
-            raise ValidationError(f"Task type does not exist.")
+        with session_scope() as session:
+            task_type = session.query(TaskType).filter_by(id=type_id, org_id=org_id).first()
 
-        return task_type
+        if task_type is None:
+            raise ValidationError(f"Task type does not exist.")
+        else:
+            return task_type
 
     @staticmethod
     def validate_create_user_request(request_body: dict) -> dict:
@@ -490,51 +561,6 @@ class ValidationController(object):
             org_setting_obj.__setattr__(k, v)
 
         return org_setting_obj
-
-    @staticmethod
-    def validate_upsert_task_escalation(
-            task_type_id: int,
-            escalations: typing.List[dict]
-    ) -> typing.Union[typing.List[dict], Response]:
-        """ Validates upserting task type escalations """
-        valid_escalations = []
-
-        for escalation in escalations:
-            esc_attrs = {
-                "display_order":  _check_int(escalation.get('display_order'), 'display_order'),
-                "delay": _check_int(escalation.get('delay'), 'delay'),
-                "from_priority": _check_task_priority(escalation.get('from_priority')),
-                "to_priority": _check_task_priority(escalation.get('to_priority'))
-            }
-
-            with session_scope() as session:
-                escalation_exists = session.query(exists().where(
-                        and_(
-                            TaskTypeEscalation.task_type_id == task_type_id,
-                            TaskTypeEscalation.display_order == esc_attrs['display_order']
-                        )
-                    )).scalar()
-
-                if escalation_exists:
-                    # validate update
-                    _check_escalation(
-                        task_type_id=task_type_id,
-                        display_order=esc_attrs['display_order'],
-                        should_exist=True
-                    )
-                    esc_attrs['action'] = 'update'
-                else:
-                    # validate create
-                    _check_escalation(
-                        task_type_id=task_type_id,
-                        display_order=esc_attrs['display_order'],
-                        should_exist=False
-                    )
-                    esc_attrs['action'] = 'create'
-
-            valid_escalations.append(esc_attrs)
-
-        return valid_escalations
 
     @staticmethod
     def validate_delay_task_request(org_id: int, request_body: dict) -> tuple:
