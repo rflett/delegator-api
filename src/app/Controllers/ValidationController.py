@@ -7,7 +7,7 @@ from validate_email import validate_email
 
 from app import logger, app, session_scope
 from app.Exceptions import ValidationError
-from app.Models import TaskType, TaskTypeEscalation, Task, OrgSetting, UserSetting
+from app.Models import TaskType, TaskTypeEscalation, Task, OrgSetting, UserSetting, Organisation, User
 from app.Models.Enums import NotificationTokens
 from app.Models.RBAC import Role
 
@@ -400,15 +400,44 @@ class ValidationController(object):
     @staticmethod
     def validate_create_org_request(request_body: dict) -> str:
         """ Validates a create org request body """
-        from app.Controllers import OrganisationController
+        org_name = _check_str(request_body.get('org_name'), 'org_name')
 
-        org_name = request_body.get('name', request_body.get('org_name'))
+        with session_scope() as session:
+            org_exists = session.query(exists().where(
+                    func.lower(Organisation.name) == func.lower(org_name)
+            )).scalar()
 
-        if not isinstance(org_name, str):
-            raise ValidationError(f"Bad org_name|name, expected str got {type(org_name)}.")
+        if org_exists:
+            raise ValidationError("That organisation already exists.")
+        else:
+            return org_name
 
-        if OrganisationController.org_exists(org_name):
-            raise ValidationError("Organisation already exists")
+    @staticmethod
+    def validate_update_org_request(req_user: User, request_body: dict) -> str:
+        """ Validates a create org request body """
+        org_name = _check_str(request_body.get('org_name'), 'org_name')
+        org_id = _check_int(request_body.get('org_id'), 'org_id')
+
+        with session_scope() as session:
+            # check org exists
+            org = session.query(Organisation).filter_by(id=org_id).first()
+            if org is None:
+                raise ValidationError("That organisation doesn't exist.")
+
+            # check that it's the user's org
+            if req_user.org_id != org.id:
+                raise ValidationError("You can only update your own organisation's name.")
+
+            # check an org with that name doesn't exist already
+            org_name_exists = session.query(exists().where(
+                and_(
+                    func.lower(Organisation.name) == func.lower(org_name),
+                    Organisation.id != req_user.org_id
+                )
+            )).scalar()
+
+            if org_name_exists:
+                raise ValidationError("That organisation name already exists.")
 
         return org_name
 

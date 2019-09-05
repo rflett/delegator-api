@@ -190,3 +190,62 @@ class OrganisationController(object):
                 org.locked = None
 
         return j_response()
+
+    @staticmethod
+    def get_org(req: request) -> Response:
+        """Get the org
+
+        :param req: The HTTP request
+        :return:    HTTP 200 response
+        """
+        from app.Controllers import AuthorizationController, AuthenticationController
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.GET,
+            resource=Resources.ORGANISATION
+        )
+
+        req_user.log(
+            operation=Operations.GET,
+            resource=Resources.ORGANISATION
+        )
+
+        org = req_user.orgs
+
+        return j_response({
+            "org_id": org.id,
+            "org_name": org.name
+        })
+
+    @staticmethod
+    def update_org(req: request) -> Response:
+        """Get the org
+
+        :param req: The HTTP request
+        :return:    HTTP 200 response
+        """
+        from app.Controllers import AuthorizationController, AuthenticationController, ValidationController
+
+        req_user = AuthenticationController.get_user_from_request(req.headers)
+
+        org_name = ValidationController.validate_update_org_request(req_user, req.get_json())
+
+        AuthorizationController.authorize_request(
+            auth_user=req_user,
+            operation=Operations.UPDATE,
+            resource=Resources.ORGANISATION
+        )
+
+        with session_scope():
+            req_user.orgs.name = org_name
+
+        req_user.log(
+            operation=Operations.UPDATE,
+            resource=Resources.ORGANISATION
+        )
+        return j_response({
+            "org_name": req_user.orgs.name
+        })
