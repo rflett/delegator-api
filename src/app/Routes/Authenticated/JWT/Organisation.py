@@ -18,3 +18,17 @@ def get_org_settings():
 @handle_exceptions
 def update_org_settings():
     return OrganisationController.update_org_settings(request)
+
+
+@app.route('/org', methods=['GET'])
+@requires_jwt
+@handle_exceptions
+def get_org():
+    return OrganisationController.get_org(request)
+
+
+@app.route('/org', methods=['PUT'])
+@requires_jwt
+@handle_exceptions
+def update_org():
+    return OrganisationController.update_org(request)
