@@ -165,7 +165,7 @@ class UserController(object):
         ).publish()
         logger.info(f"User {req_user.id} created user {user.id}")
 
-        return g_response("Successfully created user", 201)
+        return j_response(user.fat_dict(), status=201)
 
     @staticmethod
     def create_signup_user(org_id: int, valid_user: dict) -> None:
@@ -262,7 +262,7 @@ class UserController(object):
             resource_id=user_to_update.id
         )
         logger.info(f"User {req_user.id} updated user {user_to_update.id}")
-        return g_response(status=204)
+        return j_response(user_to_update.fat_dict())
 
     @staticmethod
     def delete_user(user_id: int, req: request) -> Response:
@@ -458,7 +458,7 @@ class UserController(object):
             resource_id=req_user.id
         )
         logger.info(f"updated user {req_user.id} settings")
-        return g_response(status=204)
+        return j_response(SettingsController.get_user_settings(req_user.id).as_dict())
 
     @staticmethod
     def get_user_activity(user_identifier: typing.Union[str, int], req: request) -> Response:

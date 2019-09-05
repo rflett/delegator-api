@@ -138,7 +138,7 @@ class AuthenticationController(object):
             token = auth.replace('Bearer ', '')
             jwt.decode(jwt=token, algorithms='HS256', verify=False)
             return True
-        except TypeError as e:
+        except (TypeError, jwt.DecodeError) as e:
             logger.error(str(e))
             return g_response("Invalid Authorization header.", 401)
 
