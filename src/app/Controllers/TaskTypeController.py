@@ -85,7 +85,7 @@ class TaskTypeController(object):
                 resource=Resources.TASK_TYPE,
                 resource_id=new_task_type.id
             )
-            return g_response(f"Created {label}", status=201)
+            return j_response(new_task_type.fat_dict(), status=201)
         else:
             # it existed so check if it needs to be enabled
             if task_type.disabled is None:
@@ -108,7 +108,7 @@ class TaskTypeController(object):
                 resource=Resources.TASK_TYPE,
                 resource_id=task_type.id
             )
-            return g_response(f"Enabled {label}")
+            return j_response(task_type.fat_dict(), status=201)
 
     @staticmethod
     def update_task_type(req: request) -> Response:
@@ -220,7 +220,7 @@ class TaskTypeController(object):
         logger.info(f"upsert task type escalations finished. "
                     f"created:{total_created}, updated:{total_updated}, deleted:{total_deleted}")
         # SUCCESS
-        return g_response(status=204)
+        return j_response(task_type_to_update.fat_dict())
 
     @staticmethod
     def disable_task_type(task_type_id: int, req: request) -> Response:

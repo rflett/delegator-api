@@ -60,7 +60,7 @@ class OrganisationController(object):
         """Update the org's settings
 
         :param req: The HTTP request
-        :return:    HTTP 204 response
+        :return:    HTTP 200 response and the org's settings
         """
         from app.Controllers import AuthorizationController, SettingsController, AuthenticationController, \
             ValidationController
@@ -83,7 +83,7 @@ class OrganisationController(object):
             resource_id=req_user.org_id
         )
 
-        return g_response(status=204)
+        return j_response(SettingsController.get_org_settings(req_user.org_id).as_dict(), status=200)
 
     @staticmethod
     def update_org_customer_id(req: request) -> Response:

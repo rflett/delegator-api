@@ -436,7 +436,7 @@ class TaskController(object):
                 user_ids=UserController.all_user_ids(req_user.org_id)
             )
 
-        return g_response("Successfully created task", 201)
+        return j_response(task.fat_dict(), status=201)
 
     @staticmethod
     def update_task(req: request) -> Response:
@@ -515,7 +515,7 @@ class TaskController(object):
             resource=Resources.TASK,
             resource_id=task_to_update.id
         )
-        return g_response(status=204)
+        return j_response(task_to_update.fat_dict())
 
     @staticmethod
     def assign_task(req: request) -> Response:
@@ -539,7 +539,7 @@ class TaskController(object):
             req_user=req_user
         )
 
-        return g_response(status=204)
+        return j_response(task.fat_dict())
 
     @staticmethod
     def drop_task(task_id, req: request = None, req_user: User = None) -> Response:
@@ -556,7 +556,7 @@ class TaskController(object):
 
         _drop(task_to_drop, req_user)
 
-        return g_response(status=204)
+        return j_response(task_to_drop.fat_dict())
 
     @staticmethod
     def cancel_task(task_id, req: request) -> Response:
@@ -590,7 +590,7 @@ class TaskController(object):
                 user_ids=task_to_cancel.assignee
             )
         logger.info(f"User {req_user.id} cancelled task {task_to_cancel.id}")
-        return g_response(status=204)
+        return j_response(task_to_cancel.fat_dict())
 
     @staticmethod
     def transition_task(req: request) -> Response:
@@ -613,7 +613,7 @@ class TaskController(object):
             status=task_status,
             req_user=req_user
         )
-        return g_response(status=204)
+        return j_response(task.fat_dict())
 
     @staticmethod
     def get_available_transitions(task_id: int, req: request) -> Response:
@@ -743,7 +743,7 @@ class TaskController(object):
             resource_id=task.id
         )
         logger.info(f"User {req_user.id} delayed task {task.id} for {delay_for}s.")
-        return g_response(status=204)
+        return j_response(task.fat_dict())
 
     @staticmethod
     def get_delayed_task(task_id: int, req: request) -> Response:
