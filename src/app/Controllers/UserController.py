@@ -2,7 +2,6 @@ import datetime
 import typing
 
 from flask import request, Response
-from sqlalchemy import exists, func
 
 from app import logger, g_response, session_scope, j_response, subscription_api
 from app.Controllers import AuthorizationController
@@ -66,23 +65,6 @@ def _get_user(user_identifier: typing.Union[str, int]) -> User:
 
 class UserController(object):
     @staticmethod
-    def user_exists(user_identifier: typing.Union[str, int]) -> bool:
-        """Checks to see if a user exists
-
-        :param user_identifier: The user id or email
-        :raises ValueError:     If the user doesn't exist.
-        """
-        with session_scope() as session:
-            if isinstance(user_identifier, str):
-                logger.info("user_identifier is a str so finding user by email")
-                return session.query(exists().where(func.lower(User.email) == func.lower(user_identifier))).scalar()
-            elif isinstance(user_identifier, int):
-                logger.info("user_identifier is an int so finding user by id")
-                return session.query(exists().where(User.id == user_identifier)).scalar()
-            else:
-                raise ValueError(f"bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
-
-    @staticmethod
     def get_user_by_email(email: str) -> User:
         """Public method for getting a user by their email """
         return _get_user_by_email(email)
@@ -105,6 +87,8 @@ class UserController(object):
         """Create a user """
         from app.Controllers import AuthenticationController, ValidationController
 
+        request_body = req.get_json()
+
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
         AuthorizationController.authorize_request(
@@ -112,6 +96,9 @@ class UserController(object):
             operation=Operations.CREATE,
             resource=Resources.USER
         )
+
+        # validate user
+        ValidationController.validate_create_user_request(request_body)
 
         # Check that the user hasn't surpassed limits on their product tier
         with session_scope() as session:
@@ -123,19 +110,16 @@ class UserController(object):
             logger.info(f"Organisation {req_user.orgs.name} has reached the user limit for their product tier.")
             raise ProductTierLimitError(f"You have reached the limit of users you can create.")
 
-        # validate user
-        user_attrs = ValidationController.validate_create_user_request(req.get_json())
-
         with session_scope() as session:
             user = User(
                 org_id=req_user.org_id,
-                email=user_attrs.get('email'),
-                first_name=user_attrs.get('first_name'),
-                last_name=user_attrs.get('last_name'),
+                email=request_body['email'],
+                first_name=request_body['first_name'],
+                last_name=request_body['last_name'],
                 password='secret',
-                role=user_attrs.get('role'),
-                job_title=user_attrs.get('job_title'),
-                disabled=user_attrs.get('disabled'),
+                role=request_body['role_id'],
+                job_title=request_body['job_title'],
+                disabled=request_body.get('disabled'),
                 created_by=req_user.id
             )
             session.add(user)

@@ -7,21 +7,6 @@ from app.Models import TaskType, TaskTypeEscalation, Activity
 from app.Models.Enums import Events, Operations, Resources
 
 
-def _get_task_type_escalation(task_type_id: int, display_order: int):
-    """Gets a task type escalation """
-    with session_scope() as session:
-        ret = session.query(TaskTypeEscalation).filter_by(
-                task_type_id=task_type_id,
-                display_order=display_order
-        ).first()
-    if ret is None:
-        logger.info(f"No task type escalation for task_type {task_type_id} and display order {display_order}.")
-        raise ValueError(f"No task type escalation with "
-                         f"task_type_id {task_type_id} and display order {display_order}")
-    else:
-        return ret
-
-
 class TaskTypeController(object):
     @staticmethod
     def get_task_types(req: request) -> Response:
@@ -171,30 +156,32 @@ class TaskTypeController(object):
 
             elif escalation['action'] == 'update':
                 total_updated += 1
-                escalation_to_update = _get_task_type_escalation(
-                    task_type_id=task_type_to_update.id,
-                    display_order=escalation['display_order']
-                )
-                with session_scope():
+
+                with session_scope() as session:
+                    escalation_to_update = session.query(TaskTypeEscalation).filter_by(
+                        task_type_id=task_type_to_update.id,
+                        display_order=escalation['display_order']
+                    ).first()
+
                     for k, v in escalation.items():
                         escalation_to_update.__setattr__(k, v)
 
-                    Activity(
-                        org_id=req_user.org_id,
-                        event=Events.tasktype_escalation_updated,
-                        event_id=task_type_to_update.id
-                    ).publish()
-                    Activity(
-                        org_id=req_user.org_id,
-                        event=Events.user_created_tasktype_escalation,
-                        event_id=req_user.id,
-                        event_friendly=f"Updated escalation for {task_type_to_update.label}."
-                    ).publish()
-                    req_user.log(
-                        operation=Operations.UPDATE,
-                        resource=Resources.TASK_TYPE_ESCALATION,
-                        resource_id=task_type_to_update.id
-                    )
+                Activity(
+                    org_id=req_user.org_id,
+                    event=Events.tasktype_escalation_updated,
+                    event_id=task_type_to_update.id
+                ).publish()
+                Activity(
+                    org_id=req_user.org_id,
+                    event=Events.user_created_tasktype_escalation,
+                    event_id=req_user.id,
+                    event_friendly=f"Updated escalation for {task_type_to_update.label}."
+                ).publish()
+                req_user.log(
+                    operation=Operations.UPDATE,
+                    resource=Resources.TASK_TYPE_ESCALATION,
+                    resource_id=task_type_to_update.id
+                )
                 logger.info(f"updated task type escalation {escalation_to_update.as_dict()}")
 
         # DELETE MISMATCHING ESCALATIONS
@@ -235,7 +222,7 @@ class TaskTypeController(object):
             resource=Resources.TASK_TYPE
         )
 
-        task_type_to_disable = ValidationController.validate_disable_task_type_request(req_user.org_id, task_type_id)
+        task_type_to_disable = ValidationController.validate_disable_task_type_request(task_type_id)
 
         with session_scope():
             task_type_to_disable.disabled = datetime.datetime.utcnow()

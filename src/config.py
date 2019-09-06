@@ -34,5 +34,6 @@ class Local(Config):
 
 
 class Staging(Config):
-    SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@databurner-staging.chfhv11pwxcu.ap-southeast-2.rds.amazonaws.com:5432/backburner"
+    SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@" \
+                              "databurner-staging.chfhv11pwxcu.ap-southeast-2.rds.amazonaws.com:5432/backburner"
     SUBSCRIPTION_API_URL = "https://subscription-api-staging.backburner.online"

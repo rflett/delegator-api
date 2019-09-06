@@ -11,8 +11,8 @@ def _purge_inactive_users() -> None:
     """ Removes users from the active users table which have been inactive for longer than the TTL. """
     with session_scope() as session:
         inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=app.config['INACTIVE_USER_TTL'])
-        delete_inactive = session.query(ActiveUser).filter_by(ActiveUser.last_active < inactive_cutoff).delete()
-        logger.info(f"Purged {len(delete_inactive)} users who have not been active for {inactive_cutoff}s.")
+        delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
+        logger.info(f"Purged {delete_inactive} users who have not been active for {inactive_cutoff}s.")
 
 
 class ActiveUserController(object):
