@@ -1,11 +1,12 @@
 import datetime
+import typing
 from dateutil import tz
 
 from flask import request, Response
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import aliased
 
-from app import logger, session_scope, g_response, j_response, subscription_api
+from app import logger, session_scope, j_response, subscription_api
 from app.Exceptions import ValidationError
 from app.Controllers import AuthorizationController, NotificationController
 from app.Models import User, Task, DelayedTask, Activity, TaskPriority, TaskStatus
@@ -156,25 +157,21 @@ def _unassign_task(task: Task, req_user: User) -> None:
 
 def _change_task_priority(task: Task, priority: int) -> None:
     """Common function for changing a tasks priority"""
-    from app.Controllers import UserController
-
     with session_scope():
         if priority > task.priority:
+            task.priority = priority
+            task.priority_changed_at = datetime.datetime.utcnow()
             # task priority is increasing
             NotificationController.push(
                 msg=f"{task.label()} task has been escalated.",
-                user_ids=UserController.all_user_ids(task.org_id)
+                user_ids=_all_user_ids(task.org_id)
             )
-
-        task.priority = priority
-        task.priority_changed_at = datetime.datetime.utcnow()
 
     logger.info(f"Changed task {task.id} priority to {priority}")
 
 
 def _drop(task: Task, req_user: User) -> None:
     """Drops a task"""
-    from app.Controllers import UserController
     _unassign_task(task, req_user)
 
     _transition_task(
@@ -185,7 +182,7 @@ def _drop(task: Task, req_user: User) -> None:
 
     NotificationController.push(
         msg=f"{task.label()} has been dropped.",
-        user_ids=UserController.all_user_ids(req_user.org_id)
+        user_ids=_all_user_ids(req_user.org_id)
     )
 
     req_user.log(
@@ -197,22 +194,25 @@ def _drop(task: Task, req_user: User) -> None:
                 f"which was assigned to {task.assignee}.")
 
 
-class TaskController(object):
-    @staticmethod
-    def get_task_by_id(task_id: int, org_id: int) -> Task:
-        """Gets a task by its id """
-        # TODO I don't think we need the org_id as a param here
-        with session_scope() as session:
-            ret = session.query(Task).filter_by(
-                id=task_id,
-                org_id=org_id
-            ).first()
-        if ret is None:
-            logger.info(f"Task with id {task_id} does not exist.")
-            raise ValueError(f"Task with id {task_id} does not exist.")
+def _get_task(task_id: int, org_id: int) -> Task:
+    """Gets a task by its ID, raises a ValidationError if it doesn't exist"""
+    with session_scope() as session:
+        task = session.query(Task).filter_by(id=task_id, org_id=org_id).first()
+        if task is None:
+            raise ValidationError("Task does not exist")
         else:
-            return ret
+            return task
 
+
+def _all_user_ids(org_id: int) -> typing.List[int]:
+    """ Returns a list of all user ids """
+    with session_scope() as session:
+        user_ids_qry = session.query(User.id).filter_by(org_id=org_id).all()
+
+    return [user_id[0] for user_id in user_ids_qry]
+
+
+class TaskController(object):
     @staticmethod
     def get_task_priorities(req: request) -> Response:
         """Returns all task priorities """
@@ -264,7 +264,7 @@ class TaskController(object):
     @staticmethod
     def get_task(task_id: int, req: request) -> Response:
         """Get a single task by its id """
-        from app.Controllers import TaskController, AuthenticationController
+        from app.Controllers import AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -274,17 +274,14 @@ class TaskController(object):
             resource=Resources.TASK
         )
 
-        try:
-            task = TaskController.get_task_by_id(task_id, req_user.org_id)
-            req_user.log(
-                operation=Operations.GET,
-                resource=Resources.TASK,
-                resource_id=task.id
-            )
-            return j_response(task.fat_dict())
-        except ValueError:
-            logger.info(f"Task with id {task_id} does not exist.")
-            return g_response("Task does not exist.", 400)
+        task = _get_task(task_id, req_user.org_id)
+
+        req_user.log(
+            operation=Operations.GET,
+            resource=Resources.TASK,
+            resource_id=task.id
+        )
+        return j_response(task.fat_dict())
 
     @staticmethod
     def get_tasks(req: request) -> Response:
@@ -346,7 +343,7 @@ class TaskController(object):
     @staticmethod
     def create_task(req: request) -> Response:
         """Creates a task"""
-        from app.Controllers import ValidationController, AuthenticationController, UserController
+        from app.Controllers import ValidationController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -410,7 +407,7 @@ class TaskController(object):
         else:
             NotificationController.push(
                 msg=f"{task.label()} task has been created.",
-                user_ids=UserController.all_user_ids(req_user.org_id)
+                user_ids=_all_user_ids(req_user.org_id)
             )
 
         return j_response(task.fat_dict(), status=201)
@@ -418,7 +415,7 @@ class TaskController(object):
     @staticmethod
     def update_task(req: request) -> Response:
         """Update a task """
-        from app.Controllers import ValidationController, TaskController, AuthenticationController
+        from app.Controllers import ValidationController, AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -431,7 +428,7 @@ class TaskController(object):
         task_attrs = ValidationController.validate_update_task_request(req_user.org_id, req.get_json())
 
         # update the task
-        task_to_update = TaskController.get_task_by_id(task_attrs.get('id'), req_user.org_id)
+        task_to_update = task_attrs['task']
 
         # if the assignee isn't the same as before then assign someone to it, if the new assignee is null or
         # omitted from the request, then assign the task
@@ -722,7 +719,7 @@ class TaskController(object):
     @staticmethod
     def get_delayed_task(task_id: int, req: request) -> Response:
         """Returns the delayed info for a task """
-        from app.Controllers import TaskController, AuthenticationController
+        from app.Controllers import AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -732,27 +729,20 @@ class TaskController(object):
             resource=Resources.TASK
         )
 
-        try:
-            # get the task
-            task = TaskController.get_task_by_id(task_id, req_user.org_id)
-            req_user.log(
-                operation=Operations.GET,
-                resource=Resources.TASK,
-                resource_id=task.id
-            )
-            # if the task has been delayed return the delay info, otherwise return a validation error because the
-            # task hasn't been delayed before.
-            if task.has_been_delayed():
-                return j_response(task.delayed_info())
-            else:
-                raise ValidationError("Task has not been delayed before.")
-        except ValueError as e:
-            return g_response(str(e), 400)
+        task = _get_task(task_id, req_user.org_id)
+
+        req_user.log(
+            operation=Operations.GET,
+            resource=Resources.TASK,
+            resource_id=task.id
+        )
+
+        return j_response(task.delayed_info())
 
     @staticmethod
-    def get_task_activity(task_identifier: int, req: request) -> Response:
+    def get_task_activity(task_id: int, req: request) -> Response:
         """Returns the activity for a task """
-        from app.Controllers import TaskController, AuthenticationController
+        from app.Controllers import AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -765,24 +755,19 @@ class TaskController(object):
         plan_limits = subscription_api.get_limits(req_user.orgs.chargebee_subscription_id)
         activity_log_history_limit = plan_limits.get('task_activity_log_history', 7)
 
-        try:
-            # get the task
-            task = TaskController.get_task_by_id(task_identifier, req_user.org_id)
-            req_user.log(
-                operation=Operations.GET,
-                resource=Resources.TASK_ACTIVITY,
-                resource_id=task.id
-            )
-            logger.info(f"Getting activity for task with id {task.id}")
-            return j_response(task.activity(activity_log_history_limit))
-        except ValueError as e:
-            return g_response(str(e), 400)
+        # get the task
+        task = _get_task(task_id, req_user.org_id)
+        req_user.log(
+            operation=Operations.GET,
+            resource=Resources.TASK_ACTIVITY,
+            resource_id=task.id
+        )
+        logger.info(f"Getting activity for task with id {task.id}")
+        return j_response(task.activity(activity_log_history_limit))
 
     @staticmethod
     def change_priority(req: request) -> Response:
         """ Change a tasks priority """
-        from app.Controllers import TaskController
-
         request_body = req.get_json()
         params = {
             "org_id": request_body.get('org_id'),
@@ -793,7 +778,7 @@ class TaskController(object):
             if v is None:
                 raise ValidationError(f"Missing {k} from request")
 
-        task = TaskController.get_task_by_id(params['task_id'], params['org_id'])
+        task = _get_task(params['task_id'], params['org_id'])
         _change_task_priority(
             task=task,
             priority=params['priority']

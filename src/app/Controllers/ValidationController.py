@@ -114,17 +114,17 @@ def _check_user_disabled(disabled: typing.Optional[datetime.datetime]) -> typing
             raise ValidationError("Couldn't convert disabled to datetime.datetime")
 
 
-def _check_task_id(task_id: int, org_id: int) -> int:
+def _check_task_id(task_id: int, org_id: int) -> typing.Union[int, Task]:
     task_id = _check_int(task_id, 'task_id')
 
     with session_scope() as session:
-        task_exists = session.query(exists().where(and_(Task.id == task_id, Task.org_id == org_id))).scalar()
+        task = session.query(Task).filter_by(id=task_id, org_id=org_id).first()
 
-    if not task_exists:
+    if task is None:
         logger.info(f"task {task_id} doesn't exist")
         raise ValidationError(f"task does not exist")
-
-    return task_id
+    else:
+        return task
 
 
 def _check_task_type_id(task_type_id: int, should_exist: typing.Optional[bool] = None) -> int:
@@ -466,16 +466,17 @@ class ValidationController(object):
         }
 
     @staticmethod
-    def validate_update_task_request(org_id: int, request_body: dict) -> dict:
+    def validate_update_task_request(users_org_id: int, request_body: dict) -> dict:
         """
         Validates a user request body
-        :param org_id:          The org that the task should be in (from the req user)
+        :param users_org_id:          The org that the task should be in (from the req user)
         :param request_body:    The request body from the update user request
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
+        task = _check_task_id(request_body.get('id'), users_org_id)
         return {
-            'id': _check_task_id(request_body.get('id'), org_id),
-            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), should_exist=True),
+            'task': task,
+            'type': _check_task_type_id(request_body.get('type_id'), should_exist=True),
             'description': _check_task_description(request_body.get('description')),
             'status': _check_task_status(request_body.get('status'), should_exist=True),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
@@ -485,96 +486,48 @@ class ValidationController(object):
         }
 
     @staticmethod
-    def validate_assign_task(org_id: int, request_body: dict) -> tuple:
+    def validate_assign_task(users_org_id: int, request_body: dict) -> tuple:
         """
         Validates the assign task request
         :param request_body:    The request body from the update task request
         :return:                Response if invalid, else a complex dict
         """
-        from app.Controllers import TaskController
-
-        task_id = _check_int(param=request_body.get('task_id'), param_name='task_id')
-
-        try:
-            task = TaskController.get_task_by_id(task_id, org_id)
-        except ValueError:
-            raise ValidationError("Task does not exist.")
-
+        task = _check_task_id(request_body.get('task_id'), users_org_id)
         assignee_id = _check_task_assignee(request_body.get('assignee'))
 
         return task, assignee_id
 
     @staticmethod
-    def validate_drop_task(org_id: int, task_id: int) -> Task:
+    def validate_drop_task(users_org_id: int, task_id: int) -> Task:
         """
         Validates the assign task request
+        :param: user_org_id: The org id of the requesting user
         :param task_id:    The id of the task to drop
         :return:           Response if invalid, else a complex dict
         """
-        from app.Controllers import TaskController
+        task = _check_task_id(task_id, users_org_id)
 
-        task_id = _check_int(param=task_id, param_name='task_id')
-
-        try:
-            task = TaskController.get_task_by_id(task_id, org_id)
-            if task.assignee is None:
-                raise ValidationError("Can't drop task because it is not assigned to anyone.")
-            else:
-                return task
-        except ValueError:
-            raise ValidationError("Task does not exist.")
+        if task.assignee is None:
+            raise ValidationError("Can't drop task because it is not assigned to anyone.")
+        else:
+            return task
 
     @staticmethod
-    def validate_cancel_task(org_id: int, task_id: int) -> Task:
-        """
-        Validates the cancel task request
-        :param org_id:  The task's org id
-        :param task_id: The id of the task to cancel
-        :return:        Task object
-        :raises:        ValidationError
-        """
-        from app.Controllers import TaskController
-
-        task_id = _check_int(param=task_id, param_name='task_id')
-
-        try:
-            return TaskController.get_task_by_id(task_id, org_id)
-        except ValueError:
-            raise ValidationError("Task does not exist.")
+    def validate_cancel_task(users_org_id: int, task_id: int) -> Task:
+        """Validates the cancel task request"""
+        return _check_task_id(task_id, users_org_id)
 
     @staticmethod
-    def validate_transition_task(org_id: int, request_body: dict) -> tuple:
+    def validate_transition_task(users_org_id: int, request_body: dict) -> tuple:
         """ Validates the transition task request """
-        from app.Controllers import TaskController
-
-        task_id = _check_int(param=request_body.get('task_id'), param_name='task_id')
-
-        try:
-            task = TaskController.get_task_by_id(task_id, org_id)
-        except ValueError:
-            raise ValidationError("Task does not exist.")
-
+        task = _check_task_id(request_body.get('task_id'), users_org_id)
         task_status = _check_task_status(request_body.get('task_status'), should_exist=True)
-
         return task, task_status
 
     @staticmethod
-    def validate_get_transitions(org_id: int, task_id: int) -> Task:
-        """
-        Validates the get task available task transitions request
-        :param org_id:  Org id of the task
-        :param task_id: The task id
-        :return:        Task object
-        :raises:        ValidationError
-        """
-        from app.Controllers import TaskController
-
-        task_id = _check_int(param=task_id, param_name='task_id')
-
-        try:
-            return TaskController.get_task_by_id(task_id, org_id)
-        except ValueError:
-            raise ValidationError("Task does not exist.")
+    def validate_get_transitions(users_org_id: int, task_id: int) -> Task:
+        """Validates the get task available task transitions request"""
+        return _check_task_id(task_id, users_org_id)
 
     @staticmethod
     def validate_update_user_settings_request(user_id: int, request_body: dict) -> UserSetting:
@@ -599,24 +552,14 @@ class ValidationController(object):
         return org_setting_obj
 
     @staticmethod
-    def validate_delay_task_request(org_id: int, request_body: dict) -> tuple:
+    def validate_delay_task_request(users_org_id: int, request_body: dict) -> tuple:
         """ Validates the transition task request """
-        from app.Controllers import TaskController
-
-        task_id = _check_int(request_body.get('task_id'), 'task_id')
-
+        task = _check_task_id(request_body.get('task_id'), users_org_id)
         delay_for = _check_int(request_body.get('delay_for'), 'delay_for')
-
-        reason = request_body.get('reason')
-        if reason is not None:
-            reason = _check_str(reason, 'reason')
-
         try:
-            task = TaskController.get_task_by_id(task_id, org_id)
-        except ValueError:
-            raise ValidationError("Task does not exist.")
-
-        return task, delay_for, reason
+            return task, delay_for, _check_str(request_body['reason'], 'reason')
+        except KeyError:
+            return task, delay_for, None
 
     @staticmethod
     def validate_register_token_request(request_body: dict) -> tuple:

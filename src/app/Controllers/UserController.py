@@ -1,5 +1,4 @@
 import datetime
-import typing
 
 from flask import request, Response
 
@@ -9,25 +8,6 @@ from app.Exceptions import ProductTierLimitError
 from app.Models import User, Activity, Task
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
-
-
-def _get_user_by_email(email: str) -> User:
-    """Gets a user by their email address
-
-    :param email:           The user's email
-    :raises ValueError:     If the user doesn't exist.
-    :return:                The User
-    """
-    with session_scope() as session:
-        ret = session.query(User).filter_by(
-            email=email,
-            deleted=None
-        ).first()
-    if ret is None:
-        logger.info(f"User with email {email} does not exist.")
-        raise ValueError(f"User with email {email} does not exist.")
-    else:
-        return ret
 
 
 def _get_user_by_id(user_id: int) -> User:
@@ -49,38 +29,25 @@ def _get_user_by_id(user_id: int) -> User:
         return ret
 
 
-def _get_user(user_identifier: typing.Union[str, int]) -> User:
-    """Gets a user by their id or email
-
-    :param user_identifier: The user id or email
-    :raises ValueError:     If the user doesn't exist.
-    """
-    if isinstance(user_identifier, str):
-        return _get_user_by_email(user_identifier)
-    elif isinstance(user_identifier, int):
-        return _get_user_by_id(user_identifier)
-    else:
-        raise ValueError(f"Bad user_identifier, expected Union[str, int] got {type(user_identifier)}")
-
-
 class UserController(object):
     @staticmethod
     def get_user_by_email(email: str) -> User:
         """Public method for getting a user by their email """
-        return _get_user_by_email(email)
+        with session_scope() as session:
+            ret = session.query(User).filter_by(
+                email=email,
+                deleted=None
+            ).first()
+        if ret is None:
+            logger.info(f"User with email {email} does not exist.")
+            raise ValueError(f"User with email {email} does not exist.")
+        else:
+            return ret
 
     @staticmethod
     def get_user_by_id(user_id: int) -> User:
         """Public method for getting a user by their id """
         return _get_user_by_id(user_id)
-
-    @staticmethod
-    def all_user_ids(org_id: int) -> typing.List[int]:
-        """ Returns a list of all user ids """
-        with session_scope() as session:
-            user_ids_qry = session.query(User.id).filter_by(org_id=org_id).all()
-
-        return [user_id[0] for user_id in user_ids_qry]
 
     @staticmethod
     def create_user(req: request) -> Response:
@@ -203,7 +170,7 @@ class UserController(object):
         )
 
         # get the user to update
-        user_to_update = UserController.get_user_by_id(user_attrs.get('id'))
+        user_to_update = _get_user_by_id(user_attrs.get('id'))
 
         # if the task is going to be disabled
         if user_to_update.disabled is None and user_attrs['disabled'] is not None:
@@ -263,7 +230,7 @@ class UserController(object):
         )
 
         # get the user
-        user_to_delete = UserController.get_user_by_id(user_id)
+        user_to_delete = _get_user_by_id(user_id)
 
         user_to_delete.delete(req_user)
 
@@ -284,29 +251,21 @@ class UserController(object):
         return g_response(status=204)
 
     @staticmethod
-    def get_user(user_identifier: typing.Union[int, str], req: request) -> Response:
+    def get_user(user_id: int, req: request) -> Response:
         """Get a single user by email or ID """
         from app.Controllers import AuthenticationController
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        # is the identifier an email or user_id?
-        try:
-            user_identifier = int(user_identifier)
-        except ValueError:
-            from app.Controllers import ValidationController
-            if ValidationController.validate_email(user_identifier):
-                user_identifier = str(user_identifier)
-
         AuthorizationController.authorize_request(
             auth_user=req_user,
             operation=Operations.GET,
             resource=Resources.USER,
-            affected_user_id=user_identifier
+            affected_user_id=user_id
         )
 
         try:
-            user = _get_user(user_identifier)
+            user = _get_user_by_id(user_id)
             req_user.log(
                 operation=Operations.GET,
                 resource=Resources.USER,
@@ -445,7 +404,7 @@ class UserController(object):
         return j_response(SettingsController.get_user_settings(req_user.id).as_dict())
 
     @staticmethod
-    def get_user_activity(user_identifier: typing.Union[str, int], req: request) -> Response:
+    def get_user_activity(user_id: int, req: request) -> Response:
         """Returns the activity for a user """
         from app.Controllers import AuthenticationController
 
@@ -454,16 +413,8 @@ class UserController(object):
         if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_user_activity', False):
             raise ProductTierLimitError(f"You cannot view user activity on your plan.")
 
-        # is the identifier an email or user_id?
         try:
-            user_identifier = int(user_identifier)
-        except ValueError:
-            from app.Controllers import ValidationController
-            if ValidationController.validate_email(user_identifier):
-                user_identifier = str(user_identifier)
-
-        try:
-            user = _get_user(user_identifier)
+            user = _get_user_by_id(user_id)
         except ValueError as e:
             return g_response(str(e), 400)
 
