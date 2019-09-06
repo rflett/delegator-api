@@ -171,7 +171,7 @@ class AuthenticationController(object):
         :param req: The HTTP request
         :return:    An HTTP 200 or 401 response
         """
-        from app.Controllers import ValidationController, UserController
+        from app.Controllers import ValidationController
 
         # get params from http request
         request_body = req.get_json()
@@ -184,46 +184,44 @@ class AuthenticationController(object):
         # validate password
         ValidationController.validate_password(password)
 
-        # get user
-        if UserController.user_exists(email):
-            with session_scope() as session:
-                user = session.merge(UserController.get_user_by_email(email))
+        with session_scope() as session:
+            user = session.query(User).filter_by(email=email).first()
+
+            if user is None:
+                return _failed_login_attempt(email)
+            else:
                 user.clear_failed_logins()
-        else:
-            # user doesn't exist so mark as a failed attempt against the email
-            return _failed_login_attempt(email)
 
-        # don't let them log in if they are disabled
-        if user.disabled is not None:
-            logger.info(f"Disabled user {user.id} tried to log in.")
-            return g_response(f"Cannot log in since this account has been disabled. Please consult your "
-                              f"Administrator for assistance.", 401)
+            # don't let them log in if they are disabled
+            if user.disabled is not None:
+                logger.info(f"Disabled user {user.id} tried to log in.")
+                return g_response(f"Cannot log in since this account has been disabled. Please consult your "
+                                  f"Administrator for assistance.", 401)
 
-        # don't let them log in if they are deleted (unlikely to happen)
-        if user.deleted is not None:
-            logger.warning(f"Deleted user {user.id} tried to log in.")
-            return g_response(f"Email or password incorrect", 401)
+            # don't let them log in if they are deleted (unlikely to happen)
+            if user.deleted is not None:
+                logger.warning(f"Deleted user {user.id} tried to log in.")
+                return g_response(f"Email or password incorrect", 401)
 
-        # check login attempts
-        if user.failed_login_attempts > 0:
-            logger.info(f"User {user.id} has failed to log in "
-                        f"{user.failed_login_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
-            if user.failed_login_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
-                # check timeout
-                diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
-                if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
-                    logger.info(f"user last failed {diff}s ago. "
-                                f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
-                    return g_response("Too many incorrect password attempts.", 401)
-                else:
-                    with session_scope():
-                        # reset timeout
-                        logger.info(f"User last failed {diff}s ago. "
-                                    f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s. Resetting timeout.")
-                        user.failed_login_attempts = 0
-                        user.failed_login_time = None
+            # check login attempts
+            if user.failed_login_attempts > 0:
+                logger.info(f"User {user.id} has failed to log in "
+                            f"{user.failed_login_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
+                if user.failed_login_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
+                    # check timeout
+                    diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
+                    if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
+                        logger.info(f"user last failed {diff}s ago. "
+                                    f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
+                        return g_response("Too many incorrect password attempts.", 401)
+                    else:
+                        with session_scope():
+                            # reset timeout
+                            logger.info(f"User last failed {diff}s ago. "
+                                        f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s.")
+                            user.failed_login_attempts = 0
+                            user.failed_login_time = None
 
-        with session_scope():
             # check password
             if user.password_correct(password):
                 # reset failed attempts

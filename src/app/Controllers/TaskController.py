@@ -2,13 +2,13 @@ import datetime
 from dateutil import tz
 
 from flask import request, Response
-from sqlalchemy import exists, and_, or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import aliased
 
 from app import logger, session_scope, g_response, j_response, subscription_api
 from app.Exceptions import ValidationError
 from app.Controllers import AuthorizationController, NotificationController
-from app.Models import User, Task, TaskStatus, TaskPriority, DelayedTask, Activity
+from app.Models import User, Task, DelayedTask, Activity, TaskPriority, TaskStatus
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
 
 
@@ -199,26 +199,6 @@ def _drop(task: Task, req_user: User) -> None:
 
 class TaskController(object):
     @staticmethod
-    def task_exists(task_id: int, org_id: int) -> bool:
-        """Checks to see if a task exists. """
-        with session_scope() as session:
-            return session.query(exists().where(and_(Task.id == task_id, Task.org_id == org_id))).scalar()
-
-    @staticmethod
-    def task_status_exists(task_status: str) -> bool:
-        """Checks to see if a task status exists. """
-        with session_scope() as session:
-            ret = session.query(exists().where(TaskStatus.status == task_status)).scalar()
-        return ret
-
-    @staticmethod
-    def task_priority_exists(task_priority: int) -> bool:
-        """Checks to see if a task priority exists. """
-        with session_scope() as session:
-            ret = session.query(exists().where(TaskPriority.priority == task_priority)).scalar()
-        return ret
-
-    @staticmethod
     def get_task_by_id(task_id: int, org_id: int) -> Task:
         """Gets a task by its id """
         # TODO I don't think we need the org_id as a param here
@@ -237,7 +217,6 @@ class TaskController(object):
     def get_task_priorities(req: request) -> Response:
         """Returns all task priorities """
         from app.Controllers import AuthorizationController, AuthenticationController
-        from app.Models import TaskPriority
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -262,7 +241,6 @@ class TaskController(object):
     def get_task_statuses(req: request) -> Response:
         """Returns all task statuses """
         from app.Controllers import AuthorizationController, AuthenticationController
-        from app.Models import TaskStatus
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -312,7 +290,6 @@ class TaskController(object):
     def get_tasks(req: request) -> Response:
         """Get all tasks in an organisation """
         from app.Controllers import AuthorizationController, AuthenticationController
-        from app.Models import Task
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -379,7 +356,7 @@ class TaskController(object):
             resource=Resources.TASK,
         )
 
-        task_attrs = ValidationController.validate_create_task_request(req_user.org_id, req.get_json())
+        task_attrs = ValidationController.validate_create_task_request(req.get_json())
 
         # create task
         with session_scope() as session:
@@ -619,8 +596,6 @@ class TaskController(object):
     def get_available_transitions(task_id: int, req: request) -> Response:
         """Returns the statuses that a task could be transitioned to, based on the state of the task. """
         from app.Controllers import ValidationController, AuthenticationController
-        from app.Models import TaskStatus
-        from app.Models.Enums import TaskStatuses
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
@@ -686,7 +661,6 @@ class TaskController(object):
     def delay_task(req: request) -> Response:
         """Delays a task """
         from app.Controllers import ValidationController, AuthenticationController
-        from app.Models import DelayedTask
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
