@@ -366,7 +366,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"id\": 1,\n\t\"email\": \"james@backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"W. Turner\",\n\t\"role_id\": \"MANAGER\",\n\t\"job_title\": \"Promoted from Scrub\",\n\t\"disabled\": null\n}"
+							"raw": "{\n\t\"id\": 1,\n\t\"email\": \"james@backburner.com\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"W. Turner\",\n\t\"role_id\": \"MANAGER\",\n\t\"job_title\": \"Promoted from Scrub\",\n\t\"disabled\": \"2019-08-29T23:00:00.0000Z\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/users",
@@ -476,6 +476,58 @@
 								"auth": {
 									"type": "noauth"
 								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "{{token}}"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"label\": \"TT1\"\n}"
+								},
+								"url": {
+									"raw": "{{host}}/tasks/types",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"tasks",
+										"types"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Task Type",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "fed51681-1030-43df-9387-5a58d297a618",
+										"exec": [
+											"pm.test(\"response is ok\", function () {\r",
+											"    pm.response.to.have.status(204);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
 								"method": "POST",
 								"header": [
 									{
@@ -486,13 +538,13 @@
 									{
 										"key": "Content-Type",
 										"name": "Content-Type",
-										"value": "application/json",
-										"type": "text"
+										"type": "text",
+										"value": "application/json"
 									}
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n\t\"label\": \"TT2\",\n\t\"escalation_policies\": [\n\t\t{\n\t\t\t\"display_order\": 1,\n\t\t\t\"delay\": 30,\n\t\t\t\"from_priority\": 0,\n\t\t\t\"to_priority\": 1\n\t\t},\n\t\t{\n\t\t\t\"display_order\": 2,\n\t\t\t\"delay\": 60,\n\t\t\t\"from_priority\": 1,\n\t\t\t\"to_priority\": 2\n\t\t}\n\t]\n}"
+									"raw": "{\n\t\"id\": 1,\n\t\"label\": \"Other\",\n\t\"escalation_policies\": [\n\t\t{\n\t\t\t\"display_order\": 1,\n\t\t\t\"delay\": 30,\n\t\t\t\"from_priority\": 0,\n\t\t\t\"to_priority\": 1\n\t\t},\n\t\t{\n\t\t\t\"display_order\": 2,\n\t\t\t\"delay\": 60,\n\t\t\t\"from_priority\": 1,\n\t\t\t\"to_priority\": 2\n\t\t}\n\t]\n}"
 								},
 								"url": {
 									"raw": "{{host}}/tasks/types",
@@ -582,14 +634,14 @@
 									}
 								],
 								"url": {
-									"raw": "{{host}}/tasks/types/2",
+									"raw": "{{host}}/tasks/types/1",
 									"host": [
 										"{{host}}"
 									],
 									"path": [
 										"tasks",
 										"types",
-										"2"
+										"1"
 									]
 								}
 							},
@@ -1138,7 +1190,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"task_id\": 1,\n\t\"task_status\": \"INPROGRESS\"\n}"
+							"raw": "{\n\t\"task_id\": 2,\n\t\"task_status\": \"IN_PROGRESS\"\n}"
 						},
 						"url": {
 							"raw": "{{host}}/task/transition",
@@ -1380,6 +1432,68 @@
 			"name": "Organisation",
 			"item": [
 				{
+					"name": "Get Organisation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/org",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"org"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Organisation",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"org_id\": 1,\r\n\t\"org_name\": \"RyansOrg\"\r\n}"
+						},
+						"url": {
+							"raw": "{{host}}/org",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"org"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Update Subscription",
 					"request": {
 						"method": "PUT",
@@ -1408,6 +1522,72 @@
 							"path": [
 								"org",
 								"subscription"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Lock Organisation",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Skj170raAe2SsWQm4Ny"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"locked_reason\": \"subscription_cancelled\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/org/lock/1t0Avu8RaMZr9VBzw",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"org",
+								"lock",
+								"1t0Avu8RaMZr9VBzw"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unlock Organisation",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Skj170raAe2SsWQm4Ny"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/org/lock/1t0Avu8RaMZr9VBzw",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"org",
+								"lock",
+								"1t0Avu8RaMZr9VBzw"
 							]
 						}
 					},
@@ -1505,7 +1685,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"email\": \"admin@frontburner.com.au\",\n\t\"password\": \"B4ckburn3r\"\n}"
+					"raw": "{\n\t\"email\": \"ryan.flett@frontburner.com.au\",\n\t\"password\": \"B4ckburn3r\"\n}"
 				},
 				"url": {
 					"raw": "{{host}}/login",
