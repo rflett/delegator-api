@@ -9,7 +9,7 @@ from dataclasses import dataclass
 class Base:
 
     if os.getenv('APP_ENV') == 'Ci':
-        url = "http://api:5000"
+        url = "http://api:5000/"
     else:
         url = "http://localhost:5000/"
 
