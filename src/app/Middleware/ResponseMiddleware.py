@@ -14,6 +14,10 @@ def handle_exceptions(f):
         try:
             return f(*args, **kwargs)
 
+        except Exceptions.WrapperCallFailedException as e:
+            logger.error(str(e))
+            return g_response(msg=str(e), status=200)
+
         except requests.Timeout as e:
             logger.error(str(e))
             return g_response(msg=str(e), status=202)
@@ -37,10 +41,6 @@ def handle_exceptions(f):
         except Exceptions.ResourceNotFoundError as e:
             logger.info(str(e))
             return g_response(msg=str(e), status=404)
-
-        except Exceptions.WrapperCallFailedException as e:
-            logger.error(str(e))
-            return g_response(msg=str(e), status=500)
 
         except Exception as e:
             logger.error(traceback.format_exc())

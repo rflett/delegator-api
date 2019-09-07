@@ -12,7 +12,7 @@ from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
 from app import db, session_scope, logger, user_activity_table, app, subscription_api
-from app.Models import FailedLogin, Task, UserSetting
+from app.Models import FailedLogin
 from app.Models.RBAC import Log, Permission
 from app.Models.LocalMockData import MockActivity
 
@@ -190,6 +190,8 @@ class User(db.Model):
 
     def delete(self, req_user) -> None:
         """ Deletes the user """
+        from app.Models import Task
+
         def make_random() -> str:
             return ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
 
@@ -202,6 +204,7 @@ class User(db.Model):
         # drop their tasks
         with session_scope() as session:
             users_tasks = session.query(Task).filter_by(assignee=self.id).all()
+
         for task in users_tasks:
             task.drop(req_user)
 
@@ -284,4 +287,5 @@ class User(db.Model):
     def create_settings(self) -> None:
         """ Creates the settings for this user """
         from app.Controllers.SettingsController import SettingsController
+        from app.Models import UserSetting
         SettingsController.set_user_settings(UserSetting(self.id))

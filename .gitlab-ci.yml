@@ -42,13 +42,16 @@ Build:
 Integration:
   stage: Test
   image: $GITLAB_REGISTRY/docker:latest
-  when: manual
-  only:
-    - master
+  variables:
+    APP_ENV: Ci
   services:
     - docker:dind
   tags:
     - docker
+  rules:
+    - if: '"$CI_COMMIT_REF_NAME" == "master"'
+      when: on_success
+    - when: manual
   script:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
@@ -59,18 +62,13 @@ Integration:
         -p 5000:5000 
         -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID 
         -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY 
-        -e APP_ENV=Ci 
+        -e APP_ENV=$APP_ENV
         --name api 
         --link postgres:postgres 
-        $AMZ_REGISTRY/api:latest
+        $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG
 
     # run tests
-    - docker run 
-      --link api:api 
-      -v `pwd`/src/tests/integration:/newman 
-      --name newman 
-      $AMZ_REGISTRY/newman:latest 
-      newman run /newman/integration.postman_collection.json
+    - pytest tests/integration/
 
 .deploy:
   stage: Deploy
