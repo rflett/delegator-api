@@ -1,7 +1,7 @@
 from flask import request, Response
 
 from app import logger, g_response, session_scope, j_response, subscription_api
-from app.Models import Organisation
+from app.Models import Organisation, TaskType
 
 
 class SignupController(object):
@@ -15,7 +15,6 @@ class SignupController(object):
         :return:    A HTTP 200 or 500 response
         """
         from app.Controllers import ValidationController, UserController
-        from app.Models import TaskType
 
         # get the request body
         request_body = req.get_json()
@@ -53,7 +52,6 @@ class SignupController(object):
             logger.error(str(e))
             # the org was actually created, but the user failed, so delete the org and default task type
             with session_scope() as session:
-                from app.Models import TaskType
                 session.query(TaskType).filter_by(org_id=organisation.id).delete()
                 session.delete(organisation)
                 logger.info(f"Deleted the new organisation {organisation.name} "

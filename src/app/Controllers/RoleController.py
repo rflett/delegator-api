@@ -3,6 +3,7 @@ from sqlalchemy import and_
 
 from app import session_scope, j_response
 from app.Models.Enums import Operations, Resources
+from app.Models.RBAC import Role
 
 
 class RoleController(object):
@@ -10,7 +11,6 @@ class RoleController(object):
     def get_roles(req: request) -> Response:
         """Return all roles lower in rank than the requesting user's role. """
         from app.Controllers import AuthorizationController, AuthenticationController
-        from app.Models.RBAC import Role
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 

@@ -269,7 +269,6 @@ class UserController(object):
     def get_users(req: request) -> Response:
         """Get all users """
         from app.Controllers import AuthorizationController, AuthenticationController
-        from app.Models import User
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 

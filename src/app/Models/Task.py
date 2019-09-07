@@ -127,8 +127,6 @@ class Task(db.Model):
 
     def fat_dict(self) -> dict:
         """ Returns a full task dict with all of its FK's joined. """
-        from app.Models import User
-
         with session_scope() as session:
             task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
             tasks_qry = session\

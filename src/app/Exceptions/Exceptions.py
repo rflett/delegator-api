@@ -31,4 +31,3 @@ class WrapperCallFailedException(Error):
 class ResourceNotFoundError(Error):
     """Error when the requested resource is not found"""
     pass
-

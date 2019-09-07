@@ -4,6 +4,7 @@ import hashlib
 import uuid
 
 from app import db, app
+from app.Models import OrgSetting
 
 
 class Organisation(db.Model):
@@ -39,7 +40,6 @@ class Organisation(db.Model):
     def create_settings(self) -> None:
         """ Creates the settings for this user """
         from app.Controllers.SettingsController import SettingsController
-        from app.Models import OrgSetting
         SettingsController.set_org_settings(OrgSetting(self.id))
 
     def as_dict(self):

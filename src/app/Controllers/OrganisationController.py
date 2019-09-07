@@ -6,7 +6,7 @@ from flask import request, Response
 from sqlalchemy import exists, func
 
 from app import session_scope, logger, j_response
-from app.Exceptions import ValidationError, ResourceNotFoundError
+from app.Exceptions import ValidationError
 from app.Models import Organisation
 from app.Models.Enums import Operations, Resources
 
