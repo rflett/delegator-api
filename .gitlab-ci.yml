@@ -16,6 +16,7 @@ Flake8:
   image: $GITLAB_REGISTRY/python:latest
   only:
     - master
+    - develop
   script:
     - flake8 src/
 
@@ -24,6 +25,7 @@ Build:
   image: $GITLAB_REGISTRY/docker:latest
   only:
     - master
+    - develop
   services:
     - docker:dind
   tags:
@@ -51,6 +53,10 @@ Integration:
   rules:
     - if: '$CI_COMMIT_REF_NAME != "master"'
       when: manual
+    - when: on_success
+  only:
+    - master
+    - develop
   script:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
