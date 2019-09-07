@@ -58,14 +58,12 @@ Integration:
     - eval $(aws ecr get-login --no-include-email)
 
     # start services
-    - docker run -d -p 5432:5432 --name postgres $AMZ_REGISTRY/postgres:latest
+    - docker run -d --network host $AMZ_REGISTRY/postgres:latest
     - docker run -d
-        -p 5000:5000 
+        --network host
         -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID 
         -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY 
         -e APP_ENV=$APP_ENV
-        --name api 
-        --link postgres:postgres 
         $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG
 
     # run tests

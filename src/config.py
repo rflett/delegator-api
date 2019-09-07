@@ -28,7 +28,7 @@ class Docker(Config):
 
 
 class Ci(Config):
-    SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@postgres:5432/backburner"
+    SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@127.0.0.1:5432/backburner"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     SUBSCRIPTION_API_URL = "https://subscription-api-staging.backburner.online"
 
