@@ -51,12 +51,10 @@ Integration:
   tags:
     - docker
   rules:
-    - if: '$CI_COMMIT_REF_NAME != "master"'
+    - if: '$CI_COMMIT_REF_NAME == "master"'
+      when: on_sucess
+    - if: '$CI_COMMIT_REF_NAME == "develop"'
       when: manual
-    - when: on_success
-  only:
-    - master
-    - develop
   script:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
