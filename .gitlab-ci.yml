@@ -67,6 +67,7 @@ Integration:
         $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG
 
     # run tests
+    - sleep 10
     - pytest src/tests/integration/
 
 .deploy:
