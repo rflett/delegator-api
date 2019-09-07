@@ -6,7 +6,7 @@ from flask import request, Response
 from sqlalchemy import exists, func
 
 from app import session_scope, logger, j_response
-from app.Exceptions import ValidationError
+from app.Exceptions import ValidationError, ResourceNotFoundError
 from app.Models import Organisation
 from app.Models.Enums import Operations, Resources
 
@@ -97,12 +97,9 @@ class OrganisationController(object):
             raise ValidationError("Missing email or customer_id from request")
 
         with session_scope():
-            try:
-                org = UserController.get_user_by_email(email).orgs
-                org.chargebee_customer_id = customer_id
-                return j_response()
-            except ValueError:
-                raise ValidationError("Email doesn't exist.")
+            org = UserController.get_user_by_email(email).orgs
+            org.chargebee_customer_id = customer_id
+            return j_response()
 
     @staticmethod
     def update_org_subscription_id(req: request) -> Response:

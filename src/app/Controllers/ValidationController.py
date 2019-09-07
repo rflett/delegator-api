@@ -6,7 +6,7 @@ from sqlalchemy import exists, and_, func
 from validate_email import validate_email
 
 from app import logger, app, session_scope
-from app.Exceptions import ValidationError
+from app.Exceptions import ValidationError, ResourceNotFoundError
 from app.Models import TaskType, TaskTypeEscalation, Task, OrgSetting, UserSetting, Organisation, User, TaskPriority, \
     TaskStatus
 from app.Models.Enums import NotificationTokens
@@ -80,11 +80,9 @@ def _check_user_id(
                 user_exists = session.query(exists().where(User.id == identifier)).scalar()
 
         if should_exist and not user_exists:
-            logger.info(f"user {identifier} doesn't exist")
-            raise ValidationError(f"user does not exist")
+            raise ResourceNotFoundError(f"User doesn't exist")
         elif not should_exist and user_exists:
-            logger.info(f"user {identifier} already exists")
-            raise ValidationError("user already exists")
+            raise ValidationError(f"User already exists")
 
     return identifier
 
@@ -94,9 +92,9 @@ def _check_user_role(role: str) -> str:
     with session_scope() as session:
         role_exists = session.query(exists().where(Role.id == role)).scalar()
     if not role_exists:
-        logger.info(f"Role {role} does not exist")
-        raise ValidationError(f"Role {role} does not exist")
-    return role
+        raise ResourceNotFoundError(f"Role {role} doesn't exist")
+    else:
+        return role
 
 
 def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None, str]:
@@ -111,7 +109,8 @@ def _check_user_disabled(disabled: typing.Optional[datetime.datetime]) -> typing
             disabled = datetime.datetime.strptime(disabled, app.config['REQUEST_DATE_FORMAT'])
             return disabled
         except ValueError:
-            raise ValidationError("Couldn't convert disabled to datetime.datetime")
+            raise ValidationError(f"Couldn't convert disabled {disabled} to datetime.datetime, please ensure it is "
+                                  f"in the format {app.config['REQUEST_DATE_FORMAT']}")
 
 
 def _check_task_id(task_id: int, org_id: int) -> typing.Union[int, Task]:
@@ -121,45 +120,27 @@ def _check_task_id(task_id: int, org_id: int) -> typing.Union[int, Task]:
         task = session.query(Task).filter_by(id=task_id, org_id=org_id).first()
 
     if task is None:
-        logger.info(f"task {task_id} doesn't exist")
-        raise ValidationError(f"task does not exist")
+        raise ResourceNotFoundError(f"Task {task_id} doesn't exist")
     else:
         return task
 
 
-def _check_task_type_id(task_type_id: int, should_exist: typing.Optional[bool] = None) -> int:
+def _check_task_type_id(task_type_id: int) -> int:
     task_type_id = _check_int(task_type_id, 'task_type_id')
 
-    # optionally check if it exists or not
-    if should_exist is not None:
-        with session_scope() as session:
-            task_exists = session.query(exists().where(TaskType.id == task_type_id)).scalar()
-
-        if should_exist and not task_exists:
-            logger.info(f"task type id {task_type_id} doesn't exist")
-            raise ValidationError(f"task type does not exist")
-        elif not should_exist and task_exists:
-            logger.info(f"task type id {task_type_id} in org already exists")
-            raise ValidationError("task type already exists")
+    with session_scope() as session:
+        if not session.query(exists().where(TaskType.id == task_type_id)).scalar():
+            raise ResourceNotFoundError(f"Task type {task_type_id} doesn't exist")
 
     return task_type_id
 
 
-def _check_task_status(task_status: str, should_exist: typing.Optional[bool] = None) -> str:
+def _check_task_status(task_status: str) -> str:
     task_status = _check_str(task_status, 'task_status')
 
-    # optionally check if it exists or not
-    if should_exist is not None:
-
-        with session_scope() as session:
-            status_exist = session.query(exists().where(TaskStatus.status == task_status)).scalar()
-
-        if should_exist and not status_exist:
-            logger.info(f"task status {task_status} doesn't exist")
-            raise ValidationError(f"task status {task_status} does not exist")
-        elif not should_exist and status_exist:
-            logger.info(f"task status {task_status} already exists")
-            raise ValidationError(f"task status {task_status} already exists")
+    with session_scope() as session:
+        if not session.query(exists().where(TaskStatus.status == task_status)).scalar():
+            raise ResourceNotFoundError(f"Task status {task_status} doesn't exist")
 
     return task_status.strip()
 
@@ -182,12 +163,11 @@ def _check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[Non
             due_time_parsed = dateutil.parser.parse(due_time_str)
             # check due time is not in the past
             if due_time_parsed < datetime.datetime.now(datetime.timezone.utc):
-                logger.info(f"due_time is in the past")
                 raise ValidationError("Due time is in the past.")
             return due_time_parsed
         except ValueError as e:
             logger.error(str(e))
-            raise ValidationError(f'Could not parse due_time to date.')
+            raise ValidationError(f"Could not parse due_time {due_time_str} to date.")
     return None
 
 
@@ -203,10 +183,9 @@ def _check_task_priority(priority: int) -> int:
 
     with session_scope() as session:
         if not session.query(exists().where(TaskPriority.priority == priority)).scalar():
-            logger.info(f"Priority {priority} does not exist")
-            raise ValidationError(f"Priority does not exist")
-        else:
-            return priority
+            raise ResourceNotFoundError(f"Priority {priority} doesn't exist")
+
+    return priority
 
 
 def _check_escalation(task_type_id: int, display_order: int, should_exist: bool) -> None:
@@ -218,11 +197,9 @@ def _check_escalation(task_type_id: int, display_order: int, should_exist: bool)
                 )
             )).scalar()
         if should_exist and not escalation_exists:
-            logger.info(f"task type escalation {task_type_id}:{display_order} doesn't exist")
-            raise ValidationError(f"task type escalation {task_type_id}:{display_order} does not exist")
+            raise ResourceNotFoundError(f"Task type escalation {task_type_id}:{display_order} doesn't exist")
         elif not should_exist and escalation_exists:
-            logger.info(f"task type escalation {task_type_id}:{display_order} already exists")
-            raise ValidationError(f"task type escalation {task_type_id}:{display_order} already exists")
+            raise ValidationError(f"Task type escalation {task_type_id}:{display_order} already exists.")
 
 
 class ValidationController(object):
@@ -235,11 +212,7 @@ class ValidationController(object):
         :param email:   The email to validate
         :return:        True if the email is valid, or a Flask Response.
         """
-        if not isinstance(email, str):
-            logger.info(f"bad email expected str got {type(email)}")
-            raise ValidationError(f"Bad email expected str got {type(email)}")
-        if validate_email(email) is False:
-            logger.info("email is invalid")
+        if validate_email(_check_str(email, 'email')) is False:
             raise ValidationError("Invalid email")
         return True
 
@@ -251,7 +224,6 @@ class ValidationController(object):
         :return:            True if password is valid, or a Flask Response
         """
         if not isinstance(password, str):
-            logger.info(f"bad password expected str got {type(password)}")
             raise ValidationError(f"Bad password expected str got {type(password)}")
         # password_check = _check_password_reqs(password)
         return password
@@ -284,7 +256,7 @@ class ValidationController(object):
         with session_scope() as session:
             task_type = session.query(TaskType).filter_by(id=request_body['id'], org_id=org_id).first()
             if task_type is None:
-                raise ValidationError(f"Task type {label} doesn't exist.")
+                raise ResourceNotFoundError(f"Task type {label} doesn't exist.")
 
             if task_type.disabled is not None:
                 raise ValidationError(f"Task type {label} is disabled.")
@@ -353,7 +325,7 @@ class ValidationController(object):
             task_type = session.query(TaskType).filter_by(id=type_id).first()
 
         if task_type is None:
-            raise ValidationError(f"Task type does not exist.")
+            raise ResourceNotFoundError(f"Task type {task_type_id} doesn't exist.")
         else:
             return task_type
 
@@ -429,7 +401,7 @@ class ValidationController(object):
             # check org exists
             org = session.query(Organisation).filter_by(id=org_id).first()
             if org is None:
-                raise ValidationError("That organisation doesn't exist.")
+                raise ResourceNotFoundError("That organisation doesn't exist.")
 
             # check that it's the user's org
             if req_user.org_id != org.id:
@@ -456,9 +428,9 @@ class ValidationController(object):
         :return:                Response if the request body contains invalid values, or the TaskRequest dataclass
         """
         return {
-            'type': _check_task_type_id(task_type_id=request_body.get('type_id'), should_exist=True),
+            'type': _check_task_type_id(task_type_id=request_body.get('type_id')),
             'description': _check_task_description(request_body.get('description')),
-            'status': _check_task_status(request_body.get('status'), should_exist=True),
+            'status': _check_task_status(request_body.get('status')),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
             'due_time': _check_task_due_time(request_body.get('due_time')),
             'assignee': _check_task_assignee(request_body.get('assignee')),
@@ -476,9 +448,9 @@ class ValidationController(object):
         task = _check_task_id(request_body.get('id'), users_org_id)
         return {
             'task': task,
-            'type': _check_task_type_id(request_body.get('type_id'), should_exist=True),
+            'type': _check_task_type_id(request_body.get('type_id')),
             'description': _check_task_description(request_body.get('description')),
-            'status': _check_task_status(request_body.get('status'), should_exist=True),
+            'status': _check_task_status(request_body.get('status')),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
             'due_time': _check_task_due_time(request_body.get('due_time')),
             'assignee': _check_task_assignee(request_body.get('assignee')),
@@ -521,7 +493,7 @@ class ValidationController(object):
     def validate_transition_task(users_org_id: int, request_body: dict) -> tuple:
         """ Validates the transition task request """
         task = _check_task_id(request_body.get('task_id'), users_org_id)
-        task_status = _check_task_status(request_body.get('task_status'), should_exist=True)
+        task_status = _check_task_status(request_body.get('task_status'))
         return task, task_status
 
     @staticmethod

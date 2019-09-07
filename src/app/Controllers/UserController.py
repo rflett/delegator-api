@@ -4,7 +4,7 @@ from flask import request, Response
 
 from app import logger, g_response, session_scope, j_response, subscription_api
 from app.Controllers import AuthorizationController
-from app.Exceptions import ProductTierLimitError
+from app.Exceptions import ProductTierLimitError, ResourceNotFoundError
 from app.Models import User, Activity, Task
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
@@ -14,17 +14,13 @@ def _get_user_by_id(user_id: int) -> User:
     """Gets a user by their id
 
     :param user_id:         The user's id
-    :raises ValueError:     If the user doesn't exist.
     :return:                The User
     """
     with session_scope() as session:
-        ret = session.query(User).filter_by(
-            id=user_id,
-            deleted=None
-        ).first()
+        ret = session.query(User).filter_by(id=user_id, deleted=None).first()
+
     if ret is None:
-        logger.info(f"User with id {user_id} does not exist.")
-        raise ValueError(f"User with id {user_id} does not exist.")
+        raise ResourceNotFoundError(f"User with id {user_id} does not exist.")
     else:
         return ret
 
@@ -34,13 +30,9 @@ class UserController(object):
     def get_user_by_email(email: str) -> User:
         """Public method for getting a user by their email """
         with session_scope() as session:
-            ret = session.query(User).filter_by(
-                email=email,
-                deleted=None
-            ).first()
+            ret = session.query(User).filter_by(email=email, deleted=None).first()
         if ret is None:
-            logger.info(f"User with email {email} does not exist.")
-            raise ValueError(f"User with email {email} does not exist.")
+            raise ResourceNotFoundError(f"User with email {email} does not exist.")
         else:
             return ret
 
@@ -264,17 +256,14 @@ class UserController(object):
             affected_user_id=user_id
         )
 
-        try:
-            user = _get_user_by_id(user_id)
-            req_user.log(
-                operation=Operations.GET,
-                resource=Resources.USER,
-                resource_id=user.id
-            )
-            logger.info(f"Found user {user.id}")
-            return j_response(user.fat_dict())
-        except ValueError as e:
-            return g_response(str(e), 400)
+        user = _get_user_by_id(user_id)
+        req_user.log(
+            operation=Operations.GET,
+            resource=Resources.USER,
+            resource_id=user.id
+        )
+        logger.info(f"Found user {user.id}")
+        return j_response(user.fat_dict())
 
     @staticmethod
     def get_users(req: request) -> Response:
@@ -413,10 +402,7 @@ class UserController(object):
         if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_user_activity', False):
             raise ProductTierLimitError(f"You cannot view user activity on your plan.")
 
-        try:
-            user = _get_user_by_id(user_id)
-        except ValueError as e:
-            return g_response(str(e), 400)
+        user = _get_user_by_id(user_id)
 
         AuthorizationController.authorize_request(
             auth_user=req_user,

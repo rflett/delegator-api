@@ -1,5 +1,5 @@
 from app.Middleware.AuthMiddleware import requires_jwt, requires_token_auth
-from app.Middleware.ResponseMiddlware import handle_exceptions
+from app.Middleware.ResponseMiddleware import handle_exceptions
 
 __all__ = [
     requires_jwt,
