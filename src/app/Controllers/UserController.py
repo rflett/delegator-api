@@ -57,7 +57,7 @@ class UserController(object):
         )
 
         # validate user
-        ValidationController.validate_create_user_request(request_body)
+        ValidationController.validate_create_user_request(req_user, request_body)
 
         # Check that the user hasn't surpassed limits on their product tier
         with session_scope() as session:
@@ -152,7 +152,7 @@ class UserController(object):
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 
-        user_attrs = ValidationController.validate_update_user_request(req.get_json())
+        user_attrs = ValidationController.validate_update_user_request(req_user, req.get_json())
 
         AuthorizationController.authorize_request(
             auth_user=req_user,

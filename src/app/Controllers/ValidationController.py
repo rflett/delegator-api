@@ -6,7 +6,7 @@ from sqlalchemy import exists, and_, func
 from validate_email import validate_email
 
 from app import logger, app, session_scope
-from app.Exceptions import ValidationError, ResourceNotFoundError
+from app.Exceptions import ValidationError, ResourceNotFoundError, AuthorizationError
 from app.Models import TaskType, TaskTypeEscalation, Task, OrgSetting, UserSetting, Organisation, User, TaskPriority, \
     TaskStatus
 from app.Models.Enums import NotificationTokens
@@ -17,13 +17,10 @@ def _check_int(param: int, param_name: str) -> int:
     """Ensures the param is an int and is positive
     In python bools are ints, so we need to checks that it's a bool before we check that it's an int"""
     if isinstance(param, bool):
-        logger.info(f"Bad {param_name}, expected int got {type(param)}.")
         raise ValidationError(f"Bad {param_name}, expected int got {type(param)}.")
     if not isinstance(param, int):
-        logger.info(f"Bad {param_name}, expected int got {type(param)}.")
         raise ValidationError(f"Bad {param_name}, expected int got {type(param)}.")
     if param < 0:
-        logger.info(f"{param_name} is negative.")
         raise ValidationError(f"{param_name} is negative.")
     return param
 
@@ -31,10 +28,8 @@ def _check_int(param: int, param_name: str) -> int:
 def _check_str(param: str, param_name: str) -> str:
     """Checks that the param is a str, has more than 0 chars in it, and returns the stripped str"""
     if not isinstance(param, str):
-        logger.info(f"Bad {param_name}, expected str got {type(param)}.")
         raise ValidationError(f"Bad {param_name}, expected str got {type(param)}.")
     if len(param.strip()) == 0:
-        logger.info(f"{param_name} is required.")
         raise ValidationError(f"{param_name} is required.")
     return param.strip()
 
@@ -46,15 +41,11 @@ def _check_password_reqs(password: str) -> bool:
     min_caps = 1
     special_chars = r' !#$%&\'()*+,-./:;<=>?@[\]^_`{|}~'
     if len(password) < min_length:
-        logger.info(f"password length less than {min_length}.")
         raise ValidationError(f"Password length less than {min_length}.")
     if len([char for char in password if char in special_chars]) < min_special_chars:
-        logger.info(f"password requires more than {min_special_chars} special character(s).")
         raise ValidationError(f"Password requires more than {min_special_chars} special character(s).")
     if sum(1 for c in password if c.isupper()) < min_caps:
-        logger.info(f"password requires more than {min_caps} capital letter(s).")
         raise ValidationError(f"Password requires more than {min_caps} capital letter(s).")
-    logger.info(f"password meets requirements")
     return True
 
 
@@ -87,20 +78,23 @@ def _check_user_id(
     return identifier
 
 
-def _check_user_role(role: str) -> str:
+def _check_user_role(req_user: User, role: str) -> str:
     role = _check_str(role, 'role')
     with session_scope() as session:
-        role_exists = session.query(exists().where(Role.id == role)).scalar()
-    if not role_exists:
+        role = session.query(Role).filter_by(id=role).first()
+    if role is None:
         raise ResourceNotFoundError(f"Role {role} doesn't exist")
+    elif role.rank < req_user.roles.rank:
+        raise AuthorizationError("You cannot create a more privileged user than yourself.")
     else:
-        return role
+        return role.id
 
 
 def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None, str]:
     if job_title is not None:
         return _check_str(job_title, 'job_title')
-    return job_title
+    else:
+        return job_title
 
 
 def _check_user_disabled(disabled: typing.Optional[datetime.datetime]) -> typing.Union[None, datetime.datetime]:
@@ -330,9 +324,10 @@ class ValidationController(object):
             return task_type
 
     @staticmethod
-    def validate_create_user_request(request_body: dict) -> None:
+    def validate_create_user_request(req_user: User, request_body: dict) -> None:
         """
         Validates a create user request body
+        :param req_user:        The user making the request
         :param request_body:    The request body from the create user request
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
@@ -340,11 +335,11 @@ class ValidationController(object):
         email = request_body.get('email')
         ValidationController.validate_email(email)
 
-        _check_user_id(request_body.get('email'), should_exist=False),
-        _check_user_role(request_body.get('role_id')),
-        _check_str(request_body.get('first_name'), 'first_name'),
-        _check_str(request_body.get('last_name'), 'last_name'),
-        _check_user_job_title(request_body.get('job_title')),
+        _check_user_id(request_body.get('email'), should_exist=False)
+        _check_user_role(req_user, request_body.get('role_id'))
+        _check_str(request_body.get('first_name'), 'first_name')
+        _check_str(request_body.get('last_name'), 'last_name')
+        _check_user_job_title(request_body.get('job_title'))
         _check_user_disabled(request_body.get('disabled'))
 
     @staticmethod
@@ -365,13 +360,13 @@ class ValidationController(object):
         }
 
     @staticmethod
-    def validate_update_user_request(request_body: dict) -> dict:
+    def validate_update_user_request(req_user: User, request_body: dict) -> dict:
         """  Validates an update user request body """
         return {
             "id": _check_user_id(request_body.get('id'), should_exist=True),
             "first_name": _check_str(request_body.get('first_name'), 'first_name'),
             "last_name": _check_str(request_body.get('last_name'), 'last_name'),
-            "role": _check_user_role(request_body.get('role_id')),
+            "role": _check_user_role(req_user, request_body.get('role_id')),
             "job_title": _check_user_job_title(request_body.get('job_title')),
             "disabled": _check_user_disabled(request_body.get('disabled'))
         }
@@ -422,8 +417,7 @@ class ValidationController(object):
 
     @staticmethod
     def validate_create_task_request(request_body: dict) -> dict:
-        """
-        Validates a task request body
+        """Validates a task request body
         :param request_body:    The request body from the create task request
         :return:                Response if the request body contains invalid values, or the TaskRequest dataclass
         """
@@ -439,8 +433,7 @@ class ValidationController(object):
 
     @staticmethod
     def validate_update_task_request(users_org_id: int, request_body: dict) -> dict:
-        """
-        Validates a user request body
+        """Validates a user request body
         :param users_org_id:          The org that the task should be in (from the req user)
         :param request_body:    The request body from the update user request
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
@@ -459,8 +452,8 @@ class ValidationController(object):
 
     @staticmethod
     def validate_assign_task(users_org_id: int, request_body: dict) -> tuple:
-        """
-        Validates the assign task request
+        """Validates the assign task request
+        :param: users_org_id:   The org id of the user making the request
         :param request_body:    The request body from the update task request
         :return:                Response if invalid, else a complex dict
         """
@@ -471,11 +464,10 @@ class ValidationController(object):
 
     @staticmethod
     def validate_drop_task(users_org_id: int, task_id: int) -> Task:
-        """
-        Validates the assign task request
-        :param: user_org_id: The org id of the requesting user
-        :param task_id:    The id of the task to drop
-        :return:           Response if invalid, else a complex dict
+        """Validates the assign task request
+        :param: users_org_id:   The org id of the user making the request
+        :param task_id:         The id of the task to drop
+        :return:                Response if invalid, else a complex dict
         """
         task = _check_task_id(task_id, users_org_id)
 
