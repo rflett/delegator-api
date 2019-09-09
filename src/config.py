@@ -21,10 +21,16 @@ class Config(object):
     SUBSCRIPTION_API_KEY = 'DWrcxyZsqJ64d1WGUiN'
 
 
-class Ci(Config):
+class Docker(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@postgres:5432/backburner"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     SUBSCRIPTION_API_URL = "http://subscription-api:5001"
+
+
+class Ci(Config):
+    SQLALCHEMY_DATABASE_URI = "postgresql://backburner:backburner@127.0.0.1:5432/backburner"
+    FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
+    SUBSCRIPTION_API_URL = "https://subscription-api-staging.backburner.online"
 
 
 class Local(Config):

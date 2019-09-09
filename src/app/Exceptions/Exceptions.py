@@ -26,3 +26,8 @@ class ProductTierLimitError(Error):
 class WrapperCallFailedException(Error):
     """Error when a call to another API via a wrapper fails"""
     pass
+
+
+class ResourceNotFoundError(Error):
+    """Error when the requested resource is not found"""
+    pass

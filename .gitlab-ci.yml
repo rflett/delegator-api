@@ -16,6 +16,7 @@ Flake8:
   image: $GITLAB_REGISTRY/python:latest
   only:
     - master
+    - develop
   script:
     - flake8 src/
 
@@ -24,6 +25,7 @@ Build:
   image: $GITLAB_REGISTRY/docker:latest
   only:
     - master
+    - develop
   services:
     - docker:dind
   tags:
@@ -42,35 +44,31 @@ Build:
 Integration:
   stage: Test
   image: $GITLAB_REGISTRY/docker:latest
-  when: manual
-  only:
-    - master
+  variables:
+    APP_ENV: Ci
   services:
     - docker:dind
   tags:
     - docker
+  only:
+    - develop
+    - master
   script:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
 
     # start services
-    - docker run -d -p 5432:5432 --name postgres $AMZ_REGISTRY/postgres:latest
+    - docker run -d --network host $AMZ_REGISTRY/postgres:latest
     - docker run -d
-        -p 5000:5000 
+        --network host
         -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID 
         -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY 
-        -e APP_ENV=Ci 
-        --name api 
-        --link postgres:postgres 
-        $AMZ_REGISTRY/api:latest
+        -e APP_ENV=$APP_ENV
+        $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG
 
     # run tests
-    - docker run 
-      --link api:api 
-      -v `pwd`/src/tests/integration:/newman 
-      --name newman 
-      $AMZ_REGISTRY/newman:latest 
-      newman run /newman/integration.postman_collection.json
+    - sleep 10
+    - pytest src/tests/integration/
 
 .deploy:
   stage: Deploy

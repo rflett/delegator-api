@@ -2,6 +2,7 @@ import datetime
 import typing
 
 from app import db, session_scope, app
+from app.Models import TaskTypeEscalation
 
 
 class TaskType(db.Model):
@@ -42,7 +43,6 @@ class TaskType(db.Model):
         }
 
     def fat_dict(self) -> dict:
-        from app.Models import TaskTypeEscalation
         task_type_dict = self.as_dict()
 
         # get task type escalations

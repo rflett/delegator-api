@@ -3,9 +3,9 @@ from os import getenv
 
 from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
-from sqlalchemy import exists
 
 from app import db, session_scope, logger, task_activity_table, app
+from app.Exceptions import ValidationError
 from app.Models import DelayedTask, User
 from app.Models.LocalMockData import MockActivity
 
@@ -127,8 +127,6 @@ class Task(db.Model):
 
     def fat_dict(self) -> dict:
         """ Returns a full task dict with all of its FK's joined. """
-        from app.Models import User
-
         with session_scope() as session:
             task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
             tasks_qry = session\
@@ -187,22 +185,17 @@ class Task(db.Model):
         """ Gets the label of its task type """
         return self.task_types.label
 
-    def has_been_delayed(self) -> bool:
-        """ Checks to see if a task has been delayed before at all """
-        with session_scope() as session:
-            return session.query(exists().where(DelayedTask.task_id == self.id)).scalar()
-
     def delayed_info(self) -> dict:
         """ Gets the latest delayed information about a task """
-        from app.Models import DelayedTask
-
         with session_scope() as session:
             delayed_task = session.query(DelayedTask).filter_by(task_id=self.id).first()
 
-        delayed_task_dict = delayed_task.as_dict()
-        delayed_task_dict['delayed_by'] = delayed_task.users.as_dict()
-
-        return delayed_task_dict
+        if delayed_task is None:
+            raise ValidationError("Task has not been delayed before.")
+        else:
+            delayed_task_dict = delayed_task.as_dict()
+            delayed_task_dict['delayed_by'] = delayed_task.users.as_dict()
+            return delayed_task_dict
 
     def drop(self, req_user: User) -> None:
         """ Drops this task """

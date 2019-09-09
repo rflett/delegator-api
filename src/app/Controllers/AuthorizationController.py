@@ -53,10 +53,7 @@ class AuthorizationController(object):
         elif user_permission_scope == ResourceScopes.ORG:
             if affected_user_id is not None:
                 # get the affected user's org_id
-                try:
-                    affected_user_org_id = UserController.get_user_by_id(affected_user_id).org_id
-                except ValueError as e:
-                    raise AuthorizationError(e)
+                affected_user_org_id = UserController.get_user_by_id(affected_user_id).org_id
                 if auth_user.org_id != affected_user_org_id:
                     msg = f"User id {auth_user.id} cannot perform {operation} on {resource} because their scope " \
                         f"is {user_permission_scope} but the affected user is {affected_user_id} which is " \

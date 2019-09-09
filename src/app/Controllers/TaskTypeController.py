@@ -12,7 +12,6 @@ class TaskTypeController(object):
     def get_task_types(req: request) -> Response:
         """Returns all task types """
         from app.Controllers import AuthorizationController, AuthenticationController
-        from app.Models import TaskType
 
         req_user = AuthenticationController.get_user_from_request(req.headers)
 

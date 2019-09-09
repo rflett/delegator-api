@@ -6,7 +6,7 @@ from app import app
 from app.Controllers import UserController, ActiveUserController
 
 
-@app.route('/user/<user_id>', methods=['GET'])
+@app.route('/user/<int:user_id>', methods=['GET'])
 @requires_jwt
 @handle_exceptions
 def get_user(user_id):
@@ -41,7 +41,7 @@ def update_user_settings():
     return UserController.update_user_settings(request)
 
 
-@app.route('/user/activity/<user_id>', methods=['GET'])
+@app.route('/user/activity/<int:user_id>', methods=['GET'])
 @requires_jwt
 @handle_exceptions
 def get_user_activity(user_id):

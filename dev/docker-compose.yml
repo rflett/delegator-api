@@ -14,6 +14,7 @@ services:
       APP_ENV: Ci
       AWS_ACCESS_KEY_ID: REDACTED
       AWS_SECRET_ACCESS_KEY: REDACTED
+      APP_ENV: Docker
       AWS_DEFAULT_REGION: ap-southeast-2
     ports:
       - 5000:5000
