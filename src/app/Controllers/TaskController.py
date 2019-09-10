@@ -214,11 +214,11 @@ def _all_user_ids(org_id: int) -> typing.List[int]:
 
 class TaskController(object):
     @staticmethod
-    def get_task_priorities(req: request) -> Response:
+    def get_task_priorities(**kwargs) -> Response:
         """Returns all task priorities """
-        from app.Controllers import AuthorizationController, AuthenticationController
+        from app.Controllers import AuthorizationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -238,11 +238,11 @@ class TaskController(object):
         return j_response(task_priorities)
 
     @staticmethod
-    def get_task_statuses(req: request) -> Response:
+    def get_task_statuses(**kwargs) -> Response:
         """Returns all task statuses """
-        from app.Controllers import AuthorizationController, AuthenticationController
+        from app.Controllers import AuthorizationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -262,11 +262,9 @@ class TaskController(object):
         return j_response(task_statuses)
 
     @staticmethod
-    def get_task(task_id: int, req: request) -> Response:
+    def get_task(task_id: int, **kwargs) -> Response:
         """Get a single task by its id """
-        from app.Controllers import AuthenticationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -284,11 +282,11 @@ class TaskController(object):
         return j_response(task.fat_dict())
 
     @staticmethod
-    def get_tasks(req: request) -> Response:
+    def get_tasks(**kwargs) -> Response:
         """Get all tasks in an organisation """
-        from app.Controllers import AuthorizationController, AuthenticationController
+        from app.Controllers import AuthorizationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -341,11 +339,11 @@ class TaskController(object):
         return j_response(tasks)
 
     @staticmethod
-    def create_task(req: request) -> Response:
+    def create_task(**kwargs) -> Response:
         """Creates a task"""
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -353,7 +351,7 @@ class TaskController(object):
             resource=Resources.TASK,
         )
 
-        task_attrs = ValidationController.validate_create_task_request(req.get_json())
+        task_attrs = ValidationController.validate_create_task_request(request.get_json())
 
         # create task
         with session_scope() as session:
@@ -413,11 +411,11 @@ class TaskController(object):
         return j_response(task.fat_dict(), status=201)
 
     @staticmethod
-    def update_task(req: request) -> Response:
+    def update_task(**kwargs) -> Response:
         """Update a task """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -425,7 +423,7 @@ class TaskController(object):
             resource=Resources.TASK
         )
 
-        task_attrs = ValidationController.validate_update_task_request(req_user.org_id, req.get_json())
+        task_attrs = ValidationController.validate_update_task_request(req_user.org_id, request.get_json())
 
         # update the task
         task_to_update = task_attrs['task']
@@ -492,13 +490,13 @@ class TaskController(object):
         return j_response(task_to_update.fat_dict())
 
     @staticmethod
-    def assign_task(req: request) -> Response:
+    def assign_task(**kwargs) -> Response:
         """Assigns a user to task """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
-        task, assignee_id = ValidationController.validate_assign_task(req_user.org_id, req.get_json())
+        task, assignee_id = ValidationController.validate_assign_task(req_user.org_id, request.get_json())
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -516,15 +514,14 @@ class TaskController(object):
         return j_response(task.fat_dict())
 
     @staticmethod
-    def drop_task(task_id, req: request = None, req_user: User = None) -> Response:
+    def drop_task(task_id, **kwargs) -> Response:
         """
         Drops a task, which sets it to READY and removes the assignee
         if the task is IN_PROGRESS and has an assignee
         """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        if req_user is None:
-            req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         task_to_drop = ValidationController.validate_drop_task(req_user.org_id, task_id)
 
@@ -533,11 +530,11 @@ class TaskController(object):
         return j_response(task_to_drop.fat_dict())
 
     @staticmethod
-    def cancel_task(task_id, req: request) -> Response:
+    def cancel_task(task_id, **kwargs) -> Response:
         """Cancels a task """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         task_to_cancel = ValidationController.validate_cancel_task(req_user.org_id, task_id)
 
@@ -567,11 +564,11 @@ class TaskController(object):
         return j_response(task_to_cancel.fat_dict())
 
     @staticmethod
-    def transition_task(req: request) -> Response:
+    def transition_task(**kwargs) -> Response:
         """Transitions the status of a task """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         task, task_status = ValidationController.validate_transition_task(req_user.org_id, request.get_json())
 
@@ -590,11 +587,11 @@ class TaskController(object):
         return j_response(task.fat_dict())
 
     @staticmethod
-    def get_available_transitions(task_id: int, req: request) -> Response:
+    def get_available_transitions(task_id: int, **kwargs) -> Response:
         """Returns the statuses that a task could be transitioned to, based on the state of the task. """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         task = ValidationController.validate_get_transitions(req_user.org_id, task_id)
 
@@ -655,11 +652,11 @@ class TaskController(object):
         return j_response(ret)
 
     @staticmethod
-    def delay_task(req: request) -> Response:
+    def delay_task(**kwargs) -> Response:
         """Delays a task """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         task, delay_for, reason = ValidationController.validate_delay_task_request(req_user.org_id, request.get_json())
 
@@ -717,11 +714,9 @@ class TaskController(object):
         return j_response(task.fat_dict())
 
     @staticmethod
-    def get_delayed_task(task_id: int, req: request) -> Response:
+    def get_delayed_task(task_id: int, **kwargs) -> Response:
         """Returns the delayed info for a task """
-        from app.Controllers import AuthenticationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -740,11 +735,9 @@ class TaskController(object):
         return j_response(task.delayed_info())
 
     @staticmethod
-    def get_task_activity(task_id: int, req: request) -> Response:
+    def get_task_activity(task_id: int, **kwargs) -> Response:
         """Returns the activity for a task """
-        from app.Controllers import AuthenticationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -766,9 +759,9 @@ class TaskController(object):
         return j_response(task.activity(activity_log_history_limit))
 
     @staticmethod
-    def change_priority(req: request) -> Response:
+    def change_priority() -> Response:
         """ Change a tasks priority """
-        request_body = req.get_json()
+        request_body = request.get_json()
         params = {
             "org_id": request_body.get('org_id'),
             "task_id": request_body.get('task_id'),

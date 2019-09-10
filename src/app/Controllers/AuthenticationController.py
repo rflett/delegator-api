@@ -1,6 +1,5 @@
 import datetime
 import json
-import typing
 import uuid
 
 import jwt
@@ -127,29 +126,8 @@ def _blacklist_token(token: str) -> None:
 
 class AuthenticationController(object):
     @staticmethod
-    def check_authorization_header(auth: str) -> typing.Union[bool, Response]:
-        """
-        Checks to make sure there is a JWT token in the Bearer token. Does not validate it.
-
-        :param auth:    The Authorization header from the request.
-        :return:        True if the token exists and is a JWT, or HTTP 401 Response
-        """
-        try:
-            token = auth.replace('Bearer ', '')
-            jwt.decode(jwt=token, algorithms='HS256', verify=False)
-            return True
-        except (TypeError, jwt.DecodeError) as e:
-            logger.error(str(e))
-            return g_response("Invalid Authorization header.", 401)
-
-    @staticmethod
     def get_user_from_request(request_headers: dict) -> User:
-        """
-        Get the user object that is claimed in the JWT payload.
-
-        :param request_headers: The HTTP request headers
-        :return:                A User object if a user is found
-        """
+        """Get the user object that is claimed in the JWT payload."""
         from app.Controllers import UserController
 
         # get auth from request
@@ -165,16 +143,12 @@ class AuthenticationController(object):
             raise AuthenticationError("Unable to obtain user from the request.")
 
     @staticmethod
-    def login(req: request) -> Response:
-        """ Log a user in.
-
-        :param req: The HTTP request
-        :return:    An HTTP 200 or 401 response
-        """
+    def login() -> Response:
+        """Log a user in."""
         from app.Controllers import ValidationController
 
         # get params from http request
-        request_body = req.get_json()
+        request_body = request.get_json()
         email = request_body.get('email')
         password = request_body.get('password')
 
@@ -253,28 +227,23 @@ class AuthenticationController(object):
                 return g_response("Password incorrect.", 401)
 
     @staticmethod
-    def logout(headers: dict) -> Response:
-        """ Log a user out.
+    def logout(**kwargs) -> Response:
+        """Log a user out."""
+        req_user = kwargs['req_user']
 
-        :param headers: The HTTP request headers
-        :return:        An HTTP 401 or 200 response
-        """
-        from app.Controllers import UserController
-
-        auth = headers.get('Authorization', None)
+        auth = request.headers.get('Authorization', None)
         payload = _validate_jwt(auth.replace('Bearer ', ''))
 
         if payload is False:
             return g_response('Invalid token.', 401)
         else:
-            user = UserController.get_user_by_id(payload.get('claims').get('user_id'))
-            user.is_inactive()
+            req_user.is_inactive()
             Activity(
-                org_id=user.org_id,
+                org_id=req_user.org_id,
                 event=Events.user_logout,
-                event_id=user.id,
+                event_id=req_user.id,
                 event_friendly="Logged out."
             ).publish()
             _blacklist_token(auth.replace('Bearer ', ''))
-            logger.info(f"user {user.id} logged out")
+            logger.info(f"user {req_user.id} logged out")
             return g_response('Logged out')

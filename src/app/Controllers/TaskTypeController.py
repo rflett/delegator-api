@@ -9,11 +9,11 @@ from app.Models.Enums import Events, Operations, Resources
 
 class TaskTypeController(object):
     @staticmethod
-    def get_task_types(req: request) -> Response:
+    def get_task_types(**kwargs) -> Response:
         """Returns all task types """
-        from app.Controllers import AuthorizationController, AuthenticationController
+        from app.Controllers import AuthorizationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -36,14 +36,13 @@ class TaskTypeController(object):
         return j_response(task_types)
 
     @staticmethod
-    def create_task_type(req: request) -> Response:
+    def create_task_type(**kwargs) -> Response:
         """Creates a task type"""
-        from app.Controllers import AuthorizationController, ValidationController, AuthenticationController
+        from app.Controllers import AuthorizationController, ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
-        request_body = req.get_json()
+        req_user = kwargs['req_user']
 
-        label, task_type = ValidationController.validate_create_task_type_request(req_user.org_id, request_body)
+        label, task_type = ValidationController.validate_create_task_type_request(req_user.org_id, request.get_json())
 
         if task_type is None:
             # it didn't exist so just create it
@@ -95,12 +94,12 @@ class TaskTypeController(object):
             return j_response(task_type.fat_dict(), status=201)
 
     @staticmethod
-    def update_task_type(req: request) -> Response:
+    def update_task_type(**kwargs) -> Response:
         """Updates a task type"""
-        from app.Controllers import AuthorizationController, ValidationController, AuthenticationController
+        from app.Controllers import AuthorizationController, ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
-        request_body = req.get_json()
+        req_user = kwargs['req_user']
+        request_body = request.get_json()
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -209,11 +208,11 @@ class TaskTypeController(object):
         return j_response(task_type_to_update.fat_dict())
 
     @staticmethod
-    def disable_task_type(task_type_id: int, req: request) -> Response:
+    def disable_task_type(task_type_id: int, **kwargs) -> Response:
         """Disables a task type """
-        from app.Controllers import AuthorizationController, ValidationController, AuthenticationController
+        from app.Controllers import AuthorizationController, ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,

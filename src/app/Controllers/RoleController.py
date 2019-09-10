@@ -1,4 +1,4 @@
-from flask import request, Response
+from flask import Response
 from sqlalchemy import and_
 
 from app import session_scope, j_response
@@ -8,11 +8,11 @@ from app.Models.RBAC import Role
 
 class RoleController(object):
     @staticmethod
-    def get_roles(req: request) -> Response:
+    def get_roles(**kwargs) -> Response:
         """Return all roles lower in rank than the requesting user's role. """
-        from app.Controllers import AuthorizationController, AuthenticationController
+        from app.Controllers import AuthorizationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,

@@ -1,7 +1,5 @@
 from app.Middleware import handle_exceptions
 
-from flask import request
-
 from app import app, g_response
 from app.Controllers import AuthenticationController, VersionController, AuthorizationController, SignupController
 
@@ -15,7 +13,7 @@ def health():
 @app.route('/login', methods=['POST'])
 @handle_exceptions
 def login():
-    return AuthenticationController.login(request)
+    return AuthenticationController.login()
 
 
 @app.route('/v', methods=['GET'])
@@ -27,10 +25,10 @@ def version_info():
 @app.route('/reset_password', methods=['POST'])
 @handle_exceptions
 def reset_password():
-    return AuthorizationController.reset_password(request)
+    return AuthorizationController.reset_password()
 
 
 @app.route('/signup', methods=['POST'])
 @handle_exceptions
 def signup():
-    return SignupController.signup(request)
+    return SignupController.signup()

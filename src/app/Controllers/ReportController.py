@@ -3,10 +3,10 @@ import typing
 from collections import namedtuple
 from dateutil import tz
 
-from flask import request, Response
+from flask import Response
 
 from app import j_response, session_scope, app, subscription_api
-from app.Controllers import AuthenticationController, AuthorizationController
+from app.Controllers import AuthorizationController
 from app.Exceptions import ProductTierLimitError
 from app.Models.Enums import Operations, Resources
 
@@ -344,10 +344,10 @@ def delays_per_task_type(org_id: int, start_period: datetime.datetime, end_perio
 
 class ReportController(object):
     @staticmethod
-    def get_all(req: request) -> Response:
+    def get_all(**kwargs) -> Response:
         """Returns all of the report queries """
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,

@@ -1,6 +1,6 @@
 from functools import wraps
 
-from flask import request, Response
+from flask import request
 
 from app import app
 from app.Controllers import AuthenticationController
@@ -15,12 +15,8 @@ def requires_jwt(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
-        auth = request.headers.get('Authorization', None)
-        check = AuthenticationController.check_authorization_header(auth)
-        if isinstance(check, Response):
-            return check
-        else:
-            return f(*args, **kwargs)
+        req_user = AuthenticationController.get_user_from_request(request.headers)
+        return f(req_user=req_user, *args, **kwargs)
     return decorated
 
 
