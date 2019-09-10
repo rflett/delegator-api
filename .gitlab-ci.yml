@@ -2,7 +2,6 @@
 stages:
   - Lint
   - Build
-  - Test
   - Deploy
 
 variables:
@@ -40,35 +39,6 @@ Build:
     # tag and push latest
     - docker tag $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG $AMZ_REGISTRY/$CI_PROJECT_NAME:latest
     - docker push $AMZ_REGISTRY/$CI_PROJECT_NAME:latest
-
-Integration:
-  stage: Test
-  image: $GITLAB_REGISTRY/docker:latest
-  variables:
-    APP_ENV: Ci
-  services:
-    - docker:dind
-  tags:
-    - docker
-  only:
-    - develop
-    - master
-  script:
-    # docker-login to ecr
-    - eval $(aws ecr get-login --no-include-email)
-
-    # start services
-    - docker run -d --network host $AMZ_REGISTRY/postgres:latest
-    - docker run -d
-        --network host
-        -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID 
-        -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY 
-        -e APP_ENV=$APP_ENV
-        $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG
-
-    # run tests
-    - sleep 10
-    - pytest src/tests/integration/
 
 .deploy:
   stage: Deploy
