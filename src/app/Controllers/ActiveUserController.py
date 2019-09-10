@@ -1,6 +1,6 @@
 import datetime
 
-from flask import request, Response
+from flask import Response
 
 from app import session_scope, logger, app, j_response
 from app.Models import User, ActiveUser
@@ -50,15 +50,11 @@ class ActiveUserController(object):
             session.query(ActiveUser).filter_by(user_id=user.id).delete()
 
     @staticmethod
-    def get_active_users(req: request) -> Response:
-        """Returns all active users in the organisation of the requesting user.
+    def get_active_users(**kwargs) -> Response:
+        """Returns all active users in the organisation of the requesting user."""
+        from app.Controllers import AuthorizationController
 
-         :param req: The HTTP request
-         :return:    HTTP 200 Response
-         """
-        from app.Controllers import AuthenticationController, AuthorizationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,

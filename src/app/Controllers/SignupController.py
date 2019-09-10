@@ -6,7 +6,7 @@ from app.Models import Organisation, TaskType
 
 class SignupController(object):
     @staticmethod
-    def signup(req: request) -> Response:
+    def signup() -> Response:
         """Signup a user.
 
         The organisation name and user details are taken, validated, and then created if there are no validation issues.
@@ -17,7 +17,7 @@ class SignupController(object):
         from app.Controllers import ValidationController, UserController
 
         # get the request body
-        request_body = req.get_json()
+        request_body = request.get_json()
 
         # validate org
         org_name = ValidationController.validate_create_org_request(request_body)

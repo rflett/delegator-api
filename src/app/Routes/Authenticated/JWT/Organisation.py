@@ -9,26 +9,26 @@ from app.Controllers import OrganisationController
 @app.route('/org/settings', methods=['GET'])
 @requires_jwt
 @handle_exceptions
-def get_org_settings():
-    return OrganisationController.get_org_settings(request)
+def get_org_settings(**kwargs):
+    return OrganisationController.get_org_settings(req=request, **kwargs)
 
 
 @app.route('/org/settings', methods=['PUT'])
 @requires_jwt
 @handle_exceptions
-def update_org_settings():
-    return OrganisationController.update_org_settings(request)
+def update_org_settings(**kwargs):
+    return OrganisationController.update_org_settings(req=request, **kwargs)
 
 
 @app.route('/org', methods=['GET'])
 @requires_jwt
 @handle_exceptions
-def get_org():
-    return OrganisationController.get_org(request)
+def get_org(**kwargs):
+    return OrganisationController.get_org(req=request, **kwargs)
 
 
 @app.route('/org', methods=['PUT'])
 @requires_jwt
 @handle_exceptions
-def update_org():
-    return OrganisationController.update_org(request)
+def update_org(**kwargs):
+    return OrganisationController.update_org(req=request, **kwargs)

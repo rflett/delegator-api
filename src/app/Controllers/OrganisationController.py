@@ -32,15 +32,11 @@ class OrganisationController(object):
                 raise ValueError(f"Bad org_identifier, expected Union[str, int] got {type(org_identifier)}")
 
     @staticmethod
-    def get_org_settings(req: request) -> Response:
-        """Get the org's settings
+    def get_org_settings(**kwargs) -> Response:
+        """Get the org's settings"""
+        from app.Controllers import AuthorizationController, SettingsController
 
-        :param req: The HTTP request
-        :return:    HTTP 200 response
-        """
-        from app.Controllers import AuthorizationController, SettingsController, AuthenticationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -56,16 +52,12 @@ class OrganisationController(object):
         return j_response(SettingsController.get_org_settings(req_user.org_id).as_dict())
 
     @staticmethod
-    def update_org_settings(req: request) -> Response:
-        """Update the org's settings
+    def update_org_settings(**kwargs) -> Response:
+        """Update the org's settings"""
+        from app.Controllers import AuthorizationController, SettingsController, ValidationController
 
-        :param req: The HTTP request
-        :return:    HTTP 200 response and the org's settings
-        """
-        from app.Controllers import AuthorizationController, SettingsController, AuthenticationController, \
-            ValidationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
+        req = kwargs['req']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -86,11 +78,11 @@ class OrganisationController(object):
         return j_response(SettingsController.get_org_settings(req_user.org_id).as_dict(), status=200)
 
     @staticmethod
-    def update_org_customer_id(req: request) -> Response:
+    def update_org_customer_id() -> Response:
         """Set the subscription_id for an org"""
         from app.Controllers import UserController
         try:
-            request_body = req.get_json()
+            request_body = request.get_json()
             email = request_body['email']
             customer_id = request_body['customer_id']
         except KeyError:
@@ -102,10 +94,10 @@ class OrganisationController(object):
             return j_response()
 
     @staticmethod
-    def update_org_subscription_id(req: request) -> Response:
+    def update_org_subscription_id() -> Response:
         """Set the subscription_id for an org"""
         try:
-            request_body = req.get_json()
+            request_body = request.get_json()
             customer_id = request_body['customer_id']
             subscription_id = request_body['subscription_id']
         except KeyError:
@@ -120,9 +112,9 @@ class OrganisationController(object):
                 return j_response()
 
     @staticmethod
-    def lock_organisation(customer_id: str, req: request) -> Response:
+    def lock_organisation(customer_id: str) -> Response:
         """Lock an organisation due to a billing issue."""
-        locked_reason = req.get_json().get('locked_reason')
+        locked_reason = request.get_json().get('locked_reason')
         with session_scope() as session:
             # get the org from the customer id
             org = session.query(Organisation).filter_by(chargebee_customer_id=customer_id).first()
@@ -189,15 +181,11 @@ class OrganisationController(object):
         return j_response()
 
     @staticmethod
-    def get_org(req: request) -> Response:
-        """Get the org
+    def get_org(**kwargs) -> Response:
+        """Get an organisation"""
+        from app.Controllers import AuthorizationController
 
-        :param req: The HTTP request
-        :return:    HTTP 200 response
-        """
-        from app.Controllers import AuthorizationController, AuthenticationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -218,15 +206,12 @@ class OrganisationController(object):
         })
 
     @staticmethod
-    def update_org(req: request) -> Response:
-        """Get the org
+    def update_org(**kwargs) -> Response:
+        """Update an organisation"""
+        from app.Controllers import AuthorizationController, ValidationController
 
-        :param req: The HTTP request
-        :return:    HTTP 200 response
-        """
-        from app.Controllers import AuthorizationController, AuthenticationController, ValidationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
+        req = kwargs['req']
 
         org_name = ValidationController.validate_update_org_request(req_user, req.get_json())
 

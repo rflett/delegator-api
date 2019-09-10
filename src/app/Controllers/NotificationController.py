@@ -3,7 +3,7 @@ import json
 import typing
 from os import getenv
 
-from flask import request, Response
+from flask import Response
 
 from app import logger, g_response, notification_tokens_table, app_notifications_sqs
 
@@ -29,13 +29,13 @@ def do_push(msg: str, user_ids: typing.Union[int, typing.List[int]]) -> None:
 
 class NotificationController(object):
     @staticmethod
-    def register_token(req: request) -> Response:
+    def register_token(**kwargs) -> Response:
         """ Register a notification token for a notification service """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
-        token_type, token = ValidationController.validate_register_token_request(req.get_json())
+        token_type, token = ValidationController.validate_register_token_request(kwargs['req'].get_json())
 
         notification_tokens_table.update_item(
             Key={
@@ -54,13 +54,13 @@ class NotificationController(object):
         return g_response(status=204)
 
     @staticmethod
-    def deregister_token(req: request) -> Response:
+    def deregister_token(**kwargs) -> Response:
         """ Deregister a notification token for a notification service """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
-        token_type = ValidationController.validate_deregister_token_request(req.get_json())
+        token_type = ValidationController.validate_deregister_token_request(kwargs['req'].get_json())
 
         notification_tokens_table.update_item(
             Key={

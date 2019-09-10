@@ -62,10 +62,10 @@ class AuthorizationController(object):
                     raise AuthorizationError(msg)
 
     @staticmethod
-    def reset_password(req: request):
+    def reset_password():
         """ TODO remove and make it an email based reset. """
         from app.Controllers import UserController
-        request_body = req.get_json()
+        request_body = request.get_json()
         ValidationController.validate_email(request_body.get('email'))
 
         with session_scope():

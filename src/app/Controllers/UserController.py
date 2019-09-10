@@ -42,13 +42,13 @@ class UserController(object):
         return _get_user_by_id(user_id)
 
     @staticmethod
-    def create_user(req: request) -> Response:
+    def create_user(**kwargs) -> Response:
         """Create a user """
-        from app.Controllers import AuthenticationController, ValidationController
+        from app.Controllers import ValidationController
 
-        request_body = req.get_json()
+        request_body = request.get_json()
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -146,13 +146,13 @@ class UserController(object):
         logger.info(f"User {user.id} signed up.")
 
     @staticmethod
-    def update_user(req: request) -> Response:
+    def update_user(**kwargs) -> Response:
         """Update a user. """
-        from app.Controllers import ValidationController, AuthenticationController
+        from app.Controllers import ValidationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
-        user_attrs = ValidationController.validate_update_user_request(req_user, req.get_json())
+        user_attrs = ValidationController.validate_update_user_request(req_user, request.get_json())
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -208,11 +208,9 @@ class UserController(object):
         return j_response(user_to_update.fat_dict())
 
     @staticmethod
-    def delete_user(user_id: int, req: request) -> Response:
+    def delete_user(user_id: int, **kwargs) -> Response:
         """Deletes a user """
-        from app.Controllers import AuthenticationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -243,11 +241,9 @@ class UserController(object):
         return g_response(status=204)
 
     @staticmethod
-    def get_user(user_id: int, req: request) -> Response:
+    def get_user(user_id: int, **kwargs) -> Response:
         """Get a single user by email or ID """
-        from app.Controllers import AuthenticationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -266,11 +262,11 @@ class UserController(object):
         return j_response(user.fat_dict())
 
     @staticmethod
-    def get_users(req: request) -> Response:
+    def get_users(**kwargs) -> Response:
         """Get all users """
-        from app.Controllers import AuthorizationController, AuthenticationController
+        from app.Controllers import AuthorizationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -308,11 +304,11 @@ class UserController(object):
         return j_response(users)
 
     @staticmethod
-    def user_pages(req: request) -> Response:
+    def user_pages(**kwargs) -> Response:
         """Returns the pages a user can access """
-        from app.Controllers import AuthorizationController, AuthenticationController
+        from app.Controllers import AuthorizationController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -344,11 +340,11 @@ class UserController(object):
             return j_response(sorted(pages))
 
     @staticmethod
-    def get_user_settings(req: request) -> Response:
+    def get_user_settings(**kwargs) -> Response:
         """Returns the user's settings """
-        from app.Controllers import AuthorizationController, SettingsController, AuthenticationController
+        from app.Controllers import AuthorizationController, SettingsController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -366,12 +362,11 @@ class UserController(object):
         return j_response(SettingsController.get_user_settings(req_user.id).as_dict())
 
     @staticmethod
-    def update_user_settings(req: request) -> Response:
+    def update_user_settings(**kwargs) -> Response:
         """Updates the user's settings """
-        from app.Controllers import AuthorizationController, ValidationController, SettingsController, \
-            AuthenticationController
+        from app.Controllers import AuthorizationController, ValidationController, SettingsController
 
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -380,7 +375,7 @@ class UserController(object):
             affected_user_id=req_user.id
         )
 
-        user_setting = ValidationController.validate_update_user_settings_request(req_user.id, req.get_json())
+        user_setting = ValidationController.validate_update_user_settings_request(req_user.id, request.get_json())
 
         SettingsController.set_user_settings(user_setting)
         req_user.log(
@@ -392,11 +387,9 @@ class UserController(object):
         return j_response(SettingsController.get_user_settings(req_user.id).as_dict())
 
     @staticmethod
-    def get_user_activity(user_id: int, req: request) -> Response:
+    def get_user_activity(user_id: int, **kwargs) -> Response:
         """Returns the activity for a user """
-        from app.Controllers import AuthenticationController
-
-        req_user = AuthenticationController.get_user_from_request(req.headers)
+        req_user = kwargs['req_user']
 
         if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_user_activity', False):
             raise ProductTierLimitError(f"You cannot view user activity on your plan.")
