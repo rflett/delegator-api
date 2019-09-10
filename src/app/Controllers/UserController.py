@@ -50,12 +50,6 @@ class UserController(object):
 
         req_user = kwargs['req_user']
 
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.CREATE,
-            resource=Resources.USER
-        )
-
         # validate user
         ValidationController.validate_create_user_request(req_user, request_body)
 
@@ -264,15 +258,7 @@ class UserController(object):
     @staticmethod
     def get_users(**kwargs) -> Response:
         """Get all users """
-        from app.Controllers import AuthorizationController
-
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.USERS
-        )
 
         # query for all users in the requesting user's organisation
         with session_scope() as session:
@@ -306,15 +292,7 @@ class UserController(object):
     @staticmethod
     def user_pages(**kwargs) -> Response:
         """Returns the pages a user can access """
-        from app.Controllers import AuthorizationController
-
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.PAGES
-        )
 
         # query for permissions that have the resource id like %_PAGE
         with session_scope() as session:

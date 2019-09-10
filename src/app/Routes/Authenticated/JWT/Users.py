@@ -1,7 +1,8 @@
-from app.Middleware import handle_exceptions, requires_jwt
+from app.Middleware import handle_exceptions, requires_jwt, authorize
 
 from app import app
 from app.Controllers import UserController, ActiveUserController
+from app.Models.Enums import Operations, Resources
 
 
 @app.route('/user/<int:user_id>', methods=['GET'])
@@ -21,6 +22,7 @@ def delete_user(user_id, **kwargs):
 @app.route('/user/pages', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.PAGES)
 def user_pages(**kwargs):
     return UserController.user_pages(**kwargs)
 
@@ -49,6 +51,7 @@ def get_user_activity(user_id, **kwargs):
 @app.route('/users', methods=['POST'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.CREATE, Resources.USER)
 def create_user(**kwargs):
     return UserController.create_user(**kwargs)
 
@@ -56,6 +59,7 @@ def create_user(**kwargs):
 @app.route('/users', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.USERS)
 def get_users(**kwargs):
     return UserController.get_users(**kwargs)
 
@@ -70,5 +74,6 @@ def update_user(**kwargs):
 @app.route('/users/active', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.ACTIVE_USERS)
 def active_users(**kwargs):
     return ActiveUserController.get_active_users(**kwargs)

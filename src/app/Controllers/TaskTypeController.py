@@ -11,15 +11,7 @@ class TaskTypeController(object):
     @staticmethod
     def get_task_types(**kwargs) -> Response:
         """Returns all task types """
-        from app.Controllers import AuthorizationController
-
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.TASK_TYPES
-        )
 
         with session_scope() as session:
             task_type_query = session\
@@ -96,16 +88,10 @@ class TaskTypeController(object):
     @staticmethod
     def update_task_type(**kwargs) -> Response:
         """Updates a task type"""
-        from app.Controllers import AuthorizationController, ValidationController
+        from app.Controllers import ValidationController
 
         req_user = kwargs['req_user']
         request_body = request.get_json()
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.UPDATE,
-            resource=Resources.TASK_TYPE
-        )
 
         task_type_to_update, escalations = ValidationController.validate_update_task_type_request(
             org_id=req_user.org_id,
@@ -210,15 +196,9 @@ class TaskTypeController(object):
     @staticmethod
     def disable_task_type(task_type_id: int, **kwargs) -> Response:
         """Disables a task type """
-        from app.Controllers import AuthorizationController, ValidationController
+        from app.Controllers import ValidationController
 
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.DISABLE,
-            resource=Resources.TASK_TYPE
-        )
 
         task_type_to_disable = ValidationController.validate_disable_task_type_request(task_type_id)
 

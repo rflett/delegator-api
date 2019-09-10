@@ -6,9 +6,7 @@ from dateutil import tz
 from flask import Response
 
 from app import j_response, session_scope, app, subscription_api
-from app.Controllers import AuthorizationController
 from app.Exceptions import ProductTierLimitError
-from app.Models.Enums import Operations, Resources
 
 
 def clean_qry(qry) -> list:
@@ -348,12 +346,6 @@ class ReportController(object):
         """Returns all of the report queries """
 
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.REPORTS_PAGE
-        )
 
         if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_reports_page', False):
             raise ProductTierLimitError(f"You cannot view reports your current plan.")

@@ -52,15 +52,7 @@ class ActiveUserController(object):
     @staticmethod
     def get_active_users(**kwargs) -> Response:
         """Returns all active users in the organisation of the requesting user."""
-        from app.Controllers import AuthorizationController
-
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.ACTIVE_USERS
-        )
 
         # remove inactive users
         _purge_inactive_users()
