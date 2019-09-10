@@ -1,12 +1,14 @@
-from app.Middleware import handle_exceptions, requires_jwt
+from app.Middleware import handle_exceptions, requires_jwt, authorize
 
 from app import app
 from app.Controllers import TaskController, TaskTypeController
+from app.Models.Enums import Operations, Resources
 
 
 @app.route('/task/<int:task_id>', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.TASK)
 def get_task(task_id, **kwargs):
     return TaskController.get_task(task_id, **kwargs)
 
@@ -22,6 +24,7 @@ def assign_task(**kwargs):
 @requires_jwt
 @handle_exceptions
 def drop_task(task_id, **kwargs):
+    # TODO this has no permissions attached to it yet
     return TaskController.drop_task(task_id, **kwargs)
 
 
@@ -42,6 +45,7 @@ def transition_task(**kwargs):
 @app.route('/task/transition/<int:task_id>', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.TASK_TRANSITIONS)
 def get_available_transitions(task_id, **kwargs):
     return TaskController.get_available_transitions(task_id, **kwargs)
 
@@ -56,6 +60,7 @@ def delay_task(**kwargs):
 @app.route('/task/delay/<int:task_id>', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.TASK)
 def get_delayed_task(task_id, **kwargs):
     return TaskController.get_delayed_task(task_id, **kwargs)
 
@@ -63,6 +68,7 @@ def get_delayed_task(task_id, **kwargs):
 @app.route('/task/activity/<int:task_id>', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.TASK_ACTIVITY)
 def get_task_activity(task_id, **kwargs):
     return TaskController.get_task_activity(task_id, **kwargs)
 
@@ -70,6 +76,7 @@ def get_task_activity(task_id, **kwargs):
 @app.route('/tasks/priorities', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.TASK_PRIORITIES)
 def get_task_priorities(**kwargs):
     return TaskController.get_task_priorities(**kwargs)
 
@@ -77,6 +84,7 @@ def get_task_priorities(**kwargs):
 @app.route('/tasks/statuses', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.TASK_STATUSES)
 def get_task_statuses(**kwargs):
     return TaskController.get_task_statuses(**kwargs)
 
@@ -84,6 +92,7 @@ def get_task_statuses(**kwargs):
 @app.route('/tasks/types', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.TASK_TYPES)
 def get_task_types(**kwargs):
     return TaskTypeController.get_task_types(**kwargs)
 
@@ -92,12 +101,14 @@ def get_task_types(**kwargs):
 @requires_jwt
 @handle_exceptions
 def create_task_type(**kwargs):
+    # TODO multi permission route
     return TaskTypeController.create_task_type(**kwargs)
 
 
 @app.route('/tasks/types', methods=['POST'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.UPDATE, Resources.TASK_TYPE)
 def update_task_type(**kwargs):
     return TaskTypeController.update_task_type(**kwargs)
 
@@ -105,6 +116,7 @@ def update_task_type(**kwargs):
 @app.route('/tasks/types/<int:task_type_id>', methods=['DELETE'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.DISABLE, Resources.TASK_TYPE)
 def disable_task_type(task_type_id, **kwargs):
     return TaskTypeController.disable_task_type(task_type_id, **kwargs)
 
@@ -113,12 +125,14 @@ def disable_task_type(task_type_id, **kwargs):
 @requires_jwt
 @handle_exceptions
 def create_task(**kwargs):
+    # TODO multi permission route
     return TaskController.create_task(**kwargs)
 
 
 @app.route('/tasks', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.TASKS)
 def get_tasks(**kwargs):
     return TaskController.get_tasks(**kwargs)
 
@@ -127,4 +141,5 @@ def get_tasks(**kwargs):
 @requires_jwt
 @handle_exceptions
 def update_task(**kwargs):
+    # TODO multi permission route
     return TaskController.update_task(**kwargs)

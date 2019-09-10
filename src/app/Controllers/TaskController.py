@@ -216,15 +216,7 @@ class TaskController(object):
     @staticmethod
     def get_task_priorities(**kwargs) -> Response:
         """Returns all task priorities """
-        from app.Controllers import AuthorizationController
-
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.TASK_PRIORITIES
-        )
 
         with session_scope() as session:
             task_pr_qry = session.query(TaskPriority).all()
@@ -240,20 +232,12 @@ class TaskController(object):
     @staticmethod
     def get_task_statuses(**kwargs) -> Response:
         """Returns all task statuses """
-        from app.Controllers import AuthorizationController
-
         req_user = kwargs['req_user']
 
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.TASK_STATUSES
-        )
-
         with session_scope() as session:
-            task_st_qry = session.query(TaskStatus).all()
+            task_status_qry = session.query(TaskStatus).all()
 
-        task_statuses = [ts.as_dict() for ts in task_st_qry if ts.status not in ["DELAYED", "CANCELLED"]]
+        task_statuses = [ts.as_dict() for ts in task_status_qry if ts.status not in ["DELAYED", "CANCELLED"]]
         logger.debug(f"Found {len(task_statuses)} task statuses.")
         req_user.log(
             operation=Operations.GET,
@@ -265,12 +249,6 @@ class TaskController(object):
     def get_task(task_id: int, **kwargs) -> Response:
         """Get a single task by its id """
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.TASK
-        )
 
         task = _get_task(task_id, req_user.org_id)
 
@@ -284,15 +262,7 @@ class TaskController(object):
     @staticmethod
     def get_tasks(**kwargs) -> Response:
         """Get all tasks in an organisation """
-        from app.Controllers import AuthorizationController
-
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.TASKS
-        )
 
         # start_period, end_period = ValidationController.validate_time_period(req.get_json())
         end_period = now = datetime.datetime.utcnow()
@@ -595,12 +565,6 @@ class TaskController(object):
 
         task = ValidationController.validate_get_transitions(req_user.org_id, task_id)
 
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.TASK_TRANSITIONS
-        )
-
         ret = []
 
         # handle case where no-one is assigned to the task
@@ -718,12 +682,6 @@ class TaskController(object):
         """Returns the delayed info for a task """
         req_user = kwargs['req_user']
 
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.TASK
-        )
-
         task = _get_task(task_id, req_user.org_id)
 
         req_user.log(
@@ -738,12 +696,6 @@ class TaskController(object):
     def get_task_activity(task_id: int, **kwargs) -> Response:
         """Returns the activity for a task """
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.TASK_ACTIVITY
-        )
 
         plan_limits = subscription_api.get_limits(req_user.orgs.chargebee_subscription_id)
         activity_log_history_limit = plan_limits.get('task_activity_log_history', 7)

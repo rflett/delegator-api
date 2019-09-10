@@ -34,15 +34,9 @@ class OrganisationController(object):
     @staticmethod
     def get_org_settings(**kwargs) -> Response:
         """Get the org's settings"""
-        from app.Controllers import AuthorizationController, SettingsController
+        from app.Controllers import SettingsController
 
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.ORG_SETTINGS
-        )
 
         req_user.log(
             operation=Operations.GET,
@@ -57,7 +51,6 @@ class OrganisationController(object):
         from app.Controllers import AuthorizationController, SettingsController, ValidationController
 
         req_user = kwargs['req_user']
-        req = kwargs['req']
 
         AuthorizationController.authorize_request(
             auth_user=req_user,
@@ -65,7 +58,7 @@ class OrganisationController(object):
             resource=Resources.ORG_SETTINGS
         )
 
-        org_setting = ValidationController.validate_update_org_settings_request(req_user.org_id, req.get_json())
+        org_setting = ValidationController.validate_update_org_settings_request(req_user.org_id, request.get_json())
 
         SettingsController.set_org_settings(org_setting)
 
@@ -183,15 +176,7 @@ class OrganisationController(object):
     @staticmethod
     def get_org(**kwargs) -> Response:
         """Get an organisation"""
-        from app.Controllers import AuthorizationController
-
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.ORGANISATION
-        )
 
         req_user.log(
             operation=Operations.GET,
@@ -208,18 +193,11 @@ class OrganisationController(object):
     @staticmethod
     def update_org(**kwargs) -> Response:
         """Update an organisation"""
-        from app.Controllers import AuthorizationController, ValidationController
+        from app.Controllers import ValidationController
 
         req_user = kwargs['req_user']
-        req = kwargs['req']
 
-        org_name = ValidationController.validate_update_org_request(req_user, req.get_json())
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.UPDATE,
-            resource=Resources.ORGANISATION
-        )
+        org_name = ValidationController.validate_update_org_request(req_user, request.get_json())
 
         with session_scope():
             req_user.orgs.name = org_name

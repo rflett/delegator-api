@@ -10,15 +10,7 @@ class RoleController(object):
     @staticmethod
     def get_roles(**kwargs) -> Response:
         """Return all roles lower in rank than the requesting user's role. """
-        from app.Controllers import AuthorizationController
-
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.ROLES
-        )
 
         with session_scope() as session:
             # rank > 99 are reserved for admin duties
