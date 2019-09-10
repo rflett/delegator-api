@@ -15,7 +15,6 @@ Flake8:
   image: $GITLAB_REGISTRY/python:latest
   only:
     - master
-    - develop
   script:
     - flake8 src/
 
@@ -24,7 +23,6 @@ Build:
   image: $GITLAB_REGISTRY/docker:latest
   only:
     - master
-    - develop
   services:
     - docker:dind
   tags:
