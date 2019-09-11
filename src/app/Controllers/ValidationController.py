@@ -51,8 +51,7 @@ def _check_password_reqs(password: str) -> bool:
 
 def _check_user_id(
         identifier: typing.Union[str, int],
-        should_exist: typing.Optional[bool] = None
-) -> typing.Union[None, str, int]:
+        should_exist: typing.Optional[bool] = None) -> typing.Union[None, User]:
     """Given a users email or ID, check whether it should or shouldn't exist"""
 
     # validate the identifier
@@ -66,26 +65,28 @@ def _check_user_id(
 
         with session_scope() as session:
             if isinstance(identifier, str):
-                user_exists = session.query(exists().where(func.lower(User.email) == func.lower(identifier))).scalar()
+                user = session.query(User).filter(func.lower(User.email) == func.lower(identifier)).first()
             else:
-                user_exists = session.query(exists().where(User.id == identifier)).scalar()
+                user = session.query(User).filter_by(id=identifier).first()
 
-        if should_exist and not user_exists:
-            raise ResourceNotFoundError(f"User doesn't exist")
-        elif not should_exist and user_exists:
-            raise ValidationError(f"User already exists")
+        if should_exist and user is None:
+            raise ResourceNotFoundError("User doesn't exist")
+        elif not should_exist and user is not None:
+            raise ValidationError("User already exists")
 
-    return identifier
+    return user
 
 
-def _check_user_role(req_user: User, role: str) -> str:
+def _check_user_role(req_user: User, role: str, user_to_update: User = None) -> str:
     role = _check_str(role, 'role')
     with session_scope() as session:
         role = session.query(Role).filter_by(id=role).first()
     if role is None:
         raise ResourceNotFoundError(f"Role {role} doesn't exist")
     elif role.rank < req_user.roles.rank:
-        raise AuthorizationError("You cannot create a more privileged user than yourself.")
+        raise AuthorizationError("You cannot assign a role that has more privileges than you do.")
+    elif user_to_update is not None and user_to_update.roles.rank < req_user.roles.rank:
+        raise AuthorizationError("You cannot update a user who is more privileged than you.")
     else:
         return role.id
 
@@ -167,7 +168,8 @@ def _check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[Non
 
 def _check_task_assignee(assignee: typing.Optional[int]) -> typing.Union[int, None]:
     if assignee is not None:
-        return _check_user_id(assignee, should_exist=True)
+        user = _check_user_id(assignee, should_exist=True)
+        return user.id
     else:
         return None
 
@@ -362,11 +364,12 @@ class ValidationController(object):
     @staticmethod
     def validate_update_user_request(req_user: User, request_body: dict) -> dict:
         """  Validates an update user request body """
+        user_to_update = _check_user_id(request_body.get('id'), should_exist=True)
         return {
-            "id": _check_user_id(request_body.get('id'), should_exist=True),
+            "id": user_to_update.id,
             "first_name": _check_str(request_body.get('first_name'), 'first_name'),
             "last_name": _check_str(request_body.get('last_name'), 'last_name'),
-            "role": _check_user_role(req_user, request_body.get('role_id')),
+            "role": _check_user_role(req_user, request_body.get('role_id'), user_to_update),
             "job_title": _check_user_job_title(request_body.get('job_title')),
             "disabled": _check_user_disabled(request_body.get('disabled'))
         }
