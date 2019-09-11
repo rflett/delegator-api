@@ -80,15 +80,15 @@ def _check_user_id(
 def _check_user_role(req_user: User, role: str, user_to_update: User = None) -> str:
     role = _check_str(role, 'role')
     with session_scope() as session:
-        role = session.query(Role).filter_by(id=role).first()
-    if role is None:
+        _role = session.query(Role).filter_by(id=role).first()
+    if _role is None:
         raise ResourceNotFoundError(f"Role {role} doesn't exist")
-    elif role.rank < req_user.roles.rank:
+    elif _role.rank < req_user.roles.rank:
         raise AuthorizationError("You cannot assign a role that has more privileges than you do.")
     elif user_to_update is not None and user_to_update.roles.rank < req_user.roles.rank:
         raise AuthorizationError("You cannot update a user who is more privileged than you.")
     else:
-        return role.id
+        return _role.id
 
 
 def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None, str]:
