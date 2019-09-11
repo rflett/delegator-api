@@ -3,7 +3,7 @@ import json
 import typing
 from os import getenv
 
-from flask import Response
+from flask import Response, request
 
 from app import logger, g_response, notification_tokens_table, app_notifications_sqs
 
@@ -35,7 +35,7 @@ class NotificationController(object):
 
         req_user = kwargs['req_user']
 
-        token_type, token = ValidationController.validate_register_token_request(kwargs['req'].get_json())
+        token_type, token = ValidationController.validate_register_token_request(request.get_json())
 
         notification_tokens_table.update_item(
             Key={
@@ -60,7 +60,7 @@ class NotificationController(object):
 
         req_user = kwargs['req_user']
 
-        token_type = ValidationController.validate_deregister_token_request(kwargs['req'].get_json())
+        token_type = ValidationController.validate_deregister_token_request(request.get_json())
 
         notification_tokens_table.update_item(
             Key={

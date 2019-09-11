@@ -48,15 +48,9 @@ class OrganisationController(object):
     @staticmethod
     def update_org_settings(**kwargs) -> Response:
         """Update the org's settings"""
-        from app.Controllers import AuthorizationController, SettingsController, ValidationController
+        from app.Controllers import SettingsController, ValidationController
 
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.UPDATE,
-            resource=Resources.ORG_SETTINGS
-        )
 
         org_setting = ValidationController.validate_update_org_settings_request(req_user.org_id, request.get_json())
 

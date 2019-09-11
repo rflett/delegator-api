@@ -16,6 +16,7 @@ def get_task(task_id, **kwargs):
 @app.route('/task/assign', methods=['POST'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.ASSIGN, Resources.TASK)
 def assign_task(**kwargs):
     return TaskController.assign_task(**kwargs)
 
@@ -23,14 +24,15 @@ def assign_task(**kwargs):
 @app.route('/task/drop/<int:task_id>', methods=['POST'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.DROP, Resources.TASK)
 def drop_task(task_id, **kwargs):
-    # TODO this has no permissions attached to it yet
     return TaskController.drop_task(task_id, **kwargs)
 
 
 @app.route('/task/cancel/<int:task_id>', methods=['POST'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.CANCEL, Resources.TASK)
 def cancel_task(task_id, **kwargs):
     return TaskController.cancel_task(task_id, **kwargs)
 
@@ -38,6 +40,7 @@ def cancel_task(task_id, **kwargs):
 @app.route('/task/transition', methods=['POST'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.TRANSITION, Resources.TASK)
 def transition_task(**kwargs):
     return TaskController.transition_task(**kwargs)
 
@@ -53,6 +56,7 @@ def get_available_transitions(task_id, **kwargs):
 @app.route('/task/delay', methods=['POST'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.DELAY, Resources.TASK)
 def delay_task(**kwargs):
     return TaskController.delay_task(**kwargs)
 
@@ -100,8 +104,8 @@ def get_task_types(**kwargs):
 @app.route('/tasks/types', methods=['PUT'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.CREATE, Resources.TASK_TYPE)
 def create_task_type(**kwargs):
-    # TODO multi permission route
     return TaskTypeController.create_task_type(**kwargs)
 
 
@@ -124,8 +128,8 @@ def disable_task_type(task_type_id, **kwargs):
 @app.route('/tasks', methods=['POST'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.CREATE, Resources.TASK)
 def create_task(**kwargs):
-    # TODO multi permission route
     return TaskController.create_task(**kwargs)
 
 
@@ -140,6 +144,6 @@ def get_tasks(**kwargs):
 @app.route('/tasks', methods=['PUT'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.UPDATE, Resources.TASK)
 def update_task(**kwargs):
-    # TODO multi permission route
     return TaskController.update_task(**kwargs)

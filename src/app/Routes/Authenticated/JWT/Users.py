@@ -8,6 +8,7 @@ from app.Models.Enums import Operations, Resources
 @app.route('/user/<int:user_id>', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.USER)
 def get_user(user_id, **kwargs):
     return UserController.get_user(user_id, **kwargs)
 
@@ -15,6 +16,7 @@ def get_user(user_id, **kwargs):
 @app.route('/user/<int:user_id>', methods=['DELETE'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.DELETE, Resources.USER)
 def delete_user(user_id, **kwargs):
     return UserController.delete_user(user_id, **kwargs)
 
@@ -30,6 +32,7 @@ def user_pages(**kwargs):
 @app.route('/user/settings', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.USER_SETTINGS)
 def get_user_settings(**kwargs):
     return UserController.get_user_settings(**kwargs)
 
@@ -37,6 +40,7 @@ def get_user_settings(**kwargs):
 @app.route('/user/settings', methods=['PUT'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.UPDATE, Resources.USER_SETTINGS)
 def update_user_settings(**kwargs):
     return UserController.update_user_settings(**kwargs)
 
@@ -44,6 +48,7 @@ def update_user_settings(**kwargs):
 @app.route('/user/activity/<int:user_id>', methods=['GET'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.GET, Resources.USER_ACTIVITY)
 def get_user_activity(user_id, **kwargs):
     return UserController.get_user_activity(user_id, **kwargs)
 
@@ -67,6 +72,7 @@ def get_users(**kwargs):
 @app.route('/users', methods=['PUT'])
 @requires_jwt
 @handle_exceptions
+@authorize(Operations.UPDATE, Resources.USER)
 def update_user(**kwargs):
     return UserController.update_user(**kwargs)
 

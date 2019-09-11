@@ -30,19 +30,14 @@ class TaskTypeController(object):
     @staticmethod
     def create_task_type(**kwargs) -> Response:
         """Creates a task type"""
-        from app.Controllers import AuthorizationController, ValidationController
+        from app.Controllers import ValidationController
 
         req_user = kwargs['req_user']
 
-        label, task_type = ValidationController.validate_create_task_type_request(req_user.org_id, request.get_json())
+        label, task_type = ValidationController.validate_create_task_type_request(request.get_json(), **kwargs)
 
         if task_type is None:
             # it didn't exist so just create it
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.CREATE,
-                resource=Resources.TASK_TYPE
-            )
             with session_scope() as session:
                 new_task_type = TaskType(
                     label=label,
@@ -65,11 +60,6 @@ class TaskTypeController(object):
             # it existed so check if it needs to be enabled
             if task_type.disabled is None:
                 return g_response(f"Task type {label} already exists.", status=400)
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.ENABLE,
-                resource=Resources.TASK_TYPE
-            )
             with session_scope():
                 task_type.disabled = None
             Activity(
