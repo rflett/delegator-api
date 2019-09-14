@@ -12,9 +12,9 @@ class SubscriptionApi(object):
         self.url = url
 
     def get_limits(self, subscription_id: str) -> dict:
-        """Get a subscription's plan limits"""
+        """Get a subscription's plan quantity"""
         r = requests.get(
-            url=f"{self.url}/subscription/{subscription_id}/limits",
+            url=f"{self.url}/subscription/{subscription_id}/quantity",
             headers={
                 'Authorization': self.key
             },
@@ -28,7 +28,7 @@ class SubscriptionApi(object):
     def create_customer(self, plan_id: str, user_dict: dict, org_name: str) -> typing.Tuple[str, str]:
         """Create a customer on chargebee with the signup details"""
         r = requests.put(
-            url=f"{self.url}/customer",
+            url=f"{self.url}/customer/",
             headers={
                 'Authorization': self.key
             },
