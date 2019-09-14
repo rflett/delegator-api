@@ -3,7 +3,7 @@ from functools import wraps
 from flask import request
 
 from app import app
-from app.Controllers import AuthenticationController, AuthorizationController
+from app.Controllers import AuthenticationController
 from app.Exceptions import AuthenticationError
 
 
@@ -32,16 +32,13 @@ def requires_token_auth(f):
     return decorated
 
 
-def authorize(operation: str, resource: str, affected_user_id: int = None):
+def authorize(operation: str, resource: str):
     def decorator(f):
         @wraps(f)
         def wrapped_func(*args, **kwargs):
-            AuthorizationController.authorize_request(
-                auth_user=kwargs['req_user'],
-                operation=operation,
-                resource=resource,
-                affected_user_id=affected_user_id
-            )
-            return f(*args, **kwargs)
+            req_user = kwargs['req_user']
+            req_user.is_active()
+            auth_scope = req_user.can(operation, resource)
+            return f(auth_scope=auth_scope, *args, **kwargs)
         return wrapped_func
     return decorator

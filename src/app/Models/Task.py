@@ -31,9 +31,9 @@ class Task(db.Model):
     priority_changed_at = db.Column('priority_changed_at', db.DateTime)
 
     orgs = db.relationship("Organisation", backref="organisations")
-    assignees = db.relationship("User", foreign_keys=[assignee])
-    created_bys = db.relationship("User", foreign_keys=[created_by])
-    finished_bys = db.relationship("User", foreign_keys=[finished_by])
+    assignees = db.relationship("User", foreign_keys=[assignee], backref="assigned_user")
+    created_bys = db.relationship("User", foreign_keys=[created_by], backref="created_by_user")
+    finished_bys = db.relationship("User", foreign_keys=[finished_by], backref="finished_by_user")
     task_statuses = db.relationship("TaskStatus", backref="task_statuses")
     task_types = db.relationship("TaskType", backref="task_types")
     task_priorities = db.relationship("TaskPriority", backref="task_priorities")
@@ -127,6 +127,7 @@ class Task(db.Model):
 
     def fat_dict(self) -> dict:
         """ Returns a full task dict with all of its FK's joined. """
+        from app.Models import User
         with session_scope() as session:
             task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
             tasks_qry = session\

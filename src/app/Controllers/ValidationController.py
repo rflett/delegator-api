@@ -13,6 +13,15 @@ from app.Models.Enums import NotificationTokens
 from app.Models.RBAC import Role
 
 
+def _check_auth_scope(affected_user: User, **kwargs):
+    """Compares a users scope against the action they're trying to do"""
+    if kwargs['auth_scope'] == 'SELF' and kwargs['req_user'].id != affected_user.id:
+        raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this action on themselves.")
+    elif kwargs['auth_scope'] == 'ORG' and kwargs['req_user'].org_id != affected_user.org_id:
+        raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this"
+                                 f" action within their organisation.")
+
+
 def _check_int(param: int, param_name: str) -> int:
     """Ensures the param is an int and is positive
     In python bools are ints, so we need to checks that it's a bool before we check that it's an int"""
@@ -51,8 +60,7 @@ def _check_password_reqs(password: str) -> bool:
 
 def _check_user_id(
         identifier: typing.Union[str, int],
-        should_exist: typing.Optional[bool] = None
-) -> typing.Union[None, str, int]:
+        should_exist: typing.Optional[bool] = None) -> typing.Union[None, User]:
     """Given a users email or ID, check whether it should or shouldn't exist"""
 
     # validate the identifier
@@ -66,28 +74,30 @@ def _check_user_id(
 
         with session_scope() as session:
             if isinstance(identifier, str):
-                user_exists = session.query(exists().where(func.lower(User.email) == func.lower(identifier))).scalar()
+                user = session.query(User).filter(func.lower(User.email) == func.lower(identifier)).first()
             else:
-                user_exists = session.query(exists().where(User.id == identifier)).scalar()
+                user = session.query(User).filter_by(id=identifier).first()
 
-        if should_exist and not user_exists:
-            raise ResourceNotFoundError(f"User doesn't exist")
-        elif not should_exist and user_exists:
-            raise ValidationError(f"User already exists")
+        if should_exist and user is None:
+            raise ResourceNotFoundError("User doesn't exist")
+        elif not should_exist and user is not None:
+            raise ValidationError("User already exists")
 
-    return identifier
+    return user
 
 
-def _check_user_role(req_user: User, role: str) -> str:
+def _check_user_role(req_user: User, role: str, user_to_update: User = None) -> str:
     role = _check_str(role, 'role')
     with session_scope() as session:
-        role = session.query(Role).filter_by(id=role).first()
-    if role is None:
+        _role = session.query(Role).filter_by(id=role).first()
+    if _role is None:
         raise ResourceNotFoundError(f"Role {role} doesn't exist")
-    elif role.rank < req_user.roles.rank:
-        raise AuthorizationError("You cannot create a more privileged user than yourself.")
+    elif _role.rank < req_user.roles.rank:
+        raise AuthorizationError("You cannot assign a role that has more privileges than you do.")
+    elif user_to_update is not None and user_to_update.roles.rank < req_user.roles.rank:
+        raise AuthorizationError("You cannot update a user who is more privileged than you.")
     else:
-        return role.id
+        return _role.id
 
 
 def _check_user_job_title(job_title: typing.Optional[str]) -> typing.Union[None, str]:
@@ -107,7 +117,7 @@ def _check_user_disabled(disabled: typing.Optional[datetime.datetime]) -> typing
                                   f"in the format {app.config['REQUEST_DATE_FORMAT']}")
 
 
-def _check_task_id(task_id: int, org_id: int) -> typing.Union[int, Task]:
+def _check_task_id(task_id: int, org_id: int) -> Task:
     task_id = _check_int(task_id, 'task_id')
 
     with session_scope() as session:
@@ -165,9 +175,11 @@ def _check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[Non
     return None
 
 
-def _check_task_assignee(assignee: typing.Optional[int]) -> typing.Union[int, None]:
+def _check_task_assignee(assignee: typing.Optional[int], **kwargs) -> typing.Union[int, None]:
     if assignee is not None:
-        return _check_user_id(assignee, should_exist=True)
+        user = _check_user_id(assignee, should_exist=True)
+        _check_auth_scope(user, **kwargs)
+        return user.id
     else:
         return None
 
@@ -223,9 +235,7 @@ class ValidationController(object):
         return password
 
     @staticmethod
-    def validate_create_task_type_request(
-            org_id: int,
-            request_body: dict) -> typing.Tuple[str, typing.Optional[TaskType]]:
+    def validate_create_task_type_request(request_body: dict, **kwargs) -> typing.Tuple[str, typing.Optional[TaskType]]:
         """ Validates a create task type request body """
         label = _check_str(request_body.get('label'), 'label')
 
@@ -233,7 +243,7 @@ class ValidationController(object):
         with session_scope() as session:
             task_type = session.query(TaskType).filter(
                 func.lower(TaskType.label) == func.lower(label),
-                TaskType.org_id == org_id
+                TaskType.org_id == kwargs['req_user'].org_id
             ).first()
             if task_type is None:
                 return label, None
@@ -360,13 +370,15 @@ class ValidationController(object):
         }
 
     @staticmethod
-    def validate_update_user_request(req_user: User, request_body: dict) -> dict:
+    def validate_update_user_request(request_body: dict, **kwargs) -> dict:
         """  Validates an update user request body """
+        user_to_update = _check_user_id(request_body.get('id'), should_exist=True)
+        _check_auth_scope(user_to_update, **kwargs)
         return {
-            "id": _check_user_id(request_body.get('id'), should_exist=True),
+            "id": user_to_update.id,
             "first_name": _check_str(request_body.get('first_name'), 'first_name'),
             "last_name": _check_str(request_body.get('last_name'), 'last_name'),
-            "role": _check_user_role(req_user, request_body.get('role_id')),
+            "role": _check_user_role(kwargs['req_user'], request_body.get('role_id'), user_to_update),
             "job_title": _check_user_job_title(request_body.get('job_title')),
             "disabled": _check_user_disabled(request_body.get('disabled'))
         }
@@ -416,7 +428,7 @@ class ValidationController(object):
         return org_name
 
     @staticmethod
-    def validate_create_task_request(request_body: dict) -> dict:
+    def validate_create_task_request(request_body: dict, **kwargs) -> dict:
         """Validates a task request body
         :param request_body:    The request body from the create task request
         :return:                Response if the request body contains invalid values, or the TaskRequest dataclass
@@ -427,18 +439,17 @@ class ValidationController(object):
             'status': _check_task_status(request_body.get('status')),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
             'due_time': _check_task_due_time(request_body.get('due_time')),
-            'assignee': _check_task_assignee(request_body.get('assignee')),
+            'assignee': _check_task_assignee(request_body.get('assignee'), **kwargs),
             'priority': _check_task_priority(request_body.get('priority'))
         }
 
     @staticmethod
-    def validate_update_task_request(users_org_id: int, request_body: dict) -> dict:
+    def validate_update_task_request(request_body: dict, **kwargs) -> dict:
         """Validates a user request body
-        :param users_org_id:          The org that the task should be in (from the req user)
         :param request_body:    The request body from the update user request
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
-        task = _check_task_id(request_body.get('id'), users_org_id)
+        task = _check_task_id(request_body.get('id'), kwargs['req_user'].org_id)
         return {
             'task': task,
             'type': _check_task_type_id(request_body.get('type_id')),
@@ -446,45 +457,50 @@ class ValidationController(object):
             'status': _check_task_status(request_body.get('status')),
             'time_estimate': _check_task_estimate(request_body.get('time_estimate')),
             'due_time': _check_task_due_time(request_body.get('due_time')),
-            'assignee': _check_task_assignee(request_body.get('assignee')),
+            'assignee': _check_task_assignee(request_body.get('assignee'), **kwargs),
             'priority': _check_task_priority(request_body.get('priority'))
         }
 
     @staticmethod
-    def validate_assign_task(users_org_id: int, request_body: dict) -> tuple:
+    def validate_assign_task(request_body: dict, **kwargs) -> tuple:
         """Validates the assign task request
         :param: users_org_id:   The org id of the user making the request
         :param request_body:    The request body from the update task request
         :return:                Response if invalid, else a complex dict
         """
-        task = _check_task_id(request_body.get('task_id'), users_org_id)
-        assignee_id = _check_task_assignee(request_body.get('assignee'))
+        task = _check_task_id(request_body.get('task_id'), kwargs['req_user'].org_id)
+        assignee_id = _check_task_assignee(request_body.get('assignee'), **kwargs)
 
         return task, assignee_id
 
     @staticmethod
-    def validate_drop_task(users_org_id: int, task_id: int) -> Task:
+    def validate_drop_task(task_id: int, **kwargs) -> Task:
         """Validates the assign task request
         :param: users_org_id:   The org id of the user making the request
         :param task_id:         The id of the task to drop
         :return:                Response if invalid, else a complex dict
         """
-        task = _check_task_id(task_id, users_org_id)
+        task = _check_task_id(task_id, kwargs['req_user'].org_id)
 
         if task.assignee is None:
             raise ValidationError("Can't drop task because it is not assigned to anyone.")
         else:
+            _check_auth_scope(task.assignee, **kwargs)
             return task
 
     @staticmethod
-    def validate_cancel_task(users_org_id: int, task_id: int) -> Task:
+    def validate_cancel_task(task_id: int, **kwargs) -> Task:
         """Validates the cancel task request"""
-        return _check_task_id(task_id, users_org_id)
+        task = _check_task_id(task_id, kwargs['req_user'].org_id)
+        _check_auth_scope(task.assignees, **kwargs)
+        return task
 
     @staticmethod
-    def validate_transition_task(users_org_id: int, request_body: dict) -> tuple:
+    def validate_transition_task(request_body: dict, **kwargs) -> tuple:
         """ Validates the transition task request """
-        task = _check_task_id(request_body.get('task_id'), users_org_id)
+        task = _check_task_id(request_body.get('task_id'), kwargs['req_user'].org_id)
+        if task.assignee is not None:
+            _check_auth_scope(task.assignee, **kwargs)
         task_status = _check_task_status(request_body.get('task_status'))
         return task, task_status
 
@@ -492,17 +508,6 @@ class ValidationController(object):
     def validate_get_transitions(users_org_id: int, task_id: int) -> Task:
         """Validates the get task available task transitions request"""
         return _check_task_id(task_id, users_org_id)
-
-    @staticmethod
-    def validate_update_user_settings_request(user_id: int, request_body: dict) -> UserSetting:
-        """ Validates updating user settings """
-        from decimal import Decimal
-
-        user_setting_obj = UserSetting(user_id=Decimal(user_id))
-        for k, v in request_body.items():
-            user_setting_obj.__setattr__(k, v)
-
-        return user_setting_obj
 
     @staticmethod
     def validate_update_org_settings_request(org_id: int, request_body: dict) -> OrgSetting:
@@ -516,9 +521,11 @@ class ValidationController(object):
         return org_setting_obj
 
     @staticmethod
-    def validate_delay_task_request(users_org_id: int, request_body: dict) -> tuple:
+    def validate_delay_task_request(request_body: dict, **kwargs) -> tuple:
         """ Validates the transition task request """
-        task = _check_task_id(request_body.get('task_id'), users_org_id)
+        task = _check_task_id(request_body.get('task_id'), kwargs['req_user'].org_id)
+        if task.assignee is not None:
+            _check_auth_scope(task.assignee, **kwargs)
         delay_for = _check_int(request_body.get('delay_for'), 'delay_for')
         try:
             return task, delay_for, _check_str(request_body['reason'], 'reason')
@@ -573,3 +580,24 @@ class ValidationController(object):
             raise ValidationError("start_period is in the future")
 
         return start_period, end_period
+
+    @staticmethod
+    def validate_get_user(user_id: int, **kwargs) -> User:
+        """Validates the get user request"""
+        user = _check_user_id(user_id, should_exist=True)
+        _check_auth_scope(user, **kwargs)
+        return user
+
+    @staticmethod
+    def validate_delete_user(user_id: int, **kwargs) -> User:
+        """Validates the delete user request"""
+        user = _check_user_id(user_id, should_exist=True)
+        _check_auth_scope(user, **kwargs)
+        return user
+
+    @staticmethod
+    def validate_get_user_activity(user_id: int, **kwargs) -> User:
+        """Validates the get user activity request"""
+        user = _check_user_id(user_id, should_exist=True)
+        _check_auth_scope(user, **kwargs)
+        return user

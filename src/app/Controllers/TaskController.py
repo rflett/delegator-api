@@ -315,13 +315,7 @@ class TaskController(object):
 
         req_user = kwargs['req_user']
 
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.CREATE,
-            resource=Resources.TASK,
-        )
-
-        task_attrs = ValidationController.validate_create_task_request(request.get_json())
+        task_attrs = ValidationController.validate_create_task_request(request.get_json(), **kwargs)
 
         # create task
         with session_scope() as session:
@@ -360,13 +354,6 @@ class TaskController(object):
 
         # optionally assign the task if an assignee was present in the create task request
         if task_attrs.get('assignee') is not None:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.ASSIGN,
-                resource=Resources.TASK,
-                affected_user_id=task_attrs.get('assignee')
-            )
-
             _assign_task(
                 task=task,
                 assignee=task_attrs.get('assignee'),
@@ -387,13 +374,7 @@ class TaskController(object):
 
         req_user = kwargs['req_user']
 
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.UPDATE,
-            resource=Resources.TASK
-        )
-
-        task_attrs = ValidationController.validate_update_task_request(req_user.org_id, request.get_json())
+        task_attrs = ValidationController.validate_update_task_request(request.get_json(), **kwargs)
 
         # update the task
         task_to_update = task_attrs['task']
@@ -402,13 +383,6 @@ class TaskController(object):
         # omitted from the request, then assign the task
         assignee = task_attrs.pop('assignee', None)
         if task_to_update.assignee != assignee:
-            AuthorizationController.authorize_request(
-                auth_user=req_user,
-                operation=Operations.ASSIGN,
-                resource=Resources.TASK,
-                affected_user_id=assignee
-            )
-
             if assignee is None:
                 _unassign_task(
                     task=task_to_update,
@@ -464,21 +438,12 @@ class TaskController(object):
         """Assigns a user to task """
         from app.Controllers import ValidationController
 
-        req_user = kwargs['req_user']
-
-        task, assignee_id = ValidationController.validate_assign_task(req_user.org_id, request.get_json())
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.ASSIGN,
-            resource=Resources.TASK,
-            affected_user_id=assignee_id
-        )
+        task, assignee_id = ValidationController.validate_assign_task(request.get_json(), **kwargs)
 
         _assign_task(
             task=task,
             assignee=assignee_id,
-            req_user=req_user
+            req_user=kwargs['req_user']
         )
 
         return j_response(task.fat_dict())
@@ -490,13 +455,8 @@ class TaskController(object):
         if the task is IN_PROGRESS and has an assignee
         """
         from app.Controllers import ValidationController
-
-        req_user = kwargs['req_user']
-
-        task_to_drop = ValidationController.validate_drop_task(req_user.org_id, task_id)
-
-        _drop(task_to_drop, req_user)
-
+        task_to_drop = ValidationController.validate_drop_task(task_id, **kwargs)
+        _drop(task_to_drop, kwargs['req_user'])
         return j_response(task_to_drop.fat_dict())
 
     @staticmethod
@@ -506,14 +466,7 @@ class TaskController(object):
 
         req_user = kwargs['req_user']
 
-        task_to_cancel = ValidationController.validate_cancel_task(req_user.org_id, task_id)
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.CANCEL,
-            resource=Resources.TASK,
-            affected_user_id=task_to_cancel.assignee
-        )
+        task_to_cancel = ValidationController.validate_cancel_task(task_id, **kwargs)
 
         _transition_task(
             task=task_to_cancel,
@@ -538,21 +491,13 @@ class TaskController(object):
         """Transitions the status of a task """
         from app.Controllers import ValidationController
 
-        req_user = kwargs['req_user']
-
-        task, task_status = ValidationController.validate_transition_task(req_user.org_id, request.get_json())
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.TRANSITION,
-            resource=Resources.TASK,
-            affected_user_id=task.assignee
-        )
+        task, task_status = ValidationController.validate_transition_task(request.get_json(), **kwargs)
 
         _transition_task(
             task=task,
             status=task_status,
-            req_user=req_user
+            req_user=kwargs['req_user']
+
         )
         return j_response(task.fat_dict())
 
@@ -622,14 +567,7 @@ class TaskController(object):
 
         req_user = kwargs['req_user']
 
-        task, delay_for, reason = ValidationController.validate_delay_task_request(req_user.org_id, request.get_json())
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.DELAY,
-            resource=Resources.TASK,
-            affected_user_id=task.assignee
-        )
+        task, delay_for, reason = ValidationController.validate_delay_task_request(request.get_json(), **kwargs)
 
         with session_scope() as session:
             # transition a task to delayed

@@ -1,11 +1,12 @@
 import datetime
+from decimal import Decimal
 
 from flask import request, Response
 
 from app import logger, g_response, session_scope, j_response, subscription_api
 from app.Controllers import AuthorizationController
 from app.Exceptions import ProductTierLimitError, ResourceNotFoundError
-from app.Models import User, Activity, Task
+from app.Models import User, Activity, Task, UserSetting
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
 
@@ -146,14 +147,7 @@ class UserController(object):
 
         req_user = kwargs['req_user']
 
-        user_attrs = ValidationController.validate_update_user_request(req_user, request.get_json())
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.UPDATE,
-            resource=Resources.USER,
-            affected_user_id=user_attrs.get('id')
-        )
+        user_attrs = ValidationController.validate_update_user_request(request.get_json(), **kwargs)
 
         # get the user to update
         user_to_update = _get_user_by_id(user_attrs.get('id'))
@@ -204,17 +198,10 @@ class UserController(object):
     @staticmethod
     def delete_user(user_id: int, **kwargs) -> Response:
         """Deletes a user """
+        from app.Controllers import ValidationController
         req_user = kwargs['req_user']
 
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.DELETE,
-            resource=Resources.USER,
-            affected_user_id=user_id
-        )
-
-        # get the user
-        user_to_delete = _get_user_by_id(user_id)
+        user_to_delete = ValidationController.validate_delete_user(user_id, **kwargs)
 
         user_to_delete.delete(req_user)
 
@@ -237,22 +224,13 @@ class UserController(object):
     @staticmethod
     def get_user(user_id: int, **kwargs) -> Response:
         """Get a single user by email or ID """
-        req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.USER,
-            affected_user_id=user_id
-        )
-
-        user = _get_user_by_id(user_id)
-        req_user.log(
+        from app.Controllers import ValidationController
+        user = ValidationController.validate_get_user(user_id, **kwargs)
+        kwargs['req_user'].log(
             operation=Operations.GET,
             resource=Resources.USER,
             resource_id=user.id
         )
-        logger.info(f"Found user {user.id}")
         return j_response(user.fat_dict())
 
     @staticmethod
@@ -320,17 +298,8 @@ class UserController(object):
     @staticmethod
     def get_user_settings(**kwargs) -> Response:
         """Returns the user's settings """
-        from app.Controllers import AuthorizationController, SettingsController
-
+        from app.Controllers import SettingsController
         req_user = kwargs['req_user']
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.USER_SETTINGS,
-            affected_user_id=req_user.id
-        )
-
         req_user.log(
             operation=Operations.GET,
             resource=Resources.USER_SETTINGS,
@@ -342,44 +311,33 @@ class UserController(object):
     @staticmethod
     def update_user_settings(**kwargs) -> Response:
         """Updates the user's settings """
-        from app.Controllers import AuthorizationController, ValidationController, SettingsController
+        from app.Controllers import SettingsController
 
         req_user = kwargs['req_user']
 
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.UPDATE,
-            resource=Resources.USER_SETTINGS,
-            affected_user_id=req_user.id
-        )
+        new_settings = UserSetting(user_id=Decimal(req_user.id))
+        for k, v in request.get_json().items():
+            new_settings.__setattr__(k, v)
 
-        user_setting = ValidationController.validate_update_user_settings_request(req_user.id, request.get_json())
-
-        SettingsController.set_user_settings(user_setting)
+        SettingsController.set_user_settings(new_settings)
         req_user.log(
             operation=Operations.UPDATE,
             resource=Resources.USER_SETTINGS,
             resource_id=req_user.id
         )
         logger.info(f"updated user {req_user.id} settings")
-        return j_response(SettingsController.get_user_settings(req_user.id).as_dict())
+        return j_response(new_settings.as_dict())
 
     @staticmethod
     def get_user_activity(user_id: int, **kwargs) -> Response:
         """Returns the activity for a user """
+        from app.Controllers import ValidationController
         req_user = kwargs['req_user']
 
         if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_user_activity', False):
             raise ProductTierLimitError(f"You cannot view user activity on your plan.")
 
-        user = _get_user_by_id(user_id)
-
-        AuthorizationController.authorize_request(
-            auth_user=req_user,
-            operation=Operations.GET,
-            resource=Resources.USER_ACTIVITY,
-            affected_user_id=user.id
-        )
+        user = ValidationController.validate_get_user_activity(user_id, **kwargs)
 
         req_user.log(
             operation=Operations.GET,

@@ -13,6 +13,7 @@ from sqlalchemy import exists
 
 from app import db, session_scope, logger, user_activity_table, app, subscription_api
 from app.Models import FailedLogin
+from app.Exceptions import AuthorizationError
 from app.Models.RBAC import Log, Permission
 from app.Models.LocalMockData import MockActivity
 
@@ -102,8 +103,7 @@ class User(db.Model):
             ).first()
 
         if permission is None:
-            logger.info(f"permission with role:{self.role}, operation:{operation}, resource:{resource} does not exist")
-            return False
+            raise AuthorizationError(f"No permissions to {operation} {resource}.")
         else:
             return permission.resource_scope
 
