@@ -62,10 +62,9 @@ services:
   #     - postgres
 
   postgres:
-    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
+    image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
     build:
       context: ../../containers/postgres
-    command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track='all'
     ports:
       - 5432:5432
 
