@@ -18,13 +18,6 @@ def unlock_organisation(customer_id):
     return OrganisationController.unlock_organisation(customer_id)
 
 
-@app.route('/org/customer', methods=['POST'])
-@requires_token_auth
-@handle_exceptions
-def update_org_customer_id():
-    return OrganisationController.update_org_customer_id()
-
-
 @app.route('/org/subscription', methods=['POST'])
 @requires_token_auth
 @handle_exceptions

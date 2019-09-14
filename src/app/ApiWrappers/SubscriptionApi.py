@@ -1,4 +1,5 @@
 import json
+import typing
 
 import requests
 
@@ -24,24 +25,28 @@ class SubscriptionApi(object):
         else:
             raise WrapperCallFailedException(f"Subscription API - {r.status_code}")
 
-    def get_hosted_page(self, plan_id: str, user_dict: dict) -> str:
-        """Get a hosted plan page for a new user"""
-        r = requests.post(
-            url=f"{self.url}/hosted-page",
+    def create_customer(self, plan_id: str, user_dict: dict, org_name: str) -> typing.Tuple[str, str]:
+        """Create a customer on chargebee with the signup details"""
+        r = requests.put(
+            url=f"{self.url}/customer",
             headers={
-                'Content-Type': 'application/json',
                 'Authorization': self.key
             },
             data=json.dumps({
                 "plan_id": plan_id,
-                "email": user_dict['email'],
-                "first_name": user_dict['first_name'],
-                "last_name": user_dict['last_name']
+                "user": user_dict,
+                "org_name": org_name
             }),
             timeout=10
         )
-        if r.status_code == 200:
-            return r.json().get('url')
+        if r.status_code == 201:
+            try:
+                res = r.json()
+                return res['customer_id'], res['url']
+            except ValueError:
+                raise WrapperCallFailedException(f"Subscription API - failed to decode JSON response.")
+            except KeyError:
+                raise WrapperCallFailedException(f"Missing customer_id from response body.")
         else:
             raise WrapperCallFailedException(f"Subscription API - {r.status_code}")
 

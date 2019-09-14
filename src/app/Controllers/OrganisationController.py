@@ -42,21 +42,6 @@ class OrganisationController(RequestValidationController):
 
         return self.ok(SettingsController.get_org_settings(req_user.org_id).as_dict())
 
-    def update_org_customer_id(self) -> Response:
-        """Set the subscription_id for an org"""
-        from app.Controllers import UserController
-        try:
-            request_body = request.get_json()
-            email = request_body['email']
-            customer_id = request_body['customer_id']
-        except KeyError:
-            raise ValidationError("Missing email or customer_id from request")
-
-        with session_scope():
-            org = UserController.get_user_by_email(email).orgs
-            org.chargebee_customer_id = customer_id
-            return self.ok(f"Applied customer_id {customer_id} against org {org.id}")
-
     def update_org_subscription_id(self) -> Response:
         """Set the subscription_id for an org"""
         try:

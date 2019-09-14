@@ -44,7 +44,7 @@ class SignupController(RequestValidationController):
 
         # try and create the user since the org was created successfully
         try:
-            UserController.create_signup_user(org_id=organisation.id, valid_user=valid_user)
+            user = UserController.create_signup_user(org_id=organisation.id, valid_user=valid_user)
         except Exception as e:
             logger.error(str(e))
             # the org was actually created, but the user failed, so delete the org and default task type
@@ -55,9 +55,13 @@ class SignupController(RequestValidationController):
                             f"since there was an issue creating the user.")
             return self.oh_god("There was an issue creating the user.")
 
-        hosted_page_url = subscription_api.get_hosted_page(
+        customer_id, plan_url = subscription_api.create_customer(
             plan_id=request_body.get('plan_id'),
-            user_dict=valid_user
+            user_dict=user.as_dict(),
+            org_name=organisation.name
         )
 
-        return self.ok({"url": hosted_page_url})
+        with session_scope():
+            organisation.chargebee_customer_id = customer_id
+
+        return self.ok({"url": plan_url})

@@ -104,7 +104,7 @@ class UserController(RequestValidationController):
         return self.created(user.fat_dict())
 
     @staticmethod
-    def create_signup_user(org_id: int, valid_user: dict) -> None:
+    def create_signup_user(org_id: int, valid_user: dict) -> User:
         """Creates a user from the signup page """
         with session_scope() as session:
             user = User(
@@ -137,6 +137,7 @@ class UserController(RequestValidationController):
             event_friendly=f"Created by {user.name()}"
         ).publish()
         logger.info(f"User {user.id} signed up.")
+        return user
 
     @staticmethod
     def update_user(self, **kwargs) -> Response:
