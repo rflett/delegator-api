@@ -8,9 +8,8 @@ from sqlalchemy.orm import aliased
 
 from app import logger, session_scope, subscription_api
 from app.Exceptions import ValidationError
-from app.Controllers import NotificationController
 from app.Controllers.Base import RequestValidationController
-from app.Models import User, Task, DelayedTask, Activity, TaskPriority, TaskStatus
+from app.Models import User, Task, DelayedTask, Activity, TaskPriority, TaskStatus, Notification
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
 
 
@@ -107,10 +106,10 @@ class TaskController(RequestValidationController):
             event_id=assigned_user.id,
             event_friendly=f"Assigned to {task.label()} by {req_user.name()}."
         ).publish()
-        NotificationController().push(
+        Notification(
             msg="You've been assigned a task!",
             user_ids=assigned_user.id
-        )
+        ).push()
         req_user.log(
             operation=Operations.ASSIGN,
             resource=Resources.TASK,
@@ -163,10 +162,10 @@ class TaskController(RequestValidationController):
                 task.priority = priority
                 task.priority_changed_at = datetime.datetime.utcnow()
                 # task priority is increasing
-                NotificationController().push(
+                Notification(
                     msg=f"{task.label()} task has been escalated.",
                     user_ids=self._all_user_ids(task.org_id)
-                )
+                ).push()
 
         logger.info(f"Changed task {task.id} priority to {priority}")
 
@@ -180,10 +179,10 @@ class TaskController(RequestValidationController):
             req_user=req_user
         )
 
-        NotificationController().push(
+        Notification(
             msg=f"{task.label()} has been dropped.",
             user_ids=self._all_user_ids(req_user.org_id)
-        )
+        ).push()
 
         req_user.log(
             operation=Operations.DROP,
@@ -350,10 +349,10 @@ class TaskController(RequestValidationController):
                 req_user=req_user
             )
         else:
-            NotificationController().push(
+            Notification(
                 msg=f"{task.label()} task has been created.",
                 user_ids=self._all_user_ids(req_user.org_id)
-            )
+            ).push()
 
         return self.created(task.fat_dict())
 
@@ -456,10 +455,10 @@ class TaskController(RequestValidationController):
             resource_id=task_id
         )
         if task_to_cancel.assignee is not None:
-            NotificationController().push(
+            Notification(
                 msg=f"{task_to_cancel.label()} cancelled.",
                 user_ids=task_to_cancel.assignee
-            )
+            ).push()
         logger.info(f"User {req_user.id} cancelled task {task_to_cancel.id}")
         return self.ok(task_to_cancel.fat_dict())
 
@@ -566,15 +565,15 @@ class TaskController(RequestValidationController):
                 session.add(delayed_task)
 
         if req_user.id == task.assignee:
-            NotificationController().push(
+            Notification(
                 msg=f"{task.label()} has been delayed.",
                 user_ids=task.created_by
-            )
+            ).push()
         elif req_user.id == task.created_by:
-            NotificationController().push(
+            Notification(
                 msg=f"{task.label()} has been delayed.",
                 user_ids=task.assignee
-            )
+            ).push()
 
         req_user.log(
             operation=Operations.DELAY,

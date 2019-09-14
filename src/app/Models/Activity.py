@@ -47,7 +47,7 @@ class Activity(object):
         _thread.start_new_thread(do_publish, (self.as_dict(), self.event))
 
     def as_dict(self) -> dict:
-        """ Returns a notification as a dict, ready for SNS message """
+        """ Returns an activity as a dict, ready for SNS message """
         return {
             'org_id': self.org_id,
             'event': self.event,

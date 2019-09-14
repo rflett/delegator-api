@@ -1,8 +1,9 @@
 from app.Models.ActiveUser import ActiveUser
+from app.Models.Activity import Activity
 from app.Models.BlacklistedToken import BlacklistedToken
 from app.Models.DelayedTask import DelayedTask
 from app.Models.FailedLogin import FailedLogin
-from app.Models.Activity import Activity
+from app.Models.Notification import Notification
 from app.Models.Organisation import Organisation
 from app.Models.OrgSetting import OrgSetting
 from app.Models.ProductTier import ProductTier
@@ -16,10 +17,11 @@ from app.Models.UserSetting import UserSetting
 
 __all__ = [
     ActiveUser,
+    Activity,
     BlacklistedToken,
     DelayedTask,
     FailedLogin,
-    Activity,
+    Notification,
     Organisation,
     OrgSetting,
     ProductTier,

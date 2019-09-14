@@ -1,7 +1,5 @@
 from app.Middleware import handle_exceptions, requires_jwt
 
-from flask import request
-
 from app import app
 from app.Controllers import NotificationController
 
@@ -10,11 +8,11 @@ from app.Controllers import NotificationController
 @requires_jwt
 @handle_exceptions
 def register_token(**kwargs):
-    return NotificationController.register_token(req=request, **kwargs)
+    return NotificationController.register_token(**kwargs)
 
 
 @app.route('/notification_token', methods=['DELETE'])
 @requires_jwt
 @handle_exceptions
 def deregister_token(**kwargs):
-    return NotificationController.deregister_token(req=request, **kwargs)
+    return NotificationController.deregister_token(**kwargs)
