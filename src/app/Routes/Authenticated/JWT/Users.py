@@ -75,11 +75,3 @@ def get_users(**kwargs):
 @authorize(Operations.UPDATE, Resources.USER)
 def update_user(**kwargs):
     return UserController.update_user(**kwargs)
-
-
-@app.route('/users/active', methods=['GET'])
-@requires_jwt
-@handle_exceptions
-@authorize(Operations.GET, Resources.ACTIVE_USERS)
-def active_users(**kwargs):
-    return ActiveUserController.get_active_users(**kwargs)

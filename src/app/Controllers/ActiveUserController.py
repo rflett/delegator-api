@@ -4,6 +4,7 @@ from flask import Response
 from flask_restplus import Namespace, fields
 
 from app import session_scope, logger, app
+from app.Decorators import authorize, requires_jwt, handle_exceptions
 from app.Controllers.Base import RequestValidationController
 from app.Models import User, ActiveUser
 from app.Models.Enums import Operations, Resources
@@ -70,6 +71,9 @@ class ActiveUserController(RequestValidationController):
         with session_scope() as session:
             session.query(ActiveUser).filter_by(user_id=user.id).delete()
 
+    @requires_jwt
+    @handle_exceptions
+    @authorize(Operations.GET, Resources.ACTIVE_USERS)
     @active_user_route.doc("Returns all active users in the organisation")
     @active_user_route.response(200, "Success", active_users_model)
     def get(self, **kwargs) -> Response:
