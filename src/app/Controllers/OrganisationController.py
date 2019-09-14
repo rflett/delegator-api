@@ -1,38 +1,17 @@
 import datetime
-import typing
 
 from flask import request, Response
 
-from sqlalchemy import exists, func
 
-from app import session_scope, logger, j_response
+from app import session_scope
+from app.Controllers.Base import RequestValidationController
 from app.Exceptions import ValidationError
 from app.Models import Organisation
 from app.Models.Enums import Operations, Resources
 
 
-class OrganisationController(object):
-    @staticmethod
-    def org_exists(org_identifier: typing.Union[str, int]) -> bool:
-        """Checks to see if an organisation exists
-
-        :param org_identifier:  The org_id or name
-        :return:                True if the org exists or False
-        """
-        with session_scope() as session:
-            if isinstance(org_identifier, str):
-                logger.debug("org_identifier is a str so finding org by name")
-                return session.query(exists().where(
-                    func.lower(Organisation.name) == func.lower(org_identifier)
-                )).scalar()
-            elif isinstance(org_identifier, int):
-                logger.debug("org_identifier is an int so finding org by id")
-                return session.query(exists().where(Organisation.id == org_identifier)).scalar()
-            else:
-                raise ValueError(f"Bad org_identifier, expected Union[str, int] got {type(org_identifier)}")
-
-    @staticmethod
-    def get_org_settings(**kwargs) -> Response:
+class OrganisationController(RequestValidationController):
+    def get_org_settings(self, **kwargs) -> Response:
         """Get the org's settings"""
         from app.Controllers import SettingsController
 
@@ -43,16 +22,15 @@ class OrganisationController(object):
             resource=Resources.ORG_SETTINGS
         )
 
-        return j_response(SettingsController.get_org_settings(req_user.org_id).as_dict())
+        return self.ok(SettingsController.get_org_settings(req_user.org_id).as_dict())
 
-    @staticmethod
-    def update_org_settings(**kwargs) -> Response:
+    def update_org_settings(self, **kwargs) -> Response:
         """Update the org's settings"""
-        from app.Controllers import SettingsController, ValidationController
+        from app.Controllers import SettingsController
 
         req_user = kwargs['req_user']
 
-        org_setting = ValidationController.validate_update_org_settings_request(req_user.org_id, request.get_json())
+        org_setting = self.validate_update_org_settings_request(req_user.org_id, request.get_json())
 
         SettingsController.set_org_settings(org_setting)
 
@@ -62,10 +40,9 @@ class OrganisationController(object):
             resource_id=req_user.org_id
         )
 
-        return j_response(SettingsController.get_org_settings(req_user.org_id).as_dict(), status=200)
+        return self.ok(SettingsController.get_org_settings(req_user.org_id).as_dict())
 
-    @staticmethod
-    def update_org_customer_id() -> Response:
+    def update_org_customer_id(self) -> Response:
         """Set the subscription_id for an org"""
         from app.Controllers import UserController
         try:
@@ -78,10 +55,9 @@ class OrganisationController(object):
         with session_scope():
             org = UserController.get_user_by_email(email).orgs
             org.chargebee_customer_id = customer_id
-            return j_response()
+            return self.ok(f"Applied customer_id {customer_id} against org {org.id}")
 
-    @staticmethod
-    def update_org_subscription_id() -> Response:
+    def update_org_subscription_id(self) -> Response:
         """Set the subscription_id for an org"""
         try:
             request_body = request.get_json()
@@ -96,10 +72,9 @@ class OrganisationController(object):
                 raise ValidationError(f"There is no organisation with customer id {customer_id}")
             else:
                 org.chargebee_subscription_id = subscription_id
-                return j_response()
+                return self.ok(f"Applied subscription_id {subscription_id} against org {org.id}")
 
-    @staticmethod
-    def lock_organisation(customer_id: str) -> Response:
+    def lock_organisation(self, customer_id: str) -> Response:
         """Lock an organisation due to a billing issue."""
         locked_reason = request.get_json().get('locked_reason')
         with session_scope() as session:
@@ -130,10 +105,9 @@ class OrganisationController(object):
                 org.locked = datetime.datetime.utcnow()
                 org.locked_reason = locked_reason
 
-        return j_response()
+        return self.ok(f"Successfully locked org {org.id}")
 
-    @staticmethod
-    def unlock_organisation(customer_id: str) -> Response:
+    def unlock_organisation(self, customer_id: str) -> Response:
         """Unlock an organisation after the billing issue has been rectified"""
         with session_scope() as session:
             # get the org from the customer id
@@ -165,10 +139,9 @@ class OrganisationController(object):
                 # lock org
                 org.locked = None
 
-        return j_response()
+        return self.ok(f"Successfully unlocked org {org.id}")
 
-    @staticmethod
-    def get_org(**kwargs) -> Response:
+    def get_org(self, **kwargs) -> Response:
         """Get an organisation"""
         req_user = kwargs['req_user']
 
@@ -179,19 +152,16 @@ class OrganisationController(object):
 
         org = req_user.orgs
 
-        return j_response({
+        return self.ok({
             "org_id": org.id,
             "org_name": org.name
         })
 
-    @staticmethod
-    def update_org(**kwargs) -> Response:
+    def update_org(self, **kwargs) -> Response:
         """Update an organisation"""
-        from app.Controllers import ValidationController
-
         req_user = kwargs['req_user']
 
-        org_name = ValidationController.validate_update_org_request(req_user, request.get_json())
+        org_name = self.validate_update_org_request(req_user, request.get_json())
 
         with session_scope():
             req_user.orgs.name = org_name
@@ -200,6 +170,6 @@ class OrganisationController(object):
             operation=Operations.UPDATE,
             resource=Resources.ORGANISATION
         )
-        return j_response({
+        return self.ok({
             "org_name": req_user.orgs.name
         })

@@ -2,14 +2,15 @@ import datetime
 
 from flask import request, Response
 
-from app import logger, session_scope, g_response, j_response
+from app import logger, session_scope
+from app.Controllers.Base import RequestValidationController
 from app.Models import TaskType, TaskTypeEscalation, Activity
 from app.Models.Enums import Events, Operations, Resources
+from app.Exceptions import ValidationError
 
 
-class TaskTypeController(object):
-    @staticmethod
-    def get_task_types(**kwargs) -> Response:
+class TaskTypeController(RequestValidationController):
+    def get_task_types(self, **kwargs) -> Response:
         """Returns all task types """
         req_user = kwargs['req_user']
 
@@ -25,16 +26,13 @@ class TaskTypeController(object):
             operation=Operations.GET,
             resource=Resources.TASK_TYPES
         )
-        return j_response(task_types)
+        return self.ok(task_types)
 
-    @staticmethod
-    def create_task_type(**kwargs) -> Response:
+    def create_task_type(self, **kwargs) -> Response:
         """Creates a task type"""
-        from app.Controllers import ValidationController
-
         req_user = kwargs['req_user']
 
-        label, task_type = ValidationController.validate_create_task_type_request(request.get_json(), **kwargs)
+        label, task_type = self.validate_create_task_type_request(request.get_json(), **kwargs)
 
         if task_type is None:
             # it didn't exist so just create it
@@ -55,11 +53,11 @@ class TaskTypeController(object):
                 resource=Resources.TASK_TYPE,
                 resource_id=new_task_type.id
             )
-            return j_response(new_task_type.fat_dict(), status=201)
+            return self.created(new_task_type.fat_dict())
         else:
             # it existed so check if it needs to be enabled
             if task_type.disabled is None:
-                return g_response(f"Task type {label} already exists.", status=400)
+                raise ValidationError(f"Task type {label} already exists.")
             with session_scope():
                 task_type.disabled = None
             Activity(
@@ -73,17 +71,14 @@ class TaskTypeController(object):
                 resource=Resources.TASK_TYPE,
                 resource_id=task_type.id
             )
-            return j_response(task_type.fat_dict(), status=201)
+            return self.created(task_type.fat_dict())
 
-    @staticmethod
-    def update_task_type(**kwargs) -> Response:
+    def update_task_type(self, **kwargs) -> Response:
         """Updates a task type"""
-        from app.Controllers import ValidationController
-
         req_user = kwargs['req_user']
         request_body = request.get_json()
 
-        task_type_to_update, escalations = ValidationController.validate_update_task_type_request(
+        task_type_to_update, escalations = self.validate_update_task_type_request(
             org_id=req_user.org_id,
             request_body=request_body
         )
@@ -181,16 +176,13 @@ class TaskTypeController(object):
         logger.info(f"upsert task type escalations finished. "
                     f"created:{total_created}, updated:{total_updated}, deleted:{total_deleted}")
         # SUCCESS
-        return j_response(task_type_to_update.fat_dict())
+        return self.ok(task_type_to_update.fat_dict())
 
-    @staticmethod
-    def disable_task_type(task_type_id: int, **kwargs) -> Response:
+    def disable_task_type(self, task_type_id: int, **kwargs) -> Response:
         """Disables a task type """
-        from app.Controllers import ValidationController
-
         req_user = kwargs['req_user']
 
-        task_type_to_disable = ValidationController.validate_disable_task_type_request(task_type_id)
+        task_type_to_disable = self.validate_disable_task_type_request(task_type_id)
 
         with session_scope():
             task_type_to_disable.disabled = datetime.datetime.utcnow()
@@ -211,4 +203,4 @@ class TaskTypeController(object):
             resource=Resources.TASK_TYPE,
             resource_id=task_type_to_disable.id
         )
-        return g_response(status=204)
+        return self.no_content()

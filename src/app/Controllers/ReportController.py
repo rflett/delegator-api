@@ -5,7 +5,8 @@ from dateutil import tz
 
 from flask import Response
 
-from app import j_response, session_scope, app, subscription_api
+from app import session_scope, app, subscription_api
+from app.Controllers.Base import RequestValidationController
 from app.Exceptions import ProductTierLimitError
 
 
@@ -340,9 +341,8 @@ def delays_per_task_type(org_id: int, start_period: datetime.datetime, end_perio
     return clean_qry(qry)
 
 
-class ReportController(object):
-    @staticmethod
-    def get_all(**kwargs) -> Response:
+class ReportController(RequestValidationController):
+    def get_all(self, **kwargs) -> Response:
         """Returns all of the report queries """
 
         req_user = kwargs['req_user']
@@ -354,7 +354,7 @@ class ReportController(object):
         end_period = now = datetime.datetime.utcnow()
         start_period = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())  # start_of_this_month
 
-        return j_response({
+        return self.ok({
             'trends': get_trends(req_user.org_id),
             'times': get_start_and_finish_times(req_user.org_id, start_period, end_period),
             'slowest': top_five_slowest_tasks(req_user.org_id, start_period, end_period),

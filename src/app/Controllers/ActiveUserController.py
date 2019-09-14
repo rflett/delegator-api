@@ -2,20 +2,21 @@ import datetime
 
 from flask import Response
 
-from app import session_scope, logger, app, j_response
+from app import session_scope, logger, app
+from app.Controllers.Base import RequestValidationController
 from app.Models import User, ActiveUser
 from app.Models.Enums import Operations, Resources
 
 
-def _purge_inactive_users() -> None:
-    """ Removes users from the active users table which have been inactive for longer than the TTL. """
-    with session_scope() as session:
-        inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=app.config['INACTIVE_USER_TTL'])
-        delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
-        logger.info(f"Purged {delete_inactive} users who have not been active for {inactive_cutoff}s.")
+class ActiveUserController(RequestValidationController):
+    @staticmethod
+    def _purge_inactive_users() -> None:
+        """ Removes users from the active users table which have been inactive for longer than the TTL. """
+        with session_scope() as session:
+            inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=app.config['INACTIVE_USER_TTL'])
+            delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
+            logger.info(f"Purged {delete_inactive} users who have not been active for {inactive_cutoff}s.")
 
-
-class ActiveUserController(object):
     @staticmethod
     def user_is_active(user: User) -> None:
         """Marks a user as active if they are not active already. If they're already active then update them.
@@ -49,13 +50,12 @@ class ActiveUserController(object):
         with session_scope() as session:
             session.query(ActiveUser).filter_by(user_id=user.id).delete()
 
-    @staticmethod
-    def get_active_users(**kwargs) -> Response:
+    def get_active_users(self, **kwargs) -> Response:
         """Returns all active users in the organisation of the requesting user."""
         req_user = kwargs['req_user']
 
         # remove inactive users
-        _purge_inactive_users()
+        self._purge_inactive_users()
 
         # query db for active users
         with session_scope() as session:
@@ -68,4 +68,4 @@ class ActiveUserController(object):
             resource=Resources.ACTIVE_USERS
         )
         logger.debug(f"Found {len(active_users)} active users.")
-        return j_response(active_users)
+        return self.ok(active_users)

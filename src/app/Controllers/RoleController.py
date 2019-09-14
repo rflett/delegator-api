@@ -1,14 +1,14 @@
 from flask import Response
 from sqlalchemy import and_
 
-from app import session_scope, j_response
+from app import session_scope
+from app.Controllers.Base import RequestValidationController
 from app.Models.Enums import Operations, Resources
 from app.Models.RBAC import Role
 
 
-class RoleController(object):
-    @staticmethod
-    def get_roles(**kwargs) -> Response:
+class RoleController(RequestValidationController):
+    def get_roles(self, **kwargs) -> Response:
         """Return all roles lower in rank than the requesting user's role. """
         req_user = kwargs['req_user']
 
@@ -21,4 +21,4 @@ class RoleController(object):
             operation=Operations.GET,
             resource=Resources.ROLES
         )
-        return j_response(roles)
+        return self.ok(roles)

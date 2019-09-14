@@ -3,30 +3,25 @@ from decimal import Decimal
 
 from flask import request, Response
 
-from app import logger, g_response, session_scope, j_response, subscription_api
-from app.Controllers import AuthorizationController
+from app import logger, session_scope, subscription_api
+from app.Controllers.Base import RequestValidationController
 from app.Exceptions import ProductTierLimitError, ResourceNotFoundError
 from app.Models import User, Activity, Task, UserSetting
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
 
 
-def _get_user_by_id(user_id: int) -> User:
-    """Gets a user by their id
+class UserController(RequestValidationController):
+    def _get_user_by_id(self, user_id: int) -> User:
+        """Public method for getting a user by their id """
+        with session_scope() as session:
+            user = session.query(User).filter_by(id=user_id, deleted=None).first()
 
-    :param user_id:         The user's id
-    :return:                The User
-    """
-    with session_scope() as session:
-        ret = session.query(User).filter_by(id=user_id, deleted=None).first()
+        if user is None:
+            raise ResourceNotFoundError(f"User with id {user_id} does not exist.")
+        else:
+            return user
 
-    if ret is None:
-        raise ResourceNotFoundError(f"User with id {user_id} does not exist.")
-    else:
-        return ret
-
-
-class UserController(object):
     @staticmethod
     def get_user_by_email(email: str) -> User:
         """Public method for getting a user by their email """
@@ -40,19 +35,22 @@ class UserController(object):
     @staticmethod
     def get_user_by_id(user_id: int) -> User:
         """Public method for getting a user by their id """
-        return _get_user_by_id(user_id)
+        with session_scope() as session:
+            user = session.query(User).filter_by(id=user_id, deleted=None).first()
 
-    @staticmethod
-    def create_user(**kwargs) -> Response:
+        if user is None:
+            raise ResourceNotFoundError(f"User with id {user_id} does not exist.")
+        else:
+            return user
+
+    def create_user(self, **kwargs) -> Response:
         """Create a user """
-        from app.Controllers import ValidationController
-
         request_body = request.get_json()
 
         req_user = kwargs['req_user']
 
         # validate user
-        ValidationController.validate_create_user_request(req_user, request_body)
+        self.validate_create_user_request(req_user, request_body)
 
         # Check that the user hasn't surpassed limits on their product tier
         with session_scope() as session:
@@ -103,7 +101,7 @@ class UserController(object):
         ).publish()
         logger.info(f"User {req_user.id} created user {user.id}")
 
-        return j_response(user.fat_dict(), status=201)
+        return self.created(user.fat_dict())
 
     @staticmethod
     def create_signup_user(org_id: int, valid_user: dict) -> None:
@@ -141,16 +139,14 @@ class UserController(object):
         logger.info(f"User {user.id} signed up.")
 
     @staticmethod
-    def update_user(**kwargs) -> Response:
+    def update_user(self, **kwargs) -> Response:
         """Update a user. """
-        from app.Controllers import ValidationController
-
         req_user = kwargs['req_user']
 
-        user_attrs = ValidationController.validate_update_user_request(request.get_json(), **kwargs)
+        user_attrs = self.validate_update_user_request(request.get_json(), **kwargs)
 
         # get the user to update
-        user_to_update = _get_user_by_id(user_attrs.get('id'))
+        user_to_update = self._get_user_by_id(user_attrs.get('id'))
 
         # if the task is going to be disabled
         if user_to_update.disabled is None and user_attrs['disabled'] is not None:
@@ -193,15 +189,13 @@ class UserController(object):
             resource_id=user_to_update.id
         )
         logger.info(f"User {req_user.id} updated user {user_to_update.id}")
-        return j_response(user_to_update.fat_dict())
+        return self.ok(user_to_update.fat_dict())
 
-    @staticmethod
-    def delete_user(user_id: int, **kwargs) -> Response:
+    def delete_user(self, user_id: int, **kwargs) -> Response:
         """Deletes a user """
-        from app.Controllers import ValidationController
         req_user = kwargs['req_user']
 
-        user_to_delete = ValidationController.validate_delete_user(user_id, **kwargs)
+        user_to_delete = self.validate_delete_user(user_id, **kwargs)
 
         user_to_delete.delete(req_user)
 
@@ -219,22 +213,19 @@ class UserController(object):
             resource_id=user_to_delete.id
         )
         logger.info(f"User {req_user.id} deleted user {user_to_delete.id}.")
-        return g_response(status=204)
+        return self.no_content()
 
-    @staticmethod
-    def get_user(user_id: int, **kwargs) -> Response:
+    def get_user(self, user_id: int, **kwargs) -> Response:
         """Get a single user by email or ID """
-        from app.Controllers import ValidationController
-        user = ValidationController.validate_get_user(user_id, **kwargs)
+        user = self.validate_get_user(user_id, **kwargs)
         kwargs['req_user'].log(
             operation=Operations.GET,
             resource=Resources.USER,
             resource_id=user.id
         )
-        return j_response(user.fat_dict())
+        return self.ok(user.fat_dict())
 
-    @staticmethod
-    def get_users(**kwargs) -> Response:
+    def get_users(self, **kwargs) -> Response:
         """Get all users """
         req_user = kwargs['req_user']
 
@@ -265,10 +256,9 @@ class UserController(object):
             operation=Operations.GET,
             resource=Resources.USERS
         )
-        return j_response(users)
+        return self.ok(users)
 
-    @staticmethod
-    def user_pages(**kwargs) -> Response:
+    def user_pages(self, **kwargs) -> Response:
         """Returns the pages a user can access """
         req_user = kwargs['req_user']
 
@@ -293,10 +283,9 @@ class UserController(object):
                 resource=Resources.PAGES
             )
             logger.info(f"found {len(pages)} pages.")
-            return j_response(sorted(pages))
+            return self.ok(sorted(pages))
 
-    @staticmethod
-    def get_user_settings(**kwargs) -> Response:
+    def get_user_settings(self, **kwargs) -> Response:
         """Returns the user's settings """
         from app.Controllers import SettingsController
         req_user = kwargs['req_user']
@@ -306,10 +295,9 @@ class UserController(object):
             resource_id=req_user.id
         )
         logger.info(f"got user settings for {req_user.id}")
-        return j_response(SettingsController.get_user_settings(req_user.id).as_dict())
+        return self.ok(SettingsController.get_user_settings(req_user.id).as_dict())
 
-    @staticmethod
-    def update_user_settings(**kwargs) -> Response:
+    def update_user_settings(self, **kwargs) -> Response:
         """Updates the user's settings """
         from app.Controllers import SettingsController
 
@@ -326,18 +314,16 @@ class UserController(object):
             resource_id=req_user.id
         )
         logger.info(f"updated user {req_user.id} settings")
-        return j_response(new_settings.as_dict())
+        return self.ok(new_settings.as_dict())
 
-    @staticmethod
-    def get_user_activity(user_id: int, **kwargs) -> Response:
+    def get_user_activity(self, user_id: int, **kwargs) -> Response:
         """Returns the activity for a user """
-        from app.Controllers import ValidationController
         req_user = kwargs['req_user']
 
         if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_user_activity', False):
             raise ProductTierLimitError(f"You cannot view user activity on your plan.")
 
-        user = ValidationController.validate_get_user_activity(user_id, **kwargs)
+        user = self.validate_get_user_activity(user_id, **kwargs)
 
         req_user.log(
             operation=Operations.GET,
@@ -345,4 +331,4 @@ class UserController(object):
             resource_id=user.id
         )
         logger.info(f"getting activity for user with id {user.id}")
-        return j_response(user.activity())
+        return self.ok(user.activity())
