@@ -5,7 +5,7 @@ import typing
 from sqlalchemy import exists, and_, func
 
 from app import logger, app, session_scope
-from app.Controllers.Base import ResponseController
+from app.Controllers.Base.ResponseController import ResponseController
 from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskTypeEscalation
 from app.Models.RBAC import Role
 from app.Exceptions import AuthorizationError, ValidationError, ResourceNotFoundError

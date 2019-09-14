@@ -1,4 +1,4 @@
-from app.Middleware import handle_exceptions
+from app.Decorators import handle_exceptions
 
 from app import app, g_response
 from app.Controllers import AuthenticationController, VersionController, AuthorizationController, SignupController

@@ -124,12 +124,12 @@ class AuthenticationController(RequestValidationController):
         blacklist_id = payload['aud'] + ':' + payload['jti']
         BlacklistedTokenController.blacklist_token(blacklist_id, payload['exp'])
 
-    def get_user_from_request(self, request_headers: dict) -> User:
+    def get_user_from_request(self) -> User:
         """Get the user object that is claimed in the JWT payload."""
         from app.Controllers import UserController
 
         # get auth from request
-        auth = request_headers.get('Authorization', None)
+        auth = request.headers.get('Authorization', None)
 
         payload = self._validate_jwt(auth.replace('Bearer ', ''))
 

@@ -1,4 +1,4 @@
-from app.Middleware import handle_exceptions, requires_jwt, authorize
+from app.Decorators import handle_exceptions, requires_jwt, authorize
 
 from app import app
 from app.Controllers import TaskController, TaskTypeController

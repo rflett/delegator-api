@@ -1,13 +1,33 @@
 import datetime
 
 from flask import Response
+from flask_restplus import Namespace, fields
 
 from app import session_scope, logger, app
 from app.Controllers.Base import RequestValidationController
 from app.Models import User, ActiveUser
 from app.Models.Enums import Operations, Resources
 
+active_user_route = Namespace(
+    path="/active-users",
+    name="Active Users",
+    description="Get the recently active users"
+)
 
+active_user_model = active_user_route.model('ActiveUser', {
+    "user_id": fields.Integer,
+    "org_id": fields.Integer,
+    "first_name": fields.String,
+    "last_name": fields.String,
+    "last_active": fields.String
+})
+
+active_users_model = active_user_route.model('ActiveUsers', {
+    'active_users': fields.List(fields.Nested(active_user_model))
+})
+
+
+@active_user_route.route("/")
 class ActiveUserController(RequestValidationController):
     @staticmethod
     def _purge_inactive_users() -> None:
@@ -50,8 +70,9 @@ class ActiveUserController(RequestValidationController):
         with session_scope() as session:
             session.query(ActiveUser).filter_by(user_id=user.id).delete()
 
-    def get_active_users(self, **kwargs) -> Response:
-        """Returns all active users in the organisation of the requesting user."""
+    @active_user_route.doc("Returns all active users in the organisation")
+    @active_user_route.response(200, "Success", active_users_model)
+    def get(self, **kwargs) -> Response:
         req_user = kwargs['req_user']
 
         # remove inactive users
@@ -68,4 +89,4 @@ class ActiveUserController(RequestValidationController):
             resource=Resources.ACTIVE_USERS
         )
         logger.debug(f"Found {len(active_users)} active users.")
-        return self.ok(active_users)
+        return self.ok({"active_users": active_users})

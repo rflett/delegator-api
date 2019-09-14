@@ -18,6 +18,7 @@ flask-sqlalchemy = "*"
 flask-profiler = "*"
 werkzeug = "==0.15.4"
 requests = "*"
+flask-restplus = "*"
 
 [requires]
 python_version = "3.7"

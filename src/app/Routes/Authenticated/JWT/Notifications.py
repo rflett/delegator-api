@@ -1,4 +1,4 @@
-from app.Middleware import handle_exceptions, requires_jwt
+from app.Decorators import handle_exceptions, requires_jwt
 
 from app import app
 from app.Controllers import NotificationController

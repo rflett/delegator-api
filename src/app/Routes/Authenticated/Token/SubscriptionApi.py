@@ -1,4 +1,4 @@
-from app.Middleware import handle_exceptions, requires_token_auth
+from app.Decorators import handle_exceptions, requires_token_auth
 
 from app import app
 from app.Controllers import OrganisationController, TaskController

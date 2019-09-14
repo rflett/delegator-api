@@ -15,7 +15,7 @@ def requires_jwt(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
-        req_user = AuthenticationController.get_user_from_request(request.headers)
+        req_user = AuthenticationController().get_user_from_request()
         return f(req_user=req_user, *args, **kwargs)
     return decorated
 

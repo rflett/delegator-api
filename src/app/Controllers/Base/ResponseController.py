@@ -2,9 +2,10 @@ import json
 import typing
 
 from flask import Response
+from flask_restplus import Resource
 
 
-class ResponseController(object):
+class ResponseController(Resource):
     @staticmethod
     def ok(body: typing.Optional[typing.Union[dict, list, str]]) -> Response:
         """Returns an ok json response"""
