@@ -1,7 +1,8 @@
 from app.Decorators import handle_exceptions, requires_jwt, authorize
 
 from app import app
-from app.Controllers import AuthenticationController, RoleController, ReportController
+from app.Controllers import AuthenticationController, RoleController
+from app.Controllers.Authenticated import ReportController
 from app.Models.Enums import Operations, Resources
 
 
