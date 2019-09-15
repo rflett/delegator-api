@@ -19,20 +19,21 @@ from app.Models.Request import login_dto
 from app.Models.Response import login_response_dto, message_response_dto
 from app.Services import UserService
 
-account_route = Namespace("Account", "Contains routes for logging in and registering", "/account")
+account_route = Namespace(
+    path="/account",
+    name="Account",
+    description="Contains routes for logging in and registering"
+)
+
+user_service = UserService()
 
 
 @account_route.route("/")
 class AccountController(RequestValidationController):
-    user_service: UserService
 
-    def __init__(self):
-        RequestValidationController.__init__(self)
-        self.user_service = UserService()
-
+    @account_route.expect(login_dto)
     @account_route.response(200, "Login Successful", login_response_dto)
     @account_route.response(400, "Login Failed", message_response_dto)
-    @account_route.expect(login_dto)
     @handle_exceptions
     def post(self) -> Response:
         """Log a user in."""
@@ -194,12 +195,13 @@ class AccountController(RequestValidationController):
     @account_route.response(400, "Registration Failed", message_response_dto)
     @handle_exceptions
     def patch(self) -> Response:
+        """Reset a password in the world's worst way"""
         request_body = request.get_json()
         self.validate_email(request_body.get('email'))
 
         with session_scope():
             logger.info(f"received password reset for {request_body.get('email')}")
-            user = self.user_service.get_by_email(request_body.get('email'))
+            user = user_service.get_by_email(request_body.get('email'))
             new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])
             user.reset_password(new_password)
             logger.info(json.dumps(user.as_dict()))

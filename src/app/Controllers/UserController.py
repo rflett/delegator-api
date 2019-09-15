@@ -11,16 +11,11 @@ from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
 from app.Services import UserService, SettingsService
 
+settings_service = SettingsService()
+user_service = UserService()
+
 
 class UserController(RequestValidationController):
-    settings_service: SettingsService = None
-    user_service: UserService = None
-
-    def __init__(self):
-        RequestValidationController.__init__(self)
-        self.settings_service = SettingsService()
-        self.user_service = UserService()
-
     def create_user(self, **kwargs) -> Response:
         """Create a user """
         request_body = request.get_json()
@@ -88,7 +83,7 @@ class UserController(RequestValidationController):
         user_attrs = self.validate_update_user_request(request.get_json(), **kwargs)
 
         # get the user to update
-        user_to_update = self.user_service.get_by_id(user_attrs['id'])
+        user_to_update = user_service.get_by_id(user_attrs['id'])
 
         # if the task is going to be disabled
         if user_to_update.disabled is None and user_attrs['disabled'] is not None:
@@ -236,7 +231,7 @@ class UserController(RequestValidationController):
             resource_id=req_user.id
         )
         logger.info(f"got user settings for {req_user.id}")
-        return self.ok(self.settings_service.get_user_settings(req_user.id).as_dict())
+        return self.ok(settings_service.get_user_settings(req_user.id).as_dict())
 
     def update_user_settings(self, **kwargs) -> Response:
         """Updates the user's settings """
@@ -246,7 +241,7 @@ class UserController(RequestValidationController):
         for k, v in request.get_json().items():
             new_settings.__setattr__(k, v)
 
-        self.settings_service.set_user_settings(new_settings)
+        settings_service.set_user_settings(new_settings)
         req_user.log(
             operation=Operations.UPDATE,
             resource=Resources.USER_SETTINGS,

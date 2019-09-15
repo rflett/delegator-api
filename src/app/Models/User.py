@@ -12,8 +12,8 @@ from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
 from app import db, session_scope, logger, user_activity_table, app, subscription_api
-from app.Models import FailedLogin
 from app.Exceptions import AuthorizationError
+from app.Models import FailedLogin
 from app.Models.RBAC import Log, Permission
 from app.Models.LocalMockData import MockActivity
 
@@ -242,7 +242,6 @@ class User(db.Model):
     def fat_dict(self) -> dict:
         """ Returns a full user dict with all of its FK's joined. """
         from app.Services import SettingsService
-
         with session_scope() as session:
             created_by = session.query(User).filter_by(id=self.created_by).first()
             updated_by = session.query(User).filter_by(id=self.updated_by).first()

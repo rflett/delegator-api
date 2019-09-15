@@ -18,13 +18,13 @@ active_user_route = Namespace(
 
 
 @active_user_route.route("/")
-class ActiveUserController(RequestValidationController):
+class ActiveUsers(RequestValidationController):
     @requires_jwt
     @handle_exceptions
     @authorize(Operations.GET, Resources.ACTIVE_USERS)
-    @active_user_route.doc("Returns all active users in the organisation")
     @active_user_route.response(200, "Success", active_user_response_dto)
     def get(self, **kwargs) -> Response:
+        """Returns all active users in the organisation"""
         req_user = kwargs['req_user']
 
         # remove inactive users

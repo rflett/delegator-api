@@ -13,14 +13,10 @@ from app.Models import User, Task, DelayedTask, Activity, TaskPriority, TaskStat
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
 from app.Services import UserService
 
+user_service = UserService()
+
 
 class TaskController(RequestValidationController):
-    user_service: UserService
-
-    def __init__(self):
-        RequestValidationController.__init__(self)
-        self.user_service = UserService()
-
     @staticmethod
     def _pretty_status_label(status: str) -> str:
         """Converts a task status from IN_PROGRESS to 'In Progress' """
@@ -84,14 +80,15 @@ class TaskController(RequestValidationController):
         )
         logger.info(f"User {req_user.id} transitioned task {task.id} from {old_status} to {status}")
 
-    def _assign_task(self, task: Task, assignee: int, req_user: User) -> None:
+    @staticmethod
+    def _assign_task(task: Task, assignee: int, req_user: User) -> None:
         """Common function for assigning a task """
         # set the task assignee
         with session_scope():
             task.assignee = assignee
 
         # get the assigned user
-        assigned_user = self.user_service.get_by_id(assignee)
+        assigned_user = user_service.get_by_id(assignee)
         Activity(
             org_id=task.org_id,
             event=Events.task_assigned,
@@ -121,12 +118,13 @@ class TaskController(RequestValidationController):
         )
         logger.info(f"assigned task {task.id} to user {assignee}")
 
-    def _unassign_task(self, task: Task, req_user: User) -> None:
+    @staticmethod
+    def _unassign_task(task: Task, req_user: User) -> None:
         """Common function for unassigning a task """
         # only proceed if the task is assigned to someone
         if task.assignee is not None:
             # get the old assignee
-            old_assignee = self.user_service.get_by_id(task.assignee)
+            old_assignee = user_service.get_by_id(task.assignee)
 
             with session_scope():
                 task.assignee = None
