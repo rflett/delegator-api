@@ -4,11 +4,6 @@ from app import app, g_response
 from app.Controllers import AuthenticationController, VersionController, AuthorizationController, SignupController
 
 
-@app.route('/login', methods=['POST'])
-@handle_exceptions
-def login():
-    return AuthenticationController.login()
-
 
 @app.route('/v', methods=['GET'])
 @handle_exceptions
