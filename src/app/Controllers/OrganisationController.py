@@ -8,39 +8,36 @@ from app.Controllers.Base import RequestValidationController
 from app.Exceptions import ValidationError
 from app.Models import Organisation
 from app.Models.Enums import Operations, Resources
+from app.Services import SettingsService
 
 
 class OrganisationController(RequestValidationController):
+    settings_service: SettingsService
+
+    def __init__(self):
+        RequestValidationController.__init__(self)
+        self.settings_service = SettingsService()
+
     def get_org_settings(self, **kwargs) -> Response:
         """Get the org's settings"""
-        from app.Controllers import SettingsController
-
         req_user = kwargs['req_user']
-
         req_user.log(
             operation=Operations.GET,
             resource=Resources.ORG_SETTINGS
         )
-
-        return self.ok(SettingsController.get_org_settings(req_user.org_id).as_dict())
+        return self.ok(self.settings_service.get_org_settings(req_user.org_id).as_dict())
 
     def update_org_settings(self, **kwargs) -> Response:
         """Update the org's settings"""
-        from app.Controllers import SettingsController
-
         req_user = kwargs['req_user']
-
         org_setting = self.validate_update_org_settings_request(req_user.org_id, request.get_json())
-
-        SettingsController.set_org_settings(org_setting)
-
+        self.settings_service.set_org_settings(org_setting)
         req_user.log(
             operation=Operations.UPDATE,
             resource=Resources.ORG_SETTINGS,
             resource_id=req_user.org_id
         )
-
-        return self.ok(SettingsController.get_org_settings(req_user.org_id).as_dict())
+        return self.ok(self.settings_service.get_org_settings(req_user.org_id).as_dict())
 
     def update_org_subscription_id(self) -> Response:
         """Set the subscription_id for an org"""

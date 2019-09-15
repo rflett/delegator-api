@@ -4,7 +4,7 @@ from app import user_settings_table, org_settings_table
 from app.Models import UserSetting, OrgSetting
 
 
-class SettingsController(object):
+class SettingsService(object):
     @staticmethod
     def get_user_settings(user_id: int) -> UserSetting:
         """ Returns user settings from DynamoDB as a UserSetting object """

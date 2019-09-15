@@ -39,8 +39,8 @@ class Organisation(db.Model):
 
     def create_settings(self) -> None:
         """ Creates the settings for this user """
-        from app.Controllers.SettingsController import SettingsController
-        SettingsController.set_org_settings(OrgSetting(self.id))
+        from app.Services import SettingsService
+        SettingsService.set_org_settings(OrgSetting(self.id))
 
     def as_dict(self):
         """

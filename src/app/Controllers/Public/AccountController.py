@@ -14,15 +14,22 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import handle_exceptions
 from app.Exceptions import AuthenticationError
 from app.Models import User, Activity, Organisation, TaskType
-from app.Models.Enums import Events
+from app.Models.Enums import Events, Operations, Resources
 from app.Models.Request import login_dto
 from app.Models.Response import login_response_dto, message_response_dto
+from app.Services import UserService
 
 account_route = Namespace("Account", "Contains routes for logging in and registering", "/account")
 
 
 @account_route.route("/")
 class AccountController(RequestValidationController):
+    user_service: UserService
+
+    def __init__(self):
+        RequestValidationController.__init__(self)
+        self.user_service = UserService()
+
     @account_route.response(200, "Login Successful", login_response_dto)
     @account_route.response(400, "Login Failed", message_response_dto)
     @account_route.expect(login_dto)
@@ -99,8 +106,6 @@ class AccountController(RequestValidationController):
     @handle_exceptions
     def put(self) -> Response:
         """Signup a user."""
-        from app.Controllers import UserController
-
         # get the request body
         request_body = request.get_json()
 
@@ -132,7 +137,49 @@ class AccountController(RequestValidationController):
 
         # try and create the user since the org was created successfully
         try:
-            user = UserController.create_signup_user(org_id=organisation.id, valid_user=valid_user)
+            with session_scope() as session:
+                user = User(
+                    org_id=organisation.id,
+                    email=valid_user.get('email'),
+                    first_name=valid_user.get('first_name'),
+                    last_name=valid_user.get('last_name'),
+                    password=valid_user.get('password'),
+                    role=valid_user.get('role'),
+                    job_title=valid_user.get('job_title')
+                )
+                session.add(user)
+
+            with session_scope():
+                user.created_by = user.id
+
+            # create user settings
+            user.create_settings()
+
+            user.log(
+                operation=Operations.CREATE,
+                resource=Resources.USER,
+                resource_id=user.id
+            )
+            # publish event
+            Activity(
+                org_id=user.org_id,
+                event=Events.user_created,
+                event_id=user.id,
+                event_friendly=f"Created by {user.name()}"
+            ).publish()
+            logger.info(f"User {user.id} signed up.")
+
+            customer_id, plan_url = subscription_api.create_customer(
+                plan_id=request_body.get('plan_id'),
+                user_dict=user.as_dict(),
+                org_name=organisation.name
+            )
+
+            with session_scope():
+                organisation.chargebee_customer_id = customer_id
+
+            return self.ok({"url": plan_url})
+
         except Exception as e:
             logger.error(str(e))
             # the org was actually created, but the user failed, so delete the org and default task type
@@ -143,28 +190,16 @@ class AccountController(RequestValidationController):
                             f"since there was an issue creating the user.")
             return self.oh_god("There was an issue creating the user.")
 
-        customer_id, plan_url = subscription_api.create_customer(
-            plan_id=request_body.get('plan_id'),
-            user_dict=user.as_dict(),
-            org_name=organisation.name
-        )
-
-        with session_scope():
-            organisation.chargebee_customer_id = customer_id
-
-        return self.ok({"url": plan_url})
-
     @account_route.response(200, "Reset Password Successful", message_response_dto)
     @account_route.response(400, "Registration Failed", message_response_dto)
     @handle_exceptions
     def patch(self) -> Response:
-        from app.Controllers import UserController
         request_body = request.get_json()
         self.validate_email(request_body.get('email'))
 
         with session_scope():
             logger.info(f"received password reset for {request_body.get('email')}")
-            user = UserController.get_user_by_email(request_body.get('email'))
+            user = self.user_service.get_by_email(request_body.get('email'))
             new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])
             user.reset_password(new_password)
             logger.info(json.dumps(user.as_dict()))

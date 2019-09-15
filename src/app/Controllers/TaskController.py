@@ -11,9 +11,16 @@ from app.Exceptions import ValidationError
 from app.Controllers.Base import RequestValidationController
 from app.Models import User, Task, DelayedTask, Activity, TaskPriority, TaskStatus, Notification
 from app.Models.Enums import TaskStatuses, Events, Operations, Resources
+from app.Services import UserService
 
 
 class TaskController(RequestValidationController):
+    user_service: UserService
+
+    def __init__(self):
+        RequestValidationController.__init__(self)
+        self.user_service = UserService()
+
     @staticmethod
     def _pretty_status_label(status: str) -> str:
         """Converts a task status from IN_PROGRESS to 'In Progress' """
@@ -77,17 +84,14 @@ class TaskController(RequestValidationController):
         )
         logger.info(f"User {req_user.id} transitioned task {task.id} from {old_status} to {status}")
 
-    @staticmethod
-    def _assign_task(task: Task, assignee: int, req_user: User) -> None:
+    def _assign_task(self, task: Task, assignee: int, req_user: User) -> None:
         """Common function for assigning a task """
-        from app.Controllers import UserController
-
         # set the task assignee
         with session_scope():
             task.assignee = assignee
 
         # get the assigned user
-        assigned_user = UserController.get_user_by_id(assignee)
+        assigned_user = self.user_service.get_by_id(assignee)
         Activity(
             org_id=task.org_id,
             event=Events.task_assigned,
@@ -117,15 +121,12 @@ class TaskController(RequestValidationController):
         )
         logger.info(f"assigned task {task.id} to user {assignee}")
 
-    @staticmethod
-    def _unassign_task(task: Task, req_user: User) -> None:
+    def _unassign_task(self, task: Task, req_user: User) -> None:
         """Common function for unassigning a task """
-        from app.Controllers import UserController
-
         # only proceed if the task is assigned to someone
         if task.assignee is not None:
             # get the old assignee
-            old_assignee = UserController.get_user_by_id(task.assignee)
+            old_assignee = self.user_service.get_by_id(task.assignee)
 
             with session_scope():
                 task.assignee = None

@@ -9,9 +9,18 @@ from app.Controllers.Base import RequestValidationController
 from app.Exceptions import AuthenticationError
 from app.Models import User, FailedLogin, Activity
 from app.Models.Enums import Events
+from app.Services import UserService, TokenService
 
 
 class AuthenticationController(RequestValidationController):
+    user_service: UserService
+    token_service: TokenService
+
+    def __init__(self):
+        RequestValidationController.__init__(self)
+        self.user_service = UserService()
+        self.token_service = TokenService()
+
     @staticmethod
     def _failed_login_attempt(email: str):
         """
@@ -86,20 +95,19 @@ class AuthenticationController(RequestValidationController):
         :param token:   The JWT token as a string
         :return:        JWT payload if decode was successful
         """
-        from app.Controllers import BlacklistedTokenController, UserController
         try:
             # decode the token without verifying against the org key
             suspect_jwt = jwt.decode(jwt=token, algorithms='HS256', verify=False)
 
             # check if aud:jti is blacklisted
             blacklist_id = suspect_jwt['aud'] + ':' + suspect_jwt['jti']
-            if BlacklistedTokenController.is_token_blacklisted(blacklist_id):
+            if self.token_service.is_token_blacklisted(blacklist_id):
                 raise AuthenticationError("JWT token has been blacklisted.")
 
             # get user_id from claims
             try:
                 user_id = suspect_jwt['claims']['user_id']
-                user = UserController.get_user_by_id(user_id)
+                user = self.user_service.get_by_id(user_id)
                 return jwt.decode(jwt=token, key=user.orgs.jwt_secret, audience=user.orgs.jwt_aud, algorithms='HS256')
             except KeyError:
                 self._blacklist_token(token)
@@ -111,23 +119,19 @@ class AuthenticationController(RequestValidationController):
             self._blacklist_token(token)
             raise AuthenticationError("JWT token has been blacklisted.")
 
-    @staticmethod
-    def _blacklist_token(token: str) -> None:
+    def _blacklist_token(self, token: str) -> None:
         """
         Blacklists a JWT token. This involves getting the audience and unique id (aud and jti)
         and putting them in the blacklisted tokens table.
 
         :param token: The token to invalidate.
         """
-        from app.Controllers import BlacklistedTokenController
         payload = jwt.decode(jwt=token, algorithms='HS256', verify=False)
         blacklist_id = payload['aud'] + ':' + payload['jti']
-        BlacklistedTokenController.blacklist_token(blacklist_id, payload['exp'])
+        self.token_service.blacklist_token(blacklist_id, payload['exp'])
 
     def get_user_from_request(self) -> User:
         """Get the user object that is claimed in the JWT payload."""
-        from app.Controllers import UserController
-
         # get auth from request
         auth = request.headers.get('Authorization', None)
 
@@ -135,7 +139,7 @@ class AuthenticationController(RequestValidationController):
 
         # get user
         try:
-            return UserController.get_user_by_id(payload['claims']['user_id'])
+            return self.user_service.get_by_id(payload['claims']['user_id'])
         except (TypeError, KeyError) as e:
             logger.error(str(e))
             raise AuthenticationError("Unable to obtain user from the request.")

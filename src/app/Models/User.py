@@ -166,16 +166,16 @@ class User(db.Model):
         Marks the user as active
         :return:
         """
-        from app.Controllers import ActiveUserController
-        _thread.start_new_thread(ActiveUserController.user_is_active, (self,))
+        from app.Services import ActiveUserService
+        _thread.start_new_thread(ActiveUserService.user_is_active, (self,))
 
     def is_inactive(self) -> None:
         """
         Marks the user as inactive
         :return:
         """
-        from app.Controllers import ActiveUserController
-        _thread.start_new_thread(ActiveUserController.user_is_inactive, (self,))
+        from app.Services import ActiveUserService
+        _thread.start_new_thread(ActiveUserService.user_is_inactive, (self,))
 
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """
@@ -241,7 +241,7 @@ class User(db.Model):
 
     def fat_dict(self) -> dict:
         """ Returns a full user dict with all of its FK's joined. """
-        from app.Controllers import SettingsController
+        from app.Services import SettingsService
 
         with session_scope() as session:
             created_by = session.query(User).filter_by(id=self.created_by).first()
@@ -251,7 +251,7 @@ class User(db.Model):
         user_dict['role'] = self.roles.as_dict()
         user_dict['created_by'] = created_by.name()
         user_dict['updated_by'] = updated_by.name() if updated_by is not None else None
-        user_dict['settings'] = SettingsController.get_user_settings(self.id).as_dict()
+        user_dict['settings'] = SettingsService.get_user_settings(self.id).as_dict()
 
         return user_dict
 
@@ -286,6 +286,6 @@ class User(db.Model):
 
     def create_settings(self) -> None:
         """ Creates the settings for this user """
-        from app.Controllers.SettingsController import SettingsController
+        from app.Services import SettingsService
         from app.Models import UserSetting
-        SettingsController.set_user_settings(UserSetting(self.id))
+        SettingsService.set_user_settings(UserSetting(self.id))

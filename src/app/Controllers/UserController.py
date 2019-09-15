@@ -5,43 +5,19 @@ from flask import request, Response
 
 from app import logger, session_scope, subscription_api
 from app.Controllers.Base import RequestValidationController
-from app.Exceptions import ProductTierLimitError, ResourceNotFoundError
+from app.Exceptions import ProductTierLimitError
 from app.Models import User, Activity, Task, UserSetting
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
+from app.Services import UserService
 
 
 class UserController(RequestValidationController):
-    def _get_user_by_id(self, user_id: int) -> User:
-        """Public method for getting a user by their id """
-        with session_scope() as session:
-            user = session.query(User).filter_by(id=user_id, deleted=None).first()
+    user_service: UserService
 
-        if user is None:
-            raise ResourceNotFoundError(f"User with id {user_id} does not exist.")
-        else:
-            return user
-
-    @staticmethod
-    def get_user_by_email(email: str) -> User:
-        """Public method for getting a user by their email """
-        with session_scope() as session:
-            ret = session.query(User).filter_by(email=email, deleted=None).first()
-        if ret is None:
-            raise ResourceNotFoundError(f"User with email {email} does not exist.")
-        else:
-            return ret
-
-    @staticmethod
-    def get_user_by_id(user_id: int) -> User:
-        """Public method for getting a user by their id """
-        with session_scope() as session:
-            user = session.query(User).filter_by(id=user_id, deleted=None).first()
-
-        if user is None:
-            raise ResourceNotFoundError(f"User with id {user_id} does not exist.")
-        else:
-            return user
+    def __init__(self):
+        RequestValidationController.__init__(self)
+        self.user_service = UserService()
 
     def create_user(self, **kwargs) -> Response:
         """Create a user """
@@ -103,43 +79,6 @@ class UserController(RequestValidationController):
 
         return self.created(user.fat_dict())
 
-    @staticmethod
-    def create_signup_user(org_id: int, valid_user: dict) -> User:
-        """Creates a user from the signup page """
-        with session_scope() as session:
-            user = User(
-                org_id=org_id,
-                email=valid_user.get('email'),
-                first_name=valid_user.get('first_name'),
-                last_name=valid_user.get('last_name'),
-                password=valid_user.get('password'),
-                role=valid_user.get('role'),
-                job_title=valid_user.get('job_title')
-            )
-            session.add(user)
-
-        with session_scope():
-            user.created_by = user.id
-
-        # create user settings
-        user.create_settings()
-
-        user.log(
-            operation=Operations.CREATE,
-            resource=Resources.USER,
-            resource_id=user.id
-        )
-        # publish event
-        Activity(
-            org_id=user.org_id,
-            event=Events.user_created,
-            event_id=user.id,
-            event_friendly=f"Created by {user.name()}"
-        ).publish()
-        logger.info(f"User {user.id} signed up.")
-        return user
-
-    @staticmethod
     def update_user(self, **kwargs) -> Response:
         """Update a user. """
         req_user = kwargs['req_user']
@@ -147,7 +86,7 @@ class UserController(RequestValidationController):
         user_attrs = self.validate_update_user_request(request.get_json(), **kwargs)
 
         # get the user to update
-        user_to_update = self._get_user_by_id(user_attrs.get('id'))
+        user_to_update = self.user_service.get_by_id(user_attrs['id'])
 
         # if the task is going to be disabled
         if user_to_update.disabled is None and user_attrs['disabled'] is not None:
@@ -288,7 +227,7 @@ class UserController(RequestValidationController):
 
     def get_user_settings(self, **kwargs) -> Response:
         """Returns the user's settings """
-        from app.Controllers import SettingsController
+        from app.Services import SettingsService
         req_user = kwargs['req_user']
         req_user.log(
             operation=Operations.GET,
@@ -296,11 +235,11 @@ class UserController(RequestValidationController):
             resource_id=req_user.id
         )
         logger.info(f"got user settings for {req_user.id}")
-        return self.ok(SettingsController.get_user_settings(req_user.id).as_dict())
+        return self.ok(SettingsService.get_user_settings(req_user.id).as_dict())
 
     def update_user_settings(self, **kwargs) -> Response:
         """Updates the user's settings """
-        from app.Controllers import SettingsController
+        from app.Services import SettingsService
 
         req_user = kwargs['req_user']
 
@@ -308,7 +247,7 @@ class UserController(RequestValidationController):
         for k, v in request.get_json().items():
             new_settings.__setattr__(k, v)
 
-        SettingsController.set_user_settings(new_settings)
+        SettingsService.set_user_settings(new_settings)
         req_user.log(
             operation=Operations.UPDATE,
             resource=Resources.USER_SETTINGS,

@@ -6,7 +6,7 @@ from flask_restplus import Namespace, fields
 from app import session_scope, logger, app
 from app.Decorators import authorize, requires_jwt, handle_exceptions
 from app.Controllers.Base import RequestValidationController
-from app.Models import User, ActiveUser
+from app.Models import ActiveUser
 from app.Models.Enums import Operations, Resources
 
 active_user_route = Namespace(
@@ -30,47 +30,6 @@ active_users_model = active_user_route.model('ActiveUsers', {
 
 @active_user_route.route("/")
 class ActiveUserController(RequestValidationController):
-    @staticmethod
-    def _purge_inactive_users() -> None:
-        """ Removes users from the active users table which have been inactive for longer than the TTL. """
-        with session_scope() as session:
-            inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=app.config['INACTIVE_USER_TTL'])
-            delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
-            logger.info(f"Purged {delete_inactive} users who have not been active for {inactive_cutoff}s.")
-
-    @staticmethod
-    def user_is_active(user: User) -> None:
-        """Marks a user as active if they are not active already. If they're already active then update them.
-
-        :param user: The user to mark as active
-        :return:
-        """
-        with session_scope() as session:
-            already_active = session.query(ActiveUser).filter_by(user_id=user.id).first()
-            if already_active is None:
-                # user is not active, so create
-                active_user = ActiveUser(
-                    user_id=user.id,
-                    org_id=user.org_id,
-                    first_name=user.first_name,
-                    last_name=user.last_name,
-                    last_active=datetime.datetime.utcnow()
-                )
-                session.add(active_user)
-            else:
-                # user is active, so update
-                already_active.last_active = datetime.datetime.utcnow()
-
-    @staticmethod
-    def user_is_inactive(user: User) -> None:
-        """Mark user as inactive by deleting their record in the active users table
-
-        :param user: The user to mark as inactive
-        :return:
-        """
-        with session_scope() as session:
-            session.query(ActiveUser).filter_by(user_id=user.id).delete()
-
     @requires_jwt
     @handle_exceptions
     @authorize(Operations.GET, Resources.ACTIVE_USERS)
@@ -94,3 +53,11 @@ class ActiveUserController(RequestValidationController):
         )
         logger.debug(f"Found {len(active_users)} active users.")
         return self.ok({"active_users": active_users})
+
+    @staticmethod
+    def _purge_inactive_users() -> None:
+        """ Removes users from the active users table which have been inactive for longer than the TTL. """
+        with session_scope() as session:
+            inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=app.config['INACTIVE_USER_TTL'])
+            delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
+            logger.info(f"Purged {delete_inactive} users who have not been active for {inactive_cutoff}s.")
