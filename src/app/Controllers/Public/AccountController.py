@@ -11,9 +11,9 @@ from flask_restplus import Namespace
 
 from app import app, session_scope, logger, subscription_api
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import handle_exceptions
+from app.Decorators import handle_exceptions, requires_jwt
 from app.Exceptions import AuthenticationError
-from app.Models import User, Activity, Organisation, TaskType
+from app.Models import User, Activity, Organisation, TaskType, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.Request import login_dto
 from app.Models.Response import login_response_dto, message_response_dto
@@ -206,6 +206,23 @@ class AccountController(RequestValidationController):
             logger.info(f"password successfully reset for {request_body.get('email')}")
             return self.ok(f"Password reset successfully, new password is {new_password}")
 
+    @account_route.response(200, "Logout Successful")
+    @account_route.response(400, "Logout Failed")
+    @requires_jwt
+    @handle_exceptions
+    def delete(self, **kwargs) -> Response:
+        """Log a user out"""
+        req_user = kwargs['req_user']
+        req_user.is_inactive()
+        Activity(
+            org_id=req_user.org_id,
+            event=Events.user_logout,
+            event_id=req_user.id,
+            event_friendly="Logged out."
+        ).publish()
+        logger.info(f"user {req_user.id} logged out")
+        return self.ok('Successfully logged out')
+
     def get_body(self) -> typing.Dict:
         """get params from http request"""
         request_body: dict = request.get_json()
@@ -220,6 +237,48 @@ class AccountController(RequestValidationController):
             "email": email,
             "password": password
         }
+
+    @staticmethod
+    def _failed_login_attempt(email: str):
+        """
+        Checks to see if the email passed has failed to log in before due to it not existing. If this is the case
+        it will update the failed logins table and increment the attempts and time. Checks are done against
+        login limits to prevent excessive attempts to find email addresses.
+
+        :param email:   The email that failed to login
+        :return:        HTTP 401 response
+        """
+        with session_scope() as session:
+            # check if it's failed before
+            failed_email = session.query(FailedLogin).filter_by(email=email).first()
+            if failed_email is not None:
+                # check if it has breached the limits
+                if failed_email.failed_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
+                    # check timeout
+                    diff = (datetime.datetime.utcnow() - failed_email.failed_time).seconds
+                    if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
+                        logger.info(f"Email last failed {diff}s ago. "
+                                    f"Timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
+                        raise AuthenticationError("Too many incorrect attempts.")
+                    else:
+                        # reset
+                        logger.info(f"Email last failed {diff}s ago. "
+                                    f"Timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s, resetting timeout.")
+                        session.delete(failed_email)
+                        raise AuthenticationError("Email incorrect.")
+                else:
+                    # increment failed attempts
+                    failed_email.failed_attempts += 1
+                    failed_email.failed_time = datetime.datetime.utcnow()
+                    logger.info(f"Incorrect email attempt for user, "
+                                f"total failed attempts: {failed_email.failed_attempts}")
+                    raise AuthenticationError("Email incorrect.")
+            else:
+                # hasn't failed before, so create it
+                logger.info("User failed to log in.")
+                new_failure = FailedLogin(email=email)
+                session.add(new_failure)
+                raise AuthenticationError("Email incorrect.")
 
     @staticmethod
     def _generate_jwt_token(user: User) -> str:

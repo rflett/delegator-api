@@ -12,7 +12,7 @@ from app.Services import SettingsService
 
 
 class OrganisationController(RequestValidationController):
-    settings_service: SettingsService
+    settings_service: SettingsService = None
 
     def __init__(self):
         RequestValidationController.__init__(self)

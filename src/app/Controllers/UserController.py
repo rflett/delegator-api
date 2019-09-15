@@ -9,14 +9,16 @@ from app.Exceptions import ProductTierLimitError
 from app.Models import User, Activity, Task, UserSetting
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.RBAC import Permission
-from app.Services import UserService
+from app.Services import UserService, SettingsService
 
 
 class UserController(RequestValidationController):
-    user_service: UserService
+    settings_service: SettingsService = None
+    user_service: UserService = None
 
     def __init__(self):
         RequestValidationController.__init__(self)
+        self.settings_service = SettingsService()
         self.user_service = UserService()
 
     def create_user(self, **kwargs) -> Response:
@@ -227,7 +229,6 @@ class UserController(RequestValidationController):
 
     def get_user_settings(self, **kwargs) -> Response:
         """Returns the user's settings """
-        from app.Services import SettingsService
         req_user = kwargs['req_user']
         req_user.log(
             operation=Operations.GET,
@@ -235,19 +236,17 @@ class UserController(RequestValidationController):
             resource_id=req_user.id
         )
         logger.info(f"got user settings for {req_user.id}")
-        return self.ok(SettingsService.get_user_settings(req_user.id).as_dict())
+        return self.ok(self.settings_service.get_user_settings(req_user.id).as_dict())
 
     def update_user_settings(self, **kwargs) -> Response:
         """Updates the user's settings """
-        from app.Services import SettingsService
-
         req_user = kwargs['req_user']
 
         new_settings = UserSetting(user_id=Decimal(req_user.id))
         for k, v in request.get_json().items():
             new_settings.__setattr__(k, v)
 
-        SettingsService.set_user_settings(new_settings)
+        self.settings_service.set_user_settings(new_settings)
         req_user.log(
             operation=Operations.UPDATE,
             resource=Resources.USER_SETTINGS,

@@ -3,8 +3,8 @@ from functools import wraps
 from flask import request
 
 from app import app
-from app.Controllers import AuthenticationController
 from app.Exceptions import AuthenticationError
+from app.Services import AuthService
 
 
 def requires_jwt(f):
@@ -15,7 +15,7 @@ def requires_jwt(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
-        req_user = AuthenticationController().get_user_from_request()
+        req_user = AuthService.get_user_from_request()
         return f(req_user=req_user, *args, **kwargs)
     return decorated
 
