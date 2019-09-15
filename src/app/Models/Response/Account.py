@@ -2,7 +2,7 @@ from flask_restplus import fields
 
 from app import api
 
-login_response_dto = api.models("Login Response", {
+login_response_dto = api.model("Login Response", {
     "deleted": fields.DateTime,
     "disabled": fields.DateTime,
     "email": fields.String,
