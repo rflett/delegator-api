@@ -1,31 +1,20 @@
 import datetime
 
 from flask import Response
-from flask_restplus import Namespace, fields
+from flask_restplus import Namespace
 
 from app import session_scope, logger, app
 from app.Decorators import authorize, requires_jwt, handle_exceptions
 from app.Controllers.Base import RequestValidationController
 from app.Models import ActiveUser
 from app.Models.Enums import Operations, Resources
+from app.Models.Response import active_user_response_dto
 
 active_user_route = Namespace(
     path="/active-users",
     name="Active Users",
     description="Get the recently active users"
 )
-
-active_user_model = active_user_route.model('ActiveUser', {
-    "user_id": fields.Integer,
-    "org_id": fields.Integer,
-    "first_name": fields.String,
-    "last_name": fields.String,
-    "last_active": fields.String
-})
-
-active_users_model = active_user_route.model('ActiveUsers', {
-    'active_users': fields.List(fields.Nested(active_user_model))
-})
 
 
 @active_user_route.route("/")
@@ -34,7 +23,7 @@ class ActiveUserController(RequestValidationController):
     @handle_exceptions
     @authorize(Operations.GET, Resources.ACTIVE_USERS)
     @active_user_route.doc("Returns all active users in the organisation")
-    @active_user_route.response(200, "Success", active_users_model)
+    @active_user_route.response(200, "Success", active_user_response_dto)
     def get(self, **kwargs) -> Response:
         req_user = kwargs['req_user']
 

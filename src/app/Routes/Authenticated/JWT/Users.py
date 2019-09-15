@@ -1,7 +1,7 @@
 from app.Decorators import handle_exceptions, requires_jwt, authorize
 
 from app import app
-from app.Controllers import UserController, ActiveUserController
+from app.Controllers import UserController
 from app.Models.Enums import Operations, Resources
 
 

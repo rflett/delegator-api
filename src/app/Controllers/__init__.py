@@ -1,4 +1,4 @@
-from app.Controllers.ActiveUserController import active_user_route
+from app.Controllers.Authenticated import active_user_route
 
 __all__ = [
     active_user_route
