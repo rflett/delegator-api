@@ -31,7 +31,7 @@ class UserController(RequestValidationController):
             resource=Resources.USER,
             resource_id=user.id
         )
-        # TODO map out response model
+        # TODO map out response model (Ryan - it's the same as the login response without the JWT key)
         return self.ok(user.fat_dict())
 
     @user_route.response(204, "Successfully delete the user")

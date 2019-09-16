@@ -52,3 +52,9 @@ transition_task_dto = api.model("Transition Task Model", {
 get_available_transitions_dto = api.model("Get Available Transitions Task Model", {
     "task_id": fields.Integer()
 })
+
+update_task_priority_dto = api.model("Update Task Priority Model", {
+    "org_id": fields.Integer(),
+    "task_id": fields.Integer(),
+    "priority": fields.Integer(),
+})
