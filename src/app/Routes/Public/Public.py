@@ -1,8 +1,8 @@
 from app.Decorators import handle_exceptions
 
-from app import app, g_response
-from app.Controllers import AuthenticationController, VersionController, AuthorizationController, SignupController
-
+from app import app
+from app.Controllers import AuthorizationController, SignupController
+from app.Controllers.Public import VersionController
 
 
 @app.route('/v', methods=['GET'])

@@ -1,14 +1,32 @@
 from flask import Response
+from flask_restplus import Namespace
 from sqlalchemy import and_
 
 from app import session_scope
+from app.Controllers import account_route
 from app.Controllers.Base import RequestValidationController
+from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models.Enums import Operations, Resources
 from app.Models.RBAC import Role
+from app.Models.Response import message_response_dto
+from app.Models.Response.Reporting import status_dto
+
+roles_route = Namespace(
+    path="/roles",
+    name="Roles",
+    description="Contains routes for managing user roles"
+)
 
 
+@roles_route.route("/")
 class RoleController(RequestValidationController):
-    def get_roles(self, **kwargs) -> Response:
+
+    @account_route.response(200, "Roles Retrieved", status_dto)
+    @account_route.response(400, "Exception occurred", message_response_dto)
+    @requires_jwt
+    @handle_exceptions
+    @authorize(Operations.GET, Resources.ROLES)
+    def get(self, **kwargs) -> Response:
         """Return all roles lower in rank than the requesting user's role. """
         req_user = kwargs['req_user']
 
