@@ -1,3 +1,5 @@
+import typing
+
 from app import session_scope
 from app.Models import User
 from app.Exceptions import ResourceNotFoundError
@@ -23,3 +25,11 @@ class UserService(object):
             raise ResourceNotFoundError(f"User with email {email} does not exist.")
         else:
             return user
+
+    @staticmethod
+    def get_all_user_ids(org_id: int) -> typing.List[int]:
+        """Returns a list of all user ids in an org"""
+        with session_scope() as session:
+            user_ids_qry = session.query(User.id).filter_by(org_id=org_id).all()
+
+        return [user_id[0] for user_id in user_ids_qry]

@@ -14,7 +14,7 @@ from app.Models.Enums import Events, Operations, Resources
 from app.Models.Request import update_task_dto, create_task_dto
 from app.Models.Response import task_response_dto, message_response_dto, get_task_statuses_response_dto, \
     get_task_priorities_response_dto, get_tasks_response_dto
-from app.Services import UserService
+from app.Services import UserService, TaskService
 
 tasks_route = Namespace(
     path="/tasks",
@@ -23,6 +23,7 @@ tasks_route = Namespace(
 )
 
 user_service = UserService()
+task_service = TaskService()
 
 
 @tasks_route.route("/")
@@ -85,7 +86,7 @@ class Tasks(RequestValidationController):
     @authorize(Operations.UPDATE, Resources.TASK)
     @tasks_route.expect(update_task_dto)
     @tasks_route.response(200, "Success", task_response_dto)
-    @tasks_route.response(400, "Failed to update the organisation", message_response_dto)
+    @tasks_route.response(400, "Failed update the task", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Update a task """
         req_user = kwargs['req_user']
@@ -100,12 +101,12 @@ class Tasks(RequestValidationController):
         assignee = task_attrs.pop('assignee', None)
         if task_to_update.assignee != assignee:
             if assignee is None:
-                self._unassign_task(
+                task_service.unassign(
                     task=task_to_update,
                     req_user=req_user
                 )
             else:
-                self._assign_task(
+                task_service.assign(
                     task=task_to_update,
                     assignee=assignee,
                     req_user=req_user
@@ -114,7 +115,7 @@ class Tasks(RequestValidationController):
         # transition
         task_status = task_attrs.pop('status')
         if task_to_update.status != task_status:
-            self._transition_task(
+            task_service.transition(
                 task=task_to_update,
                 status=task_status,
                 req_user=req_user
@@ -123,7 +124,7 @@ class Tasks(RequestValidationController):
         # change priority
         task_priority = task_attrs.pop('priority')
         if task_to_update.priority != task_priority:
-            self._change_task_priority(
+            task_service.change_priority(
                 task=task_to_update,
                 priority=task_priority
             )
@@ -154,7 +155,7 @@ class Tasks(RequestValidationController):
     @authorize(Operations.CREATE, Resources.TASK)
     @tasks_route.expect(create_task_dto)
     @tasks_route.response(200, "Success", task_response_dto)
-    @tasks_route.response(400, "Failed to update the organisation", message_response_dto)
+    @tasks_route.response(400, "Failed to create the task", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Creates a task"""
         req_user = kwargs['req_user']
@@ -198,7 +199,7 @@ class Tasks(RequestValidationController):
 
         # optionally assign the task if an assignee was present in the create task request
         if task_attrs.get('assignee') is not None:
-            self._assign_task(
+            task_service.assign(
                 task=task,
                 assignee=task_attrs.get('assignee'),
                 req_user=req_user
@@ -206,7 +207,7 @@ class Tasks(RequestValidationController):
         else:
             Notification(
                 msg=f"{task.label()} task has been created.",
-                user_ids=self._all_user_ids(req_user.org_id)
+                user_ids=user_service.get_all_user_ids(req_user.org_id)
             ).push()
 
         return self.created(task.fat_dict())
@@ -219,7 +220,6 @@ class TaskStatuses(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_STATUSES)
     @tasks_route.response(200, "Success", get_task_statuses_response_dto)
-    @tasks_route.response(400, "Failed to update the organisation", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Returns all task statuses """
         req_user = kwargs['req_user']
@@ -242,7 +242,6 @@ class TaskPriorities(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_PRIORITIES)
     @tasks_route.response(200, "Success", get_task_priorities_response_dto)
-    @tasks_route.response(400, "Failed to update the organisation", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Returns all task priorities """
         req_user = kwargs['req_user']
