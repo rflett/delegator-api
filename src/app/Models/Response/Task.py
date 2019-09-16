@@ -57,3 +57,13 @@ task_response_dto = api.model("Task Model", {
 get_tasks_response_dto = api.model("Tasks Model", {
     'tasks': fields.List(fields.Nested(task_response_dto))
 })
+
+delayed_task_response_dto = api.model("Delayed Tasks Model", {
+    "task_id": fields.Integer(),
+    "delay_for": fields.Integer(),
+    "delayed_at": fields.DateTime(),
+    "delayed_by": fields.Integer(),   # TODO import a User model
+    "reason": fields.String(),
+    "snoozed": fields.DateTime(),
+    "expired": fields.DateTime()
+})

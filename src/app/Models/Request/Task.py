@@ -27,3 +27,28 @@ create_task_dto = api.model("Create Task Model", {
     'assignee': fields.Integer(),
     'priority': fields.Integer(),
 })
+
+assign_task_dto = api.model("Assign Task Model", {
+    "task_id": fields.Integer(),
+    "assignee": fields.Integer()
+})
+
+delay_task_dto = api.model("Delay Task Model", {
+    "task_id": fields.Integer(),
+    "delay_for": fields.Integer(),
+    "reason": fields.String()
+})
+
+get_delayed_task_dto = api.model("Get Delayed Task Model", {
+    "task_id": fields.Integer()
+})
+
+transition_task_dto = api.model("Transition Task Model", {
+    "task_id": fields.Integer(),
+    "task_status": fields.String()
+})
+
+
+get_available_transitions_dto = api.model("Get Available Transitions Task Model", {
+    "task_id": fields.Integer()
+})
