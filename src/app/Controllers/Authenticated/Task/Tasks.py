@@ -203,10 +203,10 @@ class Tasks(RequestValidationController):
                 assignee=task_attrs.get('assignee'),
                 req_user=req_user
             )
-        else:
-            Notification(
-                msg=f"{task.label()} task has been created.",
-                user_ids=user_service.get_all_user_ids(req_user.org_id)
-            ).push()
+        
+        Notification(
+            msg=f"{task.label()} task has been created.",
+            user_ids=user_service.get_all_user_ids(req_user.org_id)
+        ).push()
 
         return self.created(task.fat_dict())
