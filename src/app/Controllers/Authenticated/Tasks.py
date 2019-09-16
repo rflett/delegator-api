@@ -6,12 +6,12 @@ from flask_restplus import Namespace
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import aliased
 
-from app import session_scope
+from app import session_scope, logger
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
-from app.Models import User, Task, Activity, TaskPriority, TaskStatus
+from app.Models import User, Task, Activity, TaskPriority, TaskStatus, Notification
 from app.Models.Enums import Events, Operations, Resources
-from app.Models.Request import update_task_dto
+from app.Models.Request import update_task_dto, create_task_dto
 from app.Models.Response import task_response_dto, message_response_dto, get_task_statuses_response_dto, \
     get_task_priorities_response_dto, get_tasks_response_dto
 from app.Services import UserService
@@ -148,6 +148,68 @@ class Tasks(RequestValidationController):
             resource_id=task_to_update.id
         )
         return self.ok(task_to_update.fat_dict())
+
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.CREATE, Resources.TASK)
+    @tasks_route.expect(create_task_dto)
+    @tasks_route.response(200, "Success", task_response_dto)
+    @tasks_route.response(400, "Failed to update the organisation", message_response_dto)
+    def post(self, **kwargs) -> Response:
+        """Creates a task"""
+        req_user = kwargs['req_user']
+
+        task_attrs = self.validate_create_task_request(request.get_json(), **kwargs)
+
+        # create task
+        with session_scope() as session:
+            task = Task(
+                org_id=req_user.org_id,
+                type=task_attrs.get('type'),
+                description=task_attrs.get('description'),
+                status=task_attrs.get('status'),
+                time_estimate=task_attrs.get('time_estimate'),
+                due_time=task_attrs.get('due_time'),
+                priority=task_attrs.get('priority'),
+                created_by=req_user.id,
+                created_at=task_attrs.get('created_at'),
+                finished_at=task_attrs.get('finished_at')
+            )
+            session.add(task)
+
+        Activity(
+            org_id=task.org_id,
+            event=Events.task_created,
+            event_id=task.id,
+            event_friendly=f"Created by {req_user.name()}."
+        ).publish()
+        Activity(
+            org_id=req_user.org_id,
+            event=Events.user_created_task,
+            event_id=req_user.id,
+            event_friendly=f"Created task {task.label()}."
+        ).publish()
+        req_user.log(
+            operation=Operations.CREATE,
+            resource=Resources.TASK,
+            resource_id=task.id
+        )
+        logger.info(f"created task {task.as_dict()}")
+
+        # optionally assign the task if an assignee was present in the create task request
+        if task_attrs.get('assignee') is not None:
+            self._assign_task(
+                task=task,
+                assignee=task_attrs.get('assignee'),
+                req_user=req_user
+            )
+        else:
+            Notification(
+                msg=f"{task.label()} task has been created.",
+                user_ids=self._all_user_ids(req_user.org_id)
+            ).push()
+
+        return self.created(task.fat_dict())
 
 
 @tasks_route.route('/statuses')
