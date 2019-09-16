@@ -22,8 +22,9 @@ report_route = Namespace(
 
 @report_route.route("/all")
 class Reports(RequestValidationController):
-    @requires_jwt
+
     @handle_exceptions
+    @requires_jwt
     @report_route.response(200, "Success", get_all_reports_response_dto)
     @report_route.response(400, "Failed to get the reports", message_response_dto)
     def get(self, **kwargs) -> Response:

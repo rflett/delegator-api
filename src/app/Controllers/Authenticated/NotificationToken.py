@@ -16,8 +16,9 @@ notification_token_route = Namespace(
 
 @notification_token_route.route("/")
 class NotificationToken(RequestValidationController):
-    @requires_jwt
+
     @handle_exceptions
+    @requires_jwt
     @notification_token_route.expect(register_notification_token_dto)
     @notification_token_route.response(204, "Registration Successful")
     @notification_token_route.response(400, "Registration Failed", message_response_dto)
@@ -43,8 +44,8 @@ class NotificationToken(RequestValidationController):
         logger.info(f"Registered token for user: {req_user.id}, token_type: {token_type}.")
         return self.no_content()
 
-    @requires_jwt
     @handle_exceptions
+    @requires_jwt
     @notification_token_route.expect(deregister_notification_token_dto)
     @notification_token_route.response(204, "De-registration Successful")
     @notification_token_route.response(400, "De-registration Failed", message_response_dto)

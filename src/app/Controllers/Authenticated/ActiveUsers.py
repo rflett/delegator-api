@@ -19,8 +19,9 @@ active_user_route = Namespace(
 
 @active_user_route.route("/")
 class ActiveUsers(RequestValidationController):
-    @requires_jwt
+
     @handle_exceptions
+    @requires_jwt
     @authorize(Operations.GET, Resources.ACTIVE_USERS)
     @active_user_route.response(200, "Success", active_user_response_dto)
     def get(self, **kwargs) -> Response:

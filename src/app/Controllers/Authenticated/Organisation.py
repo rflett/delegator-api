@@ -146,8 +146,8 @@ class OrganisationLock(RequestValidationController):
 
         return self.ok(f"Successfully locked org {org.id}")
 
-    @requires_token_auth
     @handle_exceptions
+    @requires_token_auth
     @org_route.response(200, "Success", message_response_dto)
     def delete(self, customer_id: str) -> Response:
         """Unlock an organisation after the billing issue has been rectified"""
@@ -187,8 +187,8 @@ class OrganisationLock(RequestValidationController):
 @org_route.route("/subscription")
 class OrganisationSubscription(RequestValidationController):
 
-    @requires_token_auth
     @handle_exceptions
+    @requires_token_auth
     @org_route.expect(update_org_subscription_dto)
     @org_route.response(200, "Success", message_response_dto)
     @org_route.response(400, "Failed to update the organisation's subscription", message_response_dto)

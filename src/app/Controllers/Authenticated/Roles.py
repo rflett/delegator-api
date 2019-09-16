@@ -19,13 +19,13 @@ roles_route = Namespace(
 
 
 @roles_route.route("/")
-class RoleController(RequestValidationController):
+class Roles(RequestValidationController):
 
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.GET, Resources.ROLES)
     @account_route.response(200, "Roles Retrieved", status_dto)
     @account_route.response(400, "Exception occurred", message_response_dto)
-    @requires_jwt
-    @handle_exceptions
-    @authorize(Operations.GET, Resources.ROLES)
     def get(self, **kwargs) -> Response:
         """Return all roles lower in rank than the requesting user's role. """
         req_user = kwargs['req_user']
