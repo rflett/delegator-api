@@ -6,7 +6,7 @@ from flask_restplus import Namespace
 
 from app import session_scope
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, requires_token_auth
+from app.Decorators import requires_jwt, handle_exceptions, requires_token_auth, authorize
 from app.Exceptions import ValidationError
 from app.Models import Organisation
 from app.Models.Enums import Operations, Resources
@@ -27,8 +27,9 @@ settings_service = SettingsService()
 @org_route.route("/")
 class OrganisationManage(RequestValidationController):
 
-    @requires_jwt
     @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.GET, Resources.ORGANISATION)
     @org_route.response(200, "Success", get_org_response_dto)
     def get(self, **kwargs) -> Response:
         """Get an organisation"""
@@ -46,8 +47,9 @@ class OrganisationManage(RequestValidationController):
             "org_name": org.name
         })
 
-    @requires_jwt
     @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.UPDATE, Resources.ORGANISATION)
     @org_route.expect(update_org_dto)
     @org_route.response(200, "Success", update_org_response_dto)
     @org_route.response(400, "Failed to update the organisation", message_response_dto)
@@ -72,8 +74,9 @@ class OrganisationManage(RequestValidationController):
 @org_route.route("/settings")
 class OrganisationSettings(RequestValidationController):
 
-    @requires_jwt
     @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.GET, Resources.ORG_SETTINGS)
     @org_route.response(200, "Success", get_org_settings_response_dto)
     def get(self, **kwargs) -> Response:
         """Get an organisation's settings"""
@@ -84,8 +87,9 @@ class OrganisationSettings(RequestValidationController):
         )
         return self.ok(settings_service.get_org_settings(req_user.org_id).as_dict())
 
-    @requires_jwt
     @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.UPDATE, Resources.ORG_SETTINGS)
     @org_route.expect(update_org_settings_dto)
     @org_route.response(200, "Success", update_org_settings_response_dto)
     @org_route.response(400, "Failed to update the organisation", message_response_dto)
@@ -105,8 +109,8 @@ class OrganisationSettings(RequestValidationController):
 @org_route.route("/lock/<string:customer_id>")
 class OrganisationLock(RequestValidationController):
 
-    @requires_token_auth
     @handle_exceptions
+    @requires_token_auth
     @org_route.expect(lock_org_dto)
     @org_route.response(200, "Success", message_response_dto)
     def put(self, customer_id: str) -> Response:

@@ -2,7 +2,7 @@ from app.Decorators import handle_exceptions, requires_jwt, authorize
 
 from app import app
 from app.Controllers import AuthenticationController, RoleController
-from app.Controllers.Authenticated import ReportController
+from app.Controllers.Authenticated import Reporting
 from app.Models.Enums import Operations, Resources
 
 
@@ -26,4 +26,4 @@ def get_roles(**kwargs):
 @handle_exceptions
 @authorize(Operations.GET, Resources.REPORTS_PAGE)
 def get_all_reports(**kwargs):
-    return ReportController.get_all(**kwargs)
+    return Reporting.get_all(**kwargs)
