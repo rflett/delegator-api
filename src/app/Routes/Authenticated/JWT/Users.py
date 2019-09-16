@@ -1,7 +1,7 @@
 from app.Decorators import handle_exceptions, requires_jwt, authorize
 
 from app import app
-from app.Controllers import UserController
+from app.Controllers import UserControllerbak
 from app.Models.Enums import Operations, Resources
 
 
@@ -10,7 +10,7 @@ from app.Models.Enums import Operations, Resources
 @handle_exceptions
 @authorize(Operations.GET, Resources.USER)
 def get_user(user_id, **kwargs):
-    return UserController.get_user(user_id, **kwargs)
+    return UserControllerbak.get_user(user_id, **kwargs)
 
 
 @app.route('/user/<int:user_id>', methods=['DELETE'])
@@ -18,7 +18,7 @@ def get_user(user_id, **kwargs):
 @handle_exceptions
 @authorize(Operations.DELETE, Resources.USER)
 def delete_user(user_id, **kwargs):
-    return UserController.delete_user(user_id, **kwargs)
+    return UserControllerbak.delete_user(user_id, **kwargs)
 
 
 @app.route('/user/pages', methods=['GET'])
@@ -26,7 +26,7 @@ def delete_user(user_id, **kwargs):
 @handle_exceptions
 @authorize(Operations.GET, Resources.PAGES)
 def user_pages(**kwargs):
-    return UserController.user_pages(**kwargs)
+    return UserControllerbak.user_pages(**kwargs)
 
 
 @app.route('/user/settings', methods=['GET'])
@@ -34,7 +34,7 @@ def user_pages(**kwargs):
 @handle_exceptions
 @authorize(Operations.GET, Resources.USER_SETTINGS)
 def get_user_settings(**kwargs):
-    return UserController.get_user_settings(**kwargs)
+    return UserControllerbak.get_user_settings(**kwargs)
 
 
 @app.route('/user/settings', methods=['PUT'])
@@ -42,7 +42,7 @@ def get_user_settings(**kwargs):
 @handle_exceptions
 @authorize(Operations.UPDATE, Resources.USER_SETTINGS)
 def update_user_settings(**kwargs):
-    return UserController.update_user_settings(**kwargs)
+    return UserControllerbak.update_user_settings(**kwargs)
 
 
 @app.route('/user/activity/<int:user_id>', methods=['GET'])
@@ -50,7 +50,7 @@ def update_user_settings(**kwargs):
 @handle_exceptions
 @authorize(Operations.GET, Resources.USER_ACTIVITY)
 def get_user_activity(user_id, **kwargs):
-    return UserController.get_user_activity(user_id, **kwargs)
+    return UserControllerbak.get_user_activity(user_id, **kwargs)
 
 
 @app.route('/users', methods=['POST'])
@@ -58,7 +58,7 @@ def get_user_activity(user_id, **kwargs):
 @handle_exceptions
 @authorize(Operations.CREATE, Resources.USER)
 def create_user(**kwargs):
-    return UserController.create_user(**kwargs)
+    return UserControllerbak.create_user(**kwargs)
 
 
 @app.route('/users', methods=['GET'])
@@ -66,7 +66,7 @@ def create_user(**kwargs):
 @handle_exceptions
 @authorize(Operations.GET, Resources.USERS)
 def get_users(**kwargs):
-    return UserController.get_users(**kwargs)
+    return UserControllerbak.get_users(**kwargs)
 
 
 @app.route('/users', methods=['PUT'])
@@ -74,4 +74,4 @@ def get_users(**kwargs):
 @handle_exceptions
 @authorize(Operations.UPDATE, Resources.USER)
 def update_user(**kwargs):
-    return UserController.update_user(**kwargs)
+    return UserControllerbak.update_user(**kwargs)

@@ -168,11 +168,11 @@ class UserController(RequestValidationController):
 
         # query for all users in the requesting user's organisation
         with session_scope() as session:
-            users_qry = session.query(User)\
+            users_qry = session.query(User) \
                 .filter_by(
-                    org_id=req_user.org_id,
-                    deleted=None
-                ).all()
+                org_id=req_user.org_id,
+                deleted=None
+            ).all()
 
         users = []
 
