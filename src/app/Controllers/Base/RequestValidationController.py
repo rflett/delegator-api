@@ -55,7 +55,7 @@ class RequestValidationController(ObjectValidationController):
             "role": app.config['SIGNUP_ROLE'],
             "first_name": self.check_str(request_body.get('first_name'), 'first_name'),
             "last_name": self.check_str(request_body.get('last_name'), 'last_name'),
-            "job_title": self.check_user_job_title(request_body.get('job_title')),
+            "job_title": self.check_optional_str(request_body.get('job_title'), 'job_title'),
             "disabled": self.check_user_disabled(request_body.get('disabled'))
         }
 

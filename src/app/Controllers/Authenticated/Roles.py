@@ -8,7 +8,7 @@ from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models.Enums import Operations, Resources
 from app.Models.RBAC import Role
 from app.Models.Response import message_response_dto
-from app.Models.Response.Roles import role_response
+from app.Models.Response.Roles import roles_response
 
 roles_route = Namespace(
     path="/roles",
@@ -23,7 +23,7 @@ class Roles(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.ROLES)
-    @roles_route.response(200, "Roles Retrieved", role_response)
+    @roles_route.response(200, "Roles Retrieved", roles_response)
     @roles_route.response(400, "Exception occurred", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Return all roles lower in rank than the requesting user's role. """
@@ -38,4 +38,4 @@ class Roles(RequestValidationController):
             operation=Operations.GET,
             resource=Resources.ROLES
         )
-        return self.ok(roles)
+        return self.ok({'roles': roles})

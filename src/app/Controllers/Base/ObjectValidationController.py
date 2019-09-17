@@ -166,7 +166,7 @@ class ObjectValidationController(ResponseController):
     @staticmethod
     def check_user_id(
             identifier: typing.Union[str, int],
-            should_exist: typing.Optional[bool] = None) -> typing.Union[None, User]:
+            should_exist: typing.Optional[bool] = None) -> typing.Union[None, User, str]:
         """Given a users email or ID, check whether it should or shouldn't exist"""
         # validate the identifier
         if isinstance(identifier, bool):
@@ -187,6 +187,9 @@ class ObjectValidationController(ResponseController):
                 raise ResourceNotFoundError("User doesn't exist")
             elif not should_exist and user is not None:
                 raise ValidationError("User already exists")
+            elif not should_exist and user is None:
+                # return the email
+                return identifier
 
         return user
 

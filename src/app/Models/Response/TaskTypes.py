@@ -4,7 +4,8 @@ from app import api
 from app.Models.Response.Common import NullableDateTime
 
 
-escalation_policy_dto = api.model("Escalation Policy", {
+escalation_policy_dto = api.model("Escalation Policy Response", {
+    "task_type_id": fields.Integer,
     "display_order": fields.Integer(min=1, max=2),
     "delay": fields.Integer(),
     "from_priority": fields.Integer(min=0, max=1),

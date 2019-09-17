@@ -24,7 +24,7 @@ class TaskTypes(RequestValidationController):
 
     @handle_exceptions
     @requires_jwt
-    @authorize(Operations.GET, Resources.TASK_TYPE)
+    @authorize(Operations.GET, Resources.TASK_TYPES)
     @task_types_route.response(200, "Success", task_types_response)
     def get(self, **kwargs) -> Response:
         """Returns all task types"""
@@ -44,7 +44,7 @@ class TaskTypes(RequestValidationController):
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK_TYPE)
     @task_types_route.expect(create_task_type_request)
-    @task_types_route.response(200, "Success", task_type_response)
+    @task_types_route.response(201, "Created", task_type_response)
     @task_types_route.response(400, "Failed to create the task type", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Creates a task type"""

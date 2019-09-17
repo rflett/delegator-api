@@ -1,4 +1,4 @@
-from app.Models.Request.Account import login_request
+from app.Models.Request.Account import login_request, signup_request
 from app.Models.Request.NotificationToken import register_notification_token_request, \
     deregister_notification_token_request
 from app.Models.Request.Organisation import update_org_request, update_org_settings_request, \
@@ -20,6 +20,7 @@ __all__ = [
     login_request,
     register_notification_token_request,
     lock_org_request,
+    signup_request,
     transition_task_request,
     update_org_request,
     update_org_settings_request,

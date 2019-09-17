@@ -153,7 +153,7 @@ class Tasks(RequestValidationController):
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK)
     @tasks_route.expect(create_task_request)
-    @tasks_route.response(200, "Success", task_response)
+    @tasks_route.response(201, "Created", task_response)
     @tasks_route.response(400, "Failed to create the task", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Creates a task"""

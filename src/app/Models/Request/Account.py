@@ -6,3 +6,13 @@ login_request = api.model("Login Request", {
     "email": fields.String,
     "password": fields.String
 })
+
+signup_request = api.model("Signup Request", {
+    "org_name": fields.String,
+    "email": fields.String,
+    "password": fields.String,
+    "first_name": fields.String,
+    "last_name": fields.String,
+    "job_title": fields.String,
+    "plan_id": fields.String,
+})

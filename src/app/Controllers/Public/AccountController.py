@@ -15,8 +15,8 @@ from app.Decorators import handle_exceptions, requires_jwt
 from app.Exceptions import AuthenticationError
 from app.Models import User, Activity, Organisation, TaskType, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
-from app.Models.Request import login_request
-from app.Models.Response import login_response, message_response_dto
+from app.Models.Request import login_request, signup_request
+from app.Models.Response import login_response, message_response_dto, signup_response
 from app.Services import UserService
 
 account_route = Namespace(
@@ -31,80 +31,10 @@ user_service = UserService()
 @account_route.route("/")
 class AccountController(RequestValidationController):
 
-    @account_route.expect(login_request)
-    @account_route.response(200, "Login Successful", login_response)
-    @account_route.response(400, "Login Failed", message_response_dto)
     @handle_exceptions
-    def post(self) -> Response:
-        """Log a user in."""
-        # get params from http request
-        login_data = self.get_body()
-
-        with session_scope() as session:
-            user: User = session.query(User).filter_by(email=login_data["email"]).first()
-
-            if user is None:
-                self._failed_login_attempt(login_data["email"])
-            else:
-                user.clear_failed_logins()
-
-            # don't let them log in if they are disabled
-            if user.disabled is not None:
-                logger.info(f"Disabled user {user.id} tried to log in.")
-                raise AuthenticationError("Cannot log in since this account has been disabled. Please consult your "
-                                          "Administrator for assistance.")
-
-            # don't let them log in if they are deleted (unlikely to happen)
-            if user.deleted is not None:
-                logger.warning(f"Deleted user {user.id} tried to log in.")
-                raise AuthenticationError(f"Email or password incorrect")
-
-            # check login attempts
-            if user.failed_login_attempts > 0:
-                logger.info(f"User {user.id} has failed to log in "
-                            f"{user.failed_login_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
-                if user.failed_login_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
-                    # check timeout
-                    diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
-                    if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
-                        logger.info(f"user last failed {diff}s ago. "
-                                    f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
-                        raise AuthenticationError("Too many incorrect password attempts.")
-                    else:
-                        with session_scope():
-                            # reset timeout
-                            logger.info(f"User last failed {diff}s ago. "
-                                        f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s.")
-                            user.failed_login_attempts = 0
-                            user.failed_login_time = None
-
-            # check password
-            if user.password_correct(login_data["password"]):
-                # reset failed attempts
-                user.failed_login_attempts = 0
-                user.failed_login_time = None
-                user.is_active()
-                Activity(
-                    org_id=user.org_id,
-                    event=Events.user_login,
-                    event_id=user.id,
-                    event_friendly="Logged in."
-                ).publish()
-
-                # return the user dict and their JWT token
-                return self.ok({
-                    **user.fat_dict(),
-                    **{"jwt": self._generate_jwt_token(user)}
-                })
-            else:
-                logger.info(f"Incorrect password attempt for user {user.id}.")
-                user.failed_login_attempts += 1
-                user.failed_login_time = datetime.datetime.utcnow()
-                raise AuthenticationError("Password incorrect.")
-
-    @account_route.response(200, "Registration Successful", message_response_dto)
+    @account_route.expect(signup_request)
+    @account_route.response(200, "Registration Successful", signup_response)
     @account_route.response(400, "Registration Failed", message_response_dto)
-    @handle_exceptions
     def put(self) -> Response:
         """Signup a user."""
         # get the request body
@@ -120,9 +50,7 @@ class AccountController(RequestValidationController):
         try:
             # create the organisation
             with session_scope() as session:
-                organisation = Organisation(
-                    name=org_name
-                )
+                organisation = Organisation(name=org_name)
                 session.add(organisation)
 
             # add default task type
@@ -191,9 +119,80 @@ class AccountController(RequestValidationController):
                             f"since there was an issue creating the user.")
             return self.oh_god("There was an issue creating the user.")
 
+    @handle_exceptions
+    @account_route.expect(login_request)
+    @account_route.response(200, "Login Successful", login_response)
+    @account_route.response(400, "Login Failed", message_response_dto)
+    def post(self) -> Response:
+        """Log a user in."""
+        # get params from http request
+        login_data = self._get_login_body()
+
+        with session_scope() as session:
+            user: User = session.query(User).filter_by(email=login_data["email"]).first()
+
+            if user is None:
+                self._failed_login_attempt(login_data["email"])
+            else:
+                user.clear_failed_logins()
+
+            # don't let them log in if they are disabled
+            if user.disabled is not None:
+                logger.info(f"Disabled user {user.id} tried to log in.")
+                raise AuthenticationError("Cannot log in since this account has been disabled. Please consult your "
+                                          "Administrator for assistance.")
+
+            # don't let them log in if they are deleted (unlikely to happen)
+            if user.deleted is not None:
+                logger.warning(f"Deleted user {user.id} tried to log in.")
+                raise AuthenticationError(f"Email or password incorrect")
+
+            # check login attempts
+            if user.failed_login_attempts > 0:
+                logger.info(f"User {user.id} has failed to log in "
+                            f"{user.failed_login_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times.")
+                if user.failed_login_attempts >= app.config['FAILED_LOGIN_ATTEMPTS_MAX']:
+                    # check timeout
+                    diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
+                    if diff < app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']:
+                        logger.info(f"user last failed {diff}s ago. "
+                                    f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s")
+                        raise AuthenticationError("Too many incorrect password attempts.")
+                    else:
+                        with session_scope():
+                            # reset timeout
+                            logger.info(f"User last failed {diff}s ago. "
+                                        f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s.")
+                            user.failed_login_attempts = 0
+                            user.failed_login_time = None
+
+            # check password
+            if user.password_correct(login_data["password"]):
+                # reset failed attempts
+                user.failed_login_attempts = 0
+                user.failed_login_time = None
+                user.is_active()
+                Activity(
+                    org_id=user.org_id,
+                    event=Events.user_login,
+                    event_id=user.id,
+                    event_friendly="Logged in."
+                ).publish()
+
+                # return the user dict and their JWT token
+                return self.ok({
+                    **user.fat_dict(),
+                    **{"jwt": self._generate_jwt_token(user)}
+                })
+            else:
+                logger.info(f"Incorrect password attempt for user {user.id}.")
+                user.failed_login_attempts += 1
+                user.failed_login_time = datetime.datetime.utcnow()
+                raise AuthenticationError("Password incorrect.")
+
+    @handle_exceptions
     @account_route.response(200, "Reset Password Successful", message_response_dto)
     @account_route.response(400, "Registration Failed", message_response_dto)
-    @handle_exceptions
     def patch(self) -> Response:
         """Reset a password in the world's worst way"""
         request_body = request.get_json()
@@ -208,10 +207,10 @@ class AccountController(RequestValidationController):
             logger.info(f"password successfully reset for {request_body.get('email')}")
             return self.ok(f"Password reset successfully, new password is {new_password}")
 
+    @handle_exceptions
+    @requires_jwt
     @account_route.response(200, "Logout Successful")
     @account_route.response(400, "Logout Failed")
-    @requires_jwt
-    @handle_exceptions
     def delete(self, **kwargs) -> Response:
         """Log a user out"""
         req_user = kwargs['req_user']
@@ -225,7 +224,7 @@ class AccountController(RequestValidationController):
         logger.info(f"user {req_user.id} logged out")
         return self.ok('Successfully logged out')
 
-    def get_body(self) -> typing.Dict:
+    def _get_login_body(self) -> typing.Dict:
         """get params from http request"""
         request_body: dict = request.get_json()
         email = request_body.get('email')

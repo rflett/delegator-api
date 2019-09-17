@@ -19,6 +19,7 @@ flask-profiler = "*"
 werkzeug = "==0.15.4"
 requests = "*"
 flask-restplus = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.7"
