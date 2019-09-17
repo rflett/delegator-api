@@ -14,7 +14,7 @@ from app.Controllers.Authenticated.Task.TransitionTask import transition_task_ro
 from app.Controllers.Authenticated.Task.TaskStatuses import task_statuses_route
 from app.Controllers.Authenticated.Task.TaskTypes import task_types_route
 
-__all__ = [
+all_authenticated = [
     assign_task_route,
     cancel_task_route,
     delay_task_route,
