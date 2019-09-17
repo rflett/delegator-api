@@ -6,7 +6,6 @@ from app.Models.FailedLogin import FailedLogin
 from app.Models.Notification import Notification
 from app.Models.Organisation import Organisation
 from app.Models.OrgSetting import OrgSetting
-from app.Models.ProductTier import ProductTier
 from app.Models.Task import Task
 from app.Models.TaskPriority import TaskPriority
 from app.Models.TaskStatus import TaskStatus
@@ -24,7 +23,6 @@ __all__ = [
     Notification,
     Organisation,
     OrgSetting,
-    ProductTier,
     Task,
     TaskPriority,
     TaskStatus,
