@@ -7,7 +7,7 @@ from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import Notification
 from app.Models.Enums import TaskStatuses, Operations, Resources
 from app.Models.Response import task_response, message_response_dto
-from app.Services import  TaskService
+from app.Services import TaskService
 
 cancel_task_route = Namespace(
     path="/task/cancel",

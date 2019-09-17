@@ -49,7 +49,7 @@ class Reports(RequestValidationController):
             'status': self._tasks_by_status(req_user.org_id, start_period, end_period),
             'delays': self._delays_per_task_type(req_user.org_id, start_period, end_period)
         })
-    
+
     @staticmethod
     def _clean_qry(qry) -> list:
         """

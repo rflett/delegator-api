@@ -53,7 +53,7 @@ class TransitionTask(RequestValidationController):
 
         task = self.validate_get_transitions(req_user.org_id, task_id)
 
-        transitions = []
+        statuses = []
 
         # handle case where no-one is assigned to the task
         if task.assignee is None:
@@ -73,10 +73,12 @@ class TransitionTask(RequestValidationController):
                 disabled_qry = session.query(TaskStatus).filter(~TaskStatus.status.in_(search)).all()
 
             # enabled options
-            transitions += [ts.as_dict() for ts in enabled_qry]
+            statuses += [ts.as_dict() for ts in enabled_qry]
 
             # disabled options
-            transitions += [ts.as_dict(disabled=True, tooltip="No one is assigned to this task.") for ts in disabled_qry]
+            statuses += [
+                ts.as_dict(disabled=True, tooltip="No one is assigned to this task.") for ts in disabled_qry
+            ]
 
         else:
             # if someone is assigned to the task, then these are the available transitions
@@ -96,9 +98,11 @@ class TransitionTask(RequestValidationController):
                 disabled_qry = session.query(TaskStatus).filter(~TaskStatus.status.in_(search)).all()
 
             # enabled options
-            transitions += [ts.as_dict() for ts in enabled_qry if ts.status not in ["DELAYED", "CANCELLED"]]
+            statuses += [ts.as_dict() for ts in enabled_qry if ts.status not in ["DELAYED", "CANCELLED"]]
 
             # disabled options
-            transitions += [ts.as_dict(disabled=True) for ts in disabled_qry if ts.status not in ["DELAYED", "CANCELLED"]]
+            statuses += [
+                ts.as_dict(disabled=True) for ts in disabled_qry if ts.status not in ["DELAYED", "CANCELLED"]
+            ]
 
-        return self.ok({'statuses': transitions})
+        return self.ok({'statuses': statuses})

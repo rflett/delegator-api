@@ -10,9 +10,10 @@ from app.Decorators import requires_jwt, handle_exceptions, requires_token_auth,
 from app.Exceptions import ValidationError
 from app.Models import Organisation
 from app.Models.Enums import Operations, Resources
-from app.Models.Response import update_org_response_dto, update_org_settings_response_dto, get_org_settings_response_dto, \
-    get_org_response_dto, message_response_dto
-from app.Models.Request import lock_org_request, update_org_subscription_request, update_org_settings_request, update_org_request
+from app.Models.Response import update_org_response_dto, update_org_settings_response_dto, \
+    get_org_settings_response_dto, get_org_response_dto, message_response_dto
+from app.Models.Request import lock_org_request, update_org_subscription_request, update_org_settings_request, \
+    update_org_request
 from app.Services import SettingsService
 
 org_route = Namespace(
