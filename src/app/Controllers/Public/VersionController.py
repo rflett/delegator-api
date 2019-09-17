@@ -15,7 +15,7 @@ version_route = Namespace(
 @version_route.route("/")
 class VersionController(RequestValidationController):
 
-    @version_route.response(200, "Login Successful", version_route.models("Version", {"commit_sha": fields.String}))
+    @version_route.response(200, "Version Info", version_route.model("Version", {"commit_sha": fields.String}))
     def get(self) -> Response:
         """ Returns details of the running application for debugging/verification """
         return self.ok({"commit_sha": environ.get('COMMIT_SHA')})

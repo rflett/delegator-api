@@ -3,13 +3,12 @@ from flask_restplus import Namespace
 from sqlalchemy import and_
 
 from app import session_scope
-from app.Controllers import account_route
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models.Enums import Operations, Resources
 from app.Models.RBAC import Role
 from app.Models.Response import message_response_dto
-from app.Models.Response.Reporting import status_dto
+from app.Models.Response.Roles import role_dto
 
 roles_route = Namespace(
     path="/roles",
@@ -24,8 +23,8 @@ class Roles(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.ROLES)
-    @account_route.response(200, "Roles Retrieved", status_dto)
-    @account_route.response(400, "Exception occurred", message_response_dto)
+    @roles_route.response(200, "Roles Retrieved", role_dto)
+    @roles_route.response(400, "Exception occurred", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Return all roles lower in rank than the requesting user's role. """
         req_user = kwargs['req_user']

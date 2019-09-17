@@ -1,34 +1,54 @@
 import datetime
 
 from flask import request, Response
+from flask_restplus import Namespace
 
 from app import logger, session_scope
 from app.Controllers.Base import RequestValidationController
+from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import TaskType, TaskTypeEscalation, Activity
 from app.Models.Enums import Events, Operations, Resources
+from app.Models.Request import disable_task_type_request_dto, update_task_type_request_dto, create_task_type_request_dto
+from app.Models.Response import get_all_types_response_dto, task_type_response_dto, message_response_dto
 from app.Exceptions import ValidationError
 
+task_types_route = Namespace(
+    path="/tasks/types",
+    name="Task Types",
+    description="Manage Task Types"
+)
 
-class TaskTypeController(RequestValidationController):
-    def get_task_types(self, **kwargs) -> Response:
-        """Returns all task types """
+
+@task_types_route.route("/")
+class TaskTypes(RequestValidationController):
+
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.GET, Resources.TASK_TYPE)
+    @task_types_route.response(200, "Success", get_all_types_response_dto)
+    def get(self, **kwargs) -> Response:
+        """Returns all task types"""
         req_user = kwargs['req_user']
 
         with session_scope() as session:
-            task_type_query = session\
-                .query(TaskType)\
-                .filter_by(
-                    org_id=req_user.org_id
-                ).all()
+            task_type_query = session.query(TaskType).filter_by(org_id=req_user.org_id).all()
 
         task_types = [tt.fat_dict() for tt in task_type_query]
         req_user.log(
             operation=Operations.GET,
             resource=Resources.TASK_TYPES
         )
-        return self.ok(task_types)
+        return self.ok({
+            "task_types": task_types
+        })
 
-    def create_task_type(self, **kwargs) -> Response:
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.CREATE, Resources.TASK_TYPE)
+    @task_types_route.expect(create_task_type_request_dto)
+    @task_types_route.response(200, "Success", task_type_response_dto)
+    @task_types_route.response(400, "Failed to create the task type", message_response_dto)
+    def post(self, **kwargs) -> Response:
         """Creates a task type"""
         req_user = kwargs['req_user']
 
@@ -73,7 +93,13 @@ class TaskTypeController(RequestValidationController):
             )
             return self.created(task_type.fat_dict())
 
-    def update_task_type(self, **kwargs) -> Response:
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.UPDATE, Resources.TASK_TYPE)
+    @task_types_route.expect(update_task_type_request_dto)
+    @task_types_route.response(200, "Success", task_type_response_dto)
+    @task_types_route.response(400, "Failed to update the task type", message_response_dto)
+    def put(self, **kwargs) -> Response:
         """Updates a task type"""
         req_user = kwargs['req_user']
         request_body = request.get_json()
@@ -178,9 +204,17 @@ class TaskTypeController(RequestValidationController):
         # SUCCESS
         return self.ok(task_type_to_update.fat_dict())
 
-    def disable_task_type(self, task_type_id: int, **kwargs) -> Response:
-        """Disables a task type """
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.DISABLE, Resources.TASK_TYPE)
+    @task_types_route.expect(disable_task_type_request_dto)
+    @task_types_route.response(200, "Success", task_type_response_dto)
+    @task_types_route.response(400, "Failed to disable the task type", message_response_dto)
+    def delete(self, **kwargs) -> Response:
+        """Disables a task type"""
         req_user = kwargs['req_user']
+        request_body = request.get_json()
+        task_type_id = request_body.get('id')
 
         task_type_to_disable = self.validate_disable_task_type_request(task_type_id)
 
@@ -203,4 +237,4 @@ class TaskTypeController(RequestValidationController):
             resource=Resources.TASK_TYPE,
             resource_id=task_type_to_disable.id
         )
-        return self.no_content()
+        return self.ok(task_type_to_disable.fat_dict())

@@ -4,12 +4,16 @@ from app.Models.Request.Organisation import update_org_dto, update_org_settings_
     lock_org_dto
 from app.Models.Request.Task import create_task_dto, update_task_dto, assign_task_dto, delay_task_dto, \
     get_delayed_task_dto, transition_task_dto, get_available_transitions_dto, update_task_priority_dto
+from app.Models.Request.TaskTypes import disable_task_type_request_dto, create_task_type_request_dto, \
+    update_task_type_request_dto
 
 __all__ = [
     assign_task_dto,
     create_task_dto,
+    create_task_type_request_dto,
     delay_task_dto,
     deregister_notification_token_dto,
+    disable_task_type_request_dto,
     get_available_transitions_dto,
     get_delayed_task_dto,
     login_dto,
@@ -20,5 +24,6 @@ __all__ = [
     update_org_settings_dto,
     update_org_subscription_dto,
     update_task_dto,
-    update_task_priority_dto
+    update_task_priority_dto,
+    update_task_type_request_dto
 ]
