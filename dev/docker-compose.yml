@@ -2,7 +2,7 @@ version: '3.7'
 services:
 
   postgres:
-    image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
+    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
     build:
       context: ../../containers/postgres
     ports:
