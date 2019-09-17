@@ -10,7 +10,7 @@ from app import session_scope, logger
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import User, Task, Activity, Notification
-from app.Models.Enums import Events, Operations, Resources
+from app.Models.Enums import Events, Operations, Resources, TaskStatuses
 from app.Models.Request import update_task_request, create_task_request
 from app.Models.Response import task_response, message_response_dto, tasks_response
 from app.Services import UserService, TaskService
@@ -167,7 +167,7 @@ class Tasks(RequestValidationController):
                 org_id=req_user.org_id,
                 type=task_attrs.get('type'),
                 description=task_attrs.get('description'),
-                status=task_attrs.get('status'),
+                status=TaskStatuses.READY,
                 time_estimate=task_attrs.get('time_estimate'),
                 due_time=task_attrs.get('due_time'),
                 priority=task_attrs.get('priority'),

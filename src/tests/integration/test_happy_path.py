@@ -1,5 +1,5 @@
 import json
-import pytest
+import typing
 import requests
 from dataclasses import dataclass
 
@@ -13,6 +13,7 @@ class Base:
     user_id: int = None
     org_id: int = None
     task_type_id: int = None
+    task_id: int = None
 
     def send(self, method: str, path: str, data: dict = None):
         """Sends an HTTP request"""
@@ -196,3 +197,136 @@ def test_get_task_type():
         assert 'disabled' in _type
         assert 'tooltip' in _type
         assert 'escalation_policies' in _type
+
+
+# Tasks
+def test_create_task():
+    r = base.send('post', 'tasks/', data={
+        "type_id": base.task_type_id,
+        "description": "A Task Description",
+        "time_estimate": 300,
+        "due_time": "2020-09-17T19:08:00+10:00",
+        "priority": 0
+    })
+    assert r.status_code == 201
+    base.task_id = r.json()['id']
+
+
+def test_update_task():
+    r = base.send('put', 'tasks/', data={
+        "id": base.task_id,
+        "type_id": base.task_type_id,
+        "description": "A New Task Description",
+        "status": "READY",
+        "time_estimate": 300,
+        "due_time": "2020-09-17T19:08:00+10:00",
+        "priority": 0
+    })
+    assert r.status_code == 200
+    assert r.json()['description'] == "A New Task Description"
+
+
+def test_get_tasks():
+    r = base.send('get', 'tasks/')
+    assert r.status_code == 200
+    response_body = r.json()
+    assert 'tasks' in response_body
+    assert len(response_body['tasks']) > 0
+
+
+def test_get_task_priorities():
+    r = base.send('get', 'tasks/priorities/')
+    assert r.status_code == 200
+    response_body = r.json()
+    assert 'priorities' in response_body
+    assert len(response_body['priorities']) == 3
+    for p in response_body['priorities']:
+        assert isinstance(p['priority'], int)
+        assert isinstance(p['label'], str)
+
+
+def test_get_task_statuses():
+    r = base.send('get', 'tasks/statuses/')
+    assert r.status_code == 200
+    response_body = r.json()
+    assert 'statuses' in response_body
+    assert len(response_body['statuses']) == 3
+    for s in response_body['statuses']:
+        assert isinstance(s['status'], str)
+        assert isinstance(s['label'], str)
+        assert isinstance(s['disabled'], bool)
+        assert isinstance(s['tooltip'], str) or s['tooltip'] is None
+
+
+# Task Actions
+def test_assign_task():
+    r = base.send('post', 'task/assign/', data={
+        "task_id": base.task_id,
+        "assignee": base.user_id
+    })
+    assert r.status_code == 200
+    response_body = r.json()
+    assert 'assignee' in response_body
+    assert response_body['assignee']['id'] == base.user_id
+
+
+def test_get_available_transitions():
+    r = base.send('get', 'task/transition/', data={
+        'task_id': base.task_id
+    })
+    assert r.status_code == 200
+    response_body = r.json()
+    assert 'statuses' in response_body
+    assert len(response_body['statuses']) > 0
+
+
+def transition_task():
+    r = base.send('post', 'task/transition', data={
+        "task_id": base.task_id,
+        "task_status": "IN_PROGRESS"
+    })
+    assert r.status_code == 200
+    response_body = r.json()
+    assert response_body['status']['status'] == 'IN_PROGRESS'
+
+
+def test_delay_task():
+    r = base.send('post', 'task/delay/', data={
+        "task_id": base.task_id,
+        "delay_for": 20,
+        "reason": "A test delay"
+    })
+    assert r.status_code == 200
+    response_body = r.json()
+    assert response_body['status']['status'] == 'DELAYED'
+
+
+def test_get_delayed_info():
+    r = base.send('get', 'task/delay/', data={
+        "task_id": base.task_id
+    })
+    assert r.status_code == 200
+    response_body = r.json()
+    assert "task_id" in response_body
+    assert "delay_for" in response_body
+    assert "delayed_at" in response_body
+    assert "delayed_by" in response_body
+    assert "reason" in response_body
+    assert "snoozed" in response_body
+    assert "expired" in response_body
+    assert response_body["reason"] == "A test delay"
+
+
+def test_drop_task():
+    r = base.send('post', f'task/drop/{base.task_id}')
+    assert r.status_code == 200
+    response_body = r.json()
+    assert response_body['assignee'] is None
+    assert response_body['status']['status'] == 'READY'
+
+
+def test_cancel_task():
+    r = base.send('post', f'task/cancel/{base.task_id}')
+    assert r.status_code == 200
+    response_body = r.json()
+    assert response_body['status']['status'] == 'CANCELLED'

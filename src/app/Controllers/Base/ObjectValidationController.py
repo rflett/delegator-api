@@ -15,11 +15,12 @@ class ObjectValidationController(ResponseController):
     @staticmethod
     def check_auth_scope(affected_user: User, **kwargs):
         """Compares a users scope against the action they're trying to do"""
-        if kwargs['auth_scope'] == 'SELF' and kwargs['req_user'].id != affected_user.id:
-            raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this action on themselves.")
-        elif kwargs['auth_scope'] == 'ORG' and kwargs['req_user'].org_id != affected_user.org_id:
-            raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this"
-                                     f" action within their organisation.")
+        if affected_user is not None:
+            if kwargs['auth_scope'] == 'SELF' and kwargs['req_user'].id != affected_user.id:
+                raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this action on themselves.")
+            elif kwargs['auth_scope'] == 'ORG' and kwargs['req_user'].org_id != affected_user.org_id:
+                raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this"
+                                         f" action within their organisation.")
 
     @staticmethod
     def check_escalation(task_type_id: int, display_order: int, should_exist: bool) -> None:
@@ -112,7 +113,7 @@ class ObjectValidationController(ResponseController):
 
     def check_task_id(self, task_id: int, org_id: int) -> Task:
         """Check that the task exist and return it if it does."""
-        task_id = self.check_int(task_id, 'task_id')
+        task_id = self.check_int(task_id, 'id')  # the request uses 'id'
 
         with session_scope() as session:
             task = session.query(Task).filter_by(id=task_id, org_id=org_id).first()
@@ -122,7 +123,7 @@ class ObjectValidationController(ResponseController):
         else:
             return task
 
-    def check_task_priority(self, priority: int) -> int:
+    def check_task_priority(self, priority: typing.Union[int, None]) -> typing.Union[int, None]:
         """Check that a task priority exists."""
         priority = self.check_int(priority, 'task_priority')
 

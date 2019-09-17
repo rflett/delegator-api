@@ -8,19 +8,18 @@ statuses = ['READY', 'IN_PROGRESS', 'COMPLETED']
 
 update_task_request = api.model("Update Task Request", {
     'id': fields.Integer(),
-    'type_id': fields.Integer(),
+    'type_id': fields.Integer(required=True),
     'description': fields.String(),
-    'status': fields.String(enum=statuses),
+    'status': fields.String(enum=statuses, required=True),
     'time_estimate': NullableInteger,
     'due_time': NullableDateTime,
     'assignee': fields.Integer(),
-    'priority': fields.Integer(min=0, max=2),
+    'priority': fields.Integer(min=0, max=2, required=True),
 })
 
 create_task_request = api.model("Create Task Request", {
     'type_id': fields.Integer(),
     'description': fields.String(),
-    'status': fields.String(enum=statuses),
     'time_estimate': NullableInteger,
     'due_time': NullableDateTime,
     'assignee': fields.Integer(),

@@ -67,7 +67,6 @@ class RequestValidationController(ObjectValidationController):
         return {
             'type': self.check_task_type_id(task_type_id=request_body.get('type_id')),
             'description': self.check_optional_str(request_body.get('description'), 'description'),
-            'status': self.check_task_status(request_body.get('status')),
             'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
             'due_time': self.check_task_due_time(request_body.get('due_time')),
             'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
@@ -113,7 +112,7 @@ class RequestValidationController(ObjectValidationController):
         """ Validates the transition task request """
         task = self.check_task_id(request_body.get('task_id'), kwargs['req_user'].org_id)
         if task.assignee is not None:
-            self.check_auth_scope(task.assignee, **kwargs)
+            self.check_auth_scope(task.assignees, **kwargs)
         delay_for = self.check_int(request_body.get('delay_for'), 'delay_for')
         try:
             return task, delay_for, self.check_str(request_body['reason'], 'reason')
@@ -159,7 +158,7 @@ class RequestValidationController(ObjectValidationController):
         if task.assignee is None:
             raise ValidationError("Can't drop task because it is not assigned to anyone.")
         else:
-            self.check_auth_scope(task.assignee, **kwargs)
+            self.check_auth_scope(task.assignees, **kwargs)
             return task
 
     def validate_email(self, email: str) -> bool:
@@ -242,7 +241,7 @@ class RequestValidationController(ObjectValidationController):
         """ Validates the transition task request """
         task = self.check_task_id(request_body.get('task_id'), kwargs['req_user'].org_id)
         if task.assignee is not None:
-            self.check_auth_scope(task.assignee, **kwargs)
+            self.check_auth_scope(task.assignees, **kwargs)
         task_status = self.check_task_status(request_body.get('task_status'))
         return task, task_status
 
