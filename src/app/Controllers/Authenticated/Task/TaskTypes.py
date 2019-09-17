@@ -8,8 +8,8 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import TaskType, TaskTypeEscalation, Activity
 from app.Models.Enums import Events, Operations, Resources
-from app.Models.Request import disable_task_type_request_dto, update_task_type_request_dto, create_task_type_request_dto
-from app.Models.Response import get_all_types_response_dto, task_type_response_dto, message_response_dto
+from app.Models.Request import disable_task_type_request, update_task_type_request, create_task_type_request
+from app.Models.Response import task_types_response, task_type_response, message_response_dto
 from app.Exceptions import ValidationError
 
 task_types_route = Namespace(
@@ -25,7 +25,7 @@ class TaskTypes(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_TYPE)
-    @task_types_route.response(200, "Success", get_all_types_response_dto)
+    @task_types_route.response(200, "Success", task_types_response)
     def get(self, **kwargs) -> Response:
         """Returns all task types"""
         req_user = kwargs['req_user']
@@ -38,15 +38,13 @@ class TaskTypes(RequestValidationController):
             operation=Operations.GET,
             resource=Resources.TASK_TYPES
         )
-        return self.ok({
-            "task_types": task_types
-        })
+        return self.ok({"task_types": task_types})
 
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK_TYPE)
-    @task_types_route.expect(create_task_type_request_dto)
-    @task_types_route.response(200, "Success", task_type_response_dto)
+    @task_types_route.expect(create_task_type_request)
+    @task_types_route.response(200, "Success", task_type_response)
     @task_types_route.response(400, "Failed to create the task type", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Creates a task type"""
@@ -96,8 +94,8 @@ class TaskTypes(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.TASK_TYPE)
-    @task_types_route.expect(update_task_type_request_dto)
-    @task_types_route.response(200, "Success", task_type_response_dto)
+    @task_types_route.expect(update_task_type_request)
+    @task_types_route.response(200, "Success", task_type_response)
     @task_types_route.response(400, "Failed to update the task type", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Updates a task type"""
@@ -207,8 +205,8 @@ class TaskTypes(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.DISABLE, Resources.TASK_TYPE)
-    @task_types_route.expect(disable_task_type_request_dto)
-    @task_types_route.response(200, "Success", task_type_response_dto)
+    @task_types_route.expect(disable_task_type_request)
+    @task_types_route.response(200, "Success", task_type_response)
     @task_types_route.response(400, "Failed to disable the task type", message_response_dto)
     def delete(self, **kwargs) -> Response:
         """Disables a task type"""

@@ -6,8 +6,8 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import TaskStatus
 from app.Models.Enums import TaskStatuses, Operations, Resources
-from app.Models.Request import transition_task_dto, get_available_transitions_dto
-from app.Models.Response import task_response_dto, message_response_dto, get_task_statuses_response_dto
+from app.Models.Request import transition_task_request, get_available_transitions_request
+from app.Models.Response import task_response, message_response_dto, task_statuses_response
 from app.Services import TaskService
 
 transition_task_route = Namespace(
@@ -25,8 +25,8 @@ class TransitionTask(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.TRANSITION, Resources.TASK)
-    @transition_task_route.expect(transition_task_dto)
-    @transition_task_route.response(200, "Success", task_response_dto)
+    @transition_task_route.expect(transition_task_request)
+    @transition_task_route.response(200, "Success", task_response)
     @transition_task_route.response(400, "Failed to transition the task", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Transitions a task to another status"""
@@ -42,8 +42,8 @@ class TransitionTask(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_TRANSITIONS)
-    @transition_task_route.expect(get_available_transitions_dto)
-    @transition_task_route.response(200, "Success", get_task_statuses_response_dto)
+    @transition_task_route.expect(get_available_transitions_request)
+    @transition_task_route.response(200, "Success", task_statuses_response)
     @transition_task_route.response(400, "Failed to get the available transitions", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Returns the statuses that a task could be transitioned to, based on the state of the task."""
@@ -101,4 +101,4 @@ class TransitionTask(RequestValidationController):
             # disabled options
             transitions += [ts.as_dict(disabled=True) for ts in disabled_qry if ts.status not in ["DELAYED", "CANCELLED"]]
 
-        return self.ok(transitions)
+        return self.ok({'statuses': transitions})

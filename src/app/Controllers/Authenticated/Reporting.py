@@ -10,7 +10,7 @@ from app import session_scope, app, subscription_api
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions
 from app.Exceptions import ProductTierLimitError
-from app.Models.Response import get_all_reports_response_dto, message_response_dto
+from app.Models.Response import get_all_reports_response, message_response_dto
 
 
 report_route = Namespace(
@@ -25,7 +25,7 @@ class Reports(RequestValidationController):
 
     @handle_exceptions
     @requires_jwt
-    @report_route.response(200, "Success", get_all_reports_response_dto)
+    @report_route.response(200, "Success", get_all_reports_response)
     @report_route.response(400, "Failed to get the reports", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Returns all of the report queries """

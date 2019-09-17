@@ -1,60 +1,59 @@
 from flask_restplus import fields
 
 from app import api
+from app.Models.Request.Common import NullableDateTime, NullableInteger
 
-# TODO use this for nullable date times
-# class NullableString(fields.String):
-#     __schema_type__ = ['string', 'null']
-#     __schema_example__ = 'nullable string'
 
-update_task_dto = api.model("Update Task Model", {
+statuses = ['READY', 'IN_PROGRESS', 'COMPLETED']
+
+update_task_request = api.model("Update Task Request", {
     'id': fields.Integer(),
     'type_id': fields.Integer(),
     'description': fields.String(),
-    'status': fields.String(),
-    'time_estimate': fields.Integer(),
-    'due_time': fields.DateTime(),
+    'status': fields.String(enum=statuses),
+    'time_estimate': NullableInteger,
+    'due_time': NullableDateTime,
     'assignee': fields.Integer(),
-    'priority': fields.Integer(),
+    'priority': fields.Integer(min=0, max=2),
 })
 
-create_task_dto = api.model("Create Task Model", {
+create_task_request = api.model("Create Task Request", {
     'type_id': fields.Integer(),
     'description': fields.String(),
-    'status': fields.String(),
-    'time_estimate': fields.Integer(),
-    'due_time': fields.DateTime(),
+    'status': fields.String(enum=statuses),
+    'time_estimate': NullableInteger,
+    'due_time': NullableDateTime,
     'assignee': fields.Integer(),
-    'priority': fields.Integer(),
+    'priority': fields.Integer(min=0, max=2),
 })
 
-assign_task_dto = api.model("Assign Task Model", {
+assign_task_request = api.model("Assign Task Request", {
     "task_id": fields.Integer(),
     "assignee": fields.Integer()
 })
 
-delay_task_dto = api.model("Delay Task Model", {
+delay_task_request = api.model("Delay Task Request", {
     "task_id": fields.Integer(),
     "delay_for": fields.Integer(),
     "reason": fields.String()
 })
 
-get_delayed_task_dto = api.model("Get Delayed Task Model", {
+get_delayed_task_request = api.model("Get Delayed Task Request", {
     "task_id": fields.Integer()
 })
 
-transition_task_dto = api.model("Transition Task Model", {
+transition_task_request = api.model("Transition Task Request", {
     "task_id": fields.Integer(),
-    "task_status": fields.String()
+    "task_status": fields.String(enum=statuses)
 })
 
 
-get_available_transitions_dto = api.model("Get Available Transitions Task Model", {
+get_available_transitions_request = api.model("Get Available Transitions Request", {
     "task_id": fields.Integer()
 })
 
-update_task_priority_dto = api.model("Update Task Priority Model", {
+update_task_priority_request = api.model("Update Task Priority Request", {
     "org_id": fields.Integer(),
     "task_id": fields.Integer(),
-    "priority": fields.Integer(),
+    "priority": fields.Integer(min=0, max=2)
 })

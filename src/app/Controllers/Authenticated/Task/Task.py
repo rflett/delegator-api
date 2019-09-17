@@ -4,7 +4,7 @@ from flask_restplus import Namespace
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models.Enums import Operations, Resources
-from app.Models.Response import task_response_dto, message_response_dto
+from app.Models.Response import task_response, message_response_dto
 from app.Services import TaskService
 
 task_route = Namespace(
@@ -22,7 +22,7 @@ class Task(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK)
-    @task_route.response(200, "Success", task_response_dto)
+    @task_route.response(200, "Success", task_response)
     @task_route.response(400, "Failed to get the task", message_response_dto)
     def get(self, task_id: int, **kwargs) -> Response:
         """Get a single task"""

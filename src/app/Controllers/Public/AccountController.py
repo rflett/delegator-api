@@ -15,8 +15,8 @@ from app.Decorators import handle_exceptions, requires_jwt
 from app.Exceptions import AuthenticationError
 from app.Models import User, Activity, Organisation, TaskType, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
-from app.Models.Request import login_dto
-from app.Models.Response import login_response_dto, message_response_dto
+from app.Models.Request import login_request
+from app.Models.Response import login_response, message_response_dto
 from app.Services import UserService
 
 account_route = Namespace(
@@ -31,8 +31,8 @@ user_service = UserService()
 @account_route.route("/")
 class AccountController(RequestValidationController):
 
-    @account_route.expect(login_dto)
-    @account_route.response(200, "Login Successful", login_response_dto)
+    @account_route.expect(login_request)
+    @account_route.response(200, "Login Successful", login_response)
     @account_route.response(400, "Login Failed", message_response_dto)
     @handle_exceptions
     def post(self) -> Response:

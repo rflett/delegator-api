@@ -4,7 +4,7 @@ from flask_restplus import Namespace
 from app import logger, notification_tokens_table
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions
-from app.Models.Request import register_notification_token_dto, deregister_notification_token_dto
+from app.Models.Request import register_notification_token_request, deregister_notification_token_request
 from app.Models.Response import message_response_dto
 
 notification_token_route = Namespace(
@@ -19,7 +19,7 @@ class NotificationToken(RequestValidationController):
 
     @handle_exceptions
     @requires_jwt
-    @notification_token_route.expect(register_notification_token_dto)
+    @notification_token_route.expect(register_notification_token_request)
     @notification_token_route.response(204, "Registration Successful")
     @notification_token_route.response(400, "Registration Failed", message_response_dto)
     def post(self, **kwargs) -> Response:
@@ -46,7 +46,7 @@ class NotificationToken(RequestValidationController):
 
     @handle_exceptions
     @requires_jwt
-    @notification_token_route.expect(deregister_notification_token_dto)
+    @notification_token_route.expect(deregister_notification_token_request)
     @notification_token_route.response(204, "De-registration Successful")
     @notification_token_route.response(400, "De-registration Failed", message_response_dto)
     def delete(self, **kwargs) -> Response:

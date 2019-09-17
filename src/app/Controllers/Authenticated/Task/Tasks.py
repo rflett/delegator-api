@@ -11,8 +11,8 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import User, Task, Activity, Notification
 from app.Models.Enums import Events, Operations, Resources
-from app.Models.Request import update_task_dto, create_task_dto
-from app.Models.Response import task_response_dto, message_response_dto, get_tasks_response_dto
+from app.Models.Request import update_task_request, create_task_request
+from app.Models.Response import task_response, message_response_dto, tasks_response
 from app.Services import UserService, TaskService
 
 tasks_route = Namespace(
@@ -31,7 +31,7 @@ class Tasks(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASKS)
-    @tasks_route.response(200, "Success", get_tasks_response_dto)
+    @tasks_route.response(200, "Success", tasks_response)
     def get(self, **kwargs) -> Response:
         """Get all tasks in an organisation"""
         req_user = kwargs['req_user']
@@ -78,13 +78,13 @@ class Tasks(RequestValidationController):
             operation=Operations.GET,
             resource=Resources.TASKS
         )
-        return self.ok(tasks)
+        return self.ok({'tasks': tasks})
 
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.TASK)
-    @tasks_route.expect(update_task_dto)
-    @tasks_route.response(200, "Success", task_response_dto)
+    @tasks_route.expect(update_task_request)
+    @tasks_route.response(200, "Success", task_response)
     @tasks_route.response(400, "Failed update the task", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Update a task """
@@ -152,8 +152,8 @@ class Tasks(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK)
-    @tasks_route.expect(create_task_dto)
-    @tasks_route.response(200, "Success", task_response_dto)
+    @tasks_route.expect(create_task_request)
+    @tasks_route.response(200, "Success", task_response)
     @tasks_route.response(400, "Failed to create the task", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Creates a task"""

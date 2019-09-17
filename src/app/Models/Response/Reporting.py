@@ -49,7 +49,7 @@ delays_dto = api.model("Report Delays", {
     "delayed_For": fields.Integer
 })
 
-get_all_reports_response_dto = api.model("Get All Reports Model", {
+get_all_reports_response = api.model("Get All Reports Request", {
     'trends': fields.Nested(task_trend_dto),
     'times': fields.Nested(task_time_dto),
     'slowest': fields.Nested(slowest_dto),

@@ -6,7 +6,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import TaskStatus
 from app.Models.Enums import Operations, Resources
-from app.Models.Response import get_task_statuses_response_dto
+from app.Models.Response import task_statuses_response
 
 task_statuses_route = Namespace(
     path="/tasks/statuses",
@@ -21,7 +21,7 @@ class TaskStatuses(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_STATUSES)
-    @task_statuses_route.response(200, "Success", get_task_statuses_response_dto)
+    @task_statuses_route.response(200, "Success", task_statuses_response)
     def get(self, **kwargs) -> Response:
         """Returns all task statuses """
         req_user = kwargs['req_user']
@@ -34,4 +34,4 @@ class TaskStatuses(RequestValidationController):
             operation=Operations.GET,
             resource=Resources.TASK_STATUSES
         )
-        return self.ok(task_statuses)
+        return self.ok({'statuses': task_statuses})

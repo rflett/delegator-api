@@ -66,9 +66,9 @@ class RequestValidationController(ObjectValidationController):
         """
         return {
             'type': self.check_task_type_id(task_type_id=request_body.get('type_id')),
-            'description': self.check_task_description(request_body.get('description')),
+            'description': self.check_optional_str(request_body.get('description'), 'description'),
             'status': self.check_task_status(request_body.get('status')),
-            'time_estimate': self.check_task_estimate(request_body.get('time_estimate')),
+            'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
             'due_time': self.check_task_due_time(request_body.get('due_time')),
             'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
             'priority': self.check_task_priority(request_body.get('priority'))
@@ -294,9 +294,9 @@ class RequestValidationController(ObjectValidationController):
         return {
             'task': task,
             'type': self.check_task_type_id(request_body.get('type_id')),
-            'description': self.check_task_description(request_body.get('description')),
+            'description': self.check_optional_str(request_body.get('description'), 'description'),
             'status': self.check_task_status(request_body.get('status')),
-            'time_estimate': self.check_task_estimate(request_body.get('time_estimate')),
+            'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
             'due_time': self.check_task_due_time(request_body.get('due_time')),
             'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
             'priority': self.check_task_priority(request_body.get('priority'))

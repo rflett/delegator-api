@@ -4,8 +4,8 @@ from flask_restplus import Namespace
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models.Enums import Operations, Resources
-from app.Models.Request import assign_task_dto
-from app.Models.Response import task_response_dto, message_response_dto
+from app.Models.Request import assign_task_request
+from app.Models.Response import task_response, message_response_dto
 from app.Services import TaskService
 
 assign_task_route = Namespace(
@@ -23,8 +23,8 @@ class AssignTask(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.ASSIGN, Resources.TASK)
-    @assign_task_route.expect(assign_task_dto)
-    @assign_task_route.response(200, "Success", task_response_dto)
+    @assign_task_route.expect(assign_task_request)
+    @assign_task_route.response(200, "Success", task_response)
     @assign_task_route.response(400, "Failed to assign the task", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Assigns a user to task """

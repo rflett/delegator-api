@@ -12,7 +12,7 @@ from app.Models import Organisation
 from app.Models.Enums import Operations, Resources
 from app.Models.Response import update_org_response_dto, update_org_settings_response_dto, get_org_settings_response_dto, \
     get_org_response_dto, message_response_dto
-from app.Models.Request import lock_org_dto, update_org_subscription_dto, update_org_settings_dto, update_org_dto
+from app.Models.Request import lock_org_request, update_org_subscription_request, update_org_settings_request, update_org_request
 from app.Services import SettingsService
 
 org_route = Namespace(
@@ -50,7 +50,7 @@ class OrganisationManage(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.ORGANISATION)
-    @org_route.expect(update_org_dto)
+    @org_route.expect(update_org_request)
     @org_route.response(200, "Success", update_org_response_dto)
     @org_route.response(400, "Failed to update the organisation", message_response_dto)
     def put(self, **kwargs) -> Response:
@@ -90,7 +90,7 @@ class OrganisationSettings(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.ORG_SETTINGS)
-    @org_route.expect(update_org_settings_dto)
+    @org_route.expect(update_org_settings_request)
     @org_route.response(200, "Success", update_org_settings_response_dto)
     @org_route.response(400, "Failed to update the organisation", message_response_dto)
     def put(self, **kwargs) -> Response:
@@ -111,7 +111,7 @@ class OrganisationLock(RequestValidationController):
 
     @handle_exceptions
     @requires_token_auth
-    @org_route.expect(lock_org_dto)
+    @org_route.expect(lock_org_request)
     @org_route.response(200, "Success", message_response_dto)
     def put(self, customer_id: str) -> Response:
         """Lock an organisation due to a billing issue."""
@@ -189,7 +189,7 @@ class OrganisationSubscription(RequestValidationController):
 
     @handle_exceptions
     @requires_token_auth
-    @org_route.expect(update_org_subscription_dto)
+    @org_route.expect(update_org_subscription_request)
     @org_route.response(200, "Success", message_response_dto)
     @org_route.response(400, "Failed to update the organisation's subscription", message_response_dto)
     def put(self) -> Response:

@@ -7,8 +7,8 @@ from app.Decorators import requires_jwt, handle_exceptions, authorize, requires_
 from app.Exceptions import ValidationError
 from app.Models import TaskPriority
 from app.Models.Enums import Operations, Resources
-from app.Models.Request import update_task_priority_dto
-from app.Models.Response import get_task_priorities_response_dto, message_response_dto
+from app.Models.Request import update_task_priority_request
+from app.Models.Response import task_priorities_response, message_response_dto
 from app.Services import TaskService
 
 task_priorities_route = Namespace(
@@ -26,7 +26,7 @@ class TaskPriorities(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_PRIORITIES)
-    @task_priorities_route.response(200, "Success", get_task_priorities_response_dto)
+    @task_priorities_route.response(200, "Success", task_priorities_response)
     def get(self, **kwargs) -> Response:
         """Returns all task priorities """
         req_user = kwargs['req_user']
@@ -39,11 +39,11 @@ class TaskPriorities(RequestValidationController):
             operation=Operations.GET,
             resource=Resources.TASK_PRIORITIES
         )
-        return self.ok(task_priorities)
+        return self.ok({'priorities': task_priorities})
 
     @handle_exceptions
     @requires_token_auth
-    @task_priorities_route.expect(update_task_priority_dto)
+    @task_priorities_route.expect(update_task_priority_request)
     @task_priorities_route.response(200, "Success", message_response_dto)
     @task_priorities_route.response(400, "Failed change the priority", message_response_dto)
     def put(self) -> Response:
