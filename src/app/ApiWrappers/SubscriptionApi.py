@@ -27,10 +27,11 @@ class SubscriptionApi(object):
 
     def create_customer(self, plan_id: str, user_dict: dict, org_name: str) -> typing.Tuple[str, str]:
         """Create a customer on chargebee with the signup details"""
-        r = requests.put(
+        r = requests.post(
             url=f"{self.url}/customer/",
             headers={
-                'Authorization': self.key
+                'Authorization': self.key,
+                'Content-Type': 'application/json'
             },
             data=json.dumps({
                 "plan_id": plan_id,
@@ -39,7 +40,7 @@ class SubscriptionApi(object):
             }),
             timeout=10
         )
-        if r.status_code == 201:
+        if r.status_code == 200:
             try:
                 res = r.json()
                 return res['customer_id'], res['url']

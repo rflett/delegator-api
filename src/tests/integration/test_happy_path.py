@@ -52,19 +52,18 @@ def test_version():
 
 
 # Signup
-# TODO enable after subscription API has /customer endpoint
-# def test_signup():
-#     r = base.send('put', 'account/', data={
-#         "org_name": "TestOrganisation",
-#         "email": "test@sink.delegator.com.au",
-#         "password": "S0meSupersafeP&ssword",
-#         "first_name": "Test",
-#         "last_name": "User",
-#         "job_title": "Lead Tester",
-#         "plan_id": "basic"
-#     })
-#     assert r.status_code == 200
-#     assert 'url' in r.json()
+def test_signup():
+    r = base.send('put', 'account/', data={
+        "org_name": "TestOrganisation",
+        "email": "test@sink.delegator.com.au",
+        "password": "S0meSupersafeP&ssword",
+        "first_name": "Test",
+        "last_name": "User",
+        "job_title": "Lead Tester",
+        "plan_id": "basic"
+    })
+    assert r.status_code == 200
+    assert 'url' in r.json()
 
 
 # Login
