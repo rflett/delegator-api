@@ -22,8 +22,9 @@ users_route = Namespace(
 
 @users_route.route("/")
 class UserController(RequestValidationController):
-    @requires_jwt
+
     @handle_exceptions
+    @requires_jwt
     @authorize(Operations.GET, Resources.USERS)
     @users_route.response(200, "Users retrieved", user_list_response)
     @users_route.response(400, "Couldn't retrieve the users", message_response_dto)
@@ -60,8 +61,8 @@ class UserController(RequestValidationController):
         )
         return self.ok(users)
 
-    @requires_jwt
     @handle_exceptions
+    @requires_jwt
     @authorize(Operations.CREATE, Resources.USER)
     @users_route.response(200, "User created", created_user_response)
     @users_route.response(402, "Plan limit reached. Need to pay more", message_response_dto)
@@ -128,8 +129,8 @@ class UserController(RequestValidationController):
 
         return self.created(user.fat_dict())
 
-    @requires_jwt
     @handle_exceptions
+    @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER)
     @users_route.response(200, "User Updated", created_user_response)
     @users_route.response(400, "Couldn't update the user", message_response_dto)

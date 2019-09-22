@@ -22,8 +22,8 @@ user_settings_route = Namespace(
 @user_settings_route.route("/")
 class UserSettingsController(RequestValidationController):
 
-    @requires_jwt
     @handle_exceptions
+    @requires_jwt
     @authorize(Operations.GET, Resources.USER_SETTINGS)
     @user_settings_route.response(200, "User settings retrieved", user_settings_response)
     @user_settings_route.response(400, "Failed to retrieve settings", message_response_dto)
@@ -38,8 +38,8 @@ class UserSettingsController(RequestValidationController):
         logger.info(f"got user settings for {req_user.id}")
         return self.ok(settings_service.get_user_settings(req_user.id).as_dict())
 
-    @requires_jwt
     @handle_exceptions
+    @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER_SETTINGS)
     @user_settings_route.expect(user_settings_response)
     @user_settings_route.response(200, "User settings updated", user_settings_response)

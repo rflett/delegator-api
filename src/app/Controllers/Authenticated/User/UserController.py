@@ -18,11 +18,11 @@ user_route = Namespace(
 @user_route.route("/<int:user_id>")
 class UserController(RequestValidationController):
 
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.GET, Resources.USER)
     @user_route.response(200, "Retrieved the user", user_response)
     @user_route.response(400, "Failed to get the user", message_response_dto)
-    @requires_jwt
-    @handle_exceptions
-    @authorize(Operations.GET, Resources.USER)
     def get(self, user_id: int, **kwargs) -> Response:
         """Get a single user by email or ID """
         user = self.validate_get_user(user_id, **kwargs)
@@ -33,11 +33,11 @@ class UserController(RequestValidationController):
         )
         return self.ok(user.fat_dict())
 
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.DELETE, Resources.USER)
     @user_route.response(204, "Successfully delete the user")
     @user_route.response(400, "Failed to delete the user", message_response_dto)
-    @requires_jwt
-    @handle_exceptions
-    @authorize(Operations.DELETE, Resources.USER)
     def delete(self, user_id: int, **kwargs) -> Response:
         """Deletes a user """
         req_user = kwargs['req_user']

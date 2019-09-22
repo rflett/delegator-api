@@ -17,11 +17,11 @@ user_pages_route = Namespace(
 @user_pages_route.route("/")
 class UserPagesController(RequestValidationController):
 
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.GET, Resources.PAGES)
     @user_pages_route.response(200, "Retrieved the authorized pages", [fields.String])
     @user_pages_route.response(400, "Failed to get the user's pages", message_response_dto)
-    @requires_jwt
-    @handle_exceptions
-    @authorize(Operations.GET, Resources.PAGES)
     def get(self, **kwargs):
         """Returns the pages a user can access """
         req_user = kwargs['req_user']
