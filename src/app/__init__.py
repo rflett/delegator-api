@@ -27,6 +27,9 @@ app.config["flask_profiler"] = {
         "enabled": True,
         "username": "admin",
         "password": "B4ckburn3r"
+    },
+    "ignore": {
+        "/health/"
     }
 }
 

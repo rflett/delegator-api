@@ -1,7 +1,5 @@
 import datetime
 
-from flask_restplus import fields
-
 from app import db
 
 
