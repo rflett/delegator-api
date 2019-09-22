@@ -20,6 +20,7 @@ werkzeug = "==0.15.4"
 requests = "*"
 flask-restplus = "*"
 pytest = "*"
+faker = "*"
 
 [requires]
 python_version = "3.7"

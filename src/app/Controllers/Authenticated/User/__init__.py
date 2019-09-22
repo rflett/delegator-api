@@ -4,13 +4,6 @@ from app.Controllers.Authenticated.User.UserPagesController import user_pages_ro
 from app.Controllers.Authenticated.User.UserSettingsController import user_settings_route
 from app.Controllers.Authenticated.User.UsersController import users_route
 
-__all__ = [
-    user_activity_route,
-    user_route,
-    user_pages_route,
-    users_route,
-    user_settings_route,
-]
 
 all_user_routes = [
     user_activity_route,

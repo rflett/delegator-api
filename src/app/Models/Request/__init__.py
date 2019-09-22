@@ -7,11 +7,13 @@ from app.Models.Request.Task import create_task_request, update_task_request, as
     get_delayed_task_request, transition_task_request, get_available_transitions_request, update_task_priority_request
 from app.Models.Request.TaskTypes import disable_task_type_request, create_task_type_request, \
     update_task_type_request
+from app.Models.Request.User import create_user_request, update_user_request
 
 __all__ = [
     assign_task_request,
     create_task_request,
     create_task_type_request,
+    create_user_request,
     delay_task_request,
     deregister_notification_token_request,
     disable_task_type_request,
@@ -27,5 +29,6 @@ __all__ = [
     update_org_subscription_request,
     update_task_request,
     update_task_priority_request,
-    update_task_type_request
+    update_task_type_request,
+    update_user_request
 ]

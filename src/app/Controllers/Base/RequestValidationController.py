@@ -105,7 +105,7 @@ class RequestValidationController(ObjectValidationController):
         self.check_user_role(req_user, request_body.get('role_id'))
         self.check_str(request_body.get('first_name'), 'first_name')
         self.check_str(request_body.get('last_name'), 'last_name')
-        self.check_user_job_title(request_body.get('job_title'))
+        self.check_optional_str(request_body.get('job_title'), 'job_title')
         self.check_user_disabled(request_body.get('disabled'))
 
     def validate_delay_task_request(self, request_body: dict, **kwargs) -> tuple:
@@ -379,6 +379,6 @@ class RequestValidationController(ObjectValidationController):
             "first_name": self.check_str(request_body.get('first_name'), 'first_name'),
             "last_name": self.check_str(request_body.get('last_name'), 'last_name'),
             "role": self.check_user_role(kwargs['req_user'], request_body.get('role_id'), user_to_update),
-            "job_title": self.check_user_job_title(request_body.get('job_title')),
+            "job_title": self.check_optional_str(request_body.get('job_title'), 'job_title'),
             "disabled": self.check_user_disabled(request_body.get('disabled'))
         }

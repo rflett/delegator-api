@@ -199,7 +199,8 @@ class User(db.Model):
         self.password = _hash_password(make_random())
         self.deleted = datetime.datetime.utcnow()
 
-        subscription_api.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
+        if self.disabled is None:
+            subscription_api.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
 
         # drop their tasks
         with session_scope() as session:

@@ -343,19 +343,6 @@ def test_user_activity():
     # Activity will change so as long as 200 comes back it's okay
 
 
-# User Controller
-def test_user_get():
-    response = base.send("get", f"user/{base.user_id}")
-    assert response.status_code == 200
-    response_body = response.json()
-    assert response_body['id'] == base.user_id
-
-
-def test_user_delete():
-    response = base.send("delete", f"user/{base.user_id}")
-    assert response.status_code == 204
-
-
 # User Pages Controller
 def test_user_pages():
     response = base.send("get", "user/pages")
@@ -363,7 +350,7 @@ def test_user_pages():
     # Which pages user can see doesn't matter too much
 
 
-# UserS Controller
+# Users Controller
 def test_get_users():
     response = base.send("get", "users")
     assert response.status_code == 200
@@ -376,31 +363,29 @@ def test_create_user():
         "email": fake.email(),
         "first_name": fake.name(),
         "last_name": fake.name(),
-        "role_id": fake.pyint(),
+        "role_id": "USER",
         "job_title": fake.bs(),
         "disabled": None
     }
 
     response = base.send("post", "users", create_data)
-    assert response.status_code == 200
+    assert response.status_code == 201
     response_body = response.json()
     assert response_body["email"] == create_data["email"]
 
 
 def test_update_user():
     update_data = {
-        "email": fake.email(),
+        "id": base.user_id,
         "first_name": fake.name(),
         "last_name": fake.name(),
-        "role_id": fake.pyint(),
+        "role_id": "MANAGER",
         "job_title": fake.bs(),
         "disabled": None
     }
     # Check how to update without state
-    response = base.send("post", "users", update_data)
+    response = base.send("put", "users", update_data)
     assert response.status_code == 200
-    response_body = response.json()
-    assert response_body["email"] == update_data["email"]
 
 
 # User Settings Controller
@@ -419,3 +404,16 @@ def test_update_user_settings():
     assert response.status_code == 200
     response_body = response.json()
     assert response_body["tz_offset"] == update_data["tz_offset"]
+
+
+# User Controller
+def test_user_get():
+    response = base.send("get", f"user/{base.user_id}")
+    assert response.status_code == 200
+    response_body = response.json()
+    assert response_body['id'] == base.user_id
+
+
+def test_user_delete():
+    response = base.send("delete", f"user/{base.user_id}")
+    assert response.status_code == 204

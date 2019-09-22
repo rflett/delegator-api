@@ -10,8 +10,8 @@ from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ProductTierLimitError
 from app.Models import User, Activity, Task
 from app.Models.Enums import Operations, Resources, Events
-from app.Models.Response import message_response_dto, created_user_response
-from app.Models.Response.User import user_list_response
+from app.Models.Request import create_user_request, update_user_request
+from app.Models.Response import message_response_dto, user_response, get_users_response
 
 users_route = Namespace(
     path="/users",
@@ -26,7 +26,7 @@ class UserController(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.USERS)
-    @users_route.response(200, "Users retrieved", user_list_response)
+    @users_route.response(200, "Users retrieved", get_users_response)
     @users_route.response(400, "Couldn't retrieve the users", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Get all users """
@@ -59,12 +59,15 @@ class UserController(RequestValidationController):
             operation=Operations.GET,
             resource=Resources.USERS
         )
-        return self.ok(users)
+        return self.ok({
+            "users": users
+        })
 
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.CREATE, Resources.USER)
-    @users_route.response(200, "User created", created_user_response)
+    @users_route.expect(create_user_request)
+    @users_route.response(200, "User created", user_response)
     @users_route.response(402, "Plan limit reached. Need to pay more", message_response_dto)
     @users_route.response(400, "Couldn't create the user", message_response_dto)
     def post(self, **kwargs) -> Response:
@@ -132,7 +135,8 @@ class UserController(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER)
-    @users_route.response(200, "User Updated", created_user_response)
+    @users_route.expect(update_user_request)
+    @users_route.response(200, "User Updated", user_response)
     @users_route.response(400, "Couldn't update the user", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Update a user. """
