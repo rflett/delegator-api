@@ -1,7 +1,4 @@
-import binascii
 import datetime
-import hashlib
-import uuid
 
 from app import db, app
 
@@ -15,8 +12,6 @@ class Organisation(db.Model):
     chargebee_subscription_id = db.Column('chargebee_subscription_id', db.String, default=None)
     locked = db.Column('locked', db.DateTime)
     locked_reason = db.Column('locked_reason', db.String, default=None)
-    jwt_aud = db.Column('jwt_aud', db.String)
-    jwt_secret = db.Column('jwt_secret', db.String)
     created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
     def __init__(self,
@@ -32,9 +27,6 @@ class Organisation(db.Model):
         self.chargebee_subscription_id = chargebee_subscription_id
         self.locked = locked
         self.locked_reason = locked_reason
-        self.jwt_aud = str(uuid.uuid4())
-        self.jwt_secret = binascii.hexlify(
-            hashlib.pbkdf2_hmac('sha256', uuid.uuid4().bytes, uuid.uuid4().bytes, 100000)).decode('ascii')
 
     def create_settings(self) -> None:
         """ Creates the settings for this user """

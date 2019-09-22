@@ -19,6 +19,7 @@ class Config(object):
     DYN_DB_ACTIVITY_DATE_FORMAT = '%Y%m%dT%H%M%S.%fZ'
     BACKBURNER_API_KEY = 'Skj170raAe2SsWQm4Ny'
     SUBSCRIPTION_API_KEY = 'DWrcxyZsqJ64d1WGUiN'
+    JWT_SECRET = '12a516f4e7b99441dba0231deb6fc0c87e2a84ae8beff7f64f6a5ac07058a3ae'
 
 
 class Docker(Config):

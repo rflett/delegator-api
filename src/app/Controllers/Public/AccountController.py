@@ -300,6 +300,6 @@ class AccountController(RequestValidationController):
                 "jti": str(uuid.uuid4()),
                 "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=app.config['TOKEN_TTL_IN_MINUTES'])
             },
-            key=user.orgs.jwt_secret,
+            key=app.config['JWT_SECRET'],
             algorithm='HS256'
         ).decode("utf-8")

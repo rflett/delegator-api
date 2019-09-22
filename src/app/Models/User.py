@@ -129,7 +129,7 @@ class User(db.Model):
         :return: A dict of claims.
         """
         return {
-            "aud": self.orgs.jwt_aud,
+            "aud": "backburner.online",
             "claims": {
                 "role": self.role,
                 "org": self.org_id,
