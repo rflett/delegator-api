@@ -9,6 +9,7 @@ from app.Models.Response.Roles import roles_response
 from app.Models.Response.Task import task_response, task_statuses_response, \
     task_priorities_response, tasks_response, delayed_task_response
 from app.Models.Response.TaskTypes import task_type_response, task_types_response
+from app.Models.Response.User import user_response
 
 __all__ = [
     active_user_response_dto,
@@ -28,5 +29,6 @@ __all__ = [
     task_response,
     task_type_response,
     update_org_response_dto,
-    update_org_settings_response_dto
+    update_org_settings_response_dto,
+    user_response
 ]

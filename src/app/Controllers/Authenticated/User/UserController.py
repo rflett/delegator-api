@@ -6,7 +6,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import authorize, handle_exceptions, requires_jwt
 from app.Models import Activity
 from app.Models.Enums import Operations, Resources, Events
-from app.Models.Response import message_response_dto
+from app.Models.Response import message_response_dto, user_response
 
 user_route = Namespace(
     path="/user",
@@ -18,7 +18,7 @@ user_route = Namespace(
 @user_route.route("/<int:user_id>")
 class UserController(RequestValidationController):
 
-    @user_route.response(200, "Retrieved the user")
+    @user_route.response(200, "Retrieved the user", user_response)
     @user_route.response(400, "Failed to get the user", message_response_dto)
     @requires_jwt
     @handle_exceptions
@@ -31,7 +31,6 @@ class UserController(RequestValidationController):
             resource=Resources.USER,
             resource_id=user.id
         )
-        # TODO map out response model (Ryan - it's the same as the login response without the JWT key)
         return self.ok(user.fat_dict())
 
     @user_route.response(204, "Successfully delete the user")
