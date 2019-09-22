@@ -13,6 +13,7 @@ from app.Controllers.Authenticated.Task.TaskPriorities import task_priorities_ro
 from app.Controllers.Authenticated.Task.TransitionTask import transition_task_route
 from app.Controllers.Authenticated.Task.TaskStatuses import task_statuses_route
 from app.Controllers.Authenticated.Task.TaskTypes import task_types_route
+from app.Controllers.Authenticated.User import all_user_routes
 
 all_authenticated = [
     assign_task_route,
@@ -29,5 +30,5 @@ all_authenticated = [
     task_types_route,
     tasks_route,
     transition_task_route,
-    roles_route
+    roles_route,
 ]
