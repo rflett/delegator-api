@@ -19,6 +19,8 @@ users_route = Namespace(
     description="Used to manage users"
 )
 
+user_service = UserService()
+
 
 @users_route.route("/")
 class UserController(RequestValidationController):
