@@ -5,13 +5,13 @@ from flask_restplus import Namespace
 
 from app import session_scope, subscription_api, logger
 from app.Controllers.Base import RequestValidationController
-from app.Controllers.UserControllerbak import user_service
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ProductTierLimitError
 from app.Models import User, Activity, Task
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.Request import create_user_request, update_user_request
 from app.Models.Response import message_response_dto, user_response, get_users_response
+from app.Services.UserService import UserService
 
 users_route = Namespace(
     path="/users",

@@ -5,18 +5,20 @@ from flask_restplus import Namespace
 
 from app import logger
 from app.Controllers.Base import RequestValidationController
-from app.Controllers.UserControllerbak import settings_service
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import UserSetting
 from app.Models.Enums import Operations, Resources
 from app.Models.Response import message_response_dto
 from app.Models.Response.Account import user_settings_response
+from app.Services.SettingsService import SettingsService
 
 user_settings_route = Namespace(
     path="/user/settings",
     name="User Settings",
     description="Used to manage user settings"
 )
+
+settings_service = SettingsService()
 
 
 @user_settings_route.route("/")
