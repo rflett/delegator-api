@@ -11,5 +11,7 @@ all_authenticated = [
     notification_token_route,
     org_route,
     report_route,
-    roles_route
+    roles_route,
+    *all_task_routes,
+    *all_user_routes
 ]

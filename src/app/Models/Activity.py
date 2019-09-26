@@ -9,7 +9,7 @@ from app import api_events_sns_topic, app, logger
 
 def do_publish(message: dict, event: str) -> None:
     """ Publishes an event to SNS """
-    if getenv('APP_ENV', 'Local') == 'Local':
+    if getenv('APP_ENV', 'Local') in ['Local', 'Docker']:
         logger.info(f"WOULD have published message {event}")
         return None
 

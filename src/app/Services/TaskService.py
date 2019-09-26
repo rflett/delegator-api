@@ -2,7 +2,7 @@ import datetime
 
 from app import session_scope, logger
 from app.Models import Task, User, Activity, Notification, DelayedTask
-from app.Models.Enums import Events, Operations, Resources, TaskStatuses
+from app.Models.Enums import Events, Operations, Resources, TaskStatuses, ClickActions
 from app.Exceptions import ResourceNotFoundError, ValidationError
 
 
@@ -36,10 +36,15 @@ class TaskService(object):
             event_id=assigned_user.id,
             event_friendly=f"Assigned to {task.label()} by {req_user.name()}."
         ).publish()
-        Notification(
-            msg="You've been assigned a task!",
+        assigned_notification = Notification(
+            title="You've been assigned a task!",
+            event_name=Events.user_assigned_to_task,
+            msg=f"{req_user.name()} assigned {task.label()} to you.",
+            click_action=ClickActions.VIEW_TASK,
+            task_action_id=task.id,
             user_ids=assigned_user.id
-        ).push()
+        )
+        assigned_notification.push()
         req_user.log(
             operation=Operations.ASSIGN,
             resource=Resources.TASK,
@@ -57,10 +62,15 @@ class TaskService(object):
                 task.priority = priority
                 task.priority_changed_at = datetime.datetime.utcnow()
                 # task priority is increasing
-                Notification(
+                priority_notification = Notification(
+                    title="Task escalated",
+                    event_name=Events.task_escalated,
                     msg=f"{task.label()} task has been escalated.",
+                    click_action=ClickActions.ASSIGN_TO_ME,
+                    task_action_id=task.id,
                     user_ids=UserService.get_all_user_ids(task.org_id)
-                ).push()
+                )
+                priority_notification.push()
 
         logger.info(f"Changed task {task.id} priority to {priority}")
 
@@ -75,10 +85,15 @@ class TaskService(object):
             req_user=req_user
         )
 
-        Notification(
+        dropped_notification = Notification(
+            title="Task dropped",
+            event_name=Events.task_transitioned_ready,
             msg=f"{task.label()} has been dropped.",
+            click_action=ClickActions.ASSIGN_TO_ME,
+            task_action_id=task.id,
             user_ids=UserService.get_all_user_ids(req_user.org_id)
-        ).push()
+        )
+        dropped_notification.push()
 
         req_user.log(
             operation=Operations.DROP,

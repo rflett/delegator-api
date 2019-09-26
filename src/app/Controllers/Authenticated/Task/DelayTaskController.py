@@ -7,7 +7,7 @@ from app import logger, session_scope
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import DelayedTask, Notification
-from app.Models.Enums import TaskStatuses, Operations, Resources
+from app.Models.Enums import TaskStatuses, Operations, Resources, Events, ClickActions
 from app.Models.Request import delay_task_request, get_delayed_task_request
 from app.Models.Response import task_response, message_response_dto, delayed_task_response
 from app.Services import TaskService
@@ -63,16 +63,19 @@ class DelayTask(RequestValidationController):
                 )
                 session.add(delayed_task)
 
+        delayed_notification = Notification(
+            title="Task delayed",
+            event_name=Events.task_transitioned_delayed,
+            msg=f"{task.label()} was delayed by {req_user.name()}.",
+            click_action=ClickActions.VIEW_TASK,
+            task_action_id=task.id
+        )
         if req_user.id == task.assignee:
-            Notification(
-                msg=f"{task.label()} has been delayed.",
-                user_ids=task.created_by
-            ).push()
+            delayed_notification.user_ids = task.created_by
+            delayed_notification.push()
         elif req_user.id == task.created_by:
-            Notification(
-                msg=f"{task.label()} has been delayed.",
-                user_ids=task.assignee
-            ).push()
+            delayed_notification.user_ids = task.assignee
+            delayed_notification.push()
 
         req_user.log(
             operation=Operations.DELAY,

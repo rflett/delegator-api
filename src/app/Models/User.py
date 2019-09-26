@@ -257,7 +257,7 @@ class User(db.Model):
 
     def activity(self) -> list:
         """ Returns the activity of a user"""
-        if getenv('APP_ENV', 'Local') == 'Local':
+        if getenv('APP_ENV', 'Local') in ['Local', 'Docker']:
             activity = MockActivity()
             return activity.data
 

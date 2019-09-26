@@ -160,7 +160,7 @@ class Task(db.Model):
                     f"({start_of_history.strftime('%Y-%m-%d %H:%M:%S')} "
                     f"to {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}) for task {self.id}. ")
 
-        if getenv('APP_ENV', 'Local') == 'Local':
+        if getenv('APP_ENV', 'Local') in ['Local', 'Docker']:
             activity = MockActivity()
             return activity.data
 

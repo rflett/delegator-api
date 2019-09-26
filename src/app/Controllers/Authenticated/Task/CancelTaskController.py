@@ -5,7 +5,7 @@ from app import logger
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import Notification
-from app.Models.Enums import TaskStatuses, Operations, Resources
+from app.Models.Enums import TaskStatuses, Operations, Resources, ClickActions, Events
 from app.Models.Response import task_response, message_response_dto
 from app.Services import TaskService
 
@@ -43,9 +43,13 @@ class CancelTask(RequestValidationController):
             resource_id=task_id
         )
         if task_to_cancel.assignee is not None:
-            Notification(
-                msg=f"{task_to_cancel.label()} cancelled.",
-                user_ids=task_to_cancel.assignee
-            ).push()
+            cancelled_notification = Notification(
+                title="Task cancelled",
+                event_name=Events.task_transitioned_cancelled,
+                msg=f"{task_to_cancel.label()} was cancelled by {req_user.name()}.",
+                user_ids=task_to_cancel.assignee,
+                click_action=ClickActions.CLOSE
+            )
+            cancelled_notification.push()
         logger.info(f"User {req_user.id} cancelled task {task_to_cancel.id}")
         return self.ok(task_to_cancel.fat_dict())

@@ -10,7 +10,7 @@ from app import session_scope, logger
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import User, Task, Activity, Notification
-from app.Models.Enums import Events, Operations, Resources, TaskStatuses
+from app.Models.Enums import Events, Operations, Resources, TaskStatuses, ClickActions
 from app.Models.Request import update_task_request, create_task_request
 from app.Models.Response import task_response, message_response_dto, tasks_response
 from app.Services import UserService, TaskService
@@ -203,10 +203,15 @@ class Tasks(RequestValidationController):
                 assignee=task_attrs.get('assignee'),
                 req_user=req_user
             )
-
-        Notification(
-            msg=f"{task.label()} task has been created.",
-            user_ids=user_service.get_all_user_ids(req_user.org_id)
-        ).push()
+        else:
+            created_notification = Notification(
+                title="Task created",
+                event_name=Events.task_created,
+                msg=f"{task.label()} task has been created.",
+                click_action=ClickActions.ASSIGN_TO_ME,
+                task_action_id=task.id,
+                user_ids=user_service.get_all_user_ids(req_user.org_id)
+            )
+            created_notification.push()
 
         return self.created(task.fat_dict())
