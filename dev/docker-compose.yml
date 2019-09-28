@@ -27,8 +27,8 @@ services:
       - redis
     environment:
       APP_ENV: Docker
-      AWS_ACCESS_KEY_ID: AKIATPN5QHCWHND54IZD
-      AWS_SECRET_ACCESS_KEY: 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
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ap-southeast-2
     ports:
       - 5000:5000
@@ -55,20 +55,22 @@ services:
       context: ../../task-escalator/src
     environment:
       APP_ENV: Docker
-      AWS_ACCESS_KEY_ID: AKIATPN5QHCWHND54IZD
-      AWS_SECRET_ACCESS_KEY: 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
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ap-southeast-2
     depends_on:
       - postgres
   
   task_reminder:
-    # image: 239304980652.dkr.ecr.ap-southeast-2.amazonaws.com/task-reminder:latest
+    image: task_escalator
     build:
+      cache_from: 
+        - task_escalator
       context: ../../task-reminder/src
     environment:
       APP_ENV: Docker
-      AWS_ACCESS_KEY_ID: AKIATPN5QHCWHND54IZD
-      AWS_SECRET_ACCESS_KEY: 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
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ap-southeast-2
     depends_on:
       - postgres

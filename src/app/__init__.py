@@ -4,7 +4,7 @@ from os import getenv
 
 import boto3
 import flask_profiler
-from flask import Flask
+from flask import Flask, url_for
 from flask_cors import CORS
 from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
@@ -85,6 +85,14 @@ def session_scope():
 def shutdown_session(exception=None):
     db.session.close()
 
+
+if getenv('APP_ENV', 'Local') in ['Staging', 'Production']:
+    @property
+    def specs_url(self):
+        """Monkey patch for HTTPS"""
+        return url_for(self.endpoint('specs'), _external=True, _scheme='https')
+
+    Api.specs_url = specs_url
 
 # The API with documentation
 api = Api(
