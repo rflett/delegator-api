@@ -1,3 +1,4 @@
+from app.Models.Enums.ClickActions import ClickActions
 from app.Models.Enums.Events import Events
 from app.Models.Enums.NotificationTokens import NotificationTokens
 from app.Models.Enums.Operations import Operations
@@ -6,6 +7,7 @@ from app.Models.Enums.ResourceScopes import ResourceScopes
 from app.Models.Enums.TaskStatuses import TaskStatuses
 
 __all__ = [
+    ClickActions,
     Events,
     NotificationTokens,
     Operations,

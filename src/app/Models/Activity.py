@@ -9,7 +9,7 @@ from app import api_events_sns_topic, app, logger
 
 def do_publish(message: dict, event: str) -> None:
     """ Publishes an event to SNS """
-    if getenv('APP_ENV', 'Local') == 'Local':
+    if getenv('APP_ENV', 'Local') in ['Local', 'Docker']:
         logger.info(f"WOULD have published message {event}")
         return None
 
@@ -47,7 +47,7 @@ class Activity(object):
         _thread.start_new_thread(do_publish, (self.as_dict(), self.event))
 
     def as_dict(self) -> dict:
-        """ Returns a notification as a dict, ready for SNS message """
+        """ Returns an activity as a dict, ready for SNS message """
         return {
             'org_id': self.org_id,
             'event': self.event,

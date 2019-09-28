@@ -1,30 +1,45 @@
 version: '3.7'
 services:
-  backburner-api:
-    image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/api:latest
-    # build:
-    #   cache_from: 
-    #     - backburner_api
-    #   context: ../src/
+
+  postgres:
+    # image: 239304980652.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
+    build:
+      context: ../../containers/postgres
+    ports:
+      - 5432:5432
+
+  redis:
+    # image: 239304980652.dkr.ecr.ap-southeast-2.amazonaws.com/redis:latest
+    build:
+      context: ../../containers/redis
+    ports:
+      - 6379:6379
+
+  delegator-api:
+    image: delegator_api
+    build:
+      cache_from: 
+        - delegator_api
+      context: ../src/
     restart: always
     depends_on:
       - postgres
       - redis
     environment:
-      APP_ENV: Ci
-      AWS_ACCESS_KEY_ID: REDACTED
-      AWS_SECRET_ACCESS_KEY: REDACTED
       APP_ENV: Docker
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ap-southeast-2
     ports:
       - 5000:5000
 
   subscription-api:
-    image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/subscription-api:latest
-    # build:
-    #   cache_from: 
-    #     - subscription_api
-    #   context: ../../subscription-api/src/
+    image: subscription_api
+    build:
+      cache_from: 
+        - subscription_api
+      context: ../../subscription-api/src/
+    restart: always
     depends_on:
       - redis
     environment:
@@ -32,46 +47,39 @@ services:
     ports:
       - 5001:5001
 
-  # task_escalator:
-  #   image: task_escalator
-  #   build:
-  #     cache_from: 
-  #       - task_escalator
-  #     context: ../../task-escalator/src
-  #   environment:
-  #     APP_ENV: docker
-  #   depends_on:
-  #     - postgres
+  task_escalator:
+    image: task_escalator
+    build:
+      cache_from: 
+        - task_escalator
+      context: ../../task-escalator/src
+    environment:
+      APP_ENV: Docker
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ap-southeast-2
+    depends_on:
+      - postgres
   
-  # task_reminder:
-  #   # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/task-reminder:latest
-  #   build:
-  #     context: ../../task-reminder/src
-  #   environment:
-  #     DATABASE_URI: backburner:backburner@postgres/backburner
-  #   depends_on:
-  #     - postgres
+  task_reminder:
+    image: task_escalator
+    build:
+      cache_from: 
+        - task_escalator
+      context: ../../task-reminder/src
+    environment:
+      APP_ENV: Docker
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ap-southeast-2
+    depends_on:
+      - postgres
 
   # pg_hero:
   #   image: ankane/pghero:latest
   #   environment:
-  #     DATABASE_URL: postgres://backburner:backburner@postgres/backburner
+  #     DATABASE_URL: postgres://delegator:delegator@postgres/delegator
   #   ports:
   #     - 8080:8080
   #   depends_on:
   #     - postgres
-
-  postgres:
-    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
-    build:
-      context: ../../containers/postgres
-    command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track='all'
-    ports:
-      - 5432:5432
-
-  redis:
-    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/redis:latest
-    build:
-      context: ../../containers/redis
-    ports:
-      - 6379:6379

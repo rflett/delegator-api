@@ -1,13 +1,12 @@
-import json
 import logging
-import typing
 from contextlib import contextmanager
 from os import getenv
 
 import boto3
 import flask_profiler
-from flask import Flask, Response
+from flask import Flask, url_for
 from flask_cors import CORS
+from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
 
 from app.ApiWrappers import SubscriptionApi
@@ -28,6 +27,9 @@ app.config["flask_profiler"] = {
         "enabled": True,
         "username": "admin",
         "password": "B4ckburn3r"
+    },
+    "ignore": {
+        "/health/"
     }
 }
 
@@ -39,7 +41,7 @@ logger = logging.getLogger()
 for handler in logger.handlers:
     logger.removeHandler(handler)
 
-log_format = '%(asctime)s backburner-api %(levelname)s %(message)s'
+log_format = '%(asctime)s delegator-api %(levelname)s %(message)s'
 logging.basicConfig(format=log_format, level=logging.INFO)
 
 # db conf
@@ -51,7 +53,6 @@ user_settings_table = dyn_db.Table(app.config['USER_SETTINGS_TABLE'])
 org_settings_table = dyn_db.Table(app.config['ORG_SETTINGS_TABLE'])
 user_activity_table = dyn_db.Table(app.config['USER_ACTIVITY_TABLE'])
 task_activity_table = dyn_db.Table(app.config['TASK_ACTIVITY_TABLE'])
-notification_tokens_table = dyn_db.Table(app.config['NOTIFICATION_TOKENS_TABLE'])
 
 # sns
 sns = boto3.resource('sns')
@@ -85,59 +86,26 @@ def shutdown_session(exception=None):
     db.session.close()
 
 
-# json response object
-def j_response(body: typing.Optional[typing.Union[dict, list]] = None, status: int = 200, **kwargs) -> Response:
-    """
-    Just a Flask Response but it provides a nice wrapper for returning generic json responses, so that they
-    easily remain consistent.
-    :param body:    The dict to send as a json body
-    :param status:  The HTTP status for the Response
-    :param kwargs:  Other Flask Response object kwargs (like headers etc.)
-    :return:        A flask response
-    """
-    # default headers
-    headers = {'Content-Type': 'application/json'}
+if getenv('APP_ENV', 'Local') in ['Staging', 'Production']:
+    @property
+    def specs_url(self):
+        """Monkey patch for HTTPS"""
+        return url_for(self.endpoint('specs'), _external=True, _scheme='https')
 
-    # merge new headers if there are any
-    if kwargs.get('headers') is not None:
-        headers = {
-            **headers,
-            **kwargs.pop('headers')
-        }
+    Api.specs_url = specs_url
 
-    if body is None:
-        return Response(
-            status=204,
-            headers=headers,
-            **kwargs
-        )
-    else:
-        return Response(
-            json.dumps(body),
-            status=status,
-            headers=headers,
-            **kwargs
-        )
-
-
-# generic response object
-def g_response(msg: typing.Optional[str] = None, status: int = 200, **kwargs) -> Response:
-    """
-    Just a Flask Response but gives one place to define a consistent response to use for generic responses
-    throughout the application.
-    :param msg:     The message to send as part of the "msg" key
-    :param status:  The HTTP status for the Response
-    :param kwargs:  Other Flask Response object kwargs (such as headers, status etc.)
-    :return:        A Flask Response
-    """
-    return j_response(
-        {"msg": msg},
-        status=status,
-        **kwargs
-    )
-
+# The API with documentation
+api = Api(
+    title="Delegator API",
+    version="1.0",
+    description="The public API for applications."
+)
 # routes
-from app import Routes  # noqa
+from app.Controllers import all_routes  # noqa
+for route in all_routes:
+    api.add_namespace(route)
+
+api.init_app(app)
 
 if getenv('APP_ENV') not in ['Ci', 'Local']:
     flask_profiler.init_app(app)

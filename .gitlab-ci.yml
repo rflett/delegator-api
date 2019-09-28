@@ -5,8 +5,8 @@ stages:
   - Deploy
 
 variables:
-  AMZ_REGISTRY: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com
-  GITLAB_REGISTRY: registry.gitlab.com/backburner/containers
+  AMZ_REGISTRY: 239304980652.dkr.ecr.ap-southeast-2.amazonaws.com
+  GITLAB_REGISTRY: registry.gitlab.com/delegator-au/containers
   IMAGE_TAG: $CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
 
 Flake8:
