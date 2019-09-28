@@ -41,7 +41,7 @@ logger = logging.getLogger()
 for handler in logger.handlers:
     logger.removeHandler(handler)
 
-log_format = '%(asctime)s backburner-api %(levelname)s %(message)s'
+log_format = '%(asctime)s delegator-api %(levelname)s %(message)s'
 logging.basicConfig(format=log_format, level=logging.INFO)
 
 # db conf
@@ -53,7 +53,6 @@ user_settings_table = dyn_db.Table(app.config['USER_SETTINGS_TABLE'])
 org_settings_table = dyn_db.Table(app.config['ORG_SETTINGS_TABLE'])
 user_activity_table = dyn_db.Table(app.config['USER_ACTIVITY_TABLE'])
 task_activity_table = dyn_db.Table(app.config['TASK_ACTIVITY_TABLE'])
-notification_tokens_table = dyn_db.Table(app.config['NOTIFICATION_TOKENS_TABLE'])
 
 # sns
 sns = boto3.resource('sns')
@@ -89,7 +88,7 @@ def shutdown_session(exception=None):
 
 # The API with documentation
 api = Api(
-    title="Backburner API",
+    title="Delegator API",
     version="1.0",
     description="The public API for applications."
 )

@@ -1,2 +1,0 @@
-#!/bin/bash
-docker run --network dev_default -v "C:/Users/Ryan/src/api/src/tests/integration/":"/newman" 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/newman:latest sh -c "newman run /newman/integration.postman_collection.json"

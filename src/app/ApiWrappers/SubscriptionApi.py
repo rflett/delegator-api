@@ -49,7 +49,7 @@ class SubscriptionApi(object):
             except KeyError:
                 raise WrapperCallFailedException(f"Missing customer_id from response body.")
         else:
-            raise WrapperCallFailedException(f"Subscription API - {r.status_code}")
+            raise WrapperCallFailedException(f"Subscription API - {r.status_code} - {r.text}")
 
     def decrement_plan_quantity(self, subscription_id: str) -> None:
         """Decrement a subscription's plan quantity"""

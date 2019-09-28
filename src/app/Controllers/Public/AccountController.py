@@ -12,7 +12,7 @@ from flask_restplus import Namespace
 from app import app, session_scope, logger, subscription_api
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import handle_exceptions, requires_jwt
-from app.Exceptions import AuthenticationError
+from app.Exceptions import AuthenticationError, WrapperCallFailedException
 from app.Models import User, Activity, Organisation, TaskType, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.Request import login_request, signup_request
@@ -65,59 +65,52 @@ class AccountController(RequestValidationController):
             return self.oh_god("There was an issue creating the organisation.")
 
         # try and create the user since the org was created successfully
-        try:
-            with session_scope() as session:
-                user = User(
-                    org_id=organisation.id,
-                    email=valid_user.get('email'),
-                    first_name=valid_user.get('first_name'),
-                    last_name=valid_user.get('last_name'),
-                    password=valid_user.get('password'),
-                    role=valid_user.get('role'),
-                    job_title=valid_user.get('job_title')
-                )
-                session.add(user)
-
-            with session_scope():
-                user.created_by = user.id
-
-            # create user settings
-            user.create_settings()
-
-            user.log(
-                operation=Operations.CREATE,
-                resource=Resources.USER,
-                resource_id=user.id
+        with session_scope() as session:
+            user = User(
+                org_id=organisation.id,
+                email=valid_user.get('email'),
+                first_name=valid_user.get('first_name'),
+                last_name=valid_user.get('last_name'),
+                password=valid_user.get('password'),
+                role=valid_user.get('role'),
+                job_title=valid_user.get('job_title')
             )
-            # publish event
-            Activity(
-                org_id=user.org_id,
-                event=Events.user_created,
-                event_id=user.id,
-                event_friendly=f"Created by {user.name()}"
-            ).publish()
-            logger.info(f"User {user.id} signed up.")
+            session.add(user)
 
+        with session_scope():
+            user.created_by = user.id
+
+        # create user settings
+        user.create_settings()
+
+        user.log(
+            operation=Operations.CREATE,
+            resource=Resources.USER,
+            resource_id=user.id
+        )
+        # publish event
+        Activity(
+            org_id=user.org_id,
+            event=Events.user_created,
+            event_id=user.id,
+            event_friendly=f"Created by {user.name()}"
+        ).publish()
+        logger.info(f"User {user.id} signed up.")
+
+        try:
             customer_id, plan_url = subscription_api.create_customer(
                 plan_id=request_body.get('plan_id'),
                 user_dict=user.as_dict(),
                 org_name=organisation.name
             )
-
-            with session_scope():
-                organisation.chargebee_customer_id = customer_id
-
-            return self.ok({"url": plan_url})
-
-        except Exception as e:
+        except WrapperCallFailedException as e:
             logger.error(str(e))
-            # the org was actually created, but the user failed, so delete the org and default task type
-            with session_scope() as session:
-                session.query(TaskType).filter_by(org_id=organisation.id).delete()
-                session.delete(organisation)
-                logger.info(f"Deleted the new organisation {organisation.name} "
-                            f"since there was an issue creating the user.")
-            return self.oh_god("There was an issue creating the user.")
+            return self.oh_god("Sorry, something unexpected occurred during the signup process. Please contact "
+                               "us at support@delegator.com.au")
+        with session_scope():
+            organisation.chargebee_customer_id = customer_id
+
+        return self.ok({"url": plan_url})
 
     @handle_exceptions
     @account_route.expect(login_request)

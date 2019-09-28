@@ -25,7 +25,7 @@ def requires_token_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.headers.get('Authorization', None)
-        if auth != app.config['BACKBURNER_API_KEY']:
+        if auth != app.config['DELEGATOR_API_KEY']:
             raise AuthenticationError("Unauthorized.")
         else:
             return f(*args, **kwargs)

@@ -6,7 +6,6 @@
 
 - `.gitlab-ci.yml` - CI configuration
 - `.API.postman_collection.json` - Postman collection for API routes
-- `apiary.apib` - API Blueprint for https://backburner.docs.apiary.io/#
 
 ### deploy/
 Contains scripts and configuration for deploying to ECS. Used in the CI pipeline.

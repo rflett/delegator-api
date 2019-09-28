@@ -74,7 +74,7 @@ def test_signup():
 # Login
 def test_login():
     r = base.send('post', 'account/', data={
-        "email": "ryan.flett@frontburner.com.au",
+        "email": "ryan.flett@delegator.com.au",
         "password": "B4ckburn3r"
     })
     assert r.status_code == 200

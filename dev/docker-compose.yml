@@ -2,24 +2,24 @@ version: '3.7'
 services:
 
   postgres:
-    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
+    # image: 239304980652.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
     build:
       context: ../../containers/postgres
     ports:
       - 5432:5432
 
   redis:
-    # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/redis:latest
+    # image: 239304980652.dkr.ecr.ap-southeast-2.amazonaws.com/redis:latest
     build:
       context: ../../containers/redis
     ports:
       - 6379:6379
 
-  backburner-api:
-    image: backburner_api
+  delegator-api:
+    image: delegator_api
     build:
       cache_from: 
-        - backburner_api
+        - delegator_api
       context: ../src/
     restart: always
     depends_on:
@@ -27,8 +27,8 @@ services:
       - redis
     environment:
       APP_ENV: Docker
-      AWS_ACCESS_KEY_ID: REDACTED
-      AWS_SECRET_ACCESS_KEY: REDACTED
+      AWS_ACCESS_KEY_ID: AKIATPN5QHCWHND54IZD
+      AWS_SECRET_ACCESS_KEY: htC6sNzumB4CnhfSqMNhiybeLoyUuw0/ki5yAOC7
       AWS_DEFAULT_REGION: ap-southeast-2
     ports:
       - 5000:5000
@@ -47,30 +47,36 @@ services:
     ports:
       - 5001:5001
 
-  # task_escalator:
-  #   image: task_escalator
-  #   build:
-  #     cache_from: 
-  #       - task_escalator
-  #     context: ../../task-escalator/src
-  #   environment:
-  #     APP_ENV: docker
-  #   depends_on:
-  #     - postgres
+  task_escalator:
+    image: task_escalator
+    build:
+      cache_from: 
+        - task_escalator
+      context: ../../task-escalator/src
+    environment:
+      APP_ENV: Docker
+      AWS_ACCESS_KEY_ID: AKIATPN5QHCWHND54IZD
+      AWS_SECRET_ACCESS_KEY: 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
+      AWS_DEFAULT_REGION: ap-southeast-2
+    depends_on:
+      - postgres
   
-  # task_reminder:
-  #   # image: 008492826001.dkr.ecr.ap-southeast-2.amazonaws.com/task-reminder:latest
-  #   build:
-  #     context: ../../task-reminder/src
-  #   environment:
-  #     DATABASE_URI: backburner:backburner@postgres/backburner
-  #   depends_on:
-  #     - postgres
+  task_reminder:
+    # image: 239304980652.dkr.ecr.ap-southeast-2.amazonaws.com/task-reminder:latest
+    build:
+      context: ../../task-reminder/src
+    environment:
+      APP_ENV: Docker
+      AWS_ACCESS_KEY_ID: AKIATPN5QHCWHND54IZD
+      AWS_SECRET_ACCESS_KEY: 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
+      AWS_DEFAULT_REGION: ap-southeast-2
+    depends_on:
+      - postgres
 
   # pg_hero:
   #   image: ankane/pghero:latest
   #   environment:
-  #     DATABASE_URL: postgres://backburner:backburner@postgres/backburner
+  #     DATABASE_URL: postgres://delegator:delegator@postgres/delegator
   #   ports:
   #     - 8080:8080
   #   depends_on:
