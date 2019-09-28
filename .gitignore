@@ -6,3 +6,4 @@ src/*/*/*/__pycache__
 src/.pytest_cache/
 */*/*/*/*/__pycache__
 dev/.env
+dev/.env
