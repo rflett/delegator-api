@@ -41,7 +41,8 @@ class Local(Config):
 
 class Staging(Config):
     # this should be retreived from SecretsManager instead
-    SQLALCHEMY_DATABASE_URI = "postgresql://delegator:k!.]O*;3?j`lg!0J@delegator-staging.cczlgulpiuef.ap-southeast-2.rds.amazonaws.com:5432/delegator"
+    SQLALCHEMY_DATABASE_URI = "postgresql://delegator:k!.]O*;3?j`lg!0J@" \
+                              "delegator-staging.cczlgulpiuef.ap-southeast-2.rds.amazonaws.com:5432/delegator"
     SUBSCRIPTION_API_URL = "https://subscription-api-staging.backburner.online"
     EVENTS_SNS_TOPIC_ARN = 'arn:aws:sns:ap-southeast-2:239304980652:api-staging-events'
     APP_NOTIFICATIONS_SQS = 'https://sqs.ap-southeast-2.amazonaws.com/239304980652/app-notifications-staging'

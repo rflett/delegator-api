@@ -9,7 +9,7 @@ from app.Models.Response.Roles import roles_response
 from app.Models.Response.Task import task_response, task_statuses_response, \
     task_priorities_response, tasks_response, delayed_task_response
 from app.Models.Response.TaskTypes import task_type_response, task_types_response
-from app.Models.Response.User import login_response, user_response, get_users_response
+from app.Models.Response.User import user_response, get_users_response
 
 __all__ = [
     active_user_response_dto,
