@@ -31,12 +31,12 @@ Build:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email)
     # build, tag, and push commit
-    - docker pull $AMZ_REGISTRY/$CI_PROJECT_NAME:latest
-    - docker build --build-arg COMMIT_SHA=$CI_COMMIT_SHORT_SHA -t $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG --cache-from $AMZ_REGISTRY/$CI_PROJECT_NAME:latest src/
-    - docker push $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG
+    - docker pull $AMZ_REGISTRY/delegator-api:latest
+    - docker build --build-arg COMMIT_SHA=$CI_COMMIT_SHORT_SHA -t $AMZ_REGISTRY/delegator-api:$IMAGE_TAG --cache-from $AMZ_REGISTRY/delegator-api:latest src/
+    - docker push $AMZ_REGISTRY/delegator-api:$IMAGE_TAG
     # tag and push latest
-    - docker tag $AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG $AMZ_REGISTRY/$CI_PROJECT_NAME:latest
-    - docker push $AMZ_REGISTRY/$CI_PROJECT_NAME:latest
+    - docker tag $AMZ_REGISTRY/delegator-api:$IMAGE_TAG $AMZ_REGISTRY/delegator-api:latest
+    - docker push $AMZ_REGISTRY/delegator-api:latest
 
 .deploy:
   stage: Deploy
@@ -50,9 +50,9 @@ Build:
       -X POST
       -F token=4087c68b61838a88958e72580177a2 
       -F ref=master 
-      -F variables[IMAGE]=$AMZ_REGISTRY/$CI_PROJECT_NAME:$IMAGE_TAG
+      -F variables[IMAGE]=$AMZ_REGISTRY/delegator-api:$IMAGE_TAG
       -F variables[DEPLOY_ENV]=$DEPLOY_ENV 
-      -F variables[PROJECT]=$CI_PROJECT_NAME
+      -F variables[PROJECT]=delegator-api
       https://gitlab.com/api/v4/projects/14042887/trigger/pipeline"
 
 Staging:
