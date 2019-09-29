@@ -11,7 +11,7 @@ from app.Models.Response import message_response_dto, user_response
 user_route = Namespace(
     path="/user",
     name="User",
-    description="Used to manage users"
+    description="Manager a user"
 )
 
 

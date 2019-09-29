@@ -8,14 +8,14 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import DelayedTask, Notification
 from app.Models.Enums import TaskStatuses, Operations, Resources, Events, ClickActions
-from app.Models.Request import delay_task_request, get_delayed_task_request
+from app.Models.Request import delay_task_request
 from app.Models.Response import task_response, message_response_dto, delayed_task_response
 from app.Services import TaskService
 
 delay_task_route = Namespace(
     path="/task/delay",
-    name="Tasks",
-    description="Manage tasks"
+    name="Task",
+    description="Manage a task"
 )
 
 task_service = TaskService()
@@ -30,7 +30,7 @@ class DelayTask(RequestValidationController):
     @delay_task_route.expect(delay_task_request)
     @delay_task_route.response(200, "Success", task_response)
     @delay_task_route.response(400, "Failed to delay the task", message_response_dto)
-    def post(self, **kwargs) -> Response:
+    def put(self, **kwargs) -> Response:
         """Delays a task """
         req_user = kwargs['req_user']
 
@@ -85,17 +85,18 @@ class DelayTask(RequestValidationController):
         logger.info(f"User {req_user.id} delayed task {task.id} for {delay_for}s.")
         return self.ok(task.fat_dict())
 
+
+@delay_task_route.route("/<int:task_id>")
+class GetDelayTask(RequestValidationController):
+
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK)
-    @delay_task_route.expect(get_delayed_task_request)
     @delay_task_route.response(200, "Success", delayed_task_response)
-    @delay_task_route.response(400, "Failed to delay the task", message_response_dto)
-    def get(self, **kwargs) -> Response:
+    @delay_task_route.response(400, "Failed to get the tasks delay info", message_response_dto)
+    def get(self, task_id, **kwargs) -> Response:
         """Returns the delayed info for a task """
         req_user = kwargs['req_user']
-        request_body = request.get_json()
-        task_id = request_body.get('task_id')
 
         task = task_service.get(task_id, req_user.org_id)
 

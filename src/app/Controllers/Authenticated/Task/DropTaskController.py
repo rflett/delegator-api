@@ -9,8 +9,8 @@ from app.Services import TaskService
 
 drop_task_route = Namespace(
     path="/task/drop",
-    name="Tasks",
-    description="Manage tasks"
+    name="Task",
+    description="Manage a task"
 )
 
 task_service = TaskService()

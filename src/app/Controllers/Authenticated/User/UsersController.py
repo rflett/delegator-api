@@ -97,7 +97,7 @@ class UserController(RequestValidationController):
                 email=request_body['email'],
                 first_name=request_body['first_name'],
                 last_name=request_body['last_name'],
-                password='secret',
+                password=request_body['password'],
                 role=request_body['role_id'],
                 job_title=request_body['job_title'],
                 disabled=request_body.get('disabled'),

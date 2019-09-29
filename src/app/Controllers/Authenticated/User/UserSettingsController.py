@@ -14,8 +14,8 @@ from app.Services.SettingsService import SettingsService
 
 user_settings_route = Namespace(
     path="/user/settings",
-    name="User Settings",
-    description="Used to manage user settings"
+    name="User",
+    description="Manager a user"
 )
 
 settings_service = SettingsService()

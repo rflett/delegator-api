@@ -9,8 +9,8 @@ from app.Services import TaskService
 
 task_activity_route = Namespace(
     path="/task/activity",
-    name="Task Activity",
-    description="Used to retrieve the activity of a task"
+    name="Task",
+    description="Manage a task"
 )
 
 task_service = TaskService()

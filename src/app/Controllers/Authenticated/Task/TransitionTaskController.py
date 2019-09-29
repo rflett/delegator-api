@@ -6,14 +6,14 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import TaskStatus
 from app.Models.Enums import TaskStatuses, Operations, Resources
-from app.Models.Request import transition_task_request, get_available_transitions_request
+from app.Models.Request import transition_task_request
 from app.Models.Response import task_response, message_response_dto, task_statuses_response
 from app.Services import TaskService
 
 transition_task_route = Namespace(
     path="/task/transition",
-    name="Tasks",
-    description="Manage tasks"
+    name="Task",
+    description="Manage a task"
 )
 
 task_service = TaskService()
@@ -28,7 +28,7 @@ class TransitionTask(RequestValidationController):
     @transition_task_route.expect(transition_task_request)
     @transition_task_route.response(200, "Success", task_response)
     @transition_task_route.response(400, "Failed to transition the task", message_response_dto)
-    def post(self, **kwargs) -> Response:
+    def put(self, **kwargs) -> Response:
         """Transitions a task to another status"""
         task, task_status = self.validate_transition_task(request.get_json(), **kwargs)
         task_service.transition(
@@ -39,17 +39,17 @@ class TransitionTask(RequestValidationController):
         )
         return self.ok(task.fat_dict())
 
+
+@transition_task_route.route("/<int:task_id>")
+class GetTaskTransitions(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_TRANSITIONS)
-    @transition_task_route.expect(get_available_transitions_request)
     @transition_task_route.response(200, "Success", task_statuses_response)
     @transition_task_route.response(400, "Failed to get the available transitions", message_response_dto)
-    def get(self, **kwargs) -> Response:
+    def get(self, task_id, **kwargs) -> Response:
         """Returns the statuses that a task could be transitioned to, based on the state of the task."""
         req_user = kwargs['req_user']
-        request_body = request.get_json()
-        task_id = request_body.get('task_id')
 
         task = self.validate_get_transitions(req_user.org_id, task_id)
 
@@ -98,11 +98,11 @@ class TransitionTask(RequestValidationController):
                 disabled_qry = session.query(TaskStatus).filter(~TaskStatus.status.in_(search)).all()
 
             # enabled options
-            statuses += [ts.as_dict() for ts in enabled_qry if ts.status not in ["DELAYED", "CANCELLED"]]
+            statuses += [ts.as_dict() for ts in enabled_qry]
 
             # disabled options
             statuses += [
-                ts.as_dict(disabled=True) for ts in disabled_qry if ts.status not in ["DELAYED", "CANCELLED"]
+                ts.as_dict(disabled=True) for ts in disabled_qry
             ]
 
         return self.ok({'statuses': statuses})

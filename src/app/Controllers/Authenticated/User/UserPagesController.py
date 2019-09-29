@@ -9,8 +9,8 @@ from app.Models.Response import message_response_dto
 
 user_pages_route = Namespace(
     path="/user/pages",
-    name="User Pages",
-    description="Used to retrieve information on what a user should be able to access"
+    name="User",
+    description="Manager a user"
 )
 
 

@@ -13,7 +13,7 @@ from app.Models.Response import task_types_response, task_type_response, message
 from app.Exceptions import ValidationError
 
 task_types_route = Namespace(
-    path="/tasks/types",
+    path="/task-types",
     name="Task Types",
     description="Manage Task Types"
 )
@@ -202,17 +202,18 @@ class TaskTypes(RequestValidationController):
         # SUCCESS
         return self.ok(task_type_to_update.fat_dict())
 
+
+@task_types_route.route("/<int:task_type_id>")
+class DeleteTaskType(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.DISABLE, Resources.TASK_TYPE)
     @task_types_route.expect(disable_task_type_request)
     @task_types_route.response(200, "Success", task_type_response)
     @task_types_route.response(400, "Failed to disable the task type", message_response_dto)
-    def delete(self, **kwargs) -> Response:
+    def delete(self, task_type_id, **kwargs) -> Response:
         """Disables a task type"""
         req_user = kwargs['req_user']
-        request_body = request.get_json()
-        task_type_id = request_body.get('id')
 
         task_type_to_disable = self.validate_disable_task_type_request(task_type_id)
 
