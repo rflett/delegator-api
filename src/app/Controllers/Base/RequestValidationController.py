@@ -107,6 +107,7 @@ class RequestValidationController(ObjectValidationController):
         self.check_str(request_body.get('last_name'), 'last_name')
         self.check_optional_str(request_body.get('job_title'), 'job_title')
         self.check_user_disabled(request_body.get('disabled'))
+        self.validate_password(request_body.get('password')),
 
     def validate_delay_task_request(self, request_body: dict, **kwargs) -> tuple:
         """ Validates the transition task request """
