@@ -8,6 +8,7 @@ from app.Controllers.Authenticated.Task.TransitionTaskController import transiti
 from app.Controllers.Authenticated.Task.TaskStatusesController import task_statuses_route
 from app.Controllers.Authenticated.Task.TaskTypesController import task_types_route
 from app.Controllers.Authenticated.Task.TaskActivityController import task_activity_route
+from app.Controllers.Authenticated.Task.TaskController import task_route
 
 all_task_routes = [
     assign_task_route,
@@ -19,5 +20,6 @@ all_task_routes = [
     task_types_route,
     tasks_route,
     transition_task_route,
-    task_activity_route
+    task_activity_route,
+    task_route
 ]

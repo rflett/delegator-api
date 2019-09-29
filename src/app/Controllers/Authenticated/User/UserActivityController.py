@@ -10,8 +10,8 @@ from app.Models.Response import message_response_dto, activity_response_dto
 
 user_activity_route = Namespace(
     path="/user/activity",
-    name="User Activity",
-    description="Used to retrieve the activity for a user"
+    name="User",
+    description="Manager a user"
 )
 
 

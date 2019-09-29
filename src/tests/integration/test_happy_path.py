@@ -143,7 +143,7 @@ def test_get_active_users():
 
 # Task Types
 def test_create_task_types():
-    r = base.send('post', 'tasks/types/', data={
+    r = base.send('post', 'task-types/', data={
         "label": "Patient Transport"
     })
     assert r.status_code == 201
@@ -159,7 +159,7 @@ def test_create_task_types():
 
 
 def test_update_task_type():
-    r = base.send('put', 'tasks/types/', data={
+    r = base.send('put', 'task-types/', data={
         "id": base.task_type_id,
         "label": "New Patient Transport",
         "escalation_policies": [{
@@ -182,15 +182,13 @@ def test_update_task_type():
 
 
 def test_disable_task_type():
-    r = base.send('delete', 'tasks/types/', data={
-        "id": base.task_type_id
-    })
+    r = base.send('delete', f'task-types/{base.task_type_id}')
     assert r.status_code == 200
     assert r.json()['disabled'] is not None
 
 
 def test_get_task_type():
-    r = base.send('get', 'tasks/types/')
+    r = base.send('get', 'task-types/')
     assert r.status_code == 200
     response_body = r.json()
     assert 'task_types' in response_body
@@ -205,7 +203,7 @@ def test_get_task_type():
 
 # Tasks
 def test_create_task():
-    r = base.send('post', 'tasks/', data={
+    r = base.send('post', 'task/', data={
         "type_id": base.task_type_id,
         "description": "A Task Description",
         "time_estimate": 300,
@@ -217,7 +215,7 @@ def test_create_task():
 
 
 def test_update_task():
-    r = base.send('put', 'tasks/', data={
+    r = base.send('put', 'task/', data={
         "id": base.task_id,
         "type_id": base.task_type_id,
         "description": "A New Task Description",
@@ -236,6 +234,13 @@ def test_get_tasks():
     response_body = r.json()
     assert 'tasks' in response_body
     assert len(response_body['tasks']) > 0
+
+
+def test_get_task():
+    r = base.send('get', f'task/{base.task_id}')
+    assert r.status_code == 200
+    response_body = r.json()
+    assert response_body['id'] == base.task_id
 
 
 def test_get_task_priorities():
@@ -275,9 +280,7 @@ def test_assign_task():
 
 
 def test_get_available_transitions():
-    r = base.send('get', 'task/transition/', data={
-        'task_id': base.task_id
-    })
+    r = base.send('get', f'task/transition/{base.task_id}')
     assert r.status_code == 200
     response_body = r.json()
     assert 'statuses' in response_body
@@ -285,7 +288,7 @@ def test_get_available_transitions():
 
 
 def transition_task():
-    r = base.send('post', 'task/transition', data={
+    r = base.send('put', 'task/transition', data={
         "task_id": base.task_id,
         "task_status": "IN_PROGRESS"
     })
@@ -295,7 +298,7 @@ def transition_task():
 
 
 def test_delay_task():
-    r = base.send('post', 'task/delay/', data={
+    r = base.send('put', 'task/delay/', data={
         "task_id": base.task_id,
         "delay_for": 20,
         "reason": "A test delay"
@@ -306,9 +309,7 @@ def test_delay_task():
 
 
 def test_get_delayed_info():
-    r = base.send('get', 'task/delay/', data={
-        "task_id": base.task_id
-    })
+    r = base.send('get', f'task/delay/{base.task_id}')
     assert r.status_code == 200
     response_body = r.json()
     assert "task_id" in response_body
@@ -365,7 +366,8 @@ def test_create_user():
         "last_name": fake.name(),
         "role_id": "USER",
         "job_title": fake.bs(),
-        "disabled": None
+        "disabled": None,
+        "password": "SomeP4ssw$rd"
     }
 
     response = base.send("post", "users", create_data)

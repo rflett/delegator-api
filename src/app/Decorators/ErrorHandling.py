@@ -4,6 +4,7 @@ from functools import wraps
 
 import requests
 from flask import Response
+from werkzeug.exceptions import BadRequest
 
 import app.Exceptions as Exceptions
 from app import logger
@@ -32,7 +33,7 @@ def handle_exceptions(f):
                 headers={'Content-Type': 'application/json'}
             )
 
-        except Exceptions.ValidationError as e:
+        except (Exceptions.ValidationError, BadRequest) as e:
             logger.info(str(e))
             return Response(
                 json.dumps({"msg": str(e)}),

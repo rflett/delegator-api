@@ -11,8 +11,8 @@ from app.Services import TaskService
 
 cancel_task_route = Namespace(
     path="/task/cancel",
-    name="Tasks",
-    description="Manage tasks"
+    name="Task",
+    description="Manage a task"
 )
 
 task_service = TaskService()

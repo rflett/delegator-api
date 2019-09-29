@@ -37,18 +37,9 @@ delay_task_request = api.model("Delay Task Request", {
     "reason": fields.String()
 })
 
-get_delayed_task_request = api.model("Get Delayed Task Request", {
-    "task_id": fields.Integer()
-})
-
 transition_task_request = api.model("Transition Task Request", {
     "task_id": fields.Integer(),
     "task_status": fields.String(enum=statuses)
-})
-
-
-get_available_transitions_request = api.model("Get Available Transitions Request", {
-    "task_id": fields.Integer()
 })
 
 update_task_priority_request = api.model("Update Task Priority Request", {

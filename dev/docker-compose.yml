@@ -5,6 +5,7 @@ services:
     # image: 239304980652.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
     build:
       context: ../../containers/postgres
+    command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track='all'
     ports:
       - 5432:5432
 

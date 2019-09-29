@@ -10,8 +10,8 @@ from app.Services import TaskService
 
 assign_task_route = Namespace(
     path="/task/assign",
-    name="Tasks",
-    description="Manage tasks"
+    name="Task",
+    description="Manage a task"
 )
 
 task_service = TaskService()
