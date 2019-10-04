@@ -49,22 +49,24 @@ class TaskTypes(RequestValidationController):
     def post(self, **kwargs) -> Response:
         """Creates a task type"""
         req_user = kwargs['req_user']
+        req_body = request.get_json()
 
-        label, task_type = self.validate_create_task_type_request(request.get_json(), **kwargs)
+        defaults, task_type = self.validate_create_task_type_request(req_body, **kwargs)
 
         if task_type is None:
             # it didn't exist so just create it
             with session_scope() as session:
                 new_task_type = TaskType(
-                    label=label,
+                    label=req_body['label'],
                     org_id=req_user.org_id,
+                    **defaults
                 )
                 session.add(new_task_type)
             Activity(
                 org_id=req_user.org_id,
                 event=Events.tasktype_created,
                 event_id=new_task_type.id,
-                event_friendly=f"Created task type {label}"
+                event_friendly=f"Created task type {req_body['label']}"
             )
             req_user.log(
                 operation=Operations.CREATE,
@@ -75,14 +77,14 @@ class TaskTypes(RequestValidationController):
         else:
             # it existed so check if it needs to be enabled
             if task_type.disabled is None:
-                raise ValidationError(f"Task type {label} already exists.")
+                raise ValidationError(f"Task type {req_body['label']} already exists.")
             with session_scope():
                 task_type.disabled = None
             Activity(
                 org_id=req_user.org_id,
                 event=Events.tasktype_enabled,
                 event_id=task_type.id,
-                event_friendly=f"Enabled task type {label}"
+                event_friendly=f"Enabled task type {req_body['label']}"
             )
             req_user.log(
                 operation=Operations.ENABLE,
@@ -102,7 +104,9 @@ class TaskTypes(RequestValidationController):
         req_user = kwargs['req_user']
         request_body = request.get_json()
 
-        task_type_to_update, escalations = self.validate_update_task_type_request(
+        print(request_body)
+
+        task_type_to_update, defaults,  escalations = self.validate_update_task_type_request(
             org_id=req_user.org_id,
             request_body=request_body
         )
@@ -110,10 +114,11 @@ class TaskTypes(RequestValidationController):
         # counter for number of task types created/updated/deleted in this request
         total_updated = total_created = total_deleted = 0
 
-        # update label
-        if task_type_to_update.label != request_body['label']:
-            with session_scope():
-                task_type_to_update.label = request_body['label']
+        # update label and defaults
+        with session_scope():
+            task_type_to_update.label = request_body['label']
+            for k, v in defaults.items():
+                task_type_to_update.__setattr__(k, v)
 
         # UPSERT ESCALATIONS
         for escalation in escalations:
