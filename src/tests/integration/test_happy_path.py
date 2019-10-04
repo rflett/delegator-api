@@ -144,7 +144,10 @@ def test_get_active_users():
 # Task Types
 def test_create_task_types():
     r = base.send('post', 'task-types/', data={
-        "label": "Patient Transport"
+        "label": "Patient Transport",
+        'default_time_estimate': 600,
+        'default_description': "A test description",
+        'default_priority': 1
     })
     assert r.status_code == 201
     response_body = r.json()
@@ -154,6 +157,9 @@ def test_create_task_types():
     assert 'disabled' in response_body
     assert 'tooltip' in response_body
     assert 'escalation_policies' in response_body
+    assert 'default_time_estimate' in response_body
+    assert 'default_description' in response_body
+    assert 'default_priority' in response_body
     assert response_body['label'] == "Patient Transport"
     base.task_type_id = response_body['id']
 
@@ -162,6 +168,9 @@ def test_update_task_type():
     r = base.send('put', 'task-types/', data={
         "id": base.task_type_id,
         "label": "New Patient Transport",
+        'default_time_estimate': 300,
+        'default_description': "A new test description",
+        'default_priority': 0,
         "escalation_policies": [{
             "display_order": 1,
             "delay": 30,
@@ -171,6 +180,9 @@ def test_update_task_type():
     })
     response_body = r.json()
     assert response_body['label'] == "New Patient Transport"
+    assert response_body['default_time_estimate'] == 300
+    assert response_body['default_description'] == "A new test description"
+    assert response_body['default_priority'] == 0
     assert len(response_body['escalation_policies']) == 1
     assert response_body['escalation_policies'][0] == {
         "task_type_id": base.task_type_id,

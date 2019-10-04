@@ -11,6 +11,9 @@ class TaskType(db.Model):
     label = db.Column('label', db.String)
     org_id = db.Column('org_id', db.Integer, db.ForeignKey('organisations.id'))
     disabled = db.Column('disabled', db.DateTime, default=None)
+    default_time_estimate = db.Column('default_time_estimate', db.Integer, default=0)
+    default_description = db.Column('default_description', db.String)
+    default_priority = db.Column('default_priority', db.Integer, db.ForeignKey('task_priorities.priority'), default=1)
 
     orgs = db.relationship("Organisation")
 
@@ -18,11 +21,17 @@ class TaskType(db.Model):
             self,
             label: str,
             org_id: int,
-            disabled: typing.Union[datetime.datetime, None] = None
+            disabled: typing.Union[datetime.datetime, None] = None,
+            default_time_estimate: int = 0,
+            default_description: str = None,
+            default_priority: int = 1
     ):
         self.label = label
         self.org_id = org_id
         self.disabled = disabled
+        self.default_description = default_description
+        self.default_priority = default_priority
+        self.default_time_estimate = default_time_estimate
 
     def as_dict(self) -> dict:
         """
@@ -38,7 +47,10 @@ class TaskType(db.Model):
             "label": self.label,
             "org_id": self.org_id,
             "disabled": disabled,
-            "tooltip": "Type has been disabled" if disabled else None
+            "tooltip": "Type has been disabled" if disabled else None,
+            "default_description": self.default_description,
+            "default_priority": self.default_priority,
+            "default_time_estimate": self.default_time_estimate
         }
 
     def fat_dict(self) -> dict:

@@ -48,6 +48,18 @@ services:
     ports:
       - 5001:5001
 
+  notification-api:
+    image: notification_api
+    build:
+      cache_from: 
+        - notification_api
+      context: ../../notification-api/src/
+    restart: always
+    environment:
+      APP_ENV: Docker
+    ports:
+      - 5002:5002
+
   task_escalator:
     image: task_escalator
     build:

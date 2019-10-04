@@ -74,10 +74,22 @@ class RequestValidationController(ObjectValidationController):
         }
 
     def validate_create_task_type_request(
-            self,
-            request_body: dict, **kwargs) -> typing.Tuple[str, typing.Optional[TaskType]]:
+        self,
+        request_body: dict,
+        **kwargs
+    ) -> typing.Tuple[dict, typing.Optional[TaskType]]:
         """ Validates a create task type request body """
         label = self.check_str(request_body.get('label'), 'label')
+        request_defaults = {
+            "default_description": self.check_optional_str(
+                request_body.get('default_description'), 'default_description'
+            ),
+            "default_time_estimate": self.check_optional_int(
+                request_body.get('default_time_estimate'), 'default_time_estimate'
+            ),
+            "default_priority": self.check_optional_int(request_body.get('default_priority'), 'default_priority')
+        }
+        defaults = {k: v for k, v in request_defaults.items() if v is not None}
 
         # check if it exists and needs enabling
         with session_scope() as session:
@@ -86,9 +98,9 @@ class RequestValidationController(ObjectValidationController):
                 TaskType.org_id == kwargs['req_user'].org_id
             ).first()
             if task_type is None:
-                return label, None
+                return defaults, None
             else:
-                return label, task_type
+                return defaults, task_type
 
     def validate_create_user_request(self, req_user: User, request_body: dict) -> None:
         """
@@ -302,10 +314,20 @@ class RequestValidationController(ObjectValidationController):
             'priority': self.check_task_priority(request_body.get('priority'))
         }
 
-    def validate_update_task_type_request(self, org_id: int, request_body: dict) -> typing.Tuple[TaskType, list]:
+    def validate_update_task_type_request(self, org_id: int, request_body: dict) -> typing.Tuple[TaskType, dict, list]:
         """ Validates an update task type request body """
         # check label and that escalations are in the request
         label = self.check_str(request_body.get('label'), 'label')
+
+        defaults = {
+            "default_description": self.check_optional_str(
+                request_body.get('default_description'), 'default_description'
+            ),
+            "default_time_estimate": self.check_optional_int(
+                request_body.get('default_time_estimate'), 'default_time_estimate'
+            ),
+            "default_priority": self.check_optional_int(request_body.get('default_priority'), 'default_priority')
+        }
 
         # check that the task type exists
         with session_scope() as session:
@@ -369,7 +391,7 @@ class RequestValidationController(ObjectValidationController):
 
             valid_escalations.append(esc_attrs)
 
-        return task_type, valid_escalations
+        return task_type, defaults, valid_escalations
 
     def validate_update_user_request(self, request_body: dict, **kwargs) -> dict:
         """  Validates an update user request body """
