@@ -11,7 +11,7 @@ from app.Exceptions import ValidationError
 from app.Models import Organisation
 from app.Models.Enums import Operations, Resources
 from app.Models.Response import update_org_response_dto, update_org_settings_response_dto, \
-    get_org_settings_response_dto, get_org_response_dto, message_response_dto
+    get_org_settings_response_dto, get_org_response_dto, message_response_dto, get_org_customer_id_response_dto
 from app.Models.Request import lock_org_request, update_org_subscription_request, update_org_settings_request, \
     update_org_request
 from app.Services import SettingsService
@@ -209,3 +209,16 @@ class OrganisationSubscription(RequestValidationController):
             else:
                 org.chargebee_subscription_id = subscription_id
                 return self.ok(f"Applied subscription_id {subscription_id} against org {org.id}")
+
+
+@org_route.route("/customer")
+class OrganisationSubscription(RequestValidationController):
+
+    @handle_exceptions
+    @requires_jwt
+    @org_route.response(200, "Success", get_org_customer_id_response_dto)
+    @org_route.response(400, "Failed to update the organisation's subscription", message_response_dto)
+    def get(self, **kwargs) -> Response:
+        """Get the customer_id for an org"""
+        req_user = kwargs['req_user']
+        return self.ok({"customer_id": req_user.orgs.chargebee_customer_id})
