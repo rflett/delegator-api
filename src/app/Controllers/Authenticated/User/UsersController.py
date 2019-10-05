@@ -149,7 +149,7 @@ class UserController(RequestValidationController):
         # get the user to update
         user_to_update = user_service.get_by_id(user_attrs['id'])
 
-        # if the task is going to be disabled
+        # if the user is going to be disabled
         if user_to_update.disabled is None and user_attrs['disabled'] is not None:
             # decrement plan quantity
             subscription_api.decrement_plan_quantity(user_to_update.orgs.chargebee_subscription_id)

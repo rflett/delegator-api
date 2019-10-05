@@ -200,8 +200,5 @@ class Task(db.Model):
 
     def drop(self, req_user: User) -> None:
         """ Drops this task """
-        from app.Controllers import TaskController
-        TaskController.drop_task(
-            task_id=self.id,
-            req_user=req_user
-        )
+        from app.Services import TaskService
+        TaskService().drop(self, req_user)
