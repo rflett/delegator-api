@@ -19,3 +19,7 @@ get_org_settings_response_dto = api.model("Get Org Settings Response", {
 update_org_settings_response_dto = api.model("Get Org Settings Response", {
     "org_id": fields.Integer,
 })
+
+get_org_customer_id_response_dto = api.model("Get Org Customer ID Response", {
+    "customer_id": fields.String(),
+})
