@@ -212,7 +212,7 @@ class OrganisationSubscription(RequestValidationController):
 
 
 @org_route.route("/customer")
-class OrganisationSubscription(RequestValidationController):
+class OrgCustomerId(RequestValidationController):
 
     @handle_exceptions
     @requires_jwt
