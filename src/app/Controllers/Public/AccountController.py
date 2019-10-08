@@ -105,8 +105,8 @@ class AccountController(RequestValidationController):
             )
         except WrapperCallFailedException as e:
             logger.error(str(e))
-            return self.oh_god("Sorry, something unexpected occurred during the signup process. Please contact "
-                               "us at support@delegator.com.au")
+            return self.unprocessable("Sorry, something unexpected occurred during the signup process. Please contact "
+                                      "us at support@delegator.com.au")
         with session_scope():
             organisation.chargebee_customer_id = customer_id
 

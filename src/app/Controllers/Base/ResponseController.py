@@ -43,8 +43,8 @@ class ResponseController(Resource):
         )
 
     @staticmethod
-    def oh_god(body: typing.Optional[typing.Union[dict, list, str]]) -> Response:
-        """Returns a something went horribly wrong response"""
+    def unprocessable(body: typing.Optional[typing.Union[dict, list, str]]) -> Response:
+        """Returns a unprocessable response"""
         if isinstance(body, str):
             data = {"msg": body}
         else:
@@ -52,6 +52,6 @@ class ResponseController(Resource):
 
         return Response(
             json.dumps(data),
-            status=500,
+            status=422,
             headers={'Content-Type': 'application/json'}
         )

@@ -33,7 +33,7 @@ class Reports(RequestValidationController):
         req_user = kwargs['req_user']
 
         if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_reports_page', False):
-            raise ProductTierLimitError(f"You cannot view reports your current plan.")
+            raise ProductTierLimitError("You cannot view reports your current plan.")
 
         # TODO get from request instead
         end_period = now = datetime.datetime.utcnow()

@@ -195,6 +195,9 @@ class User(db.Model):
         def make_random() -> str:
             return ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
 
+        if self.disabled is None:
+            subscription_api.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
+
         # drop their tasks
         with session_scope() as session:
             users_tasks = session.query(Task).filter_by(assignee=self.id).all()
@@ -205,9 +208,6 @@ class User(db.Model):
         self.email = f"{make_random()}@{make_random()}.com"
         self.password = _hash_password(make_random())
         self.deleted = datetime.datetime.utcnow()
-
-        if self.disabled is None:
-            subscription_api.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
 
     def as_dict(self) -> dict:
         """
