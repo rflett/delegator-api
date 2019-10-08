@@ -109,6 +109,13 @@ def test_get_org():
     assert isinstance(response_body['org_name'], str)
 
 
+def test_get_org_customer_id():
+    r = base.send('get', 'org/customer')
+    assert r.status_code == 200
+    response_body = r.json()
+    assert isinstance(response_body['customer_id'], str)
+
+
 def test_update_org():
     r = base.send('put', 'org/', data={
         "org_id": base.org_id,
@@ -365,7 +372,7 @@ def test_user_pages():
 
 # Users Controller
 def test_get_users():
-    response = base.send("get", "users")
+    response = base.send("get", "users/")
     assert response.status_code == 200
     response_body: typing.List = response.json()
     assert len(response_body) > 0
@@ -382,7 +389,7 @@ def test_create_user():
         "password": "SomeP4ssw$rd"
     }
 
-    response = base.send("post", "users", create_data)
+    response = base.send("post", "users/", create_data)
     assert response.status_code == 201
     response_body = response.json()
     assert response_body["email"] == create_data["email"]
@@ -398,7 +405,7 @@ def test_update_user():
         "disabled": None
     }
     # Check how to update without state
-    response = base.send("put", "users", update_data)
+    response = base.send("put", "users/", update_data)
     assert response.status_code == 200
 
 

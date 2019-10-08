@@ -195,10 +195,6 @@ class User(db.Model):
         def make_random() -> str:
             return ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
 
-        self.email = f"{make_random()}@{make_random()}.com"
-        self.password = _hash_password(make_random())
-        self.deleted = datetime.datetime.utcnow()
-
         if self.disabled is None:
             subscription_api.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
 
@@ -208,6 +204,10 @@ class User(db.Model):
 
         for task in users_tasks:
             task.drop(req_user)
+
+        self.email = f"{make_random()}@{make_random()}.com"
+        self.password = _hash_password(make_random())
+        self.deleted = datetime.datetime.utcnow()
 
     def as_dict(self) -> dict:
         """

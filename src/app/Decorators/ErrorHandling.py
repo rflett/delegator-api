@@ -17,14 +17,6 @@ def handle_exceptions(f):
         try:
             return f(*args, **kwargs)
 
-        except Exceptions.WrapperCallFailedException as e:
-            logger.error(str(e))
-            return Response(
-                json.dumps({"msg": str(e)}),
-                status=200,
-                headers={'Content-Type': 'application/json'}
-            )
-
         except requests.Timeout as e:
             logger.error(str(e))
             return Response(
@@ -70,6 +62,14 @@ def handle_exceptions(f):
             return Response(
                 json.dumps({"msg": str(e)}),
                 status=404,
+                headers={'Content-Type': 'application/json'}
+            )
+
+        except Exceptions.WrapperCallFailedException as e:
+            logger.error(str(e))
+            return Response(
+                json.dumps({"msg": str(e)}),
+                status=422,
                 headers={'Content-Type': 'application/json'}
             )
 
