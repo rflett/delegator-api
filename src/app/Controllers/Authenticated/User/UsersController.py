@@ -11,7 +11,7 @@ from app.Models import User, Activity, Task, UserInviteLink
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.Request import create_user_request, update_user_request
 from app.Models.Response import message_response_dto, user_response, get_users_response
-from app.Services.UserService import UserService
+from app.Services import UserService, EmailService
 
 users_route = Namespace(
     path="/users",
@@ -20,6 +20,7 @@ users_route = Namespace(
 )
 
 user_service = UserService()
+email_service = EmailService()
 
 
 @users_route.route("/")
@@ -107,9 +108,8 @@ class UserController(RequestValidationController):
         with session_scope() as session:
             invite_link = UserInviteLink(user.id)
             session.add(invite_link)
-            logger.info(f"Invite link for {user.name()} is "
-                        f"{app.config['DELEGATOR_API_URL']}?invtkn={invite_link.token}")
-            # TODO send an email with the link
+            logger.info(f"Invite token for {user.name()} is {invite_link.token}")
+            email_service.send_invite_email(user.email, invite_link.token)
 
         # create user settings
         user.create_settings()

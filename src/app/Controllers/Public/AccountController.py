@@ -1,7 +1,4 @@
 import datetime
-import json
-import random
-import string
 import typing
 import uuid
 
@@ -17,7 +14,7 @@ from app.Models import User, Activity, Organisation, TaskType, FailedLogin, User
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.Request import login_request, signup_request
 from app.Models.Response import login_response, message_response_dto, signup_response
-from app.Services import UserService
+from app.Services import UserService, EmailService
 
 account_route = Namespace(
     path="/account",
@@ -26,6 +23,7 @@ account_route = Namespace(
 )
 
 user_service = UserService()
+email_service = EmailService()
 
 
 @account_route.route("/")
@@ -196,9 +194,8 @@ class AccountController(RequestValidationController):
             user = user_service.get_by_email(request_body.get('email'))
             reset_link = UserInviteLink(user.id)
             session.add(reset_link)
-            logger.info(f"Password reset link for {user.name()} is "
-                        f"{app.config['DELEGATOR_API_URL']}?invtkn={reset_link.token}")
-            # TODO send an email with the link
+            logger.info(f"Password reset token for {user.name()} is {reset_link.token}")
+            email_service.send_reset_password_email(user.email, reset_link.token)
 
             return self.no_content()
 
