@@ -13,13 +13,16 @@ class SubscriptionApi(object):
 
     def get_limits(self, subscription_id: str) -> dict:
         """Get a subscription's plan quantity"""
-        r = requests.get(
-            url=f"{self.url}/subscription/{subscription_id}/quantity",
-            headers={
-                'Authorization': self.key
-            },
-            timeout=10
-        )
+        try:
+            r = requests.get(
+                url=f"{self.url}/subscription/{subscription_id}/quantity",
+                headers={
+                    'Authorization': self.key
+                },
+                timeout=10
+            )
+        except Exception as e:
+            raise WrapperCallFailedException(f"Subscription API - {e}")
         if r.status_code == 200:
             return r.json()
         else:
@@ -27,19 +30,23 @@ class SubscriptionApi(object):
 
     def create_customer(self, plan_id: str, user_dict: dict, org_name: str) -> typing.Tuple[str, str]:
         """Create a customer on chargebee with the signup details"""
-        r = requests.post(
-            url=f"{self.url}/customer/",
-            headers={
-                'Authorization': self.key,
-                'Content-Type': 'application/json'
-            },
-            data=json.dumps({
-                "plan_id": plan_id,
-                "user": user_dict,
-                "org_name": org_name
-            }),
-            timeout=10
-        )
+        try:
+            r = requests.post(
+                url=f"{self.url}/customer/",
+                headers={
+                    'Authorization': self.key,
+                    'Content-Type': 'application/json'
+                },
+                data=json.dumps({
+                    "plan_id": plan_id,
+                    "user": user_dict,
+                    "org_name": org_name
+                }),
+                timeout=10
+            )
+        except Exception as e:
+            raise WrapperCallFailedException(f"Subscription API - {e}")
+
         if r.status_code == 200:
             try:
                 res = r.json()
@@ -53,24 +60,32 @@ class SubscriptionApi(object):
 
     def decrement_plan_quantity(self, subscription_id: str) -> None:
         """Decrement a subscription's plan quantity"""
-        r = requests.delete(
-            url=f"{self.url}/subscription/{subscription_id}/quantity",
-            headers={
-                'Authorization': self.key
-            },
-            timeout=10
-        )
+        try:
+            r = requests.delete(
+                url=f"{self.url}/subscription/{subscription_id}/quantity",
+                headers={
+                    'Authorization': self.key
+                },
+                timeout=10
+            )
+        except Exception as e:
+            raise WrapperCallFailedException(f"Subscription API - {e}")
+
         if r.status_code != 204:
             raise WrapperCallFailedException(f"Subscription API - {r.status_code}")
 
     def increment_plan_quantity(self, subscription_id: str) -> None:
         """Increment a subscription's plan quantity"""
-        r = requests.put(
-            url=f"{self.url}/subscription/{subscription_id}/quantity",
-            headers={
-                'Authorization': self.key
-            },
-            timeout=10
-        )
+        try:
+            r = requests.put(
+                url=f"{self.url}/subscription/{subscription_id}/quantity",
+                headers={
+                    'Authorization': self.key
+                },
+                timeout=10
+            )
+        except Exception as e:
+            raise WrapperCallFailedException(f"Subscription API - {e}")
+
         if r.status_code != 204:
             raise WrapperCallFailedException(f"Subscription API - {r.status_code}")

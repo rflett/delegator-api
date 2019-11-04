@@ -1,13 +1,14 @@
 import datetime
 import typing
 
+from flask import request
 from sqlalchemy import func, exists, and_
 from validate_email import validate_email
 
 from app import app, session_scope
 from app.Controllers.Base import ObjectValidationController
 from app.Exceptions import ValidationError, ResourceNotFoundError
-from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting
+from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting, UserInviteLink
 from app.Models.Enums import NotificationTokens
 
 
@@ -119,7 +120,6 @@ class RequestValidationController(ObjectValidationController):
         self.check_str(request_body.get('last_name'), 'last_name')
         self.check_optional_str(request_body.get('job_title'), 'job_title')
         self.check_user_disabled(request_body.get('disabled'))
-        self.validate_password(request_body.get('password')),
 
     def validate_delay_task_request(self, request_body: dict, **kwargs) -> tuple:
         """ Validates the transition task request """
@@ -405,3 +405,19 @@ class RequestValidationController(ObjectValidationController):
             "job_title": self.check_optional_str(request_body.get('job_title'), 'job_title'),
             "disabled": self.check_user_disabled(request_body.get('disabled'))
         }
+
+    def validate_password_setup_request(self) -> UserInviteLink:
+        """Validates the create first time password link"""
+        try:
+            token = request.args['invtkn']
+            self.check_str(token, 'token')
+        except KeyError:
+            raise ValidationError("Missing invite token from request.")
+
+        with session_scope() as session:
+            invite_link = session.query(UserInviteLink).filter_by(token=token).first()
+
+        if invite_link is None:
+            raise ValidationError("Invite token does not exist or has expired.")
+        else:
+            return invite_link

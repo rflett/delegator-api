@@ -385,10 +385,8 @@ def test_create_user():
         "last_name": fake.name(),
         "role_id": "USER",
         "job_title": fake.bs(),
-        "disabled": None,
-        "password": "SomeP4ssw$rd"
+        "disabled": None
     }
-
     response = base.send("post", "users/", create_data)
     assert response.status_code == 201
     response_body = response.json()

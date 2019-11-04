@@ -3,11 +3,11 @@ import datetime
 from flask import Response, request
 from flask_restplus import Namespace
 
-from app import session_scope, subscription_api, logger
+from app import session_scope, subscription_api, logger, app
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ProductTierLimitError
-from app.Models import User, Activity, Task
+from app.Models import User, Activity, Task, UserInviteLink
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.Request import create_user_request, update_user_request
 from app.Models.Response import message_response_dto, user_response, get_users_response
@@ -97,13 +97,19 @@ class UserController(RequestValidationController):
                 email=request_body['email'],
                 first_name=request_body['first_name'],
                 last_name=request_body['last_name'],
-                password=request_body['password'],
                 role=request_body['role_id'],
                 job_title=request_body['job_title'],
                 disabled=request_body.get('disabled'),
                 created_by=req_user.id
             )
             session.add(user)
+
+        with session_scope() as session:
+            invite_link = UserInviteLink(user.id)
+            session.add(invite_link)
+            logger.info(f"Invite link for {user.name()} is "
+                        f"{app.config['DELEGATOR_API_URL']}?invtkn={invite_link.token}")
+            # TODO send an email with the link
 
         # create user settings
         user.create_settings()
