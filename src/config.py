@@ -37,6 +37,7 @@ class Local(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://delegator:delegator@localhost:5432/delegator"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     SUBSCRIPTION_API_URL = "http://localhost:5001"
+    DELEGATOR_API_URL = "http://localhost:5001/"
 
 
 class Staging(Config):
@@ -50,3 +51,4 @@ class Staging(Config):
     ORG_SETTINGS_TABLE = 'organisation-settings-staging'
     USER_ACTIVITY_TABLE = 'user-activity-staging'
     TASK_ACTIVITY_TABLE = 'task-activity-staging'
+    DELEGATOR_API_URL = "https://api-staging.backburner.online/"

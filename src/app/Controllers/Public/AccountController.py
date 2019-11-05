@@ -1,7 +1,4 @@
 import datetime
-import json
-import random
-import string
 import typing
 import uuid
 
@@ -13,11 +10,11 @@ from app import app, session_scope, logger, subscription_api
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import handle_exceptions, requires_jwt
 from app.Exceptions import AuthenticationError, WrapperCallFailedException
-from app.Models import User, Activity, Organisation, TaskType, FailedLogin
+from app.Models import User, Activity, Organisation, TaskType, FailedLogin, UserInviteLink
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.Request import login_request, signup_request
 from app.Models.Response import login_response, message_response_dto, signup_response
-from app.Services import UserService
+from app.Services import UserService, EmailService
 
 account_route = Namespace(
     path="/account",
@@ -26,6 +23,7 @@ account_route = Namespace(
 )
 
 user_service = UserService()
+email_service = EmailService()
 
 
 @account_route.route("/")
@@ -184,21 +182,22 @@ class AccountController(RequestValidationController):
                 raise AuthenticationError("Password incorrect.")
 
     @handle_exceptions
-    @account_route.response(200, "Reset Password Successful", message_response_dto)
+    @account_route.response(204, "Reset Password Link Sent")
     @account_route.response(400, "Registration Failed", message_response_dto)
     def patch(self) -> Response:
-        """Reset a password in the world's worst way"""
+        """Request a password reset"""
         request_body = request.get_json()
         self.validate_email(request_body.get('email'))
 
-        with session_scope():
+        with session_scope() as session:
             logger.info(f"received password reset for {request_body.get('email')}")
             user = user_service.get_by_email(request_body.get('email'))
-            new_password = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(16)])
-            user.reset_password(new_password)
-            logger.info(json.dumps(user.as_dict()))
-            logger.info(f"password successfully reset for {request_body.get('email')}")
-            return self.ok(f"Password reset successfully, new password is {new_password}")
+            reset_link = UserInviteLink(user.id)
+            session.add(reset_link)
+            logger.info(f"Password reset token for {user.name()} is {reset_link.token}")
+            email_service.send_reset_password_email(user.email, reset_link.token)
+
+            return self.no_content()
 
     @handle_exceptions
     @requires_jwt

@@ -11,6 +11,7 @@ from app.Models.TaskStatus import TaskStatus
 from app.Models.TaskType import TaskType
 from app.Models.TaskTypeEscalation import TaskTypeEscalation
 from app.Models.User import User
+from app.Models.UserInviteLink import UserInviteLink
 from app.Models.UserSetting import UserSetting
 
 __all__ = [
@@ -27,5 +28,6 @@ __all__ = [
     TaskType,
     TaskTypeEscalation,
     User,
+    UserInviteLink,
     UserSetting
 ]

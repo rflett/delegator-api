@@ -43,7 +43,7 @@ class User(db.Model):
     email = db.Column('email', db.String)
     first_name = db.Column('first_name', db.String)
     last_name = db.Column('last_name', db.String)
-    password = db.Column('password', db.String)
+    password = db.Column('password', db.String, default=None)
     job_title = db.Column('job_title', db.String)
     role = db.Column('role', db.String, db.ForeignKey('rbac_roles.id'))
     role_before_locked = db.Column('role_before_locked', db.String, db.ForeignKey('rbac_roles.id'), default=None)
@@ -68,9 +68,9 @@ class User(db.Model):
             email: str,
             first_name: str,
             last_name: str,
-            password: str,
             job_title: str,
             role: str,
+            password: str = None,
             role_before_locked: str = None,
             created_by: typing.Union[int, None] = None,
             disabled: typing.Union[datetime.datetime, None] = None,
@@ -80,7 +80,7 @@ class User(db.Model):
         self.email = email
         self.first_name = first_name
         self.last_name = last_name
-        self.password = _hash_password(password)
+        self.password = _hash_password(password) if password is not None else None
         self.job_title = job_title
         self.role = role
         self.role_before_locked = role_before_locked
@@ -114,6 +114,8 @@ class User(db.Model):
         :param password:    The password to check.
         :return:            True if it matches or False.
         """
+        if self.password is None:
+            return False
         salt = self.password[:64]
         stored_password = self.password[64:]
         pwdhash = hashlib.pbkdf2_hmac('sha512',
@@ -153,9 +155,9 @@ class User(db.Model):
         logger.info(f"user with id {self.id} did {operation} on {resource} with "
                     f"a resource_id of {resource_id}")
 
-    def reset_password(self, password) -> None:
+    def set_password(self, password) -> None:
         """
-        Resets the user's password
+        Sets the user's password
         :param password: The password
         :return: None
         """
@@ -237,7 +239,8 @@ class User(db.Model):
             "created_at": self.created_at.strftime(app.config['RESPONSE_DATE_FORMAT']),
             "created_by": self.created_by,
             "updated_at": self.updated_at.strftime(app.config['RESPONSE_DATE_FORMAT']),
-            "updated_by": self.updated_by
+            "updated_by": self.updated_by,
+            "invite_accepted": False if self.password is None else True
         }
 
     def fat_dict(self) -> dict:
