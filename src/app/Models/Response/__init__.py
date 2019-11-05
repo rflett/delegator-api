@@ -4,6 +4,7 @@ from app.Models.Response.Activity import activity_response_dto
 from app.Models.Response.General import message_response_dto
 from app.Models.Response.Organisation import get_org_response_dto, get_org_settings_response_dto, \
     update_org_response_dto, update_org_settings_response_dto, get_org_customer_id_response_dto
+from app.Models.Response.PasswordSetup import new_password_setup_response
 from app.Models.Response.Reporting import get_all_reports_response
 from app.Models.Response.Roles import roles_response
 from app.Models.Response.Task import task_response, task_statuses_response, \
@@ -23,6 +24,7 @@ __all__ = [
     get_org_response_dto,
     get_org_settings_response_dto,
     message_response_dto,
+    new_password_setup_response,
     roles_response,
     signup_response,
     task_response,

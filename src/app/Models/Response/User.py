@@ -21,6 +21,7 @@ user_response = api.model("User Response", {
     "created_by": fields.String,
     "updated_at": NullableDateTime,
     "updated_by": NullableString,
+    "invite_accepted": fields.Boolean,
     "settings": fields.Nested(user_settings_response)
 })
 
