@@ -1,37 +1,17 @@
 import _thread
-import json
 import typing
 from dataclasses import dataclass
 from os import getenv
 
-from app import logger, app_notifications_sqs
+from app import notification_api, logger
 
 
 def do_push(notification_dto: dict) -> None:
     """ Publishes the notification to SNS """
-    user_ids = notification_dto['user_ids']
-
-    # ensure user_ids are always in a list
-    if isinstance(user_ids, int):
-        user_ids = [user_ids]
-
-    # convert them to strings
-    user_ids = [str(user_id) for user_id in user_ids]
-
-    # set them again in the dto
-    notification_dto['user_ids'] = user_ids
-
-    if getenv('APP_ENV', 'Local') in ['Local', 'Docker']:
-        logger.info(f"WOULD have pushed notification {notification_dto} to SQS for "
-                    f"{len(notification_dto['user_ids'])} users.")
+    if getenv('APP_ENV', 'Local') == 'Local':
+        logger.info(f"WOULD have pushed notification {notification_dto} to NotificationApi")
         return None
-
-    app_notifications_sqs.send_message(
-        MessageBody=json.dumps(notification_dto)
-    )
-
-    logger.info(f"Pushed notification {notification_dto} to SQS for "
-                f"{len(notification_dto['user_ids'])} users.")
+    notification_api.send_notification(notification_dto)
 
 
 @dataclass
