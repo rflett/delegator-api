@@ -15,9 +15,6 @@ def handle_exceptions(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         try:
-            if request.headers.get('Content-Type') == 'application/json' \
-                    and request.method != 'GET' and request.path != '/account/':
-                logger.info(f"{request.method} - {request.get_json()}")
             return f(*args, **kwargs)
 
         except requests.Timeout as e:

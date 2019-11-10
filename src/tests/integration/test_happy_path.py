@@ -226,11 +226,24 @@ def test_create_task():
         "type_id": base.task_type_id,
         "description": "A Task Description",
         "time_estimate": 300,
-        "due_time": "2020-09-17T19:08:00+10:00",
         "priority": 0
     })
     assert r.status_code == 201
     base.task_id = r.json()['id']
+
+
+def test_schedule_task():
+    r = base.send('post', 'task/', data={
+        "type_id": base.task_type_id,
+        "description": "A Task Description",
+        "scheduled_for": "2020-11-10T15:46:00+10:00",
+        "scheduled_notification_period": 300,
+        "time_estimate": 300,
+        "priority": 0
+    })
+    assert r.status_code == 201
+    response_body = r.json()
+    assert response_body['status']['status'] == 'SCHEDULED'
 
 
 def test_update_task():
@@ -240,7 +253,6 @@ def test_update_task():
         "description": "A New Task Description",
         "status": "READY",
         "time_estimate": 300,
-        "due_time": "2020-09-17T19:08:00+10:00",
         "priority": 0
     })
     assert r.status_code == 200
@@ -278,7 +290,7 @@ def test_get_task_statuses():
     assert r.status_code == 200
     response_body = r.json()
     assert 'statuses' in response_body
-    assert len(response_body['statuses']) == 3
+    assert len(response_body['statuses']) == 4
     for s in response_body['statuses']:
         assert isinstance(s['status'], str)
         assert isinstance(s['label'], str)
