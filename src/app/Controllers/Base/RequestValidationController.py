@@ -69,7 +69,10 @@ class RequestValidationController(ObjectValidationController):
             'type': self.check_task_type_id(task_type_id=request_body.get('type_id')),
             'description': self.check_optional_str(request_body.get('description'), 'description'),
             'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
-            'due_time': self.check_task_due_time(request_body.get('due_time')),
+            'scheduled_for': self.check_task_scheduled_for(request_body.get('scheduled_for')),
+            'scheduled_notification_period': self.check_optional_int(
+                request_body.get('scheduled_notification_period'), 'scheduled_notification_period'
+            ),
             'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
             'priority': self.check_task_priority(request_body.get('priority'))
         }
@@ -309,7 +312,10 @@ class RequestValidationController(ObjectValidationController):
             'description': self.check_optional_str(request_body.get('description'), 'description'),
             'status': self.check_task_status(request_body.get('status')),
             'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
-            'due_time': self.check_task_due_time(request_body.get('due_time')),
+            'scheduled_for': self.check_task_scheduled_for(request_body.get('scheduled_for')),
+            'scheduled_notification_period': self.check_optional_int(
+                request_body.get('scheduled_notification_period'), 'scheduled_notification_period'
+            ),
             'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
             'priority': self.check_task_priority(request_body.get('priority'))
         }

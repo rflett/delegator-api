@@ -9,7 +9,7 @@ from flask_cors import CORS
 from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
 
-from app.ApiWrappers import SubscriptionApi
+from app.ApiWrappers import SubscriptionApi, NotificationApi
 
 # flask conf
 app = Flask(__name__)
@@ -66,6 +66,10 @@ app_notifications_sqs = sqs.Queue(app.config['APP_NOTIFICATIONS_SQS'])
 subscription_api = SubscriptionApi(
     url=app.config['SUBSCRIPTION_API_URL'],
     key=app.config['SUBSCRIPTION_API_KEY']
+)
+notification_api = NotificationApi(
+    url=app.config['NOTIFICATION_API_URL'],
+    key=app.config['NOTIFICATION_API_KEY']
 )
 
 

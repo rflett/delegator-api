@@ -8,7 +8,7 @@ from app.Exceptions import ResourceNotFoundError, ValidationError
 
 class TaskService(object):
     @staticmethod
-    def assign(task: Task, assignee: int, req_user: User) -> None:
+    def assign(task: Task, assignee: int, req_user: User, notify: bool = True) -> None:
         """Common function for assigning a task """
         from app.Services import UserService
 
@@ -36,15 +36,16 @@ class TaskService(object):
             event_id=assigned_user.id,
             event_friendly=f"Assigned to {task.label()} by {req_user.name()}."
         ).publish()
-        assigned_notification = Notification(
-            title="You've been assigned a task!",
-            event_name=Events.user_assigned_to_task,
-            msg=f"{req_user.name()} assigned {task.label()} to you.",
-            click_action=ClickActions.VIEW_TASK,
-            task_action_id=task.id,
-            user_ids=assigned_user.id
-        )
-        assigned_notification.push()
+        if notify:
+            assigned_notification = Notification(
+                title="You've been assigned a task!",
+                event_name=Events.user_assigned_to_task,
+                msg=f"{req_user.name()} assigned {task.label()} to you.",
+                click_action=ClickActions.VIEW_TASK,
+                task_action_id=task.id,
+                user_ids=assigned_user.id
+            )
+            assigned_notification.push()
         req_user.log(
             operation=Operations.ASSIGN,
             resource=Resources.TASK,
@@ -113,7 +114,7 @@ class TaskService(object):
             else:
                 return task
 
-    def transition(self, task: Task, status: str, req_user: User) -> None:
+    def transition(self, task: Task, status: str, req_user: User = None) -> None:
         """Common function for transitioning a task """
         with session_scope() as session:
             old_status = task.status
@@ -147,6 +148,10 @@ class TaskService(object):
         # get the pretty labels for the old and new status
         old_status_label = self._pretty_status_label(old_status)
         new_status_label = self._pretty_status_label(status)
+
+        # req_user will be none when this is called from the patch endpoint with key authentication
+        if req_user is None:
+            return
 
         Activity(
             org_id=task.org_id,

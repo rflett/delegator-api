@@ -19,18 +19,23 @@ class Config(object):
     DELEGATOR_API_KEY = 'Skj170raAe2SsWQm4Ny'
     SUBSCRIPTION_API_KEY = 'DWrcxyZsqJ64d1WGUiN'
     JWT_SECRET = '12a516f4e7b99441dba0231deb6fc0c87e2a84ae8beff7f64f6a5ac07058a3ae'
+    NOTIFICATION_API_KEY = 'JnQqvTV7iGABve1T87K'
 
 
 class Docker(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://delegator:delegator@postgres:5432/delegator"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     SUBSCRIPTION_API_URL = "http://subscription-api:5001"
+    DELEGATOR_API_URL = "http://localhost:5001/"
+    NOTIFICATION_API_URL = "http://notification-api:5002"
 
 
 class Ci(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://delegator:delegator@127.0.0.1:5432/delegator"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     SUBSCRIPTION_API_URL = "https://subscription-api-staging.backburner.online"
+    DELEGATOR_API_URL = "http://localhost:5001/"
+    NOTIFICATION_API_URL = "http://localhost:5002"
 
 
 class Local(Config):
@@ -38,6 +43,7 @@ class Local(Config):
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     SUBSCRIPTION_API_URL = "http://localhost:5001"
     DELEGATOR_API_URL = "http://localhost:5001/"
+    NOTIFICATION_API_URL = "http://localhost:5002"
 
 
 class Staging(Config):
@@ -52,3 +58,4 @@ class Staging(Config):
     USER_ACTIVITY_TABLE = 'user-activity-staging'
     TASK_ACTIVITY_TABLE = 'task-activity-staging'
     DELEGATOR_API_URL = "https://api-staging.backburner.online/"
+    NOTIFICATION_API_URL = "https://notification-api-staging.backburner.online"

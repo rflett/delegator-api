@@ -3,7 +3,7 @@ import traceback
 from functools import wraps
 
 import requests
-from flask import Response
+from flask import Response, request
 from werkzeug.exceptions import BadRequest
 
 import app.Exceptions as Exceptions

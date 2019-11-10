@@ -72,7 +72,8 @@ class ManageTask(RequestValidationController):
                 task_service.assign(
                     task=task_to_update,
                     assignee=assignee,
-                    req_user=req_user
+                    req_user=req_user,
+                    notify=False if task_to_update.status == TaskStatuses.SCHEDULED else True
                 )
 
         # transition
@@ -125,19 +126,23 @@ class ManageTask(RequestValidationController):
 
         task_attrs = self.validate_create_task_request(request.get_json(), **kwargs)
 
-        # create task
+        if task_attrs['scheduled_for'] is not None and task_attrs['scheduled_notification_period'] is not None:
+            return self.created(self._schedule_task(task_attrs, req_user))
+        else:
+            return self.created(self._create_task(task_attrs, req_user))
+
+    @staticmethod
+    def _create_task(task_attrs: dict, req_user) -> dict:
+        """Creates a new task"""
         with session_scope() as session:
             task = Task(
                 org_id=req_user.org_id,
-                type=task_attrs.get('type'),
-                description=task_attrs.get('description'),
+                type=task_attrs['type'],
+                description=task_attrs['description'],
                 status=TaskStatuses.READY,
-                time_estimate=task_attrs.get('time_estimate'),
-                due_time=task_attrs.get('due_time'),
-                priority=task_attrs.get('priority'),
-                created_by=req_user.id,
-                created_at=task_attrs.get('created_at'),
-                finished_at=task_attrs.get('finished_at')
+                time_estimate=task_attrs['time_estimate'],
+                priority=task_attrs['priority'],
+                created_by=req_user.id
             )
             session.add(task)
 
@@ -178,4 +183,51 @@ class ManageTask(RequestValidationController):
             )
             created_notification.push()
 
-        return self.created(task.fat_dict())
+        return task.fat_dict()
+
+    @staticmethod
+    def _schedule_task(task_attrs: dict, req_user) -> dict:
+        """Schedules a new task"""
+        with session_scope() as session:
+            task = Task(
+                org_id=req_user.org_id,
+                type=task_attrs['type'],
+                description=task_attrs['description'],
+                status=TaskStatuses.SCHEDULED,
+                scheduled_for=task_attrs['scheduled_for'],
+                scheduled_notification_period=task_attrs['scheduled_notification_period'],
+                time_estimate=task_attrs['time_estimate'],
+                priority=task_attrs['priority'],
+                created_by=req_user.id
+            )
+            session.add(task)
+
+        Activity(
+            org_id=task.org_id,
+            event=Events.task_scheduled,
+            event_id=task.id,
+            event_friendly=f"Scheduled by {req_user.name()}."
+        ).publish()
+        Activity(
+            org_id=req_user.org_id,
+            event=Events.user_scheduled_task,
+            event_id=req_user.id,
+            event_friendly=f"Scheduled task {task.label()}."
+        ).publish()
+        req_user.log(
+            operation=Operations.CREATE,
+            resource=Resources.TASK,
+            resource_id=task.id
+        )
+        logger.info(f"Scheduled task {task.as_dict()}")
+
+        # optionally assign the task if an assignee was present in the create task request
+        if task_attrs.get('assignee') is not None:
+            task_service.assign(
+                task=task,
+                assignee=task_attrs.get('assignee'),
+                req_user=req_user,
+                notify=False
+            )
+
+        return task.fat_dict()
