@@ -25,12 +25,14 @@ class Docker(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://delegator:delegator@postgres:5432/delegator"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     SUBSCRIPTION_API_URL = "http://subscription-api:5001"
+    DELEGATOR_API_URL = "http://localhost:5001/"
 
 
 class Ci(Config):
     SQLALCHEMY_DATABASE_URI = "postgresql://delegator:delegator@127.0.0.1:5432/delegator"
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     SUBSCRIPTION_API_URL = "https://subscription-api-staging.backburner.online"
+    DELEGATOR_API_URL = "http://localhost:5001/"
 
 
 class Local(Config):

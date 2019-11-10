@@ -5,7 +5,7 @@ from app.Models.Response.Common import NullableDateTime
 from app.Models.Response.TaskTypes import task_type_response
 from app.Models.Response.User import user_response
 
-response_statuses = ['READY', 'IN_PROGRESS', 'DELAYED', 'COMPLETED', 'CANCELLED']
+response_statuses = ['SCHEDULED', 'READY', 'IN_PROGRESS', 'DELAYED', 'COMPLETED', 'CANCELLED']
 
 task_status_dto = api.model("Task Status", {
     "status":  fields.String(enum=response_statuses),
@@ -34,7 +34,9 @@ task_response = api.model("Task Response", {
     "description": fields.String(),
     "status": fields.Nested(task_status_dto),
     "time_estimate": fields.String(),
-    "due_time": NullableDateTime,
+    "scheduled_for": NullableDateTime,
+    "scheduled_notification_period": fields.Integer(),
+    "scheduled_notification_sent": NullableDateTime,
     "assignee": fields.Nested(user_response),
     "priority": fields.Nested(task_priority_dto),
     "created_by": fields.Nested(user_response),

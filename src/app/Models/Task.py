@@ -19,7 +19,9 @@ class Task(db.Model):
     description = db.Column('description', db.String)
     status = db.Column('status', db.String, db.ForeignKey('task_statuses.status'))
     time_estimate = db.Column('time_estimate', db.Integer, default=0)
-    due_time = db.Column('due_time', db.DateTime)
+    scheduled_for = db.Column('scheduled_for', db.DateTime, default=None)
+    scheduled_notification_period = db.Column('scheduled_notification_period', db.Integer, default=None)
+    scheduled_notification_sent = db.Column('scheduled_notification_sent', db.DateTime, default=None)
     assignee = db.Column('assignee', db.Integer, db.ForeignKey('users.id'), default=None)
     priority = db.Column('priority', db.Integer, db.ForeignKey('task_priorities.priority'), default=1)
     created_by = db.Column('created_by', db.Integer, db.ForeignKey('users.id'))
@@ -45,10 +47,12 @@ class Task(db.Model):
         description: str,
         status: str,
         time_estimate: int,
-        due_time: datetime,
         priority: int,
         created_by: int,
-        created_at: datetime,
+        created_at: datetime = None,
+        scheduled_for: datetime = None,
+        scheduled_notification_period: int = None,
+        scheduled_notification_sent: datetime = None,
         started_at: datetime = None,
         finished_at: datetime = None,
         assignee: int = None,
@@ -61,7 +65,9 @@ class Task(db.Model):
         self.description = description
         self.status = status
         self.time_estimate = time_estimate
-        self.due_time = due_time
+        self.scheduled_for = scheduled_for
+        self.scheduled_notification_period = scheduled_notification_period
+        self.scheduled_notification_sent = scheduled_notification_sent
         self.assignee = assignee
         self.priority = priority
         self.created_by = created_by
@@ -76,11 +82,6 @@ class Task(db.Model):
         """
         :return: dict repr of a Task object
         """
-        if self.due_time is None:
-            due_time = None
-        else:
-            due_time = self.due_time.strftime(app.config['RESPONSE_DATE_FORMAT'])
-
         if self.created_at is None:
             created_at = None
         else:
@@ -106,6 +107,16 @@ class Task(db.Model):
         else:
             priority_changed_at = self.priority_changed_at.strftime(app.config['RESPONSE_DATE_FORMAT'])
 
+        if self.scheduled_for is None:
+            scheduled_for = None
+        else:
+            scheduled_for = self.scheduled_for.strftime(app.config['RESPONSE_DATE_FORMAT'])
+
+        if self.scheduled_notification_sent is None:
+            scheduled_notification_sent = None
+        else:
+            scheduled_notification_sent = self.scheduled_notification_sent.strftime(app.config['RESPONSE_DATE_FORMAT'])
+
         return {
             "id": self.id,
             "org_id": self.org_id,
@@ -113,7 +124,9 @@ class Task(db.Model):
             "description": self.description,
             "status": self.status,
             "time_estimate": self.time_estimate,
-            "due_time": due_time,
+            "scheduled_for": scheduled_for,
+            "scheduled_notification_period": self.scheduled_notification_period,
+            "scheduled_notification_sent": scheduled_notification_sent,
             "assignee": self.assignee,
             "priority": self.priority,
             "created_by": self.created_by,

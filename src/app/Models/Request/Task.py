@@ -12,7 +12,8 @@ update_task_request = api.model("Update Task Request", {
     'description': fields.String(),
     'status': fields.String(enum=statuses, required=True),
     'time_estimate': NullableInteger,
-    'due_time': NullableDateTime,
+    "scheduled_for": NullableDateTime,
+    "scheduled_notification_period": fields.Integer(),
     'assignee': fields.Integer(),
     'priority': fields.Integer(min=0, max=2, required=True),
 })
@@ -21,7 +22,8 @@ create_task_request = api.model("Create Task Request", {
     'type_id': fields.Integer(),
     'description': fields.String(),
     'time_estimate': NullableInteger,
-    'due_time': NullableDateTime,
+    "scheduled_for": NullableDateTime,
+    "scheduled_notification_period": fields.Integer(),
     'assignee': fields.Integer(),
     'priority': fields.Integer(min=0, max=2),
 })
@@ -38,8 +40,9 @@ delay_task_request = api.model("Delay Task Request", {
 })
 
 transition_task_request = api.model("Transition Task Request", {
-    "task_id": fields.Integer(),
-    "task_status": fields.String(enum=statuses)
+    "task_id": fields.Integer(required=True),
+    "task_status": fields.String(enum=statuses, required=True),
+    "org_id": fields.Integer()
 })
 
 update_task_priority_request = api.model("Update Task Priority Request", {

@@ -97,18 +97,18 @@ class ObjectValidationController(ResponseController):
             return None
 
     @staticmethod
-    def check_task_due_time(due_time_str: typing.Optional[str]) -> typing.Union[None, datetime.datetime]:
+    def check_task_scheduled_for(scheduled_for_str: typing.Optional[str]) -> typing.Union[None, datetime.datetime]:
         """Verify a task due time can be converted to a datetime and is not in the past"""
-        if due_time_str is not None:
+        if scheduled_for_str is not None:
             try:
-                due_time_parsed = dateutil.parser.parse(due_time_str)
+                scheduled_for_parsed = dateutil.parser.parse(scheduled_for_str)
                 # check due time is not in the past
-                if due_time_parsed < datetime.datetime.now(datetime.timezone.utc):
-                    raise ValidationError("Due time is in the past.")
-                return due_time_parsed
+                if scheduled_for_parsed < datetime.datetime.now(datetime.timezone.utc):
+                    raise ValidationError("scheduled_for is in the past.")
+                return scheduled_for_parsed
             except ValueError as e:
                 logger.error(str(e))
-                raise ValidationError(f"Could not parse due_time {due_time_str} to date.")
+                raise ValidationError(f"Could not parse scheduled_for {scheduled_for_str} to date.")
         return None
 
     def check_task_id(self, task_id: int, org_id: int) -> Task:

@@ -3,7 +3,7 @@ from flask_restplus import Namespace
 
 from app import session_scope
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
+from app.Decorators import requires_jwt, handle_exceptions, authorize, requires_token_auth
 from app.Models import TaskStatus
 from app.Models.Enums import TaskStatuses, Operations, Resources
 from app.Models.Request import transition_task_request
@@ -31,13 +31,29 @@ class TransitionTask(RequestValidationController):
     def put(self, **kwargs) -> Response:
         """Transitions a task to another status"""
         task, task_status = self.validate_transition_task(request.get_json(), **kwargs)
+        return self.ok(self._transition_task(task, task_status, kwargs['req_user']))
+
+    @handle_exceptions
+    @requires_token_auth
+    @transition_task_route.expect(transition_task_request)
+    @transition_task_route.response(200, "Success", task_response)
+    @transition_task_route.response(400, "Failed to transition the task", message_response_dto)
+    def patch(self) -> Response:
+        """Transitions a task to another status with token auth"""
+        request_body = request.get_json()
+        task = task_service.get(request_body['task_id'], request_body['org_id'])
+        return self.ok(self._transition_task(task, request_body['task_status']))
+
+    @staticmethod
+    def _transition_task(task, task_status: str, req_user=None) -> dict:
+        """Transitions a task to another status"""
         task_service.transition(
             task=task,
             status=task_status,
-            req_user=kwargs['req_user']
+            req_user=req_user
 
         )
-        return self.ok(task.fat_dict())
+        return task.fat_dict()
 
 
 @transition_task_route.route("/<int:task_id>")
@@ -60,7 +76,8 @@ class GetTaskTransitions(RequestValidationController):
             # you can move from ready to ready, cancelled and dropped are not included because they are handled
             # separately
             valid_transitions = {
-                TaskStatuses.READY: [TaskStatuses.READY]
+                TaskStatuses.READY: [TaskStatuses.READY],
+                TaskStatuses.SCHEDULED: [TaskStatuses.READY]
             }
 
             # search list for querying db
@@ -85,7 +102,8 @@ class GetTaskTransitions(RequestValidationController):
             valid_transitions = {
                 TaskStatuses.READY: [TaskStatuses.READY, TaskStatuses.IN_PROGRESS, TaskStatuses.CANCELLED],
                 TaskStatuses.IN_PROGRESS: [TaskStatuses.IN_PROGRESS, TaskStatuses.COMPLETED],
-                TaskStatuses.DELAYED: [TaskStatuses.DELAYED, TaskStatuses.IN_PROGRESS]
+                TaskStatuses.DELAYED: [TaskStatuses.DELAYED, TaskStatuses.IN_PROGRESS],
+                TaskStatuses.SCHEDULED: [TaskStatuses.READY]
             }
 
             # search list for querying db
