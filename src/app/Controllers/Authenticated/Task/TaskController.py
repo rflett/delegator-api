@@ -93,6 +93,13 @@ class ManageTask(RequestValidationController):
                 priority=task_priority
             )
 
+        # don't update scheduled info if it wasn't scheduled to begin with, or the notification has been sent
+        if task_to_update.scheduled_for is None \
+                and task_to_update.scheduled_notification_period is None \
+                or task_to_update.scheduled_notification_sent:
+            task_attrs.pop('scheduled_for')
+            task_attrs.pop('scheduled_notification_period')
+
         # for each value in the request body, if the task has that attribute, update it
         # previous attributes such as priority and status have been popped from the request dict so will not be updated
         # again here
