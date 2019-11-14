@@ -157,7 +157,7 @@ class ManageTask(RequestValidationController):
                 time_estimate=task_attrs['time_estimate'],
                 priority=task_attrs['priority'],
                 created_by=req_user.id,
-                **self._get_labels(task_attrs.pop('labels'))
+                **self._get_labels(task_attrs['labels'])
             )
             session.add(task)
 
@@ -213,7 +213,7 @@ class ManageTask(RequestValidationController):
                 time_estimate=task_attrs['time_estimate'],
                 priority=task_attrs['priority'],
                 created_by=req_user.id,
-                **self._get_labels(task_attrs.pop('labels'))
+                **self._get_labels(task_attrs['labels'])
             )
             session.add(task)
 
