@@ -31,6 +31,9 @@ class Task(db.Model):
     finished_at = db.Column('finished_at', db.DateTime)
     status_changed_at = db.Column('status_changed_at', db.DateTime)
     priority_changed_at = db.Column('priority_changed_at', db.DateTime)
+    label_1 = db.Column('label_1', db.Integer, default=None)
+    label_2 = db.Column('label_2', db.Integer, default=None)
+    label_3 = db.Column('label_3', db.Integer, default=None)
 
     orgs = db.relationship("Organisation", backref="organisations")
     assignees = db.relationship("User", foreign_keys=[assignee], backref="assigned_user")
@@ -58,7 +61,10 @@ class Task(db.Model):
         assignee: int = None,
         finished_by: int = None,
         status_changed_at: datetime = None,
-        priority_changed_at: datetime = None
+        priority_changed_at: datetime = None,
+        label_1: int = None,
+        label_2: int = None,
+        label_3: int = None
     ):
         self.org_id = org_id
         self.type = type
@@ -77,6 +83,9 @@ class Task(db.Model):
         self.finished_at = finished_at
         self.status_changed_at = status_changed_at
         self.priority_changed_at = priority_changed_at
+        self.label_1 = label_1
+        self.label_2 = label_2
+        self.label_3 = label_3
 
     def as_dict(self) -> dict:
         """
@@ -135,23 +144,36 @@ class Task(db.Model):
             "finished_by": self.finished_by,
             "finished_at": finished_at,
             "status_changed_at": status_changed_at,
-            "priority_changed_at": priority_changed_at
+            "priority_changed_at": priority_changed_at,
+            "labels": [l for l in [self.label_1, self.label_2, self.label_3] if l is not None]
         }
 
     def fat_dict(self) -> dict:
         """ Returns a full task dict with all of its FK's joined. """
-        from app.Models import User
+        from app.Models import User, TaskLabel
         with session_scope() as session:
             task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
+            task_label_1, task_label_2, task_label_3 = aliased(TaskLabel), aliased(TaskLabel), aliased(TaskLabel)
             tasks_qry = session\
-                .query(Task, task_assignee, task_created_by, task_finished_by) \
+                .query(
+                    Task,
+                    task_assignee,
+                    task_created_by,
+                    task_finished_by,
+                    task_label_1,
+                    task_label_2,
+                    task_label_3
+                ) \
                 .outerjoin(task_assignee, task_assignee.id == Task.assignee) \
                 .outerjoin(task_finished_by, task_finished_by.id == Task.finished_by) \
+                .outerjoin(task_label_1, task_label_1.id == Task.label_1) \
+                .outerjoin(task_label_2, task_label_2.id == Task.label_2) \
+                .outerjoin(task_label_3, task_label_3.id == Task.label_3) \
                 .join(task_created_by, task_created_by.id == Task.created_by) \
                 .filter(Task.id == self.id) \
                 .first()
 
-        t, ta, tcb, tfb = tasks_qry
+        t, ta, tcb, tfb, tla, tlb, tlc = tasks_qry
 
         task_dict = self.as_dict()
 
@@ -161,6 +183,7 @@ class Task(db.Model):
         task_dict['status'] = self.task_statuses.as_dict()
         task_dict['type'] = self.task_types.as_dict()
         task_dict['priority'] = self.task_priorities.as_dict()
+        task_dict['labels'] = [l.as_dict() for l in [tla, tlb, tlc] if l is not None]
 
         return task_dict
 

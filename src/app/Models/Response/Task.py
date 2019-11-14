@@ -4,6 +4,7 @@ from app import api
 from app.Models.Response.Common import NullableDateTime
 from app.Models.Response.TaskTypes import task_type_response
 from app.Models.Response.User import user_response
+from app.Models.Response.TaskLabels import task_label_dto
 
 response_statuses = ['SCHEDULED', 'READY', 'IN_PROGRESS', 'DELAYED', 'COMPLETED', 'CANCELLED']
 
@@ -46,6 +47,7 @@ task_response = api.model("Task Response", {
     "finished_at": NullableDateTime,
     "status_changed_at": NullableDateTime,
     "priority_changed_at": NullableDateTime,
+    "labels": fields.List(fields.Nested(task_label_dto))
 })
 
 tasks_response = api.model("Tasks Response", {
