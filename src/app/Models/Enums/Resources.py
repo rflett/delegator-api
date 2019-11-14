@@ -22,3 +22,4 @@ class Resources(str):
     USER_SETTINGS = 'USER_SETTINGS'
     USERS = 'USERS'
     USERS_PAGE = 'USERS_PAGE'
+    TASK_LABELS = 'TASK_LABELS'

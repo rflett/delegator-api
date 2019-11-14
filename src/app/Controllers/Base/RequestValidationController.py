@@ -74,7 +74,8 @@ class RequestValidationController(ObjectValidationController):
                 request_body.get('scheduled_notification_period'), 'scheduled_notification_period'
             ),
             'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
-            'priority': self.check_task_priority(request_body.get('priority'))
+            'priority': self.check_task_priority(request_body.get('priority')),
+            'labels': self.check_task_labels(request_body.get('labels', []), kwargs['req_user'].org_id)
         }
 
     def validate_create_task_type_request(
@@ -301,10 +302,7 @@ class RequestValidationController(ObjectValidationController):
         return org_setting_obj
 
     def validate_update_task_request(self, request_body: dict, **kwargs) -> dict:
-        """Validates a user request body
-        :param request_body:    The request body from the update user request
-        :return:                Response if the request body contains invalid values, or the UserRequest dataclass
-        """
+        """Validates an update task request"""
         task = self.check_task_id(request_body.get('id'), kwargs['req_user'].org_id)
         return {
             'task': task,
@@ -317,7 +315,8 @@ class RequestValidationController(ObjectValidationController):
                 request_body.get('scheduled_notification_period'), 'scheduled_notification_period'
             ),
             'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
-            'priority': self.check_task_priority(request_body.get('priority'))
+            'priority': self.check_task_priority(request_body.get('priority')),
+            'labels': self.check_task_labels(request_body.get('labels', []), kwargs['req_user'].org_id)
         }
 
     def validate_update_task_type_request(self, org_id: int, request_body: dict) -> typing.Tuple[TaskType, dict, list]:
@@ -427,3 +426,20 @@ class RequestValidationController(ObjectValidationController):
             raise ValidationError("Invite token does not exist or has expired.")
         else:
             return invite_link
+
+    def validate_update_task_labels_request(self, request_body: dict) -> typing.List[dict]:
+        """Validates that the incoming task labels are valid"""
+
+        # expecting a list of label dicts
+        try:
+            labels = request_body['labels']
+
+            for label in labels:
+                self.check_optional_int(label.get('id'), 'id')
+                self.check_str(label['label'], 'label')
+                self.check_str(label['colour'], 'colour')
+
+            return labels
+
+        except KeyError as e:
+            raise ValidationError(f"Missing {e} from request")

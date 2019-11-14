@@ -6,6 +6,7 @@ from app.Models.Notification import Notification
 from app.Models.Organisation import Organisation
 from app.Models.OrgSetting import OrgSetting
 from app.Models.Task import Task
+from app.Models.TaskLabel import TaskLabel
 from app.Models.TaskPriority import TaskPriority
 from app.Models.TaskStatus import TaskStatus
 from app.Models.TaskType import TaskType
@@ -23,6 +24,7 @@ __all__ = [
     Organisation,
     OrgSetting,
     Task,
+    TaskLabel,
     TaskPriority,
     TaskStatus,
     TaskType,
