@@ -42,13 +42,13 @@
 									}
 								],
 								"url": {
-									"raw": "{{host}}/users/active",
+									"raw": "{{host}}/active-users/",
 									"host": [
 										"{{host}}"
 									],
 									"path": [
-										"users",
-										"active"
+										"active-users",
+										""
 									]
 								}
 							},
@@ -140,12 +140,13 @@
 							"raw": "{\n\t\"email\": \"james@backburner.com.au\",\n\t\"first_name\": \"James\",\n\t\"last_name\": \"Turner\",\n\t\"role_id\": \"USER\",\n\t\"job_title\": \"Developer\"\n}"
 						},
 						"url": {
-							"raw": "{{host}}/users",
+							"raw": "{{host}}/users/",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"users"
+								"users",
+								""
 							]
 						}
 					},
@@ -476,7 +477,7 @@
 								"auth": {
 									"type": "noauth"
 								},
-								"method": "PUT",
+								"method": "POST",
 								"header": [
 									{
 										"key": "Authorization",
@@ -486,22 +487,27 @@
 									{
 										"key": "Content-Type",
 										"name": "Content-Type",
-										"type": "text",
-										"value": "application/json"
+										"value": "application/json",
+										"type": "text"
 									}
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n\t\"label\": \"TT1\"\n}"
+									"raw": "{\n\t\"label\": \"TT1\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
 								},
 								"url": {
-									"raw": "{{host}}/tasks/types",
+									"raw": "{{host}}/task-types/",
 									"host": [
 										"{{host}}"
 									],
 									"path": [
-										"tasks",
-										"types"
+										"task-types",
+										""
 									]
 								}
 							},
@@ -528,7 +534,7 @@
 								"auth": {
 									"type": "noauth"
 								},
-								"method": "POST",
+								"method": "PUT",
 								"header": [
 									{
 										"key": "Authorization",
@@ -538,22 +544,27 @@
 									{
 										"key": "Content-Type",
 										"name": "Content-Type",
-										"type": "text",
-										"value": "application/json"
+										"value": "application/json",
+										"type": "text"
 									}
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n\t\"id\": 1,\n\t\"label\": \"Other\",\n\t\"escalation_policies\": [\n\t\t{\n\t\t\t\"display_order\": 1,\n\t\t\t\"delay\": 30,\n\t\t\t\"from_priority\": 0,\n\t\t\t\"to_priority\": 1\n\t\t},\n\t\t{\n\t\t\t\"display_order\": 2,\n\t\t\t\"delay\": 60,\n\t\t\t\"from_priority\": 1,\n\t\t\t\"to_priority\": 2\n\t\t}\n\t]\n}"
+									"raw": "{\n\t\"id\": 1,\n\t\"label\": \"OPther\",\n    \"default_description\": \"A description\",\n    \"default_priority\": 2,\n\t\"escalation_policies\": [\n\t\t{\n\t\t\t\"display_order\": 1,\n\t\t\t\"delay\": 30,\n\t\t\t\"from_priority\": 0,\n\t\t\t\"to_priority\": 1\n\t\t},\n\t\t{\n\t\t\t\"display_order\": 2,\n\t\t\t\"delay\": 60,\n\t\t\t\"from_priority\": 1,\n\t\t\t\"to_priority\": 2\n\t\t}\n\t]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
 								},
 								"url": {
-									"raw": "{{host}}/tasks/types",
+									"raw": "{{host}}/task-types/",
 									"host": [
 										"{{host}}"
 									],
 									"path": [
-										"tasks",
-										"types"
+										"task-types",
+										""
 									]
 								}
 							},
@@ -593,13 +604,13 @@
 									}
 								],
 								"url": {
-									"raw": "{{host}}/tasks/types",
+									"raw": "{{host}}/task-types/",
 									"host": [
 										"{{host}}"
 									],
 									"path": [
-										"tasks",
-										"types"
+										"task-types",
+										""
 									]
 								}
 							},
@@ -631,16 +642,30 @@
 										"key": "Authorization",
 										"type": "text",
 										"value": "{{token}}"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"value": "application/json",
+										"type": "text"
 									}
 								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
 								"url": {
-									"raw": "{{host}}/tasks/types/1",
+									"raw": "{{host}}/task-types/1",
 									"host": [
 										"{{host}}"
 									],
 									"path": [
-										"tasks",
-										"types",
+										"task-types",
 										"1"
 									]
 								}
@@ -687,13 +712,14 @@
 									}
 								],
 								"url": {
-									"raw": "{{host}}/tasks/statuses",
+									"raw": "{{host}}/tasks/statuses/",
 									"host": [
 										"{{host}}"
 									],
 									"path": [
 										"tasks",
-										"statuses"
+										"statuses",
+										""
 									]
 								}
 							},
@@ -744,9 +770,15 @@
 								}
 							},
 							"response": []
-						},
+						}
+					],
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "Labels",
+					"item": [
 						{
-							"name": "Get Available Transitions",
+							"name": "Get Labels",
 							"event": [
 								{
 									"listen": "test",
@@ -779,20 +811,81 @@
 									}
 								],
 								"url": {
-									"raw": "{{host}}/task/transition/1",
+									"raw": "{{host}}/task-labels/",
 									"host": [
 										"{{host}}"
 									],
 									"path": [
-										"task",
-										"transition",
-										"1"
+										"task-labels",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Labels",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "fed51681-1030-43df-9387-5a58d297a618",
+										"exec": [
+											"pm.test(\"response is ok\", function () {\r",
+											"    pm.response.to.have.status(200);\r",
+											"});\r",
+											"\r",
+											"pm.test(\"response must be valid and have a body\", function () {\r",
+											"     pm.response.to.be.json;\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "{{token}}"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"labels\": [\n\t\t{\n\t\t\t\"id\": 1,\n\t\t\t\"label\": \"labelOne\",\n\t\t\t\"colour\": \"red\"\n\t\t},\n\t\t{\n\t\t\t\"id\": 2,\n\t\t\t\"label\": \"labelTwo\",\n\t\t\t\"colour\": \"green\"\n\t\t},\n\t\t{\n\t\t\t\"id\": 3,\n\t\t\t\"label\": \"labelThree\",\n\t\t\t\"colour\": \"yellow\"\n\t\t},\n\t\t{\n\t\t\t\"id\": 4,\n\t\t\t\"label\": \"labelFour\",\n\t\t\t\"colour\": \"blue\"\n\t\t}\n\t]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{host}}/task-labels/",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"task-labels",
+										""
 									]
 								}
 							},
 							"response": []
 						}
 					],
+					"protocolProfileBehavior": {},
 					"_postman_isSubFolder": true
 				},
 				{
@@ -814,15 +907,21 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"READY\",\n\t\"time_estimate\": 600,\n\t\"due_time\": \"2020-04-26T06:00:00+10:00\",\n\t\"priority\": 0\n}"
+							"raw": "{\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"time_estimate\": 600,\n\t\"priority\": 0,\n\t\"scheduled_for\": \"2029-11-10T18:05:00+10:00\",\n\t\"scheduled_notification_period\": 300,\n\t\"labels\": [1, 2, 5]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
-							"raw": "{{host}}/tasks",
+							"raw": "{{host}}/task/",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"tasks"
+								"task",
+								""
 							]
 						}
 					},
@@ -862,12 +961,13 @@
 							}
 						],
 						"url": {
-							"raw": "{{host}}/tasks",
+							"raw": "{{host}}/tasks/",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"tasks"
+								"tasks",
+								""
 							]
 						}
 					},
@@ -905,6 +1005,71 @@
 							"path": [
 								"task",
 								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Transitions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"task_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/task/transition/2",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"task",
+								"transition",
+								"2"
 							]
 						}
 					},
@@ -992,15 +1157,16 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"id\": 1,\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"status\": \"IN_PROGRESS\",\n\t\"time_estimate\": 300,\n\t\"due_time\": \"2020-03-31T21:00:00+10:00\",\n\t\"assignee\": 1,\n\t\"priority\": 1\n}\n"
+							"raw": "{\n\t\"id\": 1,\n\t\"org_id\": 1,\n\t\"type_id\": 1,\n\t\"description\": \"Hello World\",\n\t\"time_estimate\": 300,\n\t\"scheduled_for\": \"2019-11-10T15:51:00+10:00\",\n\t\"scheduled_notification_period\": 30,\n\t\"assignee\": 1,\n\t\"priority\": 1\n}\n"
 						},
 						"url": {
-							"raw": "{{host}}/tasks",
+							"raw": "{{host}}/task/",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"tasks"
+								"task",
+								""
 							]
 						}
 					},
@@ -1206,6 +1372,56 @@
 					"response": []
 				},
 				{
+					"name": "Transition Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fed51681-1030-43df-9387-5a58d297a618",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Skj170raAe2SsWQm4Ny"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"task_id\": 1,\n\t\"task_status\": \"READY\",\n\t\"org_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{host}}/task/transition/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"task",
+								"transition",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Delay Task",
 					"event": [
 						{
@@ -1236,13 +1452,18 @@
 							{
 								"key": "Content-Type",
 								"name": "Content-Type",
-								"type": "text",
-								"value": "application/json"
+								"value": "application/json",
+								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"task_id\": 1,\n\t\"delay_for\": 20,\n\t\"reason\": \"because I'm lazy\"\n}"
+							"raw": "{\r\n\t\"task_id\": 5,\r\n\t\"delay_for\": 20,\r\n\t\"reason\": \"because I'm lazy\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{host}}/task/delay",
@@ -1363,7 +1584,12 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"org_id\": 1\n}"
+							"raw": "{\n\t\"org_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{host}}/org/settings",
@@ -1479,15 +1705,16 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n\t\"org_id\": 1,\r\n\t\"org_name\": \"RyansOrg\"\r\n}"
+							"raw": "{\r\n\t\"org_id\": 1,\r\n\t\"org_name\": \"Delegator\"\r\n}"
 						},
 						"url": {
-							"raw": "{{host}}/org",
+							"raw": "{{host}}/org/",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
-								"org"
+								"org",
+								""
 							]
 						}
 					},
@@ -1512,7 +1739,12 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n\t\"chargebee_customer_id\": \"2sUBzx5vRZMD2gy13jF\",\r\n\t\"plan_id\": \"basic\"\r\n}"
+							"raw": "{\r\n\t\"customer_id\": \"2sUBzx5vRZMD2gy13jF\",\r\n\t\"subscription_id\": \"2sUBzx5vRZMD2gy13jF\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{host}}/org/subscription",
@@ -1596,6 +1828,129 @@
 			]
 		},
 		{
+			"name": "Passwords",
+			"item": [
+				{
+					"name": "Verify Link",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/password/?invtkn=se5S2R2sWGwMks6uxFLCqQs7KgmmgJttw9scLGMX",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"password",
+								""
+							],
+							"query": [
+								{
+									"key": "invtkn",
+									"value": "se5S2R2sWGwMks6uxFLCqQs7KgmmgJttw9scLGMX"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"password\": \"Ryanfl3tt!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/password/?invtkn=e6u0J8niKgiiHetEO60k9HfDLulTaWGwNKzSMTd6",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"password",
+								""
+							],
+							"query": [
+								{
+									"key": "invtkn",
+									"value": "e6u0J8niKgiiHetEO60k9HfDLulTaWGwNKzSMTd6"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "310d5b23-cc45-4b55-9f6f-b739a6a7f067",
+								"exec": [
+									"pm.test(\"response is ok\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"     pm.response.to.be.json;\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"email\": \"james.turner@frontburner.com.au\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/account/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"account",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
 			"name": "Signup",
 			"event": [
 				{
@@ -1613,26 +1968,32 @@
 				"auth": {
 					"type": "noauth"
 				},
-				"method": "POST",
+				"method": "PUT",
 				"header": [
 					{
 						"key": "Content-Type",
 						"name": "Content-Type",
-						"type": "text",
-						"value": "application/json"
+						"value": "application/json",
+						"type": "text"
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"org_name\": \"BackBurner\",\n\t\"email\": \"ryan.flett@backburner.com.au\",\n\t\"password\": \"Ryanflett!1\",\n\t\"first_name\": \"Ryan\",\n\t\"last_name\": \"Flett\",\n\t\"job_title\": \"DevOps\",\n\t\"plan_id\": \"basic\"\n}"
+					"raw": "{\r\n    \"org_name\": \"Delegator\",\r\n    \"email\": \"devops@delegator.com.au\",\r\n    \"password\": \"B4ckburn3r\",\r\n    \"first_name\": \"Ryan\",\r\n    \"last_name\": \"Flett\",\r\n    \"job_title\": \"DevOps Engineer\",\r\n    \"plan_id\": \"premium\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
 				},
 				"url": {
-					"raw": "{{host}}/signup",
+					"raw": "{{host}}/account/",
 					"host": [
 						"{{host}}"
 					],
 					"path": [
-						"signup"
+						"account",
+						""
 					]
 				}
 			},
@@ -1674,8 +2035,8 @@
 					{
 						"key": "Content-Type",
 						"name": "Content-Type",
-						"type": "text",
-						"value": "application/json"
+						"value": "application/json",
+						"type": "text"
 					},
 					{
 						"key": "Referer",
@@ -1685,15 +2046,21 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"email\": \"ryan.flett@frontburner.com.au\",\n\t\"password\": \"B4ckburn3r\"\n}"
+					"raw": "{\n\t\"email\": \"admin@delegator.com.au\",\n\t\"password\": \"B4ckburn3r\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
 				},
 				"url": {
-					"raw": "{{host}}/login",
+					"raw": "{{host}}/account/",
 					"host": [
 						"{{host}}"
 					],
 					"path": [
-						"login"
+						"account",
+						""
 					]
 				}
 			},
@@ -1774,12 +2141,13 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{host}}/health",
+					"raw": "{{host}}/health/",
 					"host": [
 						"{{host}}"
 					],
 					"path": [
-						"health"
+						"health",
+						""
 					]
 				}
 			},
@@ -1880,53 +2248,6 @@
 					],
 					"path": [
 						"logout"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Reset Password",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"id": "310d5b23-cc45-4b55-9f6f-b739a6a7f067",
-						"exec": [
-							"pm.test(\"response is ok\", function () {\r",
-							"    pm.response.to.have.status(200);\r",
-							"});\r",
-							"\r",
-							"pm.test(\"response must be valid and have a body\", function () {\r",
-							"     pm.response.to.be.json;\r",
-							"});\r",
-							""
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"name": "Content-Type",
-						"type": "text",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n\t\"email\": \"ryan.flett1@gmail.com\"\n}"
-				},
-				"url": {
-					"raw": "{{host}}/reset_password",
-					"host": [
-						"{{host}}"
-					],
-					"path": [
-						"reset_password"
 					]
 				}
 			},
