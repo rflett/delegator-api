@@ -3,6 +3,7 @@ from app.Controllers.Authenticated.Task.CancelTaskController import cancel_task_
 from app.Controllers.Authenticated.Task.DelayTaskController import delay_task_route
 from app.Controllers.Authenticated.Task.DropTaskController import drop_task_route
 from app.Controllers.Authenticated.Task.TasksController import tasks_route
+from app.Controllers.Authenticated.Task.TaskLabelsController import task_labels_route
 from app.Controllers.Authenticated.Task.TaskPrioritiesController import task_priorities_route
 from app.Controllers.Authenticated.Task.TransitionTaskController import transition_task_route
 from app.Controllers.Authenticated.Task.TaskStatusesController import task_statuses_route
@@ -15,6 +16,7 @@ all_task_routes = [
     cancel_task_route,
     delay_task_route,
     drop_task_route,
+    task_labels_route,
     task_statuses_route,
     task_priorities_route,
     task_types_route,

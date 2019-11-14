@@ -11,12 +11,10 @@ class TaskLabel(db.Model):
 
     def __init__(
             self,
-            id: int,
             org_id: int,
             label: str,
             colour: str = None,
     ):
-        self.id = id
         self.org_id = org_id
         self.label = label
         self.colour = colour

@@ -16,6 +16,7 @@ update_task_request = api.model("Update Task Request", {
     "scheduled_notification_period": fields.Integer(),
     'assignee': fields.Integer(),
     'priority': fields.Integer(min=0, max=2, required=True),
+    "labels": fields.List(fields.Integer, max_items=3)
 })
 
 create_task_request = api.model("Create Task Request", {
@@ -25,7 +26,7 @@ create_task_request = api.model("Create Task Request", {
     "scheduled_for": NullableDateTime,
     "scheduled_notification_period": fields.Integer(),
     'assignee': fields.Integer(),
-    'priority': fields.Integer(min=0, max=2),
+    'priority': fields.Integer(min=0, max=2)
 })
 
 assign_task_request = api.model("Assign Task Request", {

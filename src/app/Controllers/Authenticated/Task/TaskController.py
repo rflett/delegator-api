@@ -100,11 +100,19 @@ class ManageTask(RequestValidationController):
             task_attrs.pop('scheduled_for')
             task_attrs.pop('scheduled_notification_period')
 
-        # for each value in the request body, if the task has that attribute, update it
+        # update the labels
+        labels = self._get_labels(task_attrs.pop('labels'))
+
+        attrs_to_update = {
+            **task_attrs,
+            **labels
+        }
+
+        # for each value left in the task attrs, if the task has that attribute, update it
         # previous attributes such as priority and status have been popped from the request dict so will not be updated
         # again here
         with session_scope():
-            for k, v in task_attrs.items():
+            for k, v in attrs_to_update.items():
                 task_to_update.__setattr__(k, v)
 
         # publish event
@@ -138,8 +146,7 @@ class ManageTask(RequestValidationController):
         else:
             return self.created(self._create_task(task_attrs, req_user))
 
-    @staticmethod
-    def _create_task(task_attrs: dict, req_user) -> dict:
+    def _create_task(self, task_attrs: dict, req_user) -> dict:
         """Creates a new task"""
         with session_scope() as session:
             task = Task(
@@ -149,7 +156,8 @@ class ManageTask(RequestValidationController):
                 status=TaskStatuses.READY,
                 time_estimate=task_attrs['time_estimate'],
                 priority=task_attrs['priority'],
-                created_by=req_user.id
+                created_by=req_user.id,
+                **self._get_labels(task_attrs.pop('labels'))
             )
             session.add(task)
 
@@ -192,8 +200,7 @@ class ManageTask(RequestValidationController):
 
         return task.fat_dict()
 
-    @staticmethod
-    def _schedule_task(task_attrs: dict, req_user) -> dict:
+    def _schedule_task(self, task_attrs: dict, req_user) -> dict:
         """Schedules a new task"""
         with session_scope() as session:
             task = Task(
@@ -205,7 +212,8 @@ class ManageTask(RequestValidationController):
                 scheduled_notification_period=task_attrs['scheduled_notification_period'],
                 time_estimate=task_attrs['time_estimate'],
                 priority=task_attrs['priority'],
-                created_by=req_user.id
+                created_by=req_user.id,
+                **self._get_labels(task_attrs.pop('labels'))
             )
             session.add(task)
 
@@ -238,3 +246,15 @@ class ManageTask(RequestValidationController):
             )
 
         return task.fat_dict()
+
+    @staticmethod
+    def _get_labels(label_attrs: dict) -> dict:
+        """labels provided as a list, so map their index to the Task column"""
+        labels = {
+            "label_1": None,
+            "label_2": None,
+            "label_3": None
+        }
+        for i in range(1, len(label_attrs) + 1):
+            labels[f'label_{i}'] = label_attrs[i - 1]
+        return labels
