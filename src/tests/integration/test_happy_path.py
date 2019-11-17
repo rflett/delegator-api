@@ -368,6 +368,114 @@ def test_cancel_task():
     assert response_body['status']['status'] == 'CANCELLED'
 
 
+# Task Labels
+def test_create_labels():
+    create_data = {
+        "labels": [
+            {
+                "label": "labelOne",
+                "colour": "red"
+            },
+            {
+                "label": "labelTwo",
+                "colour": "green"
+            },
+            {
+                "label": "labelThree",
+                "colour": "yellow"
+            }
+        ]
+    }
+    r = base.send('post', 'task-labels/', create_data)
+    assert r.status_code == 200
+    response_body = r.json()
+    assert 'labels' in response_body
+    assert len(response_body['labels']) == 3
+    for label in response_body['labels']:
+        assert isinstance(label['id'], int)
+        assert isinstance(label['label'], str)
+        assert isinstance(label['colour'], str)
+
+
+def test_create_task_with_labels():
+    r = base.send('post', 'task/', data={
+        "type_id": base.task_type_id,
+        "description": "A Task Description",
+        "time_estimate": 300,
+        "priority": 0,
+        "labels": [1, 2, 3]
+    })
+    assert r.status_code == 201
+    response_body = r.json()
+    assert 'labels' in response_body
+    assert len(response_body['labels']) == 3
+
+
+def test_schedule_task_with_labels():
+    r = base.send('post', 'task/', data={
+        "type_id": base.task_type_id,
+        "description": "A Task Description",
+        "scheduled_for": "2020-11-10T15:46:00+10:00",
+        "scheduled_notification_period": 300,
+        "time_estimate": 300,
+        "priority": 0,
+        "labels": [1]
+    })
+    assert r.status_code == 201
+    response_body = r.json()
+    assert response_body['status']['status'] == 'SCHEDULED'
+    assert 'labels' in response_body
+    assert len(response_body['labels']) == 1
+    assert response_body['labels'][0] == {
+        "id": 1,
+        "label": "labelOne",
+        "colour": "red"
+    }
+
+
+def test_delete_label():
+    delete_data = {
+        "labels": [
+            {
+                "id": 1,
+                "label": "labelOne",
+                "colour": "red"
+            }
+        ]
+    }
+    r = base.send('post', 'task-labels/', delete_data)
+    assert r.status_code == 200
+    response_body = r.json()
+    assert 'labels' in response_body
+    assert len(response_body['labels']) == 1
+    for label in response_body['labels']:
+        assert isinstance(label['id'], int)
+        assert isinstance(label['label'], str)
+        assert isinstance(label['colour'], str)
+
+
+def test_update_label():
+    update_data = {
+        "labels": [
+            {
+                "id": 1,
+                "label": "labelOneNew",
+                "colour": "blue"
+            }
+        ]
+    }
+    r = base.send('post', 'task-labels/', update_data)
+    assert r.status_code == 200
+    response_body = r.json()
+    assert 'labels' in response_body
+    assert len(response_body['labels']) == 1
+    assert response_body['labels'][0] == {
+        "id": 1,
+        "label": "labelOneNew",
+        "colour": "blue"
+    }
+
+
 # User Activity Controller
 def test_user_activity():
     response = base.send("get", f"user/activity/{base.user_id}")

@@ -69,12 +69,13 @@ class RequestValidationController(ObjectValidationController):
             'type': self.check_task_type_id(task_type_id=request_body.get('type_id')),
             'description': self.check_optional_str(request_body.get('description'), 'description'),
             'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
-            'scheduled_for': self.check_task_scheduled_for(request_body.get('scheduled_for')),
+            'scheduled_for': self.check_date(request_body.get('scheduled_for'), 'scheduled_for'),
             'scheduled_notification_period': self.check_optional_int(
                 request_body.get('scheduled_notification_period'), 'scheduled_notification_period'
             ),
             'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
-            'priority': self.check_task_priority(request_body.get('priority'))
+            'priority': self.check_task_priority(request_body.get('priority')),
+            'labels': self.check_task_labels(request_body.get('labels', []), kwargs['req_user'].org_id)
         }
 
     def validate_create_task_type_request(
@@ -301,10 +302,7 @@ class RequestValidationController(ObjectValidationController):
         return org_setting_obj
 
     def validate_update_task_request(self, request_body: dict, **kwargs) -> dict:
-        """Validates a user request body
-        :param request_body:    The request body from the update user request
-        :return:                Response if the request body contains invalid values, or the UserRequest dataclass
-        """
+        """Validates an update task request"""
         task = self.check_task_id(request_body.get('id'), kwargs['req_user'].org_id)
         return {
             'task': task,
@@ -312,12 +310,13 @@ class RequestValidationController(ObjectValidationController):
             'description': self.check_optional_str(request_body.get('description'), 'description'),
             'status': self.check_task_status(request_body.get('status')),
             'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
-            'scheduled_for': self.check_task_scheduled_for(request_body.get('scheduled_for')),
+            'scheduled_for': self.check_date(request_body.get('scheduled_for'), 'scheduled_for'),
             'scheduled_notification_period': self.check_optional_int(
                 request_body.get('scheduled_notification_period'), 'scheduled_notification_period'
             ),
             'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
-            'priority': self.check_task_priority(request_body.get('priority'))
+            'priority': self.check_task_priority(request_body.get('priority')),
+            'labels': self.check_task_labels(request_body.get('labels', []), kwargs['req_user'].org_id)
         }
 
     def validate_update_task_type_request(self, org_id: int, request_body: dict) -> typing.Tuple[TaskType, dict, list]:
@@ -427,3 +426,26 @@ class RequestValidationController(ObjectValidationController):
             raise ValidationError("Invite token does not exist or has expired.")
         else:
             return invite_link
+
+    def validate_update_task_labels_request(self, request_body: dict) -> typing.List[dict]:
+        """Validates that the incoming task labels are valid"""
+
+        # expecting a list of label dicts
+        try:
+            labels = request_body['labels']
+
+            for label in labels:
+                self.check_optional_int(label.get('id'), 'id')
+                self.check_str(label['label'], 'label')
+                self.check_str(label['colour'], 'colour')
+
+            return labels
+
+        except KeyError as e:
+            raise ValidationError(f"Missing {e} from request")
+
+    def validate_silence_notifications_request(self, request_body: dict) -> typing.Tuple[int, int]:
+        """Validates the silencing notifications"""
+        silence_until = self.check_date(request_body.get('silence_until'), 'silence_until')
+        silenced_option = self.check_int(request_body.get('silenced_option'), 'silenced_option')
+        return int(silence_until.timestamp()), silenced_option

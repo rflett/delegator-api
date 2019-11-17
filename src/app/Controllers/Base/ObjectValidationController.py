@@ -6,7 +6,7 @@ from sqlalchemy import exists, and_, func
 
 from app import logger, app, session_scope
 from app.Controllers.Base.ResponseController import ResponseController
-from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskTypeEscalation
+from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskTypeEscalation, TaskLabel
 from app.Models.RBAC import Role
 from app.Exceptions import AuthorizationError, ValidationError, ResourceNotFoundError
 
@@ -87,6 +87,20 @@ class ObjectValidationController(ResponseController):
             raise ValidationError(f"{param_name} is required.")
         return param.strip()
 
+    @staticmethod
+    def check_date(date_str: typing.Optional[str], param_name: str) -> typing.Union[None, datetime.datetime]:
+        """Verify a date can be converted to a datetime and is not in the past"""
+        if date_str is not None:
+            try:
+                date_parsed = dateutil.parser.parse(date_str)
+                if date_parsed < datetime.datetime.now(datetime.timezone.utc):
+                    raise ValidationError(f"{param_name} is in the past.")
+                return date_parsed
+            except ValueError as e:
+                logger.error(str(e))
+                raise ValidationError(f"Could not parse {param_name} {date_str} to date.")
+        return None
+
     def check_task_assignee(self, assignee: typing.Optional[int], **kwargs) -> typing.Union[int, None]:
         """Check if the user has permissions to assign this person to a task."""
         if assignee is not None:
@@ -95,21 +109,6 @@ class ObjectValidationController(ResponseController):
             return user.id
         else:
             return None
-
-    @staticmethod
-    def check_task_scheduled_for(scheduled_for_str: typing.Optional[str]) -> typing.Union[None, datetime.datetime]:
-        """Verify a task due time can be converted to a datetime and is not in the past"""
-        if scheduled_for_str is not None:
-            try:
-                scheduled_for_parsed = dateutil.parser.parse(scheduled_for_str)
-                # check due time is not in the past
-                if scheduled_for_parsed < datetime.datetime.now(datetime.timezone.utc):
-                    raise ValidationError("scheduled_for is in the past.")
-                return scheduled_for_parsed
-            except ValueError as e:
-                logger.error(str(e))
-                raise ValidationError(f"Could not parse scheduled_for {scheduled_for_str} to date.")
-        return None
 
     def check_task_id(self, task_id: int, org_id: int) -> Task:
         """Check that the task exist and return it if it does."""
@@ -152,6 +151,19 @@ class ObjectValidationController(ResponseController):
                 raise ResourceNotFoundError(f"Task type {task_type_id} doesn't exist")
 
         return task_type_id
+
+    def check_task_labels(self, labels: typing.List[int], org_id: int) -> typing.List[int]:
+        """Check to make sure that the labels are valid"""
+        if len(labels) > 3:
+            raise ValidationError(f"Tasks can only have up to 3 labels, you've supplied {len(labels)}.")
+        with session_scope() as session:
+            for label_id in labels:
+                self.check_int(label_id, 'label id')
+                if not session.query(exists().where(
+                        and_(TaskLabel.id == label_id, TaskLabel.org_id == org_id)
+                )).scalar():
+                    raise ResourceNotFoundError(f"Label {label_id} doesn't exist")
+        return labels
 
     @staticmethod
     def check_user_disabled(disabled: typing.Optional[datetime.datetime]) -> typing.Union[None, datetime.datetime]:

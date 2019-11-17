@@ -3,7 +3,7 @@ import datetime
 from flask import Response, request
 from flask_restplus import Namespace
 
-from app import session_scope, subscription_api, logger, app
+from app import session_scope, subscription_api, logger
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ProductTierLimitError

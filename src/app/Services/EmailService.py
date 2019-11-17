@@ -24,7 +24,7 @@ class EmailService(object):
             <head></head>
             <body>
               <h1>Delegator Account Validation</h1>
-              <p>Please click the following one time link to activate your account and set your password: 
+              <p>Please click the following one time link to activate your account and set your password:
                 <a href='{app.config['DELEGATOR_API_URL']}?invtkn={token}'>
                     {app.config['DELEGATOR_API_URL']}?invtkn={token}
                 </a>
@@ -54,7 +54,7 @@ class EmailService(object):
             <head></head>
             <body>
               <h1>Delegator - Password reset requested</h1>
-              <p>Please click the following one time link to reset your password: 
+              <p>Please click the following one time link to reset your password:
                 <a href='{app.config['DELEGATOR_API_URL']}?invtkn={token}'>
                     {app.config['DELEGATOR_API_URL']}?invtkn={token}
                 </a>

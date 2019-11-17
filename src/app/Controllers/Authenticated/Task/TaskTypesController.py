@@ -106,7 +106,7 @@ class TaskTypes(RequestValidationController):
 
         print(request_body)
 
-        task_type_to_update, defaults,  escalations = self.validate_update_task_type_request(
+        task_type_to_update, defaults, escalations = self.validate_update_task_type_request(
             org_id=req_user.org_id,
             request_body=request_body
         )

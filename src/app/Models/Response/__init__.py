@@ -9,14 +9,17 @@ from app.Models.Response.Reporting import get_all_reports_response
 from app.Models.Response.Roles import roles_response
 from app.Models.Response.Task import task_response, task_statuses_response, \
     task_priorities_response, tasks_response, delayed_task_response
+from app.Models.Response.TaskLabels import task_labels_response
 from app.Models.Response.TaskTypes import task_type_response, task_types_response
 from app.Models.Response.User import user_response, get_users_response
+from app.Models.Response.NotificationSilencing import get_silenced_option_dto
 
 __all__ = [
     active_user_response_dto,
     activity_response_dto,
     delayed_task_response,
     get_all_reports_response,
+    get_silenced_option_dto,
     task_types_response,
     task_priorities_response,
     task_statuses_response,
@@ -28,6 +31,7 @@ __all__ = [
     roles_response,
     signup_response,
     task_response,
+    task_labels_response,
     task_type_response,
     update_org_response_dto,
     update_org_settings_response_dto,
