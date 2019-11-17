@@ -79,7 +79,7 @@ class NotificationSnooze(RequestValidationController):
         request_body = request.get_json()
         req_user = kwargs['req_user']
 
-        silence_until, silenced_option= self.validate_silence_notifications_request(request_body)
+        silence_until, silenced_option = self.validate_silence_notifications_request(request_body)
 
         notification_api.silence_notifications({
             "user_id": req_user.id,

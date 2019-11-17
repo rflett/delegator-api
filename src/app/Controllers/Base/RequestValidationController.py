@@ -1,5 +1,4 @@
 import datetime
-import time
 import typing
 
 from flask import request

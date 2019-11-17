@@ -1,7 +1,6 @@
 from flask_restplus import fields
 
 from app import api
-from app.Models.Response.Common import NullableDateTime
 
 task_label_dto = api.model("Task Label Dto", {
     "id": fields.Integer(),
