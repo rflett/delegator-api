@@ -8,6 +8,7 @@ from app.Models.Request.Task import create_task_request, update_task_request, as
 from app.Models.Request.TaskTypes import disable_task_type_request, create_task_type_request, \
     update_task_type_request
 from app.Models.Request.User import create_user_request, update_user_request
+from app.Models.Request.NotificationSilencing import silence_notifications_dto
 
 __all__ = [
     assign_task_request,
@@ -21,6 +22,7 @@ __all__ = [
     register_notification_token_request,
     lock_org_request,
     signup_request,
+    silence_notifications_dto,
     transition_task_request,
     update_org_request,
     update_org_settings_request,
