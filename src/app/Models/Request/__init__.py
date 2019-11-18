@@ -9,6 +9,9 @@ from app.Models.Request.TaskTypes import disable_task_type_request, create_task_
     update_task_type_request
 from app.Models.Request.User import create_user_request, update_user_request
 from app.Models.Request.NotificationSilencing import silence_notifications_dto
+from app.Models.Request.TaskLabels import task_label_dto
+from app.Models.Request.TaskLabels import new_task_label_dto
+from app.Models.Request.TaskLabels import delete_task_label_dto
 
 __all__ = [
     assign_task_request,
@@ -23,6 +26,9 @@ __all__ = [
     lock_org_request,
     signup_request,
     silence_notifications_dto,
+    delete_task_label_dto,
+    task_label_dto,
+    new_task_label_dto,
     transition_task_request,
     update_org_request,
     update_org_settings_request,

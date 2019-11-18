@@ -1,19 +1,17 @@
-import copy
-
 from flask import Response, request
 from flask_restplus import Namespace
-from sqlalchemy import and_
 
-from app import session_scope
+from app import session_scope, logger
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import TaskLabel
 from app.Models.Enums import Operations, Resources
-from app.Models.Response import task_labels_response
+from app.Models.Response import task_labels_response, message_response_dto
+from app.Models.Request import new_task_label_dto, task_label_dto, delete_task_label_dto
 
 task_labels_route = Namespace(
     path="/task-labels",
-    name="Tasks Labels",
+    name="Task Labels",
     description="Manage Task Labels"
 )
 
@@ -32,63 +30,69 @@ class TaskLabels(RequestValidationController):
         with session_scope() as session:
             task_labels_qry = session.query(TaskLabel).filter_by(org_id=req_user.org_id).all()
 
-        req_user.log(
-            operation=Operations.GET,
-            resource=Resources.TASK_LABELS
-        )
+        req_user.log(Operations.GET, Resources.TASK_LABELS)
         return self.ok({'labels': [tl.as_dict() for tl in task_labels_qry]})
 
     @handle_exceptions
     @requires_jwt
-    @authorize(Operations.UPDATE, Resources.TASK_LABELS)
-    @task_labels_route.expect(task_labels_response)
-    @task_labels_route.response(200, "Success", task_labels_response)
+    @authorize(Operations.CREATE, Resources.TASK_LABEL)
+    @task_labels_route.expect(new_task_label_dto)
+    @task_labels_route.response(200, "Success", task_label_dto)
+    @task_labels_route.response(400, "Failed to create the task label", message_response_dto)
     def post(self, **kwargs) -> Response:
-        """Creates and deletes task labels"""
+        """Creates a task label"""
         req_user = kwargs['req_user']
         request_body = request.get_json()
 
-        request_labels = self.validate_update_task_labels_request(request_body)
-        new_labels = copy.deepcopy(request_labels)
+        label, colour = self.validate_create_task_label_request(request_body)
 
-        # delete labels from db that are not in the incoming request
         with session_scope() as session:
-            session.query(TaskLabel) \
-                .filter(
-                    and_(
-                        ~TaskLabel.id.in_([l['id'] for l in request_labels if l.get('id') is not None]),
-                        TaskLabel.org_id == req_user.org_id
-                    )
-                ).delete(synchronize_session=False)
+            new_label = TaskLabel(req_user.org_id, label, colour)
+            session.add(new_label)
 
-        # find labels to update
+        req_user.log(Operations.CREATE, Resources.TASK_LABEL, new_label.id)
+        return self.created(new_label.as_dict())
+
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.UPDATE, Resources.TASK_LABEL)
+    @task_labels_route.expect(task_label_dto)
+    @task_labels_route.response(200, "Success", task_label_dto)
+    @task_labels_route.response(400, "Failed to update the task label", message_response_dto)
+    @task_labels_route.response(404, "Failed to update the task label", message_response_dto)
+    def put(self, **kwargs) -> Response:
+        """Updates a task label"""
+        req_user = kwargs['req_user']
+        request_body = request.get_json()
+
+        label = self.validate_update_task_labels_request(request_body, req_user.org_id)
+
+        logger.info(label.id)
+
+        with session_scope():
+            label.colour = request_body.get('colour')
+            label.label = request_body.get('label')
+
+        req_user.log(Operations.UPDATE, Resources.TASK_LABEL, label.id)
+        return self.ok(label.as_dict())
+
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.DELETE, Resources.TASK_LABEL)
+    @task_labels_route.expect(delete_task_label_dto)
+    @task_labels_route.response(204, "Success")
+    @task_labels_route.response(400, "Failed to delete the task label", message_response_dto)
+    @task_labels_route.response(404, "Failed to delete the task label", message_response_dto)
+    def delete(self, **kwargs) -> Response:
+        """Deletes a task label"""
+        req_user = kwargs['req_user']
+        request_body = request.get_json()
+
+        label = self.validate_delete_task_labels_request(request_body, req_user.org_id)
+        label_id = label.id
+
         with session_scope() as session:
-            labels_to_update_qry = session.query(TaskLabel) \
-                .filter(
-                    and_(
-                        TaskLabel.id.in_([l['id'] for l in request_labels if l.get('id') is not None]),
-                        TaskLabel.org_id == req_user.org_id
-                    )
-                ).all()
-            for l in labels_to_update_qry:
-                for rl in request_labels:
-                    if l.id == rl.get('id'):
-                        l.label = rl['label']
-                        l.colour = rl['colour']
-                        new_labels.remove(rl)
+            session.delete(label)
 
-        # create new, the ones that were updated were removed from the request_labels list
-        with session_scope() as session:
-            for l in new_labels:
-                new_label = TaskLabel(label=l['label'], colour=l['colour'], org_id=req_user.org_id)
-                session.add(new_label)
-
-        # get all labels to return
-        with session_scope() as session:
-            task_labels_qry = session.query(TaskLabel).filter_by(org_id=req_user.org_id).all()
-
-        req_user.log(
-            operation=Operations.UPDATE,
-            resource=Resources.TASK_LABELS
-        )
-        return self.ok({'labels': [tl.as_dict() for tl in task_labels_qry]})
+        req_user.log(Operations.DELETE, Resources.TASK_LABEL, label_id)
+        return self.no_content()

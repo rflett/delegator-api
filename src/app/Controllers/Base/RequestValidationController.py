@@ -8,7 +8,7 @@ from validate_email import validate_email
 from app import app, session_scope
 from app.Controllers.Base import ObjectValidationController
 from app.Exceptions import ValidationError, ResourceNotFoundError
-from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting, UserInviteLink
+from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting, UserInviteLink, TaskLabel
 from app.Models.Enums import NotificationTokens
 
 
@@ -427,22 +427,37 @@ class RequestValidationController(ObjectValidationController):
         else:
             return invite_link
 
-    def validate_update_task_labels_request(self, request_body: dict) -> typing.List[dict]:
+    def validate_create_task_label_request(self, request_body: dict) -> typing.Tuple[str, str]:
+        """Validates that the incoming task label is valid"""
+        label = self.check_str(request_body.get('label'), 'label')
+        colour = self.check_str(request_body.get('colour'), 'colour')
+        return label, colour
+
+    def validate_update_task_labels_request(self, request_body: dict, org_id: int) -> TaskLabel:
         """Validates that the incoming task labels are valid"""
+        label_id = self.check_int(request_body.get('id'), 'id')
+        self.check_str(request_body.get('label'), 'label')
+        self.check_str(request_body.get('colour'), 'colour')
 
-        # expecting a list of label dicts
-        try:
-            labels = request_body['labels']
+        with session_scope() as session:
+            task_label = session.query(TaskLabel).filter_by(id=label_id, org_id=org_id).first()
 
-            for label in labels:
-                self.check_optional_int(label.get('id'), 'id')
-                self.check_str(label['label'], 'label')
-                self.check_str(label['colour'], 'colour')
+        if task_label is None:
+            raise ResourceNotFoundError("Task label doesn't exist.")
+        else:
+            return task_label
 
-            return labels
+    def validate_delete_task_labels_request(self, request_body: dict, org_id: int) -> TaskLabel:
+        """Validates that the incoming task labels are valid"""
+        label_id = self.check_int(request_body.get('id'), 'id')
 
-        except KeyError as e:
-            raise ValidationError(f"Missing {e} from request")
+        with session_scope() as session:
+            task_label = session.query(TaskLabel).filter_by(id=label_id, org_id=org_id).first()
+
+        if task_label is None:
+            raise ResourceNotFoundError("Task label doesn't exist.")
+        else:
+            return task_label
 
     def validate_silence_notifications_request(self, request_body: dict) -> typing.Tuple[int, int]:
         """Validates the silencing notifications"""
