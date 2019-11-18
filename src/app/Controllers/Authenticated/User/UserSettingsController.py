@@ -108,5 +108,5 @@ class NotificationSnooze(RequestValidationController):
     def get(self, **kwargs):
         """Get the notification silenced option"""
         req_user = kwargs['req_user']
-        option = notification_api.get_silenced_option(req_user.id)
+        option = int(notification_api.get_silenced_option(req_user.id))
         return self.ok({"option": option})

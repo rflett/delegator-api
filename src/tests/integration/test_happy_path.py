@@ -19,6 +19,7 @@ class Base:
     org_id: int = None
     task_type_id: int = None
     task_id: int = None
+    task_label_id: int = None
 
     def send(self, method: str, path: str, data: dict = None):
         """Sends an HTTP request"""
@@ -369,32 +370,40 @@ def test_cancel_task():
 
 
 # Task Labels
-def test_create_labels():
+def test_create_label():
     create_data = {
-        "labels": [
-            {
-                "label": "labelOne",
-                "colour": "red"
-            },
-            {
-                "label": "labelTwo",
-                "colour": "green"
-            },
-            {
-                "label": "labelThree",
-                "colour": "yellow"
-            }
-        ]
+        "label": "labelOne",
+        "colour": "red"
     }
     r = base.send('post', 'task-labels/', create_data)
+    assert r.status_code == 201
+    label = r.json()
+    assert label['id'] == 1
+    assert label['label'] == create_data['label']
+    assert label['colour'] == create_data['colour']
+    base.task_label_id = label['id']
+
+
+def test_update_label():
+    update_data = {
+        "id": base.task_label_id,
+        "label": "labelOneUpdated",
+        "colour": "blue"
+    }
+    r = base.send('put', 'task-labels/', update_data)
+    assert r.status_code == 200
+    label = r.json()
+    assert label['id'] == 1
+    assert label['label'] == update_data['label']
+    assert label['colour'] == update_data['colour']
+
+
+def test_get_labels():
+    r = base.send('get', 'task-labels/')
     assert r.status_code == 200
     response_body = r.json()
     assert 'labels' in response_body
-    assert len(response_body['labels']) == 3
-    for label in response_body['labels']:
-        assert isinstance(label['id'], int)
-        assert isinstance(label['label'], str)
-        assert isinstance(label['colour'], str)
+    assert len(response_body['labels']) == 1
 
 
 def test_create_task_with_labels():
@@ -403,12 +412,12 @@ def test_create_task_with_labels():
         "description": "A Task Description",
         "time_estimate": 300,
         "priority": 0,
-        "labels": [1, 2, 3]
+        "labels": [1]
     })
     assert r.status_code == 201
     response_body = r.json()
     assert 'labels' in response_body
-    assert len(response_body['labels']) == 3
+    assert len(response_body['labels']) == 1
 
 
 def test_schedule_task_with_labels():
@@ -428,52 +437,17 @@ def test_schedule_task_with_labels():
     assert len(response_body['labels']) == 1
     assert response_body['labels'][0] == {
         "id": 1,
-        "label": "labelOne",
-        "colour": "red"
+        "label": "labelOneUpdated",
+        "colour": "blue"
     }
 
 
 def test_delete_label():
     delete_data = {
-        "labels": [
-            {
-                "id": 1,
-                "label": "labelOne",
-                "colour": "red"
-            }
-        ]
+        "id": base.task_label_id,
     }
-    r = base.send('post', 'task-labels/', delete_data)
-    assert r.status_code == 200
-    response_body = r.json()
-    assert 'labels' in response_body
-    assert len(response_body['labels']) == 1
-    for label in response_body['labels']:
-        assert isinstance(label['id'], int)
-        assert isinstance(label['label'], str)
-        assert isinstance(label['colour'], str)
-
-
-def test_update_label():
-    update_data = {
-        "labels": [
-            {
-                "id": 1,
-                "label": "labelOneNew",
-                "colour": "blue"
-            }
-        ]
-    }
-    r = base.send('post', 'task-labels/', update_data)
-    assert r.status_code == 200
-    response_body = r.json()
-    assert 'labels' in response_body
-    assert len(response_body['labels']) == 1
-    assert response_body['labels'][0] == {
-        "id": 1,
-        "label": "labelOneNew",
-        "colour": "blue"
-    }
+    r = base.send('delete', 'task-labels/', delete_data)
+    assert r.status_code == 204
 
 
 # User Activity Controller
@@ -529,7 +503,7 @@ def test_update_user():
 
 # User Settings Controller
 def test_get_user_settings():
-    response = base.send("get", "user/settings")
+    response = base.send("get", "user/settings/")
     assert response.status_code == 200
     response_body = response.json()
     assert response_body["user_id"] == base.user_id
@@ -539,10 +513,31 @@ def test_update_user_settings():
     update_data = {
         "tz_offset": "+0900"
     }
-    response = base.send("put", "user/settings", update_data)
+    response = base.send("put", "user/settings/", update_data)
     assert response.status_code == 200
     response_body = response.json()
     assert response_body["tz_offset"] == update_data["tz_offset"]
+
+
+def test_silence_notifications():
+    silence_data = {
+        "silence_until": "2020-11-17T19:25:00+10:00",
+        "silenced_option": 1
+    }
+    r = base.send("put", "user/settings/silence-notifications", silence_data)
+    assert r.status_code == 204
+
+
+def test_get_silenced_option():
+    r = base.send("get", "user/settings/silence-notifications")
+    assert r.status_code == 200
+    request_body = r.json()
+    assert request_body['option'] == 1
+
+
+def test_unsilence_notifications():
+    r = base.send("delete", "user/settings/silence-notifications")
+    assert r.status_code == 204
 
 
 # User Controller

@@ -8,7 +8,6 @@ task_label_dto = api.model("Task Label Dto", {
     "colour": fields.String()
 })
 
-
 task_labels_response = api.model("Task Labels Response", {
     "labels": fields.List(fields.Nested(task_label_dto))
 })
