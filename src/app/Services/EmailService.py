@@ -1,3 +1,5 @@
+from os import getenv
+
 import boto3
 from botocore.exceptions import ClientError
 
@@ -15,7 +17,7 @@ class EmailService(object):
         # The email body for recipients with non-HTML email clients.
         body_text = ("Delegator - account validation\r\n"
                      "Please use the following one-time link to set "
-                     f"your password {app.config['DELEGATOR_API_URL']}?invtkn={token}"
+                     f"your password {app.config['PUBLIC_WEB_URL']}?invtkn={token}"
                      )
 
         # The HTML body of the email.
@@ -25,8 +27,8 @@ class EmailService(object):
             <body>
               <h1>Delegator Account Validation</h1>
               <p>Please click the following one time link to activate your account and set your password:
-                <a href='{app.config['DELEGATOR_API_URL']}?invtkn={token}'>
-                    {app.config['DELEGATOR_API_URL']}?invtkn={token}
+                <a href='{app.config['PUBLIC_WEB_URL']}?invtkn={token}'>
+                    {app.config['PUBLIC_WEB_URL']}?invtkn={token}
                 </a>
               </p>
             </body>
@@ -45,7 +47,7 @@ class EmailService(object):
         # The email body for recipients with non-HTML email clients.
         body_text = ("Delegator - Password reset requested\r\n"
                      "Please use the following one-time link to reset "
-                     f"your password {app.config['DELEGATOR_API_URL']}?invtkn={token}"
+                     f"your password {app.config['PUBLIC_WEB_URL']}?invtkn={token}"
                      )
 
         # The HTML body of the email.
@@ -55,8 +57,8 @@ class EmailService(object):
             <body>
               <h1>Delegator - Password reset requested</h1>
               <p>Please click the following one time link to reset your password:
-                <a href='{app.config['DELEGATOR_API_URL']}?invtkn={token}'>
-                    {app.config['DELEGATOR_API_URL']}?invtkn={token}
+                <a href='{app.config['PUBLIC_WEB_URL']}?invtkn={token}'>
+                    {app.config['PUBLIC_WEB_URL']}?invtkn={token}
                 </a>
               </p>
             </body>
@@ -67,6 +69,9 @@ class EmailService(object):
 
     @staticmethod
     def _send_mail(recipient: str, subject: str, body_text: str, body_html: str) -> None:
+        if getenv('MOCK_AWS'):
+            return
+
         # The character encoding for the email.
         charset = "UTF-8"
 

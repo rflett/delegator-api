@@ -9,17 +9,25 @@ from flask_cors import CORS
 from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
 
+from config_ssm import SsmConfig
 from app.ApiWrappers import SubscriptionApi, NotificationApi
 
 # flask conf
 app = Flask(__name__)
-app.config.from_object(f"config.{getenv('APP_ENV', 'Local')}")
+app_env = getenv('APP_ENV', 'Local')
+app.config.from_object(f"config.{app_env}")
+
+# load in values from parameter store in higher envs
+if app_env not in ['Local', 'Docker', 'Ci']:
+    params = SsmConfig().get_params(app_env)
+    app.config.update(**params)
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DB_URI']
+
 
 # flask profiler
 app.config["flask_profiler"] = {
     "enabled": True,
     "storage": {
-        # "engine": "sqlite"
         "engine": "sqlalchemy",
         "db_url": app.config['SQLALCHEMY_DATABASE_URI']
     },
@@ -47,28 +55,30 @@ logging.basicConfig(format=log_format, level=logging.INFO)
 # db conf
 db = SQLAlchemy(app)
 
-# dynamo db
-dyn_db = boto3.resource('dynamodb')
-user_settings_table = dyn_db.Table(app.config['USER_SETTINGS_TABLE'])
-org_settings_table = dyn_db.Table(app.config['ORG_SETTINGS_TABLE'])
-user_activity_table = dyn_db.Table(app.config['USER_ACTIVITY_TABLE'])
-task_activity_table = dyn_db.Table(app.config['TASK_ACTIVITY_TABLE'])
-
-# sns
-sns = boto3.resource('sns')
-api_events_sns_topic = sns.Topic(app.config['EVENTS_SNS_TOPIC_ARN'])
-
-# sqs
-sqs = boto3.resource('sqs')
-app_notifications_sqs = sqs.Queue(app.config['APP_NOTIFICATIONS_SQS'])
+if getenv('MOCK_AWS'):
+    user_settings_table = None
+    org_settings_table = None
+    user_activity_table = None
+    task_activity_table = None
+    api_events_sns_topic = None
+else:
+    # dynamo db
+    dyn_db = boto3.resource('dynamodb')
+    user_settings_table = dyn_db.Table(app.config['USER_SETTINGS_TABLE'])
+    org_settings_table = dyn_db.Table(app.config['ORG_SETTINGS_TABLE'])
+    user_activity_table = dyn_db.Table(app.config['USER_ACTIVITY_TABLE'])
+    task_activity_table = dyn_db.Table(app.config['TASK_ACTIVITY_TABLE'])
+    # sns
+    sns = boto3.resource('sns')
+    api_events_sns_topic = sns.Topic(app.config['EVENTS_SNS_TOPIC_ARN'])
 
 # api wrappers
 subscription_api = SubscriptionApi(
-    url=app.config['SUBSCRIPTION_API_URL'],
+    url=app.config['SUBSCRIPTION_API_PUBLIC_URL'],
     key=app.config['SUBSCRIPTION_API_KEY']
 )
 notification_api = NotificationApi(
-    url=app.config['NOTIFICATION_API_URL'],
+    url=app.config['NOTIFICATION_API_PUBLIC_URL'],
     key=app.config['NOTIFICATION_API_KEY']
 )
 
@@ -90,7 +100,7 @@ def shutdown_session(exception=None):
     db.session.close()
 
 
-if getenv('APP_ENV', 'Local') in ['Staging', 'Production']:
+if app_env in ['Staging', 'Production']:
     @property
     def specs_url(self):
         """Monkey patch for HTTPS"""
@@ -111,5 +121,4 @@ for route in all_routes:
 
 api.init_app(app)
 
-if getenv('APP_ENV') not in ['Ci', 'Local']:
-    flask_profiler.init_app(app)
+flask_profiler.init_app(app)
