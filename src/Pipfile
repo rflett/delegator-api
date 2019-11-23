@@ -4,11 +4,12 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+pytest = "*"
+faker = "*"
 
 [packages]
 flask = "*"
 gunicorn = "*"
-pip = "*"
 pyjwt = "*"
 psycopg2 = "*"
 validate-email = "*"
@@ -16,11 +17,9 @@ boto3 = "*"
 flask-cors = "*"
 flask-sqlalchemy = "*"
 flask-profiler = "*"
-werkzeug = "==0.15.4"
+werkzeug = "*"
 requests = "*"
 flask-restplus = "*"
-pytest = "*"
-faker = "*"
 
 [requires]
 python_version = "3.7"

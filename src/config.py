@@ -26,7 +26,7 @@ class Dev(Config):
     TASK_ACTIVITY_TABLE = 'task-activity-dev'
     # the following are retrieved from SSM parameter store in higher envs
     PUBLIC_WEB_URL = "http://localhost:4200/"
-    JWT_SECRET = '12a516f4e7b99441dba0231deb6fc0c87e2a84ae8beff7f64f6a5ac07058a3ae'
+    JWT_SECRET = 'dev_s3cr3t'
 
 
 class Docker(Dev):

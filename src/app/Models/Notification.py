@@ -1,14 +1,13 @@
 import _thread
 import typing
 from dataclasses import dataclass
-from os import getenv
 
-from app import notification_api, logger
+from app import notification_api, logger, app_env
 
 
 def do_push(notification_dto: dict) -> None:
     """ Publishes the notification to SNS """
-    if getenv('APP_ENV', 'Local') == 'Local':
+    if app_env == 'Local':
         logger.info(f"WOULD have pushed notification {notification_dto} to NotificationApi")
         return None
     notification_api.send_notification(notification_dto)

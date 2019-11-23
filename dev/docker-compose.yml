@@ -39,17 +39,27 @@ services:
       - 5000:5000
 
   subscription-api:
-    image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/subscription-api:latest
+    # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/subscription-api:latest
+    image: sub_api
+    build:
+      cache_from: 
+        - sub_api
+      context: ../../subscription-api/src/
     restart: always
     environment:
-      APP_ENV: Ci
+      APP_ENV: Docker
     ports:
       - 5001:5001
     depends_on:
       - redis
 
   notification-api:
-    image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/notification-api:latest
+    # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/notification-api:latest
+    image: note_api
+    build:
+      cache_from: 
+        - note_api
+      context: ../../notification-api/src/
     restart: always
     env_file:
     - .env
