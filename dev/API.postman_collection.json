@@ -824,7 +824,7 @@
 							"response": []
 						},
 						{
-							"name": "Update Labels",
+							"name": "Create Label",
 							"event": [
 								{
 									"listen": "test",
@@ -864,7 +864,129 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n\t\"labels\": [\n\t\t{\n\t\t\t\"id\": 1,\n\t\t\t\"label\": \"labelOne\",\n\t\t\t\"colour\": \"red\"\n\t\t},\n\t\t{\n\t\t\t\"id\": 2,\n\t\t\t\"label\": \"labelTwo\",\n\t\t\t\"colour\": \"green\"\n\t\t},\n\t\t{\n\t\t\t\"id\": 3,\n\t\t\t\"label\": \"labelThree\",\n\t\t\t\"colour\": \"yellow\"\n\t\t},\n\t\t{\n\t\t\t\"id\": 4,\n\t\t\t\"label\": \"labelFour\",\n\t\t\t\"colour\": \"blue\"\n\t\t}\n\t]\n}",
+									"raw": "{\n\t\"label\": \"labelOne\",\n\t\"colour\": \"red\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{host}}/task-labels/",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"task-labels",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Label",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "fed51681-1030-43df-9387-5a58d297a618",
+										"exec": [
+											"pm.test(\"response is ok\", function () {\r",
+											"    pm.response.to.have.status(200);\r",
+											"});\r",
+											"\r",
+											"pm.test(\"response must be valid and have a body\", function () {\r",
+											"     pm.response.to.be.json;\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "{{token}}"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"id\": 1,\n\t\"label\": \"labelOne\",\n\t\"colour\": \"blue\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{host}}/task-labels/",
+									"host": [
+										"{{host}}"
+									],
+									"path": [
+										"task-labels",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Label",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "fed51681-1030-43df-9387-5a58d297a618",
+										"exec": [
+											"pm.test(\"response is ok\", function () {\r",
+											"    pm.response.to.have.status(200);\r",
+											"});\r",
+											"\r",
+											"pm.test(\"response must be valid and have a body\", function () {\r",
+											"     pm.response.to.be.json;\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "{{token}}"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"id\": 1\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1495,13 +1617,14 @@
 							}
 						],
 						"url": {
-							"raw": "{{host}}/user/settings",
+							"raw": "{{host}}/user/settings/",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
 								"user",
-								"settings"
+								"settings",
+								""
 							]
 						}
 					},
@@ -1529,13 +1652,14 @@
 							"raw": "{\n\t\"user_id\": 1,\n\t\"tz_offset\": \"+1000\"\n}"
 						},
 						"url": {
-							"raw": "{{host}}/user/settings",
+							"raw": "{{host}}/user/settings/",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
 								"user",
-								"settings"
+								"settings",
+								""
 							]
 						}
 					},
@@ -1599,6 +1723,112 @@
 							"path": [
 								"org",
 								"settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Silence User Notifications",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"silence_until\": \"2019-11-17T19:25:00+10:00\",\n\t\"silenced_option\": 1\n}\n"
+						},
+						"url": {
+							"raw": "{{host}}/user/settings/silence-notifications",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"settings",
+								"silence-notifications"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Silenced Option",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{host}}/user/settings/silence-notifications",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"settings",
+								"silence-notifications"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Un-Silence User Notifications",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/user/settings/silence-notifications",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"user",
+								"settings",
+								"silence-notifications"
 							]
 						}
 					},

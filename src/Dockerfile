@@ -1,4 +1,4 @@
-FROM 239304980652.dkr.ecr.ap-southeast-2.amazonaws.com/python:runtime
+FROM 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/python:runtime
 
 # env setup
 ENV APP_ENV=Local
@@ -24,4 +24,4 @@ ARG COMMIT_SHA=local
 ENV COMMIT_SHA=${COMMIT_SHA}
 
 # run
-CMD ["pipenv", "run", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--log-level", "warning", "--access-logfile", "-", "--access-logformat", "%(h)s %(t)s %(D)s delegator-api %(r)s %(s)s", "--config", "/app/gunicorn.config", "api:app"]
+CMD ["pipenv", "run", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--log-level", "warning", "--access-logfile", "-", "--access-logformat", "%(h)s %(t)s %(D)s delegator-api %(r)s %(s)s", "--config", "/app/gunicorn.py", "api:app"]

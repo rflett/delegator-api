@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from os import getenv
 
-from app import api_events_sns_topic, app, logger
+from app import api_events_sns_topic, app, logger, app_env
 
 
 def do_publish(message: dict, event: str) -> None:
     """ Publishes an event to SNS """
-    if getenv('APP_ENV', 'Local') in ['Local', 'Docker']:
+    if app_env in ['Local', 'Docker'] or getenv('MOCK_AWS'):
         logger.info(f"WOULD have published message {event}")
         return None
 
