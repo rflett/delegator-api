@@ -6,7 +6,7 @@ from flask_restplus import Namespace
 
 from app import session_scope
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, requires_token_auth, authorize
+from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ValidationError
 from app.Models import Organisation
 from app.Models.Enums import Operations, Resources
@@ -19,7 +19,7 @@ from app.Services import SettingsService
 org_route = Namespace(
     path="/org",
     name="Organisation",
-    description="Contains routes for managing organisations"
+    description="Manage the organisation"
 )
 
 settings_service = SettingsService()
@@ -32,6 +32,7 @@ class OrganisationManage(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.ORGANISATION)
     @org_route.response(200, "Success", get_org_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Get an organisation"""
         req_user = kwargs['req_user']
@@ -54,6 +55,8 @@ class OrganisationManage(RequestValidationController):
     @org_route.expect(update_org_request)
     @org_route.response(200, "Success", update_org_response_dto)
     @org_route.response(400, "Failed to update the organisation", message_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
+    @org_route.response(404, "Organisation does not exist", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Update an organisation"""
         req_user = kwargs['req_user']
@@ -79,6 +82,7 @@ class OrganisationSettings(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.ORG_SETTINGS)
     @org_route.response(200, "Success", get_org_settings_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Get an organisation's settings"""
         req_user = kwargs['req_user']
@@ -94,6 +98,8 @@ class OrganisationSettings(RequestValidationController):
     @org_route.expect(update_org_settings_request)
     @org_route.response(200, "Success", update_org_settings_response_dto)
     @org_route.response(400, "Failed to update the organisation", message_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
+    @org_route.response(404, "Organisation does not exist", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Update an organisation's settings"""
         req_user = kwargs['req_user']
@@ -111,11 +117,16 @@ class OrganisationSettings(RequestValidationController):
 class OrganisationLock(RequestValidationController):
 
     @handle_exceptions
-    @requires_token_auth
+    @requires_jwt
+    @authorize(Operations.LOCK, Resources.ORGANISATION)
     @org_route.expect(lock_org_request)
-    @org_route.response(200, "Success", message_response_dto)
-    def put(self, customer_id: str) -> Response:
+    @org_route.response(200, "Locked the organisation", message_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
+    @org_route.response(404, "Organisation does not exist", message_response_dto)
+    def put(self, customer_id: str, **kwargs) -> Response:
         """Lock an organisation due to a billing issue."""
+        req_user = kwargs['req_user']
+
         locked_reason = request.get_json().get('locked_reason')
         with session_scope() as session:
             # get the org from the customer id
@@ -145,13 +156,19 @@ class OrganisationLock(RequestValidationController):
                 org.locked = datetime.datetime.utcnow()
                 org.locked_reason = locked_reason
 
+        req_user.log(Operations.LOCK, Resources.ORGANISATION, org.id)
         return self.ok(f"Successfully locked org {org.id}")
 
     @handle_exceptions
-    @requires_token_auth
+    @requires_jwt
+    @authorize(Operations.UNLOCK, Resources.ORGANISATION)
     @org_route.response(200, "Success", message_response_dto)
-    def delete(self, customer_id: str) -> Response:
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
+    @org_route.response(404, "Organisation does not exist", message_response_dto)
+    def delete(self, customer_id: str, **kwargs) -> Response:
         """Unlock an organisation after the billing issue has been rectified"""
+        req_user = kwargs['req_user']
+
         with session_scope() as session:
             # get the org from the customer id
             org = session.query(Organisation).filter_by(chargebee_customer_id=customer_id).first()
@@ -182,6 +199,7 @@ class OrganisationLock(RequestValidationController):
                 # lock org
                 org.locked = None
 
+        req_user.log(Operations.UNLOCK, Resources.ORGANISATION, org.id)
         return self.ok(f"Successfully unlocked org {org.id}")
 
 
@@ -189,12 +207,15 @@ class OrganisationLock(RequestValidationController):
 class OrganisationSubscription(RequestValidationController):
 
     @handle_exceptions
-    @requires_token_auth
+    @requires_jwt
+    @authorize(Operations.UPDATE, Resources.ORGANISATION_SUBSCRIPTION)
     @org_route.expect(update_org_subscription_request)
     @org_route.response(200, "Success", message_response_dto)
     @org_route.response(400, "Failed to update the organisation's subscription", message_response_dto)
-    def put(self) -> Response:
+    def put(self, **kwargs) -> Response:
         """Set the subscription_id for an org"""
+        req_user = kwargs['req_user']
+
         try:
             request_body = request.get_json()
             customer_id = request_body['customer_id']
@@ -208,6 +229,7 @@ class OrganisationSubscription(RequestValidationController):
                 raise ValidationError(f"There is no organisation with customer id {customer_id}")
             else:
                 org.chargebee_subscription_id = subscription_id
+                req_user.log(Operations.UPDATE, Resources.ORGANISATION_SUBSCRIPTION, org.id)
                 return self.ok(f"Applied subscription_id {subscription_id} against org {org.id}")
 
 

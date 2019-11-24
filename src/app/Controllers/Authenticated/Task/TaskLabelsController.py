@@ -23,6 +23,7 @@ class TaskLabels(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_LABELS)
     @task_labels_route.response(200, "Success", task_labels_response)
+    @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Returns all task labels """
         req_user = kwargs['req_user']
@@ -37,8 +38,9 @@ class TaskLabels(RequestValidationController):
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK_LABEL)
     @task_labels_route.expect(new_task_label_dto)
-    @task_labels_route.response(200, "Success", task_label_dto)
-    @task_labels_route.response(400, "Failed to create the task label", message_response_dto)
+    @task_labels_route.response(200, "Created task label", task_label_dto)
+    @task_labels_route.response(400, "Bad request", message_response_dto)
+    @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Creates a task label"""
         req_user = kwargs['req_user']
@@ -57,9 +59,10 @@ class TaskLabels(RequestValidationController):
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.TASK_LABEL)
     @task_labels_route.expect(task_label_dto)
-    @task_labels_route.response(200, "Success", task_label_dto)
-    @task_labels_route.response(400, "Failed to update the task label", message_response_dto)
-    @task_labels_route.response(404, "Failed to update the task label", message_response_dto)
+    @task_labels_route.response(200, "Updated the task label", task_label_dto)
+    @task_labels_route.response(400, "Bad request", message_response_dto)
+    @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
+    @task_labels_route.response(404, "Task label not found", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Updates a task label"""
         req_user = kwargs['req_user']
@@ -80,9 +83,10 @@ class TaskLabels(RequestValidationController):
     @requires_jwt
     @authorize(Operations.DELETE, Resources.TASK_LABEL)
     @task_labels_route.expect(delete_task_label_dto)
-    @task_labels_route.response(204, "Success")
-    @task_labels_route.response(400, "Failed to delete the task label", message_response_dto)
-    @task_labels_route.response(404, "Failed to delete the task label", message_response_dto)
+    @task_labels_route.response(204, "Deleted the task label")
+    @task_labels_route.response(400, "Bad request", message_response_dto)
+    @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
+    @task_labels_route.response(404, "Task label not found", message_response_dto)
     def delete(self, **kwargs) -> Response:
         """Deletes a task label"""
         req_user = kwargs['req_user']

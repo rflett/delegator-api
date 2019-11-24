@@ -1,10 +1,9 @@
 from functools import wraps
 
-from flask import request
-
-from app import app
-from app.Exceptions import AuthenticationError
 from app.Services import AuthService
+from app.Models import User
+
+auth_service = AuthService()
 
 
 def requires_jwt(f):
@@ -15,20 +14,8 @@ def requires_jwt(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
-        req_user = AuthService.get_user_from_request()
+        req_user = auth_service.get_requester_details()
         return f(req_user=req_user, *args, **kwargs)
-    return decorated
-
-
-def requires_token_auth(f):
-    """Checks that a request contains a valid auth token"""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.headers.get('Authorization', None)
-        if auth != app.config['DELEGATOR_API_KEY']:
-            raise AuthenticationError("Unauthorized.")
-        else:
-            return f(*args, **kwargs)
     return decorated
 
 
@@ -37,7 +24,8 @@ def authorize(operation: str, resource: str):
         @wraps(f)
         def wrapped_func(*args, **kwargs):
             req_user = kwargs['req_user']
-            req_user.is_active()
+            if isinstance(req_user, User):
+                req_user.is_active()
             auth_scope = req_user.can(operation, resource)
             return f(auth_scope=auth_scope, *args, **kwargs)
         return wrapped_func

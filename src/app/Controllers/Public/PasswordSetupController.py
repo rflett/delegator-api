@@ -7,7 +7,8 @@ from app import session_scope, logger
 from app.Decorators import handle_exceptions
 from app.Controllers.Base import RequestValidationController
 from app.Models import UserInviteLink
-from app.Models.Response import new_password_setup_response, message_response_dto
+from app.Models.Request import password_setup_request
+from app.Models.Response import password_setup_response, message_response_dto
 from app.Services import UserService
 
 user_service = UserService()
@@ -23,7 +24,8 @@ password_setup_route = Namespace(
 class PasswordSetup(RequestValidationController):
 
     @handle_exceptions
-    @password_setup_route.response(204, "No Content")
+    @password_setup_route.param('invtkn', 'The token that the user received to manage their password.')
+    @password_setup_route.response(204, "The token is still valid.")
     @password_setup_route.response(400, "Bad Request", message_response_dto)
     def get(self):
         """Validates the token is valid and hasn't expired"""
@@ -32,7 +34,9 @@ class PasswordSetup(RequestValidationController):
         return self.no_content()
 
     @handle_exceptions
-    @password_setup_route.response(200, "Success", new_password_setup_response)
+    @password_setup_route.param('invtkn', 'The token that the user received to manage their password.')
+    @password_setup_route.expect(password_setup_request)
+    @password_setup_route.response(200, "Successfully set the users password.", password_setup_response)
     @password_setup_route.response(400, "Bad Request", message_response_dto)
     def post(self) -> Response:
         """Setup a password after user creation or password reset"""

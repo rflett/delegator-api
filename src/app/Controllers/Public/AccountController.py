@@ -12,7 +12,7 @@ from app.Decorators import handle_exceptions, requires_jwt
 from app.Exceptions import AuthenticationError, WrapperCallFailedException
 from app.Models import User, Activity, Organisation, TaskType, FailedLogin, UserInviteLink
 from app.Models.Enums import Events, Operations, Resources
-from app.Models.Request import login_request, signup_request
+from app.Models.Request import login_request, signup_request, password_reset_request
 from app.Models.Response import login_response, message_response_dto, signup_response
 from app.Services import UserService, EmailService
 
@@ -60,7 +60,7 @@ class AccountController(RequestValidationController):
 
         except Exception as e:
             logger.error(str(e))
-            return self.oh_god("There was an issue creating the organisation.")
+            return self.unprocessable("There was an issue creating the organisation.")
 
         # try and create the user since the org was created successfully
         with session_scope() as session:
@@ -182,21 +182,21 @@ class AccountController(RequestValidationController):
                 raise AuthenticationError("Password incorrect.")
 
     @handle_exceptions
-    @account_route.response(204, "Reset Password Link Sent")
+    @account_route.expect(password_reset_request)
+    @account_route.response(204, "Email with link to reset password has been sent.")
     @account_route.response(400, "Registration Failed", message_response_dto)
     def patch(self) -> Response:
         """Request a password reset"""
         request_body = request.get_json()
-        self.validate_email(request_body.get('email'))
+        email = request_body.get('email')
+        self.validate_email(email)
 
         with session_scope() as session:
-            logger.info(f"received password reset for {request_body.get('email')}")
-            user = user_service.get_by_email(request_body.get('email'))
+            user = user_service.get_by_email(email)
+            logger.info(f"User {user.name()} requested password reset.")
             reset_link = UserInviteLink(user.id)
             session.add(reset_link)
-            logger.info(f"Password reset token for {user.name()} is {reset_link.token}")
             email_service.send_reset_password_email(user.email, reset_link.token)
-
             return self.no_content()
 
     @handle_exceptions

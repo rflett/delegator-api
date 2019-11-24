@@ -28,8 +28,10 @@ class DelayTask(RequestValidationController):
     @requires_jwt
     @authorize(Operations.DELAY, Resources.TASK)
     @delay_task_route.expect(delay_task_request)
-    @delay_task_route.response(200, "Success", task_response)
-    @delay_task_route.response(400, "Failed to delay the task", message_response_dto)
+    @delay_task_route.response(200, "Delayed the task", task_response)
+    @delay_task_route.response(400, "Bad request", message_response_dto)
+    @delay_task_route.response(403, "Insufficient privileges", message_response_dto)
+    @delay_task_route.response(404, "Task not found", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Delays a task """
         req_user = kwargs['req_user']
@@ -93,7 +95,9 @@ class GetDelayTask(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK)
     @delay_task_route.response(200, "Success", delayed_task_response)
-    @delay_task_route.response(400, "Failed to get the tasks delay info", message_response_dto)
+    @delay_task_route.response(400, "Bad request", message_response_dto)
+    @delay_task_route.response(403, "Insufficient privileges", message_response_dto)
+    @delay_task_route.response(404, "Task not found", message_response_dto)
     def get(self, task_id, **kwargs) -> Response:
         """Returns the delayed info for a task """
         req_user = kwargs['req_user']

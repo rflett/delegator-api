@@ -16,7 +16,7 @@ from app.Services import UserService, EmailService
 users_route = Namespace(
     path="/users",
     name="Users",
-    description="Used to manage users"
+    description="Manage a user or users"
 )
 
 user_service = UserService()
@@ -30,7 +30,8 @@ class UserController(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.USERS)
     @users_route.response(200, "Users retrieved", get_users_response)
-    @users_route.response(400, "Couldn't retrieve the users", message_response_dto)
+    @users_route.response(400, "Bad request", message_response_dto)
+    @users_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Get all users """
         req_user = kwargs['req_user']
@@ -70,9 +71,11 @@ class UserController(RequestValidationController):
     @requires_jwt
     @authorize(Operations.CREATE, Resources.USER)
     @users_route.expect(create_user_request)
-    @users_route.response(200, "User created", user_response)
-    @users_route.response(402, "Plan limit reached. Need to pay more", message_response_dto)
-    @users_route.response(400, "Couldn't create the user", message_response_dto)
+    @users_route.response(200, "Successfully created user", user_response)
+    @users_route.response(400, "Bad request", message_response_dto)
+    @users_route.response(402, "Subscription limit reached", message_response_dto)
+    @users_route.response(403, "Insufficient privileges", message_response_dto)
+    @users_route.response(404, "User does not exist", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Create a user"""
         request_body = request.get_json()
@@ -145,7 +148,9 @@ class UserController(RequestValidationController):
     @authorize(Operations.UPDATE, Resources.USER)
     @users_route.expect(update_user_request)
     @users_route.response(200, "User Updated", user_response)
-    @users_route.response(400, "Couldn't update the user", message_response_dto)
+    @users_route.response(400, "Bad request", message_response_dto)
+    @users_route.response(403, "Insufficient privileges", message_response_dto)
+    @users_route.response(404, "User does not exist", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Update a user. """
         req_user = kwargs['req_user']

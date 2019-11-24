@@ -4,13 +4,13 @@ from os import getenv
 
 import requests
 
+from app.ApiWrappers import BaseWrapper
 from app.Exceptions import WrapperCallFailedException
 
 
-class SubscriptionApi(object):
-    def __init__(self, key: str, url: str):
-        self.key = key
-        self.url = url
+class SubscriptionApi(BaseWrapper):
+    def __init__(self, jwt_secret: str, url: str):
+        super().__init__(jwt_secret, url)
 
     def get_limits(self, subscription_id: str) -> dict:
         """Get a subscription's plan quantity"""
@@ -20,7 +20,7 @@ class SubscriptionApi(object):
             r = requests.get(
                 url=f"{self.url}/subscription/{subscription_id}/quantity",
                 headers={
-                    'Authorization': self.key
+                    'Authorization': f"Bearer {self.create_sa_token()}"
                 },
                 timeout=10
             )
@@ -39,8 +39,8 @@ class SubscriptionApi(object):
             r = requests.post(
                 url=f"{self.url}/customer/",
                 headers={
-                    'Authorization': self.key,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': f"Bearer {self.create_sa_token()}"
                 },
                 data=json.dumps({
                     "plan_id": plan_id,
@@ -71,7 +71,8 @@ class SubscriptionApi(object):
             r = requests.delete(
                 url=f"{self.url}/subscription/{subscription_id}/quantity",
                 headers={
-                    'Authorization': self.key
+                    'Content-Type': 'application/json',
+                    'Authorization': f"Bearer {self.create_sa_token()}"
                 },
                 timeout=10
             )
@@ -89,7 +90,8 @@ class SubscriptionApi(object):
             r = requests.put(
                 url=f"{self.url}/subscription/{subscription_id}/quantity",
                 headers={
-                    'Authorization': self.key
+                    'Content-Type': 'application/json',
+                    'Authorization': f"Bearer {self.create_sa_token()}"
                 },
                 timeout=10
             )

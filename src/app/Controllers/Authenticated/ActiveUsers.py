@@ -8,7 +8,7 @@ from app.Decorators import authorize, requires_jwt, handle_exceptions
 from app.Controllers.Base import RequestValidationController
 from app.Models import ActiveUser
 from app.Models.Enums import Operations, Resources
-from app.Models.Response import active_user_response_dto
+from app.Models.Response import active_user_response_dto, message_response_dto
 
 active_user_route = Namespace(
     path="/active-users",
@@ -24,6 +24,7 @@ class ActiveUsers(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.ACTIVE_USERS)
     @active_user_route.response(200, "Success", active_user_response_dto)
+    @active_user_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Returns all active users in the organisation"""
         req_user = kwargs['req_user']

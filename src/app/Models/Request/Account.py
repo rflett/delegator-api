@@ -16,3 +16,11 @@ signup_request = api.model("Signup Request", {
     "job_title": fields.String,
     "plan_id": fields.String,
 })
+
+password_setup_request = api.model("Password setup request", {
+    "password": fields.String(required=True)
+})
+
+password_reset_request = api.model("Password reset request", {
+    "email": fields.String(required=True)
+})

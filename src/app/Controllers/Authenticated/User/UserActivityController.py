@@ -11,7 +11,7 @@ from app.Models.Response import message_response_dto, activity_response_dto
 user_activity_route = Namespace(
     path="/user/activity",
     name="User",
-    description="Manager a user"
+    description="Manage a user"
 )
 
 
@@ -22,8 +22,10 @@ class UserActivityController(RequestValidationController):
     @handle_exceptions
     @authorize(Operations.GET, Resources.USER_ACTIVITY)
     @user_activity_route.response(200, "User activity retrieved", activity_response_dto)
-    @user_activity_route.response(400, "Couldn't retrieve User activity", message_response_dto)
+    @user_activity_route.response(400, "Bad request", message_response_dto)
     @user_activity_route.response(402, "Plan doesn't include this functionality", message_response_dto)
+    @user_activity_route.response(403, "Insufficient privileges", message_response_dto)
+    @user_activity_route.response(404, "User does not exist", message_response_dto)
     def get(self, user_id: int, **kwargs) -> Response:
         """Returns the activity for a user """
         req_user = kwargs['req_user']

@@ -10,7 +10,7 @@ from app.Models.Response import message_response_dto
 user_pages_route = Namespace(
     path="/user/pages",
     name="User",
-    description="Manager a user"
+    description="Manage a user"
 )
 
 
@@ -20,8 +20,9 @@ class UserPagesController(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.PAGES)
-    @user_pages_route.response(200, "Retrieved the authorized pages", [fields.String])
-    @user_pages_route.response(400, "Failed to get the user's pages", message_response_dto)
+    @user_pages_route.response(200, "Retreived the pages the user can access", [fields.String])
+    @user_pages_route.response(400, "Bad request", message_response_dto)
+    @user_pages_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs):
         """Returns the pages a user can access """
         req_user = kwargs['req_user']
