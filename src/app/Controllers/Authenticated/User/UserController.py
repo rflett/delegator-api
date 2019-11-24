@@ -11,7 +11,7 @@ from app.Models.Response import message_response_dto, user_response
 user_route = Namespace(
     path="/user",
     name="User",
-    description="Manager a user"
+    description="Manage a user"
 )
 
 
@@ -22,7 +22,9 @@ class UserController(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.USER)
     @user_route.response(200, "Retrieved the user", user_response)
-    @user_route.response(400, "Failed to get the user", message_response_dto)
+    @user_route.response(400, "Bad request", message_response_dto)
+    @user_route.response(403, "Insufficient privileges", message_response_dto)
+    @user_route.response(404, "User does not exist", message_response_dto)
     def get(self, user_id: int, **kwargs) -> Response:
         """Get a single user by email or ID """
         user = self.validate_get_user(user_id, **kwargs)
@@ -36,8 +38,10 @@ class UserController(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.DELETE, Resources.USER)
-    @user_route.response(204, "Successfully delete the user")
-    @user_route.response(400, "Failed to delete the user", message_response_dto)
+    @user_route.response(204, "Successfully deleted the user")
+    @user_route.response(400, "Bad request", message_response_dto)
+    @user_route.response(403, "Insufficient privileges", message_response_dto)
+    @user_route.response(404, "User does not exist", message_response_dto)
     def delete(self, user_id: int, **kwargs) -> Response:
         """Deletes a user """
         req_user = kwargs['req_user']

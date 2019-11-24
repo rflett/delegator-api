@@ -22,8 +22,10 @@ class DropTask(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.DROP, Resources.TASK)
-    @drop_task_route.response(200, "Success", task_response)
-    @drop_task_route.response(400, "Failed to drop the task", message_response_dto)
+    @drop_task_route.response(200, "Dropped the task", task_response)
+    @drop_task_route.response(400, "Bad request", message_response_dto)
+    @drop_task_route.response(403, "Insufficient privileges", message_response_dto)
+    @drop_task_route.response(404, "Task not found", message_response_dto)
     def post(self, task_id: int, **kwargs) -> Response:
         """Drops a task"""
         task_to_drop = self.validate_drop_task(task_id, **kwargs)

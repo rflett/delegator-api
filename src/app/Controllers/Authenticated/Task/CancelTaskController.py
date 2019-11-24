@@ -24,8 +24,10 @@ class CancelTask(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.CANCEL, Resources.TASK)
-    @cancel_task_route.response(200, "Success", task_response)
-    @cancel_task_route.response(400, "Failed to cancel the task", message_response_dto)
+    @cancel_task_route.response(200, "Cancelled the task", task_response)
+    @cancel_task_route.response(400, "Bad request", message_response_dto)
+    @cancel_task_route.response(403, "Insufficient privileges", message_response_dto)
+    @cancel_task_route.response(404, "Task not found", message_response_dto)
     def post(self, task_id: int, **kwargs) -> Response:
         """Cancels a task"""
         req_user = kwargs['req_user']

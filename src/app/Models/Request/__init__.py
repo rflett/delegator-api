@@ -1,4 +1,4 @@
-from app.Models.Request.Account import login_request, signup_request
+from app.Models.Request.Account import login_request, signup_request, password_setup_request, password_reset_request
 from app.Models.Request.NotificationToken import register_notification_token_request, \
     deregister_notification_token_request
 from app.Models.Request.Organisation import update_org_request, update_org_settings_request, \
@@ -29,6 +29,8 @@ __all__ = [
     delete_task_label_dto,
     task_label_dto,
     new_task_label_dto,
+    password_reset_request,
+    password_setup_request,
     transition_task_request,
     update_org_request,
     update_org_settings_request,

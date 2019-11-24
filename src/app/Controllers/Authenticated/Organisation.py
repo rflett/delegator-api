@@ -19,7 +19,7 @@ from app.Services import SettingsService
 org_route = Namespace(
     path="/org",
     name="Organisation",
-    description="Contains routes for managing organisations"
+    description="Manage the organisation"
 )
 
 settings_service = SettingsService()
@@ -32,6 +32,7 @@ class OrganisationManage(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.ORGANISATION)
     @org_route.response(200, "Success", get_org_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Get an organisation"""
         req_user = kwargs['req_user']
@@ -54,6 +55,8 @@ class OrganisationManage(RequestValidationController):
     @org_route.expect(update_org_request)
     @org_route.response(200, "Success", update_org_response_dto)
     @org_route.response(400, "Failed to update the organisation", message_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
+    @org_route.response(404, "Organisation does not exist", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Update an organisation"""
         req_user = kwargs['req_user']
@@ -79,6 +82,7 @@ class OrganisationSettings(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.ORG_SETTINGS)
     @org_route.response(200, "Success", get_org_settings_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Get an organisation's settings"""
         req_user = kwargs['req_user']
@@ -94,6 +98,8 @@ class OrganisationSettings(RequestValidationController):
     @org_route.expect(update_org_settings_request)
     @org_route.response(200, "Success", update_org_settings_response_dto)
     @org_route.response(400, "Failed to update the organisation", message_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
+    @org_route.response(404, "Organisation does not exist", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Update an organisation's settings"""
         req_user = kwargs['req_user']
@@ -114,6 +120,8 @@ class OrganisationLock(RequestValidationController):
     @requires_token_auth
     @org_route.expect(lock_org_request)
     @org_route.response(200, "Success", message_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
+    @org_route.response(404, "Organisation does not exist", message_response_dto)
     def put(self, customer_id: str) -> Response:
         """Lock an organisation due to a billing issue."""
         locked_reason = request.get_json().get('locked_reason')
@@ -150,6 +158,8 @@ class OrganisationLock(RequestValidationController):
     @handle_exceptions
     @requires_token_auth
     @org_route.response(200, "Success", message_response_dto)
+    @org_route.response(403, "Insufficient privileges", message_response_dto)
+    @org_route.response(404, "Organisation does not exist", message_response_dto)
     def delete(self, customer_id: str) -> Response:
         """Unlock an organisation after the billing issue has been rectified"""
         with session_scope() as session:

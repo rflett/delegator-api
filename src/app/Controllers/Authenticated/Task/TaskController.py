@@ -27,7 +27,9 @@ class GetTask(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK)
     @task_route.response(200, "Success", task_response)
-    @task_route.response(400, "Failed to get the task", message_response_dto)
+    @task_route.response(400, "Bad request", message_response_dto)
+    @task_route.response(403, "Insufficient privileges", message_response_dto)
+    @task_route.response(404, "Task not found", message_response_dto)
     def get(self, task_id: int, **kwargs) -> Response:
         """Get a single task"""
         req_user = kwargs['req_user']
@@ -48,8 +50,10 @@ class ManageTask(RequestValidationController):
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.TASK)
     @task_route.expect(update_task_request)
-    @task_route.response(200, "Success", task_response)
-    @task_route.response(400, "Failed update the task", message_response_dto)
+    @task_route.response(200, "Task was updated", task_response)
+    @task_route.response(400, "Bad request", message_response_dto)
+    @task_route.response(403, "Insufficient privileges", message_response_dto)
+    @task_route.response(404, "Task not found", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Update a task """
         req_user = kwargs['req_user']
@@ -133,8 +137,10 @@ class ManageTask(RequestValidationController):
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK)
     @task_route.expect(create_task_request)
-    @task_route.response(201, "Created", task_response)
-    @task_route.response(400, "Failed to create the task", message_response_dto)
+    @task_route.response(201, "Task was created", task_response)
+    @task_route.response(400, "Bad request", message_response_dto)
+    @task_route.response(403, "Insufficient privileges", message_response_dto)
+    @task_route.response(404, "Task not found", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Creates a task"""
         req_user = kwargs['req_user']

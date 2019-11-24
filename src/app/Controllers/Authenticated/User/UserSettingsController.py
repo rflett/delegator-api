@@ -16,7 +16,7 @@ from app.Services.SettingsService import SettingsService
 user_settings_route = Namespace(
     path="/user/settings",
     name="User",
-    description="Manager a user"
+    description="Manage a user"
 )
 
 settings_service = SettingsService()
@@ -30,6 +30,7 @@ class UserSettingsController(RequestValidationController):
     @authorize(Operations.GET, Resources.USER_SETTINGS)
     @user_settings_route.response(200, "User settings retrieved", user_settings_response)
     @user_settings_route.response(400, "Failed to retrieve settings", message_response_dto)
+    @user_settings_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Returns the user's settings"""
         req_user = kwargs['req_user']
@@ -47,6 +48,8 @@ class UserSettingsController(RequestValidationController):
     @user_settings_route.expect(user_settings_response)
     @user_settings_route.response(200, "User settings updated", user_settings_response)
     @user_settings_route.response(400, "Failed to update settings", message_response_dto)
+    @user_settings_route.response(403, "Insufficient privileges", message_response_dto)
+    @user_settings_route.response(404, "User does not exist", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Updates the user's settings"""
         req_user = kwargs['req_user']
@@ -73,7 +76,9 @@ class NotificationSnooze(RequestValidationController):
     @authorize(Operations.UPDATE, Resources.USER_SETTINGS)
     @user_settings_route.expect(silence_notifications_dto)
     @user_settings_route.response(201, "Success")
-    @user_settings_route.response(401, "Authorisation Failed", message_response_dto)
+    @user_settings_route.response(400, "Bad request", message_response_dto)
+    @user_settings_route.response(403, "Insufficient privileges", message_response_dto)
+    @user_settings_route.response(404, "User does not exist", message_response_dto)
     def put(self, **kwargs):
         """Silence notifications for a user"""
         request_body = request.get_json()
@@ -93,7 +98,9 @@ class NotificationSnooze(RequestValidationController):
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER_SETTINGS)
     @user_settings_route.response(204, "Success")
-    @user_settings_route.response(401, "Authorisation Failed", message_response_dto)
+    @user_settings_route.response(400, "Bad request", message_response_dto)
+    @user_settings_route.response(403, "Insufficient privileges", message_response_dto)
+    @user_settings_route.response(404, "User does not exist", message_response_dto)
     def delete(self, **kwargs):
         """Un-silence notifications for a user"""
         req_user = kwargs['req_user']
@@ -105,6 +112,7 @@ class NotificationSnooze(RequestValidationController):
     @authorize(Operations.GET, Resources.USER_SETTINGS)
     @user_settings_route.response(204, "Success", get_silenced_option_dto)
     @user_settings_route.response(401, "Authorisation Failed", message_response_dto)
+    @user_settings_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs):
         """Get the notification silenced option"""
         req_user = kwargs['req_user']
