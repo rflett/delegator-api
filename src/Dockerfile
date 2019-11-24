@@ -1,4 +1,4 @@
-FROM 239304980652.dkr.ecr.ap-southeast-2.amazonaws.com/python:runtime
+FROM 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/python:runtime
 
 # env setup
 ENV APP_ENV=Local

@@ -5,8 +5,7 @@ class SsmConfig(object):
 
     def get_params(self, app_env: str) -> dict:
         """Get the parameters from parameter store"""
-        s = boto3.Session(profile_name="production")
-        ssm = s.client('ssm')
+        ssm = boto3.client('ssm')
         return {
             **self._get_param_path(ssm, app_env, 'global'),
             **self._get_param_path(ssm, app_env, 'delegator-api')
@@ -16,9 +15,9 @@ class SsmConfig(object):
     def _get_param_path(ssm, app_env: str, path: str) -> dict:
         """Get params for a particular path"""
         ret = {}
-        global_params_req = ssm.get_parameters_by_path(Path=f"/{app_env}/application/{path}")
+        params_qry = ssm.get_parameters_by_path(Path=f"/{app_env.lower()}/application/{path}/")
 
-        for param in global_params_req['Parameters']:
+        for param in params_qry['Parameters']:
             # break up /staging/application/global/db-uri to just db-uri
             name = param['Name'].split('/')[-1:][0]
             # db-uri -> DB_URI

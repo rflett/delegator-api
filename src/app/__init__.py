@@ -20,7 +20,7 @@ app.config.from_object(f"config.{app_env}")
 # load in values from parameter store in higher envs
 if app_env not in ['Local', 'Docker', 'Ci']:
     params = SsmConfig().get_params(app_env)
-    app.config.update(**params)
+    app.config.update(params)
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DB_URI']
 
 
