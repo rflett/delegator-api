@@ -3,7 +3,7 @@ from flask_restplus import Namespace
 
 from app import session_scope
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize, requires_token_auth
+from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ValidationError
 from app.Models import TaskPriority
 from app.Models.Enums import Operations, Resources
@@ -43,14 +43,17 @@ class TaskPriorities(RequestValidationController):
         return self.ok({'priorities': task_priorities})
 
     @handle_exceptions
-    @requires_token_auth
+    @requires_jwt
+    @authorize(Operations.UPDATE, Resources.TASK_PRIORITY)
     @task_priorities_route.expect(update_task_priority_request)
     @task_priorities_route.response(200, "Changed the tasks priority", message_response_dto)
     @task_priorities_route.response(400, "Bad request", message_response_dto)
     @task_priorities_route.response(403, "Insufficient privileges", message_response_dto)
     @task_priorities_route.response(404, "Task not found", message_response_dto)
-    def put(self) -> Response:
+    def put(self, **kwargs) -> Response:
         """Change a tasks priority"""
+        req_user = kwargs['req_user']
+
         request_body = request.get_json()
         params = {
             "org_id": request_body.get('org_id'),
@@ -66,4 +69,5 @@ class TaskPriorities(RequestValidationController):
             task=task,
             priority=params['priority']
         )
+        req_user.log(Operations.UPDATE, Resources.TASK_PRIORITY, task.id)
         return self.ok(f"Priority changed for task {params['task_id']}")

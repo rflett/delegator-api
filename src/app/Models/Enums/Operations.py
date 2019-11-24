@@ -10,3 +10,5 @@ class Operations(str):
     GET = 'GET'
     TRANSITION = 'TRANSITION'
     UPDATE = 'UPDATE'
+    LOCK = 'LOCK'
+    UNLOCK = 'UNLOCK'

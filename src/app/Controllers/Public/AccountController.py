@@ -60,7 +60,7 @@ class AccountController(RequestValidationController):
 
         except Exception as e:
             logger.error(str(e))
-            return self.oh_god("There was an issue creating the organisation.")
+            return self.unprocessable("There was an issue creating the organisation.")
 
         # try and create the user since the org was created successfully
         with session_scope() as session:

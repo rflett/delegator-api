@@ -10,10 +10,6 @@ class Config(object):
     REQUEST_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
     RESPONSE_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S%z'
     DYN_DB_ACTIVITY_DATE_FORMAT = '%Y%m%dT%H%M%S.%fZ'
-    # TODO these will be phased out in favour of JWTs
-    DELEGATOR_API_KEY = 'Skj170raAe2SsWQm4Ny'
-    SUBSCRIPTION_API_KEY = 'DWrcxyZsqJ64d1WGUiN'
-    NOTIFICATION_API_KEY = 'JnQqvTV7iGABve1T87K'
 
 
 class Dev(Config):

@@ -3,9 +3,10 @@ from flask_restplus import Namespace
 
 from app import session_scope
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize, requires_token_auth
+from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import TaskStatus
 from app.Models.Enums import TaskStatuses, Operations, Resources
+from app.Models.RBAC import ServiceAccount
 from app.Models.Request import transition_task_request
 from app.Models.Response import task_response, message_response_dto, task_statuses_response
 from app.Services import TaskService
@@ -32,21 +33,17 @@ class TransitionTask(RequestValidationController):
     @transition_task_route.response(404, "Task not found", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Transitions a task to another status"""
-        task, task_status = self.validate_transition_task(request.get_json(), **kwargs)
-        return self.ok(self._transition_task(task, task_status, kwargs['req_user']))
-
-    @handle_exceptions
-    @requires_token_auth
-    @transition_task_route.expect(transition_task_request)
-    @transition_task_route.response(200, "Success", task_response)
-    @transition_task_route.response(400, "Failed to transition the task", message_response_dto)
-    @transition_task_route.response(403, "Insufficient privileges", message_response_dto)
-    @transition_task_route.response(404, "Task not found", message_response_dto)
-    def patch(self) -> Response:
-        """Transitions a task to another status with token auth"""
+        req_user = kwargs['req_user']
         request_body = request.get_json()
-        task = task_service.get(request_body['task_id'], request_body['org_id'])
-        return self.ok(self._transition_task(task, request_body['task_status']))
+
+        if isinstance(req_user, ServiceAccount):
+            task = task_service.get(request_body['task_id'], request_body['org_id'])
+            result = self._transition_task(task, request_body['task_status'])
+        else:
+            task, task_status = self.validate_transition_task(request.get_json(), **kwargs)
+            result = self._transition_task(task, task_status, kwargs['req_user'])
+
+        return self.ok(result)
 
     @staticmethod
     def _transition_task(task, task_status: str, req_user=None) -> dict:

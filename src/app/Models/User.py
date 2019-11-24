@@ -131,11 +131,12 @@ class User(db.Model):
         :return: A dict of claims.
         """
         return {
-            "aud": "backburner.online",
+            "aud": "delegator.com.au",
             "claims": {
                 "role": self.role,
                 "org": self.org_id,
-                "user_id": self.id
+                "user-id": self.id,
+                "type": "user"
             }
         }
 

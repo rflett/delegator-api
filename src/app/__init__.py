@@ -72,16 +72,6 @@ else:
     sns = boto3.resource('sns')
     api_events_sns_topic = sns.Topic(app.config['EVENTS_SNS_TOPIC_ARN'])
 
-# api wrappers
-subscription_api = SubscriptionApi(
-    url=app.config['SUBSCRIPTION_API_PUBLIC_URL'],
-    key=app.config['SUBSCRIPTION_API_KEY']
-)
-notification_api = NotificationApi(
-    url=app.config['NOTIFICATION_API_PUBLIC_URL'],
-    key=app.config['NOTIFICATION_API_KEY']
-)
-
 
 @contextmanager
 def session_scope():
@@ -98,6 +88,11 @@ def session_scope():
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db.session.close()
+
+
+# api wrappers
+notification_api = NotificationApi(app.config['JWT_SECRET'], app.config['NOTIFICATION_API_PUBLIC_URL'])
+subscription_api = SubscriptionApi(app.config['JWT_SECRET'], app.config['SUBSCRIPTION_API_PUBLIC_URL'])
 
 
 if app_env in ['Staging', 'Production']:
@@ -122,4 +117,5 @@ for route in sorted(all_routes, key=lambda x: x.name):
 
 api.init_app(app)
 
-flask_profiler.init_app(app)
+if app_env not in ['Local', 'Docker']:
+    flask_profiler.init_app(app)

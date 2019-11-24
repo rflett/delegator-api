@@ -5,12 +5,12 @@ from os import getenv
 import requests
 
 from app.Exceptions import WrapperCallFailedException
+from app.ApiWrappers.BaseWrapper import BaseWrapper
 
 
-class NotificationApi(object):
-    def __init__(self, key: str, url: str):
-        self.key = key
-        self.url = url
+class NotificationApi(BaseWrapper):
+    def __init__(self, jwt_secret: str, url: str):
+        super().__init__(jwt_secret, url)
 
     def send_notification(self, notification_payload: dict) -> None:
         """Send a notification"""
@@ -21,8 +21,8 @@ class NotificationApi(object):
                 url=f"{self.url}/send",
                 data=json.dumps(notification_payload),
                 headers={
-                    'Authorization': self.key,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': f"Bearer {self.create_sa_token()}"
                 },
                 timeout=10
             )
@@ -40,8 +40,8 @@ class NotificationApi(object):
                 url=f"{self.url}/silence",
                 data=json.dumps(notification_payload),
                 headers={
-                    'Authorization': self.key,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': f"Bearer {self.create_sa_token()}"
                 },
                 timeout=10
             )
@@ -59,8 +59,8 @@ class NotificationApi(object):
                 url=f"{self.url}/silence",
                 data=json.dumps(notification_payload),
                 headers={
-                    'Authorization': self.key,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': f"Bearer {self.create_sa_token()}"
                 },
                 timeout=10
             )
@@ -77,7 +77,7 @@ class NotificationApi(object):
             r = requests.get(
                 url=f"{self.url}/silence?user_id={user_id}",
                 headers={
-                    'Authorization': self.key
+                    'Authorization': f"Bearer {self.create_sa_token()}"
                 },
                 timeout=10
             )
