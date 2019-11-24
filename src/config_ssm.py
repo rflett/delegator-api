@@ -5,8 +5,7 @@ class SsmConfig(object):
 
     def get_params(self, app_env: str) -> dict:
         """Get the parameters from parameter store"""
-        s = boto3.Session(profile_name="production")
-        ssm = s.client('ssm')
+        ssm = boto3.client('ssm')
         return {
             **self._get_param_path(ssm, app_env, 'global'),
             **self._get_param_path(ssm, app_env, 'delegator-api')
