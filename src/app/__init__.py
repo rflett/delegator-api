@@ -115,8 +115,9 @@ api = Api(
     description="The public API for applications."
 )
 # routes
+# sorted(ut, key=lambda x: x.count, reverse=True)
 from app.Controllers import all_routes  # noqa
-for route in all_routes:
+for route in sorted(all_routes, key=lambda x: x.name):
     api.add_namespace(route)
 
 api.init_app(app)

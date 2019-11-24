@@ -27,6 +27,7 @@ class TaskPriorities(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_PRIORITIES)
     @task_priorities_route.response(200, "Success", task_priorities_response)
+    @task_priorities_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Returns all task priorities """
         req_user = kwargs['req_user']
@@ -44,8 +45,10 @@ class TaskPriorities(RequestValidationController):
     @handle_exceptions
     @requires_token_auth
     @task_priorities_route.expect(update_task_priority_request)
-    @task_priorities_route.response(200, "Success", message_response_dto)
-    @task_priorities_route.response(400, "Failed change the priority", message_response_dto)
+    @task_priorities_route.response(200, "Changed the tasks priority", message_response_dto)
+    @task_priorities_route.response(400, "Bad request", message_response_dto)
+    @task_priorities_route.response(403, "Insufficient privileges", message_response_dto)
+    @task_priorities_route.response(404, "Task not found", message_response_dto)
     def put(self) -> Response:
         """Change a tasks priority"""
         request_body = request.get_json()

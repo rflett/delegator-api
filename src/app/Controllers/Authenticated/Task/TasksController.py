@@ -11,7 +11,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import User, Task
 from app.Models.Enums import Operations, Resources
-from app.Models.Response import tasks_response
+from app.Models.Response import tasks_response, message_response_dto
 from app.Services import TaskService
 
 tasks_route = Namespace(
@@ -30,6 +30,7 @@ class Tasks(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.TASKS)
     @tasks_route.response(200, "Success", tasks_response)
+    @tasks_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Get all tasks in an organisation"""
         req_user = kwargs['req_user']

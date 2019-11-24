@@ -26,8 +26,10 @@ class TransitionTask(RequestValidationController):
     @requires_jwt
     @authorize(Operations.TRANSITION, Resources.TASK)
     @transition_task_route.expect(transition_task_request)
-    @transition_task_route.response(200, "Success", task_response)
-    @transition_task_route.response(400, "Failed to transition the task", message_response_dto)
+    @transition_task_route.response(200, "Transitioned the task to another status", task_response)
+    @transition_task_route.response(400, "Bad request", message_response_dto)
+    @transition_task_route.response(403, "Insufficient privileges", message_response_dto)
+    @transition_task_route.response(404, "Task not found", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Transitions a task to another status"""
         task, task_status = self.validate_transition_task(request.get_json(), **kwargs)
@@ -38,6 +40,8 @@ class TransitionTask(RequestValidationController):
     @transition_task_route.expect(transition_task_request)
     @transition_task_route.response(200, "Success", task_response)
     @transition_task_route.response(400, "Failed to transition the task", message_response_dto)
+    @transition_task_route.response(403, "Insufficient privileges", message_response_dto)
+    @transition_task_route.response(404, "Task not found", message_response_dto)
     def patch(self) -> Response:
         """Transitions a task to another status with token auth"""
         request_body = request.get_json()
@@ -62,7 +66,9 @@ class GetTaskTransitions(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_TRANSITIONS)
     @transition_task_route.response(200, "Success", task_statuses_response)
-    @transition_task_route.response(400, "Failed to get the available transitions", message_response_dto)
+    @transition_task_route.response(400, "Bad request", message_response_dto)
+    @transition_task_route.response(403, "Insufficient privileges", message_response_dto)
+    @transition_task_route.response(404, "Task not found", message_response_dto)
     def get(self, task_id, **kwargs) -> Response:
         """Returns the statuses that a task could be transitioned to, based on the state of the task."""
         req_user = kwargs['req_user']

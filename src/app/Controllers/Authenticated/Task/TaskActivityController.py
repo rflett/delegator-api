@@ -23,7 +23,9 @@ class TaskActivity(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_ACTIVITY)
     @task_activity_route.response(200, "Success", activity_response_dto)
-    @task_activity_route.response(400, "Failed to get the task's activity", message_response_dto)
+    @task_activity_route.response(400, "Bad request", message_response_dto)
+    @task_activity_route.response(403, "Insufficient privileges", message_response_dto)
+    @task_activity_route.response(404, "Task not found", message_response_dto)
     def get(self, task_id: int, **kwargs):
         """Returns the activity for a task"""
         req_user = kwargs['req_user']
