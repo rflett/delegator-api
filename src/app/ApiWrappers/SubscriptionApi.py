@@ -1,5 +1,6 @@
 import json
 import typing
+from os import getenv
 
 import requests
 
@@ -13,6 +14,8 @@ class SubscriptionApi(object):
 
     def get_limits(self, subscription_id: str) -> dict:
         """Get a subscription's plan quantity"""
+        if getenv('MOCK_SERVICES'):
+            return {}
         try:
             r = requests.get(
                 url=f"{self.url}/subscription/{subscription_id}/quantity",
@@ -30,6 +33,8 @@ class SubscriptionApi(object):
 
     def create_customer(self, plan_id: str, user_dict: dict, org_name: str) -> typing.Tuple[str, str]:
         """Create a customer on chargebee with the signup details"""
+        if getenv('MOCK_SERVICES'):
+            return 'mock_cust_id', 'https://delegator.com.au'
         try:
             r = requests.post(
                 url=f"{self.url}/customer/",
@@ -60,6 +65,8 @@ class SubscriptionApi(object):
 
     def decrement_plan_quantity(self, subscription_id: str) -> None:
         """Decrement a subscription's plan quantity"""
+        if getenv('MOCK_SERVICES'):
+            return
         try:
             r = requests.delete(
                 url=f"{self.url}/subscription/{subscription_id}/quantity",
@@ -76,6 +83,8 @@ class SubscriptionApi(object):
 
     def increment_plan_quantity(self, subscription_id: str) -> None:
         """Increment a subscription's plan quantity"""
+        if getenv('MOCK_SERVICES'):
+            return
         try:
             r = requests.put(
                 url=f"{self.url}/subscription/{subscription_id}/quantity",

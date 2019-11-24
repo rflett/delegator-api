@@ -1,5 +1,6 @@
 import json
 import typing
+from os import getenv
 
 import requests
 
@@ -13,6 +14,8 @@ class NotificationApi(object):
 
     def send_notification(self, notification_payload: dict) -> None:
         """Send a notification"""
+        if getenv('MOCK_SERVICES'):
+            return
         try:
             r = requests.post(
                 url=f"{self.url}/send",
@@ -30,6 +33,8 @@ class NotificationApi(object):
 
     def silence_notifications(self, notification_payload: dict) -> None:
         """Silence notifications for a user"""
+        if getenv('MOCK_SERVICES'):
+            return
         try:
             r = requests.put(
                 url=f"{self.url}/silence",
@@ -47,6 +52,8 @@ class NotificationApi(object):
 
     def unsilence_notifications(self, notification_payload: dict) -> None:
         """Enable notifications for a user"""
+        if getenv('MOCK_SERVICES'):
+            return
         try:
             r = requests.delete(
                 url=f"{self.url}/silence",
@@ -64,6 +71,8 @@ class NotificationApi(object):
 
     def get_silenced_option(self, user_id: int) -> typing.Union[int, None]:
         """Get the option that was selected when silencing notifications"""
+        if getenv('MOCK_SERVICES'):
+            return
         try:
             r = requests.get(
                 url=f"{self.url}/silence?user_id={user_id}",

@@ -18,6 +18,11 @@ class TaskService(object):
 
         # get the assigned user
         assigned_user = UserService.get_by_id(assignee)
+
+        # don't notify the assignee if they assigned themselves to the task
+        if assigned_user.id == req_user.id:
+            notify = False
+
         Activity(
             org_id=task.org_id,
             event=Events.task_assigned,

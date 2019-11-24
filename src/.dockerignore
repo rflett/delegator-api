@@ -1,8 +1,9 @@
 .dockerignore
 .flake8
-Dockerfile
 local.sh
 
+__pycache__/
 **/__pycache__/
 .idea/
 .pytest_cache
+tests/

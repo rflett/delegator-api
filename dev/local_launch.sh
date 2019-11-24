@@ -2,7 +2,7 @@
 
 set -e
 
-eval $(aws ecr get-login --no-include-email)
+eval $(aws.cmd ecr get-login --no-include-email --profile shared-services)
 docker-compose down
 # docker-compose pull
 docker-compose up --build

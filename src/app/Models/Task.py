@@ -4,7 +4,7 @@ from os import getenv
 from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
 
-from app import db, session_scope, logger, task_activity_table, app
+from app import db, session_scope, logger, task_activity_table, app, app_env
 from app.Exceptions import ValidationError
 from app.Models import DelayedTask, User
 from app.Models.LocalMockData import MockActivity
@@ -196,7 +196,7 @@ class Task(db.Model):
                     f"({start_of_history.strftime('%Y-%m-%d %H:%M:%S')} "
                     f"to {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}) for task {self.id}. ")
 
-        if getenv('APP_ENV', 'Local') in ['Local', 'Docker']:
+        if app_env in ['Local', 'Docker'] or getenv('MOCK_AWS'):
             activity = MockActivity()
             return activity.data
 
