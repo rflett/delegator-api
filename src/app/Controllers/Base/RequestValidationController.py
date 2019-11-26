@@ -10,6 +10,9 @@ from app.Controllers.Base import ObjectValidationController
 from app.Exceptions import ValidationError, ResourceNotFoundError
 from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting, UserInviteLink, TaskLabel
 from app.Models.Enums import NotificationTokens
+from app.Services import UserService
+
+user_service = UserService()
 
 
 class RequestValidationController(ObjectValidationController):
@@ -140,6 +143,8 @@ class RequestValidationController(ObjectValidationController):
         """Validates the delete user request"""
         user = self.check_user_id(user_id, should_exist=True)
         self.check_auth_scope(user, **kwargs)
+        if user_service.is_user_only_org_admin(user):
+            raise ValidationError("Can't delete the only remaining Administrator")
         return user
 
     def validate_deregister_token_request(self, request_body: dict) -> str:

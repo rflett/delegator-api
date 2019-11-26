@@ -4,7 +4,7 @@ from functools import wraps
 
 import requests
 from flask import Response
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, NotFound, MethodNotAllowed, HTTPException
 
 import app.Exceptions as Exceptions
 from app import logger
@@ -57,7 +57,7 @@ def handle_exceptions(f):
                 headers={'Content-Type': 'application/json'}
             )
 
-        except Exceptions.ResourceNotFoundError as e:
+        except (Exceptions.ResourceNotFoundError, NotFound) as e:
             logger.info(str(e))
             return Response(
                 json.dumps({"msg": str(e)}),
@@ -65,7 +65,15 @@ def handle_exceptions(f):
                 headers={'Content-Type': 'application/json'}
             )
 
-        except Exceptions.WrapperCallFailedException as e:
+        except MethodNotAllowed as e:
+            logger.info(str(e))
+            return Response(
+                json.dumps({"msg": str(e)}),
+                status=405,
+                headers={'Content-Type': 'application/json'}
+            )
+
+        except (Exceptions.WrapperCallFailedException, HTTPException) as e:
             logger.error(str(e))
             return Response(
                 json.dumps({"msg": str(e)}),

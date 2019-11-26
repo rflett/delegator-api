@@ -1,7 +1,10 @@
 import typing
 
-from app import session_scope
+from sqlalchemy import func
+
+from app import session_scope, logger
 from app.Models import User
+from app.Models.Enums import Roles
 from app.Exceptions import ResourceNotFoundError
 
 
@@ -33,3 +36,19 @@ class UserService(object):
             user_ids_qry = session.query(User.id).filter_by(org_id=org_id).all()
 
         return [user_id[0] for user_id in user_ids_qry]
+
+    @staticmethod
+    def is_user_only_org_admin(user: User) -> bool:
+        """Checks to see if the user is the only ORG_ADMIN"""
+        if user.role != Roles.ORG_ADMIN:
+            return False
+
+        with session_scope() as session:
+            org_admins_cnt = session.query(func.count(User.id)).filter(
+                User.role == Roles.ORG_ADMIN,
+                User.org_id == user.org_id,
+                User.disabled == None,  # noqa
+                User.deleted == None  # noqa
+            ).scalar()
+
+        return True if org_admins_cnt == 1 else False
