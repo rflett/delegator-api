@@ -81,9 +81,9 @@ class RequestValidationController(ObjectValidationController):
         }
 
     def validate_create_task_type_request(
-        self,
-        request_body: dict,
-        **kwargs
+            self,
+            request_body: dict,
+            **kwargs
     ) -> typing.Tuple[dict, typing.Optional[TaskType]]:
         """ Validates a create task type request body """
         label = self.check_str(request_body.get('label'), 'label')
@@ -184,9 +184,11 @@ class RequestValidationController(ObjectValidationController):
             raise ValidationError("Invalid email")
         return True
 
-    def validate_get_transitions(self, users_org_id: int, task_id: int) -> Task:
+    def validate_get_transitions(self, users_org_id: int) -> typing.List[Task]:
         """Validates the get task available task transitions request"""
-        return self.check_task_id(task_id, users_org_id)
+        with session_scope() as session:
+            tasks = session.query(Task).filter_by(org_id=users_org_id).all()
+        return tasks
 
     def validate_get_user(self, user_id: int, **kwargs) -> User:
         """Validates the get user request"""
