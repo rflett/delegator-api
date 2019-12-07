@@ -2,7 +2,7 @@ import typing
 
 from sqlalchemy import func
 
-from app import session_scope, logger
+from app import session_scope
 from app.Models import User
 from app.Models.Enums import Roles
 from app.Exceptions import ResourceNotFoundError

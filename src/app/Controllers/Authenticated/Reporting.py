@@ -6,10 +6,11 @@ from dateutil import tz
 from flask import Response
 from flask_restplus import Namespace
 
-from app import session_scope, app, subscription_api
+from app import session_scope, app
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions
 from app.Exceptions import ProductTierLimitError
+from app.Models import Subscription
 from app.Models.Response import get_all_reports_response, message_response_dto
 
 
@@ -32,7 +33,9 @@ class Reports(RequestValidationController):
 
         req_user = kwargs['req_user']
 
-        if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_reports_page', False):
+        subscription = Subscription(req_user.orgs.chargebee_subscription_id)
+
+        if not subscription.can_get_reports():
             raise ProductTierLimitError("You cannot view reports your current plan.")
 
         # TODO get from request instead

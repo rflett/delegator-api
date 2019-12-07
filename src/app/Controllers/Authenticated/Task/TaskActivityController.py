@@ -1,8 +1,9 @@
 from flask_restplus import Namespace
 
-from app import logger, subscription_api
+from app import logger
 from app.Decorators import authorize, requires_jwt, handle_exceptions
 from app.Controllers.Base import RequestValidationController
+from app.Models import Subscription
 from app.Models.Enums import Operations, Resources
 from app.Models.Response import message_response_dto, activity_response_dto
 from app.Services import TaskService
@@ -30,8 +31,9 @@ class TaskActivity(RequestValidationController):
         """Returns the activity for a task"""
         req_user = kwargs['req_user']
 
-        plan_limits = subscription_api.get_limits(req_user.orgs.chargebee_subscription_id)
-        activity_log_history_limit = plan_limits.get('task_activity_log_history', 7)
+        # check the subscription limitations
+        subscription = Subscription(req_user.orgs.chargebee_subscription_id)
+        activity_log_history_limit = subscription.task_activity_log_history()
 
         # get the task
         task = task_service.get(task_id, req_user.org_id)

@@ -12,7 +12,7 @@ class SubscriptionApi(BaseWrapper):
     def __init__(self, jwt_secret: str, url: str):
         super().__init__(jwt_secret, url)
 
-    def get_limits(self, subscription_id: str) -> dict:
+    def get_subscription(self, subscription_id: str) -> dict:
         """Get a subscription's plan quantity"""
         if getenv('MOCK_SERVICES'):
             return {}
