@@ -93,7 +93,7 @@ class TransitionTask(RequestValidationController):
                     enabled_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
 
                 # enabled options
-                this_task_transitions["valid_transitions"] += [ts.as_dict() for ts in enabled_qry]
+                this_task_transitions["valid_transitions"] += [ts.status for ts in enabled_qry]
 
             else:
                 # if someone is assigned to the task, then these are the available transitions
@@ -112,7 +112,7 @@ class TransitionTask(RequestValidationController):
                     enabled_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
 
                 # enabled options
-                this_task_transitions["valid_transitions"] += [ts.as_dict() for ts in enabled_qry]
+                this_task_transitions["valid_transitions"] += [ts.status for ts in enabled_qry]
 
             all_task_transitions.append(this_task_transitions)
 
