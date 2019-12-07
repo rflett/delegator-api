@@ -6,9 +6,12 @@ from sqlalchemy import exists, and_, func
 
 from app import logger, app, session_scope
 from app.Controllers.Base.ResponseController import ResponseController
+from app.Exceptions import AuthorizationError, ValidationError, ResourceNotFoundError
 from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskTypeEscalation, TaskLabel
 from app.Models.RBAC import Role
-from app.Exceptions import AuthorizationError, ValidationError, ResourceNotFoundError
+from app.Services import UserService
+
+user_service = UserService()
 
 
 class ObjectValidationController(ResponseController):
@@ -215,7 +218,11 @@ class ObjectValidationController(ResponseController):
             raise ResourceNotFoundError(f"Role {role} doesn't exist")
         elif _role.rank < req_user.roles.rank:
             raise AuthorizationError(f"No permissions to pass the role {role} on")
+        elif user_to_update is None:
+            return _role.id
         elif user_to_update is not None and user_to_update.roles.rank < req_user.roles.rank:
             raise AuthorizationError(f"No permissions to pass the role {role} on")
+        elif user_to_update.role != role and user_service.is_user_only_org_admin(user_to_update):
+            raise ValidationError("Can't demote the only remaining Administrator's role")
         else:
             return _role.id

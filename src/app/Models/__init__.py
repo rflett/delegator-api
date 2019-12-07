@@ -5,6 +5,7 @@ from app.Models.FailedLogin import FailedLogin
 from app.Models.Notification import Notification
 from app.Models.Organisation import Organisation
 from app.Models.OrgSetting import OrgSetting
+from app.Models.Subscription import Subscription
 from app.Models.Task import Task
 from app.Models.TaskLabel import TaskLabel
 from app.Models.TaskPriority import TaskPriority
@@ -23,6 +24,7 @@ __all__ = [
     Notification,
     Organisation,
     OrgSetting,
+    Subscription,
     Task,
     TaskLabel,
     TaskPriority,

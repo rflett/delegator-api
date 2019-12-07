@@ -189,7 +189,12 @@ class Task(db.Model):
 
     def activity(self, max_days_of_history: int) -> list:
         """ Returns the activity of a task. """
-        start_of_history = datetime.datetime.utcnow() - datetime.timedelta(days=max_days_of_history)
+        if max_days_of_history == -1:
+            # all time, THE TIME OF THIS ORIGINAL COMMIT
+            start_of_history = datetime.datetime(2019, 12, 6, 22, 51, 7, 856186)
+        else:
+            start_of_history = datetime.datetime.utcnow() - datetime.timedelta(days=max_days_of_history)
+
         start_of_history_str = start_of_history.strftime(app.config['DYN_DB_ACTIVITY_DATE_FORMAT'])
 
         logger.info(f"Retrieving {max_days_of_history} days of history "

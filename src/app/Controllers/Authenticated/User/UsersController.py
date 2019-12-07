@@ -6,8 +6,8 @@ from flask_restplus import Namespace
 from app import session_scope, subscription_api, logger
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
-from app.Exceptions import ProductTierLimitError
-from app.Models import User, Activity, Task, UserInviteLink
+from app.Exceptions import ProductTierLimitError, ValidationError
+from app.Models import User, Activity, Task, UserInviteLink, Subscription
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.Request import create_user_request, update_user_request
 from app.Models.Response import message_response_dto, user_response, get_users_response
@@ -89,9 +89,14 @@ class UserController(RequestValidationController):
         with session_scope() as session:
             existing_user_count = session.query(User).filter_by(org_id=req_user.org_id).count()
 
-        max_users = subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('max_users', 10)
+        # check the subscription limitations
+        subscription = Subscription(req_user.orgs.chargebee_subscription_id)
+        max_users = subscription.max_users()
 
-        if existing_user_count >= max_users:
+        if max_users == -1:
+            # infinite users
+            pass
+        elif existing_user_count >= max_users:
             logger.info(f"Organisation {req_user.orgs.name} has reached the user limit for their product tier.")
             raise ProductTierLimitError(f"You have reached the limit of users you can create.")
 
@@ -159,9 +164,13 @@ class UserController(RequestValidationController):
 
         # get the user to update
         user_to_update = user_service.get_by_id(user_attrs['id'])
+        is_user_only_org_admin = user_service.is_user_only_org_admin(user_to_update)
 
         # if the user is going to be disabled
         if user_to_update.disabled is None and user_attrs['disabled'] is not None:
+            if is_user_only_org_admin:
+                raise ValidationError("Cannot disable only remaining Administrator.")
+
             # decrement plan quantity
             subscription_api.decrement_plan_quantity(user_to_update.orgs.chargebee_subscription_id)
 

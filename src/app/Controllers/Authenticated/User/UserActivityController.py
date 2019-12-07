@@ -1,10 +1,11 @@
 from flask import Response
 from flask_restplus import Namespace
 
-from app import subscription_api, logger
+from app import logger
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ProductTierLimitError
+from app.Models import Subscription
 from app.Models.Enums import Operations, Resources
 from app.Models.Response import message_response_dto, activity_response_dto
 
@@ -30,8 +31,11 @@ class UserActivityController(RequestValidationController):
         """Returns the activity for a user """
         req_user = kwargs['req_user']
 
-        if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_user_activity', False):
-            raise ProductTierLimitError(f"You cannot view user activity on your plan.")
+        # check subscription limitations
+        subscription = Subscription(req_user.orgs.chargebee_subscription_id)
+
+        if not subscription.can_view_user_activity():
+            raise ProductTierLimitError("You cannot view user activity on your plan.")
 
         user = self.validate_get_user_activity(user_id, **kwargs)
 

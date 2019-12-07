@@ -9,7 +9,9 @@ from app import app, session_scope
 from app.Controllers.Base import ObjectValidationController
 from app.Exceptions import ValidationError, ResourceNotFoundError
 from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting, UserInviteLink, TaskLabel
-from app.Models.Enums import NotificationTokens
+from app.Services import UserService
+
+user_service = UserService()
 
 
 class RequestValidationController(ObjectValidationController):
@@ -140,17 +142,9 @@ class RequestValidationController(ObjectValidationController):
         """Validates the delete user request"""
         user = self.check_user_id(user_id, should_exist=True)
         self.check_auth_scope(user, **kwargs)
+        if user_service.is_user_only_org_admin(user):
+            raise ValidationError("Can't delete the only remaining Administrator")
         return user
-
-    def validate_deregister_token_request(self, request_body: dict) -> str:
-        """ Validate the request payload for registering a notification token """
-        token_type = self.check_str(request_body.get('token_type'), 'token_type')
-
-        if token_type in NotificationTokens.TOKENS:
-            return token_type
-        else:
-            raise ValidationError(f"Token type {token_type} not supported: "
-                                  f"supported types are: {NotificationTokens.TOKENS}")
 
     def validate_disable_task_type_request(self, task_type_id: int) -> TaskType:
         """ Validates the disable task request """
@@ -217,18 +211,6 @@ class RequestValidationController(ObjectValidationController):
             raise ValidationError(f"Bad password expected str got {type(password)}")
         # password_check = self.check_password_reqs(password)
         return password
-
-    def validate_register_token_request(self, request_body: dict) -> tuple:
-        """ Validate the request payload for registering a notification token """
-        token_type = self.check_str(request_body.get('token_type'), 'token_type')
-
-        if token_type not in NotificationTokens.TOKENS:
-            raise ValidationError(f"Token type {token_type} not supported: "
-                                  f"supported types are: {NotificationTokens.TOKENS}")
-
-        token = self.check_str(request_body.get('token'), 'token')
-
-        return token_type, token
 
     def validate_time_period(self, request_body: dict) -> typing.Tuple[datetime.datetime, datetime.datetime]:
         """ Validate that two dates are a valid comparision period """

@@ -1,8 +1,9 @@
 from flask_restplus import Namespace, fields
 
-from app import session_scope, subscription_api, logger
+from app import session_scope, logger
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
+from app.Models import Subscription
 from app.Models.Enums import Operations, Resources
 from app.Models.RBAC import Permission
 from app.Models.Response import message_response_dto
@@ -41,7 +42,8 @@ class UserPagesController(RequestValidationController):
                     pages.append(page.split('_PAGE')[0])
 
             # Remove reports if user hasn't paid for them
-            if not subscription_api.get_limits(req_user.orgs.chargebee_subscription_id).get('view_reports_page', False):
+            subscription = Subscription(req_user.orgs.chargebee_subscription_id)
+            if not subscription.can_get_reports():
                 pages.remove('REPORTS')
 
             req_user.log(
