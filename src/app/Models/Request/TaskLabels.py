@@ -13,6 +13,3 @@ new_task_label_dto = api.model("New Task Label Dto", {
     "colour": fields.String()
 })
 
-delete_task_label_dto = api.model("Delete Task Label Dto", {
-    "id": fields.Integer()
-})

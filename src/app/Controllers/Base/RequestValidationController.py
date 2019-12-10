@@ -431,9 +431,9 @@ class RequestValidationController(ObjectValidationController):
         else:
             return task_label
 
-    def validate_delete_task_labels_request(self, request_body: dict, org_id: int) -> TaskLabel:
+    def validate_delete_task_labels_request(self, label_id: int, org_id: int) -> TaskLabel:
         """Validates that the incoming task labels are valid"""
-        label_id = self.check_int(request_body.get('id'), 'id')
+        label_id = self.check_int(label_id, 'label_id')
 
         with session_scope() as session:
             task_label = session.query(TaskLabel).filter_by(id=label_id, org_id=org_id).first()

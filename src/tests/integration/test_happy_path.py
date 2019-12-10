@@ -443,10 +443,7 @@ def test_schedule_task_with_labels():
 
 
 def test_delete_label():
-    delete_data = {
-        "id": base.task_label_id,
-    }
-    r = base.send('delete', 'task-labels/', delete_data)
+    r = base.send('delete', f'task-labels/{base.task_label_id}')
     assert r.status_code == 204
 
 

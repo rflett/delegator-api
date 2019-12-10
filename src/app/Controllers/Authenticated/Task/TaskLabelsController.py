@@ -7,7 +7,7 @@ from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Models import TaskLabel
 from app.Models.Enums import Operations, Resources
 from app.Models.Response import task_labels_response, message_response_dto
-from app.Models.Request import new_task_label_dto, task_label_dto, delete_task_label_dto
+from app.Models.Request import new_task_label_dto, task_label_dto
 
 task_labels_route = Namespace(
     path="/task-labels",
@@ -79,21 +79,22 @@ class TaskLabels(RequestValidationController):
         req_user.log(Operations.UPDATE, Resources.TASK_LABEL, label.id)
         return self.ok(label.as_dict())
 
+
+@task_labels_route.route('/<int:label_id>')
+class DeleteTaskLabel(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.DELETE, Resources.TASK_LABEL)
-    @task_labels_route.expect(delete_task_label_dto)
+    @task_labels_route.param("label_id", "The id of the label you want to delete")
     @task_labels_route.response(204, "Deleted the task label")
     @task_labels_route.response(400, "Bad request", message_response_dto)
     @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
     @task_labels_route.response(404, "Task label not found", message_response_dto)
-    def delete(self, **kwargs) -> Response:
+    def delete(self, label_id: int, **kwargs) -> Response:
         """Deletes a task label"""
         req_user = kwargs['req_user']
-        request_body = request.get_json()
 
-        label = self.validate_delete_task_labels_request(request_body, req_user.org_id)
-        label_id = label.id
+        label = self.validate_delete_task_labels_request(label_id, req_user.org_id)
 
         with session_scope() as session:
             session.delete(label)
