@@ -38,7 +38,7 @@ Build:
     - docker tag $AMZ_REGISTRY/delegator-api:$IMAGE_TAG $AMZ_REGISTRY/delegator-api:latest
     - docker push $AMZ_REGISTRY/delegator-api:latest
 
-Staging:
+.deploy:
   stage: Deploy
   environment:
     name: $DEPLOY_ENV
@@ -56,7 +56,7 @@ Staging:
       https://gitlab.com/api/v4/projects/14042887/trigger/pipeline"
 
 Staging:
-  stage: Deploy
+  extends: .deploy
   variables:
     DEPLOY_ENV: staging
 
