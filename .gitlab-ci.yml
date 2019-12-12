@@ -38,11 +38,11 @@ Build:
     - docker tag $AMZ_REGISTRY/delegator-api:$IMAGE_TAG $AMZ_REGISTRY/delegator-api:latest
     - docker push $AMZ_REGISTRY/delegator-api:latest
 
-.deploy:
+Staging:
   stage: Deploy
   environment:
     name: $DEPLOY_ENV
-    url: https://api-$DEPLOY_ENV.backburner.online/v
+    url: https://api.$DEPLOY_ENV.delegator.com.au/
   only:
     - master
   script:
@@ -56,6 +56,15 @@ Build:
       https://gitlab.com/api/v4/projects/14042887/trigger/pipeline"
 
 Staging:
-  extends: .deploy
+  stage: Deploy
   variables:
     DEPLOY_ENV: staging
+
+Production:
+  extends: .deploy
+  when: manual
+  variables:
+    DEPLOY_ENV: production
+  environment:
+    name: $DEPLOY_ENV
+    url: https://api.delegator.com.au/
