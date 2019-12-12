@@ -10,6 +10,7 @@ from flask_restplus import Api
 from flask_sqlalchemy import SQLAlchemy
 
 from config_ssm import SsmConfig
+from config_secretsman import SecretsManConfig
 from app.ApiWrappers import SubscriptionApi, NotificationApi
 
 # flask conf
@@ -21,7 +22,13 @@ app.config.from_object(f"config.{app_env}")
 if app_env not in ['Local', 'Docker', 'Ci']:
     params = SsmConfig().get_params(app_env)
     app.config.update(params)
-    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DB_URI']
+
+# load secrets from aws secrets manager in production
+if app_env == 'Production':
+    secrets = SecretsManConfig().get_params()
+    app.config.update(secrets)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DB_URI']
 
 
 # flask profiler

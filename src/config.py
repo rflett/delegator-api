@@ -27,14 +27,14 @@ class Dev(Config):
 
 class Docker(Dev):
     """Used when running with docker-compose"""
-    SQLALCHEMY_DATABASE_URI = "postgresql://delegator:delegator@postgres:5432/delegator"
+    DB_URI = "postgresql://delegator:delegator@postgres:5432/delegator"
     SUBSCRIPTION_API_PUBLIC_URL = "http://subscription-api:5001"
     NOTIFICATION_API_PUBLIC_URL = "http://notification-api:5002"
 
 
 class Local(Dev):
     """When running on the local machine"""
-    SQLALCHEMY_DATABASE_URI = "postgresql://delegator:delegator@127.0.0.1:5432/delegator"
+    DB_URI = "postgresql://delegator:delegator@127.0.0.1:5432/delegator"
     SUBSCRIPTION_API_PUBLIC_URL = "http://localhost:5001"
     NOTIFICATION_API_PUBLIC_URL = "http://localhost:5002"
 
@@ -46,3 +46,12 @@ class Staging(Config):
     ORG_SETTINGS_TABLE = 'organisation-settings-staging'
     USER_ACTIVITY_TABLE = 'user-activity-staging'
     TASK_ACTIVITY_TABLE = 'task-activity-staging'
+
+
+class Production(Config):
+    """Production ECS"""
+    EVENTS_SNS_TOPIC_ARN = 'arn:aws:sns:ap-southeast-2:239304980652:api-production-events'
+    USER_SETTINGS_TABLE = 'user-settings-production'
+    ORG_SETTINGS_TABLE = 'organisation-settings-production'
+    USER_ACTIVITY_TABLE = 'user-activity-production'
+    TASK_ACTIVITY_TABLE = 'task-activity-production'

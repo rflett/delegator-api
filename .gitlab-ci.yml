@@ -42,7 +42,7 @@ Build:
   stage: Deploy
   environment:
     name: $DEPLOY_ENV
-    url: https://api-$DEPLOY_ENV.backburner.online/v
+    url: https://api.$DEPLOY_ENV.delegator.com.au/
   only:
     - master
   script:
@@ -59,3 +59,12 @@ Staging:
   extends: .deploy
   variables:
     DEPLOY_ENV: staging
+
+Production:
+  extends: .deploy
+  when: manual
+  variables:
+    DEPLOY_ENV: production
+  environment:
+    name: $DEPLOY_ENV
+    url: https://api.delegator.com.au/
