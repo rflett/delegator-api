@@ -12,4 +12,3 @@ new_task_label_dto = api.model("New Task Label Dto", {
     "label": fields.String(),
     "colour": fields.String()
 })
-
