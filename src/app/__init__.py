@@ -28,6 +28,7 @@ if app_env not in ['Local', 'Docker', 'Ci']:
     xray_recorder.configure(service='delegator-api', plugins=("ECSPlugin",))
     XRayMiddleware(app, xray_recorder)
     patch(('botocore', 'requests'))
+    xray_recorder.begin_segment('delegator-api-init')
     # parameter store
     params = SsmConfig().get_params(app_env)
     app.config.update(params)
@@ -126,7 +127,6 @@ api = Api(
     description="The public API for applications."
 )
 # routes
-# sorted(ut, key=lambda x: x.count, reverse=True)
 from app.Controllers import all_routes  # noqa
 for route in sorted(all_routes, key=lambda x: x.name):
     api.add_namespace(route)
@@ -136,3 +136,5 @@ api.init_app(app)
 if app_env not in ['Local', 'Docker', 'Ci']:
     # flask profiler
     flask_profiler.init_app(app)
+    # xray
+    xray_recorder.end_segment()
