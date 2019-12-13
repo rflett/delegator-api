@@ -3,10 +3,8 @@ from contextlib import contextmanager
 from os import getenv
 
 import boto3
-import botocore  # noqa used for xray
-import requests  # noqa used for xray
 import flask_profiler
-from aws_xray_sdk.core import xray_recorder, patch
+from aws_xray_sdk.core import xray_recorder, patch_all
 from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 from flask import Flask, url_for
 from flask_cors import CORS
@@ -22,13 +20,13 @@ app = Flask(__name__)
 app_env = getenv('APP_ENV', 'Local')
 app.config.from_object(f"config.{app_env}")
 
+# setup aws xray
+xray_recorder.configure(service='delegator-api', context_missing='LOG_ERROR', plugins=("ECSPlugin",))
+XRayMiddleware(app, xray_recorder)
+patch_all()
+
 # load in values from parameter store in higher envs
 if app_env not in ['Local', 'Docker', 'Ci']:
-    # setup aws xray
-    xray_recorder.configure(service='delegator-api', plugins=("ECSPlugin",))
-    XRayMiddleware(app, xray_recorder)
-    patch(('botocore', 'requests'))
-    xray_recorder.begin_segment('delegator-api-init')
     # parameter store
     params = SsmConfig().get_params(app_env)
     app.config.update(params)
@@ -136,5 +134,3 @@ api.init_app(app)
 if app_env not in ['Local', 'Docker', 'Ci']:
     # flask profiler
     flask_profiler.init_app(app)
-    # xray
-    xray_recorder.end_segment()
