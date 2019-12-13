@@ -2,6 +2,7 @@ import typing
 
 import jwt
 from flask import request
+from aws_xray_sdk.core import xray_recorder
 
 from app import logger, session_scope, app
 from app.Exceptions import ValidationError, ResourceNotFoundError
@@ -30,9 +31,13 @@ class AuthService(object):
             logger.info(f"Decoding raised {e}, we probably failed to decode the JWT due to a user secret/aud issue.")
             raise ValidationError("Couldn't validate the JWT.")
 
+        document = xray_recorder.current_segment()
+
         if decoded['claims']['type'] == 'user':
+            document.set_user(str(decoded['claims']['user-id']))
             return self._get_user(decoded['claims']['user-id'])
         elif decoded['claims']['type'] == 'service-account':
+            document.set_user(str(decoded['claims']['service-account-name']))
             return self._get_service_account(decoded['claims']['service-account-name'])
         else:
             raise ValidationError("Can't determine requester type from token.")

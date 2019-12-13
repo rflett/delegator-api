@@ -4,6 +4,8 @@ from os import getenv
 
 import boto3
 import flask_profiler
+from aws_xray_sdk.core import xray_recorder, patch_all
+from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 from flask import Flask, url_for
 from flask_cors import CORS
 from flask_restplus import Api
@@ -20,6 +22,10 @@ app.config.from_object(f"config.{app_env}")
 
 # load in values from parameter store in higher envs
 if app_env not in ['Local', 'Docker', 'Ci']:
+    # setup aws xray
+    xray_recorder.configure(service=f'delegator-api')
+    XRayMiddleware(app, xray_recorder)
+    # parameter store
     params = SsmConfig().get_params(app_env)
     app.config.update(params)
 
@@ -124,5 +130,8 @@ for route in sorted(all_routes, key=lambda x: x.name):
 
 api.init_app(app)
 
-if app_env not in ['Local', 'Docker']:
+if app_env not in ['Local', 'Docker', 'Ci']:
+    # aws xray
+    patch_all()
+    # flask profiler
     flask_profiler.init_app(app)
