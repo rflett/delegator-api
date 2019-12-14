@@ -20,13 +20,12 @@ app = Flask(__name__)
 app_env = getenv('APP_ENV', 'Local')
 app.config.from_object(f"config.{app_env}")
 
-# setup aws xray
-xray_recorder.configure(service='delegator-api', context_missing='LOG_ERROR', plugins=("ECSPlugin",))
-XRayMiddleware(app, xray_recorder)
-patch_all()
-
 # load in values from parameter store in higher envs
 if app_env not in ['Local', 'Docker', 'Ci']:
+    # setup aws xray
+    xray_recorder.configure(service='delegator-api', context_missing='LOG_ERROR', plugins=("ECSPlugin",))
+    xray_recorder.configure(sampling=True if app.config['XRAY_ENABLED'] == 'True' else False)
+    XRayMiddleware(app, xray_recorder)
     # parameter store
     params = SsmConfig().get_params(app_env)
     app.config.update(params)
@@ -134,3 +133,5 @@ api.init_app(app)
 if app_env not in ['Local', 'Docker', 'Ci']:
     # flask profiler
     flask_profiler.init_app(app)
+    # xray
+    patch_all()

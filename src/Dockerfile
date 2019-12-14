@@ -11,10 +11,9 @@ EXPOSE 5000
 # app dir
 WORKDIR /app
 
-
 # project requirements
 COPY Pipfile Pipfile.lock ./
-RUN pipenv install
+RUN pipenv install --system
 
 # copy project src
 COPY . .
@@ -23,5 +22,8 @@ COPY . .
 ARG COMMIT_SHA=local
 ENV COMMIT_SHA=${COMMIT_SHA}
 
+# su
+USER daemon
+
 # run
-CMD ["pipenv", "run", "gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--log-level", "warning", "--access-logfile", "-", "--access-logformat", "%(h)s %(t)s %(D)s delegator-api %(r)s %(s)s", "--config", "/app/gunicorn.py", "api:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--log-level", "warning", "--access-logfile", "-", "--access-logformat", "%(h)s %(t)s %(D)s delegator-api %(r)s %(s)s", "--config", "/app/gunicorn.py", "api:app"]
