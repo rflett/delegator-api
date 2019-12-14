@@ -1,3 +1,4 @@
+import json
 import logging
 from contextlib import contextmanager
 from os import getenv
@@ -6,10 +7,10 @@ import boto3
 import flask_profiler
 from aws_xray_sdk.core import xray_recorder, patch_all
 from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+from aws_xray_sdk.ext.flask_sqlalchemy.query import XRayFlaskSqlAlchemy
 from flask import Flask, url_for
 from flask_cors import CORS
 from flask_restplus import Api
-from flask_sqlalchemy import SQLAlchemy
 
 from config_ssm import SsmConfig
 from config_secretsman import SecretsManConfig
@@ -28,6 +29,8 @@ if app_env not in ['Local', 'Docker', 'Ci']:
     # parameter store
     params = SsmConfig().get_params(app_env)
     app.config.update(params)
+    xray_recorder.configure(sampling_rules=json.loads(app.config['XRAY_RULE_IGNORE_HEALTH']))
+    logging.getLogger('aws_xray_sdk').setLevel(logging.WARNING)
 
 # load secrets from aws secrets manager in production
 if app_env == 'Production':
@@ -66,7 +69,7 @@ log_format = '%(asctime)s delegator-api %(levelname)s %(message)s'
 logging.basicConfig(format=log_format, level=logging.INFO)
 
 # db conf
-db = SQLAlchemy(app)
+db = XRayFlaskSqlAlchemy(app)
 
 if getenv('MOCK_AWS'):
     user_settings_table = None
