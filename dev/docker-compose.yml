@@ -13,6 +13,18 @@ services:
     ports:
       - 6379:6379
 
+  xray:
+    image: amazon/aws-xray-daemon
+    restart: always
+    env_file:
+    - .env
+    command: -o
+    environment:
+      AWS_REGION: ap-southeast-2
+    ports:
+      - 2000:2000/udp
+      - 2000:2000
+
   delegator-api:
     # use the image from ECR
     # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/delegator-api:latest
@@ -28,10 +40,12 @@ services:
     depends_on:
       - postgres
       - redis
+      - xray
     env_file:
     - .env
     environment:
       APP_ENV: Docker
+      AWS_XRAY_DAEMON_ADDRESS: xray:2000
       # MOCK_SERVICES: 'true'
       # MOCK_AWS: 'true'
       AWS_DEFAULT_REGION: ap-southeast-2
