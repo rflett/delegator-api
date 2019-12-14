@@ -24,7 +24,6 @@ app.config.from_object(f"config.{app_env}")
 if app_env not in ['Local', 'Docker', 'Ci']:
     # setup aws xray
     xray_recorder.configure(service='delegator-api', context_missing='LOG_ERROR', plugins=("ECSPlugin",))
-    xray_recorder.configure(sampling=True if app.config['XRAY_ENABLED'] == 'True' else False)
     XRayMiddleware(app, xray_recorder)
     # parameter store
     params = SsmConfig().get_params(app_env)
