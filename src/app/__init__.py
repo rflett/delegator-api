@@ -23,14 +23,9 @@ app.config.from_object(f"config.{app_env}")
 
 # load in values from parameter store in higher envs
 if app_env not in ['Local', 'Docker', 'Ci']:
-    # setup aws xray
-    xray_recorder.configure(service='delegator-api', context_missing='LOG_ERROR', plugins=("ECSPlugin",))
-    XRayMiddleware(app, xray_recorder)
     # parameter store
     params = SsmConfig().get_params(app_env)
     app.config.update(params)
-    xray_recorder.configure(sampling_rules=json.loads(app.config['XRAY_RULE_IGNORE_HEALTH']))
-    logging.getLogger('aws_xray_sdk').setLevel(logging.WARNING)
 
 # load secrets from aws secrets manager in production
 if app_env == 'Production':
@@ -39,12 +34,14 @@ if app_env == 'Production':
 
 app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DB_URI']
 
-
 # xray
-xray_recorder.configure(service='delegator-api', context_missing='LOG_ERROR', plugins=("ECSPlugin",))
+xray_recorder.configure(
+    service='delegator-api',
+    context_missing='LOG_ERROR',
+    plugins=("ECSPlugin",),
+    sampling_rules=json.loads(app.config['XRAY_RULE_IGNORE_HEALTH'])
+)
 XRayMiddleware(app, xray_recorder)
-# parameter store
-xray_recorder.configure(sampling_rules=json.loads(app.config['XRAY_RULE_IGNORE_HEALTH']))
 logging.getLogger('aws_xray_sdk').setLevel(logging.WARNING)
 
 # flask profiler
