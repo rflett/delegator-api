@@ -23,6 +23,7 @@ class Dev(Config):
     # the following are retrieved from SSM parameter store in higher envs
     PUBLIC_WEB_URL = "http://localhost:4200/"
     JWT_SECRET = 'dev_s3cr3t'
+    XRAY_RULE_IGNORE_HEALTH = '{}'
 
 
 class Docker(Dev):
