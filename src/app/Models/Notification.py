@@ -1,16 +1,7 @@
-import _thread
 import typing
 from dataclasses import dataclass
 
 from app import notification_api, logger, app_env
-
-
-def do_push(notification_dto: dict) -> None:
-    """ Publishes the notification to SNS """
-    if app_env == 'Local':
-        logger.info(f"WOULD have pushed notification {notification_dto} to NotificationApi")
-        return None
-    notification_api.send_notification(notification_dto)
 
 
 @dataclass
@@ -25,7 +16,10 @@ class Notification(object):
 
     def push(self) -> None:
         """ Publish the message to SNS for pushing to the user """
-        _thread.start_new_thread(do_push, (self.as_dict(), ))  # this needs to be a tuple
+        if app_env == 'Local':
+            logger.info(f"WOULD have pushed notification {self.as_dict()} to NotificationApi")
+            return None
+        notification_api.send_notification(self.as_dict())
 
     def as_dict(self) -> dict:
         """ Returns a notification as a dict, ready for SNS message """

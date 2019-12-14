@@ -40,6 +40,13 @@ if app_env == 'Production':
 app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DB_URI']
 
 
+# xray
+xray_recorder.configure(service='delegator-api', context_missing='LOG_ERROR', plugins=("ECSPlugin",))
+XRayMiddleware(app, xray_recorder)
+# parameter store
+xray_recorder.configure(sampling_rules=json.loads(app.config['XRAY_RULE_IGNORE_HEALTH']))
+logging.getLogger('aws_xray_sdk').setLevel(logging.WARNING)
+
 # flask profiler
 app.config["flask_profiler"] = {
     "enabled": True,
@@ -132,8 +139,10 @@ for route in sorted(all_routes, key=lambda x: x.name):
 
 api.init_app(app)
 
+# xray
+patch_all()
+
+
 if app_env not in ['Local', 'Docker', 'Ci']:
     # flask profiler
     flask_profiler.init_app(app)
-    # xray
-    patch_all()

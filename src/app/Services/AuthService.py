@@ -5,7 +5,7 @@ from flask import request
 from aws_xray_sdk.core import xray_recorder
 
 from app import logger, session_scope, app
-from app.Exceptions import ValidationError, ResourceNotFoundError
+from app.Exceptions import ValidationError, ResourceNotFoundError, AuthorizationError
 from app.Models import User
 from app.Models.RBAC import ServiceAccount
 
@@ -24,12 +24,12 @@ class AuthService(object):
                 audience='delegator.com.au',
                 algorithms='HS256'
             )
-        except (KeyError, AttributeError):
-            raise ValidationError("Invalid request.")
+        except (KeyError, AttributeError) as e:
+            raise AuthorizationError(f"Invalid request - {e}")
         except Exception as e:
             logger.error(str(e))
             logger.info(f"Decoding raised {e}, we probably failed to decode the JWT due to a user secret/aud issue.")
-            raise ValidationError("Couldn't validate the JWT.")
+            raise AuthorizationError("Couldn't validate the JWT.")
 
         document = xray_recorder.current_segment()
 
@@ -40,7 +40,7 @@ class AuthService(object):
             document.set_user(str(decoded['claims']['service-account-name']))
             return self._get_service_account(decoded['claims']['service-account-name'])
         else:
-            raise ValidationError("Can't determine requester type from token.")
+            raise AuthorizationError("Can't determine requester type from token.")
 
     @staticmethod
     def _get_user(user_id: int) -> User:

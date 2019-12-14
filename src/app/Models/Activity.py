@@ -1,35 +1,9 @@
-import _thread
 import json
 from dataclasses import dataclass
 from datetime import datetime
 from os import getenv
 
 from app import api_events_sns_topic, app, logger, app_env
-
-
-def do_publish(message: dict, event: str) -> None:
-    """ Publishes an event to SNS """
-    if app_env in ['Local', 'Docker'] or getenv('MOCK_AWS'):
-        logger.info(f"WOULD have published message {event}")
-        return None
-
-    api_events_sns_topic.publish(
-        TopicArn=api_events_sns_topic.arn,
-        Message=json.dumps({
-            'default': json.dumps(message)
-        }),
-        MessageStructure='json',
-        MessageAttributes={
-            'event': {
-                'DataType': 'String',
-                'StringValue': event
-            },
-            'event_class': {
-                'DataType': 'String',
-                'StringValue': event.split('_')[0]
-            },
-        }
-    )
 
 
 @dataclass
@@ -44,7 +18,27 @@ class Activity(object):
 
     def publish(self) -> None:
         """ Publishes an event to SNS """
-        _thread.start_new_thread(do_publish, (self.as_dict(), self.event))
+        if app_env in ['Local'] or getenv('MOCK_AWS'):
+            logger.info(f"WOULD have published message {self.event}")
+            return None
+
+        api_events_sns_topic.publish(
+            TopicArn=api_events_sns_topic.arn,
+            Message=json.dumps({
+                'default': json.dumps(self.as_dict())
+            }),
+            MessageStructure='json',
+            MessageAttributes={
+                'event': {
+                    'DataType': 'String',
+                    'StringValue': self.event
+                },
+                'event_class': {
+                    'DataType': 'String',
+                    'StringValue': self.event.split('_')[0]
+                },
+            }
+        )
 
     def as_dict(self) -> dict:
         """ Returns an activity as a dict, ready for SNS message """
