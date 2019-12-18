@@ -5,7 +5,7 @@ from flask import request
 from aws_xray_sdk.core import xray_recorder
 
 from app import logger, session_scope, app
-from app.Exceptions import ValidationError, ResourceNotFoundError, AuthorizationError
+from app.Exceptions import ResourceNotFoundError, AuthorizationError
 from app.Models import User
 from app.Models.RBAC import ServiceAccount
 

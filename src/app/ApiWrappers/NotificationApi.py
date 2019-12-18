@@ -4,7 +4,7 @@ from os import getenv
 
 import requests
 
-from app.Exceptions import WrapperCallFailedException, ResourceNotFoundError
+from app.Exceptions import WrapperCallFailedException
 from app.ApiWrappers.BaseWrapper import BaseWrapper
 
 

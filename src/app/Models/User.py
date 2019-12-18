@@ -1,4 +1,3 @@
-import _thread
 import binascii
 import datetime
 import hashlib
