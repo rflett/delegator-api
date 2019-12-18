@@ -63,3 +63,9 @@ delayed_task_response = api.model("Delayed Tasks Response", {
     "snoozed": NullableDateTime,
     "expired": NullableDateTime
 })
+
+task_transition_dto = api.model("Get Task Transitions Dto", {
+    "task_id": fields.Integer(),
+    "valid_transitions": fields.List(fields.String(enum=response_statuses))
+})
+transition_tasks_response = api.model("Get Valid Transitions Dto", task_transition_dto)

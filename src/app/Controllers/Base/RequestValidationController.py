@@ -71,7 +71,7 @@ class RequestValidationController(ObjectValidationController):
             'type': self.check_task_type_id(task_type_id=request_body.get('type_id')),
             'description': self.check_optional_str(request_body.get('description'), 'description'),
             'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
-            'scheduled_for': self.check_date(request_body.get('scheduled_for'), 'scheduled_for'),
+            'scheduled_for': self.check_optional_date(request_body.get('scheduled_for'), 'scheduled_for'),
             'scheduled_notification_period': self.check_optional_int(
                 request_body.get('scheduled_notification_period'), 'scheduled_notification_period'
             ),
@@ -294,7 +294,7 @@ class RequestValidationController(ObjectValidationController):
             'description': self.check_optional_str(request_body.get('description'), 'description'),
             'status': self.check_task_status(request_body.get('status')),
             'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
-            'scheduled_for': self.check_date(request_body.get('scheduled_for'), 'scheduled_for'),
+            'scheduled_for': self.check_optional_date(request_body.get('scheduled_for'), 'scheduled_for'),
             'scheduled_notification_period': self.check_optional_int(
                 request_body.get('scheduled_notification_period'), 'scheduled_notification_period'
             ),
@@ -443,8 +443,11 @@ class RequestValidationController(ObjectValidationController):
         else:
             return task_label
 
-    def validate_silence_notifications_request(self, request_body: dict) -> typing.Tuple[int, int]:
+    def validate_silence_notifications_request(self, request_body: dict) -> typing.Tuple[typing.Union[int, None], int]:
         """Validates the silencing notifications"""
-        silence_until = self.check_date(request_body.get('silence_until'), 'silence_until')
+        silence_until = self.check_optional_date(request_body.get('silence_until'), 'silence_until')
         silenced_option = self.check_int(request_body.get('silenced_option'), 'silenced_option')
-        return int(silence_until.timestamp()), silenced_option
+        if silence_until is not None:
+            return int(silence_until.timestamp()), silenced_option
+        else:
+            return silence_until, silenced_option

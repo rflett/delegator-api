@@ -4,7 +4,7 @@ from os import getenv
 
 import requests
 
-from app.Exceptions import WrapperCallFailedException
+from app.Exceptions import WrapperCallFailedException, ResourceNotFoundError
 from app.ApiWrappers.BaseWrapper import BaseWrapper
 
 
@@ -73,6 +73,7 @@ class NotificationApi(BaseWrapper):
         """Get the option that was selected when silencing notifications"""
         if getenv('MOCK_SERVICES'):
             return
+
         try:
             r = requests.get(
                 url=f"{self.url}/silence?user_id={user_id}",
@@ -81,10 +82,9 @@ class NotificationApi(BaseWrapper):
                 },
                 timeout=10
             )
-            if r.status_code != 200:
-                raise WrapperCallFailedException(f"Notification API - {r.status_code}")
-            else:
-                response_body = r.json()
-                return response_body.get('option')
         except Exception as e:
             raise WrapperCallFailedException(f"Notification API - {e}")
+        if r.status_code != 200:
+            raise WrapperCallFailedException(f"Notification API - {r.status_code}")
+        else:
+            return r.json()

@@ -170,7 +170,7 @@ class User(db.Model):
         :return:
         """
         from app.Services import ActiveUserService
-        _thread.start_new_thread(ActiveUserService.user_is_active, (self,))
+        ActiveUserService.user_is_active(self)
 
     def is_inactive(self) -> None:
         """
@@ -178,7 +178,7 @@ class User(db.Model):
         :return:
         """
         from app.Services import ActiveUserService
-        _thread.start_new_thread(ActiveUserService.user_is_inactive, (self,))
+        ActiveUserService.user_is_inactive(self)
 
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """
