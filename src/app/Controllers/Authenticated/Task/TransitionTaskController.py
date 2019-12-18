@@ -4,11 +4,11 @@ from flask_restplus import Namespace
 from app import session_scope
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
-from app.Models import TaskStatus
+from app.Models import TaskStatus, Task
 from app.Models.Enums import TaskStatuses, Operations, Resources
 from app.Models.RBAC import ServiceAccount
 from app.Models.Request import transition_task_request
-from app.Models.Response import task_response, message_response_dto, task_statuses_response
+from app.Models.Response import task_response, message_response_dto, transition_tasks_response
 from app.Services import TaskService
 
 transition_task_route = Namespace(
@@ -59,15 +59,16 @@ class TransitionTask(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_TRANSITIONS)
-    @transition_task_route.response(200, "Success", task_statuses_response)
+    @transition_task_route.response(200, "Success", transition_tasks_response)
     @transition_task_route.response(400, "Bad request", message_response_dto)
     @transition_task_route.response(403, "Insufficient privileges", message_response_dto)
     @transition_task_route.response(404, "Task not found", message_response_dto)
     def get(self, **kwargs) -> Response:
-        """Returns the statuses that a task could be transitioned to, based on the state of the task."""
+        """Returns all tasks and the statuses they can be transitioned to"""
         req_user = kwargs['req_user']
 
-        tasks = self.validate_get_transitions(req_user.org_id)
+        with session_scope() as session:
+            tasks = session.query(Task).filter_by(org_id=req_user.org_id).all()
 
         # handle case where no-one is assigned to the task
         all_task_transitions = []

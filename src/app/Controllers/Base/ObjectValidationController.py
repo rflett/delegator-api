@@ -91,7 +91,7 @@ class ObjectValidationController(ResponseController):
         return param.strip()
 
     @staticmethod
-    def check_date(date_str: typing.Optional[str], param_name: str) -> typing.Union[None, datetime.datetime]:
+    def check_optional_date(date_str: typing.Optional[str], param_name: str) -> typing.Union[None, datetime.datetime]:
         """Verify a date can be converted to a datetime and is not in the past"""
         if date_str is not None:
             try:
