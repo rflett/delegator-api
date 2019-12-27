@@ -30,8 +30,8 @@ class Roles(RequestValidationController):
         req_user = kwargs['req_user']
 
         with session_scope() as session:
-            # rank > 99 are reserved for admin duties
-            roles_qry = session.query(Role).filter(and_(Role.rank >= req_user.roles.rank, Role.rank <= 99)).all()
+            # rank > 50 are reserved for admin duties
+            roles_qry = session.query(Role).filter(and_(Role.rank >= req_user.roles.rank, Role.rank <= 50)).all()
 
         roles = [r.as_dict() for r in roles_qry]
         req_user.log(
