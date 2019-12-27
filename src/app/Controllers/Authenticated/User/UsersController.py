@@ -2,6 +2,7 @@ import datetime
 
 from flask import Response, request
 from flask_restplus import Namespace
+from sqlalchemy import and_
 
 from app import session_scope, subscription_api, logger
 from app.Controllers.Base import RequestValidationController
@@ -9,6 +10,7 @@ from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ProductTierLimitError, ValidationError
 from app.Models import User, Activity, Task, UserInviteLink, Subscription
 from app.Models.Enums import Operations, Resources, Events
+from app.Models.RBAC import Role
 from app.Models.Request import create_user_request, update_user_request
 from app.Models.Response import message_response_dto, user_response, get_users_response
 from app.Services import UserService, EmailService
@@ -38,11 +40,15 @@ class UserController(RequestValidationController):
 
         # query for all users in the requesting user's organisation
         with session_scope() as session:
-            users_qry = session.query(User) \
-                .filter_by(
-                org_id=req_user.org_id,
-                deleted=None
-            ).all()
+            users_qry = session.query(User)\
+                .join(Role, Role.id == User.role)\
+                .filter(
+                    and_(
+                        User.org_id == req_user.org_id,
+                        Role.rank >= req_user.roles.rank,
+                        User.deleted == None  # noqa
+                    )
+                ).all()
 
         users = []
 
