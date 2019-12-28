@@ -18,9 +18,6 @@ signup_request = api.model("Signup Request", {
 })
 
 password_setup_request = api.model("Password setup request", {
-    "password": fields.String(required=True)
-})
-
-password_reset_request = api.model("Password reset request", {
-    "email": fields.String(required=True)
+    "password": fields.String(required=True),
+    "invite_link": fields.String(required=True)
 })

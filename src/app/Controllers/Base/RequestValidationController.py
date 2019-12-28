@@ -395,21 +395,21 @@ class RequestValidationController(ObjectValidationController):
             "disabled": self.check_user_disabled(request_body.get('disabled'))
         }
 
-    def validate_password_setup_request(self) -> UserInviteLink:
-        """Validates the create first time password link"""
+    def validate_password_link(self) -> None:
+        """Validates that the invtkn query string param is valid"""
         try:
             token = request.args['invtkn']
-            self.check_str(token, 'token')
         except KeyError:
             raise ValidationError("Missing invite token from request.")
 
-        with session_scope() as session:
-            invite_link = session.query(UserInviteLink).filter_by(token=token).first()
+        self.validate_password_token(token)
 
-        if invite_link is None:
-            raise ValidationError("Invite token does not exist or has expired.")
-        else:
-            return invite_link
+    def validate_password_setup_request(self, request_body: dict) -> typing.Tuple[UserInviteLink, str]:
+        """Validates the create first time password link"""
+        invite_link = self.validate_password_token(request_body.get('invite_token'))
+        password = self.validate_password(request_body.get('password'))
+
+        return invite_link, password
 
     def validate_create_task_label_request(self, request_body: dict) -> typing.Tuple[str, str]:
         """Validates that the incoming task label is valid"""
