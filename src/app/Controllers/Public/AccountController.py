@@ -10,11 +10,11 @@ from app import app, session_scope, logger, subscription_api
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import handle_exceptions, requires_jwt
 from app.Exceptions import AuthenticationError, WrapperCallFailedException
-from app.Models import User, Activity, Organisation, TaskType, FailedLogin, UserInviteLink
+from app.Models import User, Activity, Organisation, TaskType, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
-from app.Models.Request import login_request, signup_request, password_reset_request
+from app.Models.Request import login_request, signup_request
 from app.Models.Response import login_response, message_response_dto, signup_response
-from app.Services import UserService, EmailService
+from app.Services import UserService
 
 account_route = Namespace(
     path="/account",
@@ -23,7 +23,6 @@ account_route = Namespace(
 )
 
 user_service = UserService()
-email_service = EmailService()
 
 
 @account_route.route("/")
@@ -180,24 +179,6 @@ class AccountController(RequestValidationController):
                 user.failed_login_attempts += 1
                 user.failed_login_time = datetime.datetime.utcnow()
                 raise AuthenticationError("Password incorrect.")
-
-    @handle_exceptions
-    @account_route.expect(password_reset_request)
-    @account_route.response(204, "Email with link to reset password has been sent.")
-    @account_route.response(400, "Registration Failed", message_response_dto)
-    def patch(self) -> Response:
-        """Request a password reset"""
-        request_body = request.get_json()
-        email = request_body.get('email')
-        self.validate_email(email)
-
-        with session_scope() as session:
-            user = user_service.get_by_email(email)
-            logger.info(f"User {user.name()} requested password reset.")
-            reset_link = UserInviteLink(user.id)
-            session.add(reset_link)
-            email_service.send_reset_password_email(user.email, reset_link.token)
-            return self.no_content()
 
     @handle_exceptions
     @requires_jwt

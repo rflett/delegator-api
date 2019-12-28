@@ -7,7 +7,7 @@ from sqlalchemy import exists, and_, func
 from app import logger, app, session_scope
 from app.Controllers.Base.ResponseController import ResponseController
 from app.Exceptions import AuthorizationError, ValidationError, ResourceNotFoundError
-from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskTypeEscalation, TaskLabel
+from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskTypeEscalation, TaskLabel, UserInviteLink
 from app.Models.RBAC import Role
 from app.Services import UserService
 
@@ -226,3 +226,15 @@ class ObjectValidationController(ResponseController):
             raise ValidationError("Can't demote the only remaining Administrator's role")
         else:
             return _role.id
+
+    def validate_password_token(self, token: str) -> UserInviteLink:
+        """Validates the create first time password link"""
+        self.check_str(token, 'token')
+
+        with session_scope() as session:
+            invite_link = session.query(UserInviteLink).filter_by(token=token).first()
+
+        if invite_link is None:
+            raise ValidationError("Invite token does not exist or has expired.")
+        else:
+            return invite_link
