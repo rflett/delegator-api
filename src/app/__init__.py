@@ -14,7 +14,6 @@ from flask_restplus import Api
 
 from config_ssm import SsmConfig
 from config_secretsman import SecretsManConfig
-from app.ApiWrappers import SubscriptionApi, NotificationApi
 
 # flask conf
 app = Flask(__name__)
@@ -111,8 +110,10 @@ def shutdown_session(exception=None):
 
 
 # api wrappers
+from app.ApiWrappers import SubscriptionApi, NotificationApi, EmailApi  # noqa
 notification_api = NotificationApi(app.config['JWT_SECRET'], app.config['NOTIFICATION_API_PUBLIC_URL'])
 subscription_api = SubscriptionApi(app.config['JWT_SECRET'], app.config['SUBSCRIPTION_API_PUBLIC_URL'])
+email_api = EmailApi(app.config['JWT_SECRET'], app.config['EMAIL_API_PUBLIC_URL'])
 
 
 if app_env in ['Staging', 'Production']:

@@ -8,7 +8,7 @@ from validate_email import validate_email
 from app import app, session_scope
 from app.Controllers.Base import ObjectValidationController
 from app.Exceptions import ValidationError, ResourceNotFoundError
-from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting, UserInviteLink, TaskLabel
+from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting, UserPasswordToken, TaskLabel
 from app.Services import UserService
 
 user_service = UserService()
@@ -396,20 +396,20 @@ class RequestValidationController(ObjectValidationController):
         }
 
     def validate_password_link(self) -> None:
-        """Validates that the invtkn query string param is valid"""
+        """Validates that the token query string param is valid"""
         try:
-            token = request.args['invtkn']
+            token = request.args['token']
         except KeyError:
-            raise ValidationError("Missing invite token from request.")
+            raise ValidationError("Missing token from request.")
 
         self.validate_password_token(token)
 
-    def validate_password_setup_request(self, request_body: dict) -> typing.Tuple[UserInviteLink, str]:
+    def validate_password_setup_request(self, request_body: dict) -> typing.Tuple[UserPasswordToken, str]:
         """Validates the create first time password link"""
-        invite_link = self.validate_password_token(request_body.get('invite_token'))
+        password_token = self.validate_password_token(request_body.get('token'))
         password = self.validate_password(request_body.get('password'))
 
-        return invite_link, password
+        return password_token, password
 
     def validate_create_task_label_request(self, request_body: dict) -> typing.Tuple[str, str]:
         """Validates that the incoming task label is valid"""

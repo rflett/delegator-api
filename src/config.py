@@ -31,6 +31,7 @@ class Docker(Dev):
     DB_URI = "postgresql://delegator:delegator@postgres:5432/delegator"
     SUBSCRIPTION_API_PUBLIC_URL = "http://subscription-api:5001"
     NOTIFICATION_API_PUBLIC_URL = "http://notification-api:5002"
+    EMAIL_API_PUBLIC_URL = "http://email-api:5003"
 
 
 class Local(Dev):
@@ -38,6 +39,7 @@ class Local(Dev):
     DB_URI = "postgresql://delegator:delegator@127.0.0.1:5432/delegator"
     SUBSCRIPTION_API_PUBLIC_URL = "http://localhost:5001"
     NOTIFICATION_API_PUBLIC_URL = "http://localhost:5002"
+    EMAIL_API_PUBLIC_URL = "http://localhost:5003"
 
 
 class Staging(Config):

@@ -7,7 +7,7 @@ from sqlalchemy import exists, and_, func
 from app import logger, app, session_scope
 from app.Controllers.Base.ResponseController import ResponseController
 from app.Exceptions import AuthorizationError, ValidationError, ResourceNotFoundError
-from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskTypeEscalation, TaskLabel, UserInviteLink
+from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskTypeEscalation, TaskLabel, UserPasswordToken
 from app.Models.RBAC import Role
 from app.Services import UserService
 
@@ -227,14 +227,14 @@ class ObjectValidationController(ResponseController):
         else:
             return _role.id
 
-    def validate_password_token(self, token: str) -> UserInviteLink:
+    def validate_password_token(self, token: str) -> UserPasswordToken:
         """Validates the create first time password link"""
         self.check_str(token, 'token')
 
         with session_scope() as session:
-            invite_link = session.query(UserInviteLink).filter_by(token=token).first()
+            password_token = session.query(UserPasswordToken).filter_by(token=token).first()
 
-        if invite_link is None:
+        if password_token is None:
             raise ValidationError("Invite token does not exist or has expired.")
         else:
-            return invite_link
+            return password_token

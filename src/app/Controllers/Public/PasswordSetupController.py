@@ -3,17 +3,16 @@ import time
 from flask import Response, request
 from flask_restplus import Namespace
 
-from app import session_scope, logger
+from app import session_scope, logger, email_api, app
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import handle_exceptions
 from app.Exceptions import ValidationError, ResourceNotFoundError
-from app.Models import UserInviteLink
+from app.Models import UserPasswordToken
 from app.Models.Request import password_setup_request
 from app.Models.Response import password_setup_response, message_response_dto
-from app.Services import UserService, EmailService
+from app.Services import UserService
 
 user_service = UserService()
-email_service = EmailService()
 
 password_setup_route = Namespace(
     path="/password",
@@ -26,7 +25,7 @@ password_setup_route = Namespace(
 class PasswordSetup(RequestValidationController):
 
     @handle_exceptions
-    @password_setup_route.param('invtkn', 'The token that the user received to manage their password.')
+    @password_setup_route.param('token', 'The token that the user received to manage their password.')
     @password_setup_route.response(204, "The token is still valid.")
     @password_setup_route.response(400, "Bad Request", message_response_dto)
     def get(self):
@@ -55,13 +54,16 @@ class PasswordSetup(RequestValidationController):
 
         with session_scope() as session:
             # delete old link if there's one
-            session.query(UserInviteLink).filter_by(user_id=user.id).delete()
+            session.query(UserPasswordToken).filter_by(user_id=user.id).delete()
             # create new link
-            reset_link = UserInviteLink(user.id)
+            reset_link = UserPasswordToken(user.id)
             session.add(reset_link)
-            # send email
-            email_service.send_reset_password_email(user.email, reset_link.token)
-            return self.no_content()
+
+        link = app.config['PUBLIC_WEB_URL'] + 'reset-password?token=' + reset_link.token
+
+        email_api.send_reset_password(email, user.first_name, link)
+
+        return self.no_content()
 
     @handle_exceptions
     @password_setup_route.expect(password_setup_request)
@@ -73,24 +75,24 @@ class PasswordSetup(RequestValidationController):
 
         # expire old and validate
         self._purge_expired_tokens()
-        user_invite_link, password = self.validate_password_setup_request(request_body)
+        password_token, password = self.validate_password_setup_request(request_body)
 
         # set password
-        user = user_service.get_by_id(user_invite_link.user_id)
+        user = user_service.get_by_id(password_token.user_id)
 
         # only reset if the password hasn't been set (or has been reset)
         with session_scope() as session:
             user.set_password(password)
-            session.delete(user_invite_link)
+            session.delete(password_token)
 
         return self.ok({"email": user.email})
 
     @staticmethod
     def _purge_expired_tokens() -> None:
-        """Removes invite tokens that have expired."""
+        """Removes password tokens that have expired."""
         with session_scope() as session:
-            delete_expired = session.query(UserInviteLink).filter(
-                (UserInviteLink.expire_after + UserInviteLink.created_at) < int(time.time())
+            delete_expired = session.query(UserPasswordToken).filter(
+                (UserPasswordToken.expire_after + UserPasswordToken.created_at) < int(time.time())
             ).delete()
             if delete_expired > 0:
-                logger.info(f"Purged {delete_expired} invite links which expired.")
+                logger.info(f"Purged {delete_expired} password tokens which expired.")
