@@ -59,7 +59,7 @@ class PasswordSetup(RequestValidationController):
             reset_link = UserPasswordToken(user.id)
             session.add(reset_link)
 
-        link = app.config['PUBLIC_WEB_URL'] + 'reset-password?token=' + reset_link.token
+        link = app.config['PUBLIC_WEB_URL'] + '/reset-password?token=' + reset_link.token
 
         email_api.send_reset_password(email, user.first_name, link)
 
