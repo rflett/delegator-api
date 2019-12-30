@@ -9,6 +9,7 @@ from app.Models.Enums import TaskStatuses, Operations, Resources
 from app.Models.RBAC import ServiceAccount
 from app.Models.Request import transition_task_request
 from app.Models.Response import task_response, message_response_dto, transition_tasks_response
+from app.Models.Response.Task import task_transition_dto
 from app.Services import TaskService
 
 transition_task_route = Namespace(
@@ -59,7 +60,7 @@ class TransitionTask(RequestValidationController):
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_TRANSITIONS)
-    @transition_task_route.response(200, "Success", transition_tasks_response)
+    @transition_task_route.response(200, "Success", [transition_tasks_response])
     @transition_task_route.response(400, "Bad request", message_response_dto)
     @transition_task_route.response(403, "Insufficient privileges", message_response_dto)
     @transition_task_route.response(404, "Task not found", message_response_dto)
@@ -71,9 +72,9 @@ class TransitionTask(RequestValidationController):
             tasks = session.query(Task).filter_by(org_id=req_user.org_id).all()
 
         # handle case where no-one is assigned to the task
-        all_task_transitions = []
+        all_task_transitions: transition_tasks_response = []
         for task in tasks:
-            this_task_transitions = {
+            this_task_transitions: task_transition_dto = {
                 "task_id": task.id,
                 "valid_transitions": []
             }
@@ -100,7 +101,7 @@ class TransitionTask(RequestValidationController):
                 # if someone is assigned to the task, then these are the available transitions
                 valid_transitions = {
                     TaskStatuses.READY: [TaskStatuses.READY, TaskStatuses.IN_PROGRESS, TaskStatuses.CANCELLED],
-                    TaskStatuses.IN_PROGRESS: [TaskStatuses.IN_PROGRESS, TaskStatuses.COMPLETED],
+                    TaskStatuses.IN_PROGRESS: [TaskStatuses.IN_PROGRESS, TaskStatuses.COMPLETED, TaskStatuses.DELAYED],
                     TaskStatuses.DELAYED: [TaskStatuses.DELAYED, TaskStatuses.IN_PROGRESS],
                     TaskStatuses.SCHEDULED: [TaskStatuses.READY]
                 }
