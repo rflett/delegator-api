@@ -5,15 +5,15 @@ import time
 from app import db
 
 
-class UserInviteLink(db.Model):
-    __tablename__ = "user_invite_links"
+class UserPasswordToken(db.Model):
+    __tablename__ = "user_password_tokens"
 
     user_id = db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True)
     token = db.Column('token', db.String)
     created_at = db.Column('created_at', db.Integer)
     expire_after = db.Column('expire_after', db.Integer, default=86400)
 
-    users = db.relationship("User", backref="invite_token_user")
+    users = db.relationship("User", backref="password_token_user")
 
     def __init__(
         self,
@@ -27,7 +27,7 @@ class UserInviteLink(db.Model):
 
     def as_dict(self) -> dict:
         """
-        :return: dict repr of a UserInviteLink object
+        :return: dict repr of a UserPasswordToken object
         """
         return {
             "user_id": self.user_id,

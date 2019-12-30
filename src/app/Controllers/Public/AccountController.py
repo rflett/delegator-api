@@ -6,7 +6,7 @@ import jwt
 from flask import Response, request
 from flask_restplus import Namespace
 
-from app import app, session_scope, logger, subscription_api
+from app import app, session_scope, logger, subscription_api, email_api
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import handle_exceptions, requires_jwt
 from app.Exceptions import AuthenticationError, WrapperCallFailedException
@@ -106,6 +106,8 @@ class AccountController(RequestValidationController):
                                       "us at support@delegator.com.au")
         with session_scope():
             organisation.chargebee_customer_id = customer_id
+
+        email_api.send_welcome(user.email, user.first_name)
 
         return self.ok({"url": plan_url})
 
