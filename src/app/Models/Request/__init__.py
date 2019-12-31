@@ -5,7 +5,7 @@ from app.Models.Request.Task import create_task_request, update_task_request, as
     transition_task_request, update_task_priority_request
 from app.Models.Request.TaskTypes import disable_task_type_request, create_task_type_request, \
     update_task_type_request
-from app.Models.Request.User import create_user_request, update_user_request
+from app.Models.Request.User import create_user_request, update_user_request, resend_welcome_request
 from app.Models.Request.NotificationSilencing import silence_notifications_dto
 from app.Models.Request.TaskLabels import task_label_dto
 from app.Models.Request.TaskLabels import new_task_label_dto
@@ -24,6 +24,7 @@ __all__ = [
     task_label_dto,
     new_task_label_dto,
     password_setup_request,
+    resend_welcome_request,
     transition_task_request,
     update_org_request,
     update_org_settings_request,
