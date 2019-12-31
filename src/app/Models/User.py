@@ -240,7 +240,7 @@ class User(db.Model):
             "created_by": self.created_by,
             "updated_at": self.updated_at.strftime(app.config['RESPONSE_DATE_FORMAT']),
             "updated_by": self.updated_by,
-            "invite_accepted": False if self.password is None else True
+            "invite_accepted": self.invite_accepted()
         }
 
     def fat_dict(self) -> dict:
@@ -292,3 +292,18 @@ class User(db.Model):
         from app.Services import SettingsService
         from app.Models import UserSetting
         SettingsService.set_user_settings(UserSetting(self.id))
+
+    def invite_accepted(self) -> bool:
+        """Check to see if they have accepted their invite"""
+        return self.password is not None
+
+    def get_password_token(self) -> typing.Union[str, None]:
+        """Get the password token if it exists"""
+        from app.Models import UserPasswordToken
+        with session_scope() as session:
+            token_qry = session.query(UserPasswordToken).filter_by(user_id=self.id).first()
+
+        if token_qry is None:
+            return None
+        else:
+            return token_qry.token

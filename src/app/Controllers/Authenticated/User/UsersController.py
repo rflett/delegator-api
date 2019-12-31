@@ -4,7 +4,7 @@ from flask import Response, request
 from flask_restplus import Namespace
 from sqlalchemy import and_
 
-from app import session_scope, subscription_api, logger
+from app import session_scope, subscription_api, logger, email_api, app
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ProductTierLimitError, ValidationError
@@ -127,6 +127,14 @@ class UserController(RequestValidationController):
 
         # increment chargebee subscription plan_quantity
         subscription_api.increment_plan_quantity(user.orgs.chargebee_subscription_id)
+
+        # send welcome email
+        email_api.send_welcome_new_user(
+            email=user.email,
+            first_name=user.first_name,
+            inviter_name=req_user.first_name,
+            link=app.config['PUBLIC_WEB_URL'] + '/account-setup?token=' + password_token.token
+        )
 
         req_user.log(
             operation=Operations.CREATE,

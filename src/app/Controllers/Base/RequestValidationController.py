@@ -184,7 +184,8 @@ class RequestValidationController(ObjectValidationController):
             raise ValidationError("Invalid email")
         return True
 
-    def validate_get_transitions(self, users_org_id: int) -> typing.List[Task]:
+    @staticmethod
+    def validate_get_transitions(users_org_id: int) -> typing.List[Task]:
         """Validates the get task available task transitions request"""
         with session_scope() as session:
             tasks = session.query(Task).filter_by(org_id=users_org_id).all()
@@ -451,3 +452,14 @@ class RequestValidationController(ObjectValidationController):
             return int(silence_until.timestamp()), silenced_option
         else:
             return silence_until, silenced_option
+
+    def validate_resend_welcome_request(self, request_body: dict) -> typing.Tuple[User, str]:
+        """Validate the resend welcome request"""
+        user = self.check_user_id(request_body.get('user_id'), should_exist=True)
+
+        # check if invite accepted
+        token = user.get_password_token()
+        if user.invite_accepted() or token is None:
+            raise ValidationError("User has already accepted their invitation.")
+        else:
+            return user, token

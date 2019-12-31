@@ -22,3 +22,7 @@ update_user_request = api.model("Update User Request", {
     "job_title": fields.String(required=False),
     "disabled": NullableDateTime(required=False)
 })
+
+resend_welcome_request = api.model("Resend Welcome Request", {
+    "user_id": fields.Integer(required=True)
+})
