@@ -3,7 +3,7 @@ import typing
 import uuid
 
 import jwt
-from flask import Response, request
+from flask import Response, request, redirect
 from flask_restplus import Namespace
 
 from app import app, session_scope, logger, subscription_api, email_api
@@ -47,7 +47,7 @@ class AccountController(RequestValidationController):
         try:
             # create the organisation
             with session_scope() as session:
-                organisation = Organisation(name=org_name)
+                organisation = Organisation(name=org_name, chargebee_signup_plan=request_body.get('plan_id'))
                 session.add(organisation)
 
             # add default task type
@@ -95,7 +95,7 @@ class AccountController(RequestValidationController):
         logger.info(f"User {user.id} signed up.")
 
         try:
-            customer_id, plan_url = subscription_api.create_customer(
+            response = subscription_api.create_customer(
                 plan_id=request_body.get('plan_id'),
                 user_dict=user.as_dict(),
                 org_name=organisation.name
@@ -105,11 +105,12 @@ class AccountController(RequestValidationController):
             return self.unprocessable("Sorry, something unexpected occurred during the signup process. Please contact "
                                       "us at support@delegator.com.au")
         with session_scope():
-            organisation.chargebee_customer_id = customer_id
+            organisation.chargebee_customer_id = response['customer_id']
+            organisation.chargebee_subscription_id = response['customer_id']
 
         email_api.send_welcome(user.email, user.first_name)
 
-        return self.ok({"url": plan_url})
+        return self.ok({"url": response['url']})
 
     @handle_exceptions
     @account_route.expect(login_request)
@@ -127,6 +128,22 @@ class AccountController(RequestValidationController):
                 self._failed_login_attempt(login_data["email"])
             else:
                 user.clear_failed_logins()
+
+            # check that the org is setup
+            if not user.orgs.chargebee_setup_complete:
+                # check with the subscription api to see if it has been completed
+                customer = subscription_api.get_customer(user.orgs.chargebee_customer_id)
+                if not customer['meta_data']['signup_finished']:
+                    # redirect to setup chargebee stuff
+                    url = subscription_api.checkout_subscription(
+                        customer_id=customer['id'],
+                        plan_id=user.orgs.chargebee_signup_plan
+                    )
+                    return self.ok({"url": url})
+                else:
+                    # the setup has been complete, and the webhook probably hasn't occurred fast enough
+                    org = session.query(Organisation).filter_by(id=user.orgs.id).first()
+                    org.chargebee_setup_complete = True
 
             # don't let them log in if they are disabled
             if user.disabled is not None:

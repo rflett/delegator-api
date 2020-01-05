@@ -6,7 +6,7 @@ class Subscription(object):
     def __init__(self, subscription_id: str):
         self._subscription_id = subscription_id
 
-        sub_request = subscription_api.get_subscription(self._subscription_id)
+        sub_request = subscription_api.get_subscription_meta(self._subscription_id)
 
         self._status = sub_request['status']
         self._metadata = sub_request['meta_data']

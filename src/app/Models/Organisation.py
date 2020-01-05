@@ -10,21 +10,25 @@ class Organisation(db.Model):
     name = db.Column('name', db.String)
     chargebee_customer_id = db.Column('chargebee_customer_id', db.String, default=None)
     chargebee_subscription_id = db.Column('chargebee_subscription_id', db.String, default=None)
+    chargebee_setup_complete = db.Column('chargebee_setup_complete', db.Boolean, default=False)
+    chargebee_signup_plan = db.Column('chargebee_signup_plan', db.String)
     locked = db.Column('locked', db.DateTime)
     locked_reason = db.Column('locked_reason', db.String, default=None)
     created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
 
     def __init__(self,
                  name: str,
-                 product_tier: str = None,
+                 chargebee_signup_plan: str = None,
                  chargebee_customer_id: str = None,
                  chargebee_subscription_id: str = None,
+                 chargebee_setup_complete: bool = False,
                  locked: datetime = None,
                  locked_reason: str = None):
         self.name = name
-        self.product_tier = product_tier
+        self.chargebee_signup_plan = chargebee_signup_plan
         self.chargebee_customer_id = chargebee_customer_id
         self.chargebee_subscription_id = chargebee_subscription_id
+        self.chargebee_setup_complete = chargebee_setup_complete
         self.locked = locked
         self.locked_reason = locked_reason
 
@@ -46,9 +50,10 @@ class Organisation(db.Model):
 
         return {
             "name": self.name,
-            "product_tier": self.product_tier,
+            "chargebee_signup_plan": self.chargebee_signup_plan,
             "chargebee_customer_id": self.chargebee_customer_id,
             "chargebee_subscription_id": self.chargebee_subscription_id,
+            "chargebee_setup_complete": self.chargebee_setup_complete,
             "locked": locked,
             "locked_reason": self.locked_reason
         }
