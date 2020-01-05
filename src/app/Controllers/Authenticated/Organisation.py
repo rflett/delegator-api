@@ -4,7 +4,7 @@ from flask import request, Response
 from flask_restplus import Namespace
 
 
-from app import session_scope
+from app import session_scope, logger
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ValidationError
@@ -228,9 +228,15 @@ class OrganisationSubscription(RequestValidationController):
             if org is None:
                 raise ValidationError(f"There is no organisation with customer id {customer_id}")
             else:
-                org.chargebee_subscription_id = subscription_id
-                req_user.log(Operations.UPDATE, Resources.ORGANISATION_SUBSCRIPTION, org.id)
-                return self.ok(f"Applied subscription_id {subscription_id} against org {org.id}")
+                # check subscription_id matches
+                if not org.chargebee_subscription_id == subscription_id:
+                    logger.error("subscription_id already against organisation doesn't match webhook")
+                    raise ValidationError("subscription_id already against organisation doesn't match webhook")
+                else:
+                    org.chargebee_setup_complete = True
+                    req_user.log(Operations.UPDATE, Resources.ORGANISATION_SUBSCRIPTION, org.id)
+                    logger.info(f"Org {org.name} has completed chargebee setup")
+                    return self.ok(f"Completed chargebee setup for org {org.name}")
 
 
 @org_route.route("/customer")
