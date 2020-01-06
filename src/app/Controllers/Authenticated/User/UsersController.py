@@ -112,7 +112,7 @@ class UserController(RequestValidationController):
                 first_name=request_body['first_name'],
                 last_name=request_body['last_name'],
                 role=request_body['role_id'],
-                job_title=request_body['job_title'],
+                job_title=request_body.get('job_title'),
                 disabled=request_body.get('disabled'),
                 created_by=req_user.id
             )
