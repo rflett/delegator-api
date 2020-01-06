@@ -179,6 +179,14 @@ class User(db.Model):
         from app.Services import ActiveUserService
         ActiveUserService.user_is_inactive(self)
 
+    def last_active(self) -> str:
+        """
+        Returns when the user was last active
+        :return:
+        """
+        from app.Services import ActiveUserService
+        return ActiveUserService.user_last_active(self)
+
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """
 
@@ -240,7 +248,8 @@ class User(db.Model):
             "created_by": self.created_by,
             "updated_at": self.updated_at.strftime(app.config['RESPONSE_DATE_FORMAT']),
             "updated_by": self.updated_by,
-            "invite_accepted": self.invite_accepted()
+            "invite_accepted": self.invite_accepted(),
+            "last_seen": self.last_active()
         }
 
     def fat_dict(self) -> dict:
@@ -260,13 +269,14 @@ class User(db.Model):
 
     def activity(self) -> list:
         """ Returns the activity of a user"""
-        if app_env in ['Local', 'Docker'] or getenv('MOCK_AWS'):
+        if getenv('MOCK_AWS'):
             activity = MockActivity()
             return activity.data
 
         activity = user_activity_table.query(
             Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('id').eq(self.id)
+            KeyConditionExpression=Key('id').eq(self.id),
+            ScanIndexForward=False
         )
         logger.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
 

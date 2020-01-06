@@ -3,20 +3,11 @@ import datetime
 
 class MockActivity(object):
     def __init__(self):
-        self.data = [
-            {
-                "activity": "activity_1",
+        _data = []
+        for i in range(1, 50):
+            _data.append({
+                "activity": f"activity_{i}",
                 "activity_timestamp": datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%S.%fZ"),
-                "event_friendly": "Sample Event 1"
-            },
-            {
-                "activity": "activity_2",
-                "activity_timestamp": datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%S.%fZ"),
-                "event_friendly": "Sample Event 2"
-            },
-            {
-                "activity": "activity_3",
-                "activity_timestamp": datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%S.%fZ"),
-                "event_friendly": "Sample Event 3"
-            }
-        ]
+                "event_friendly": f"Sample Event {i}"
+            })
+        self.data = _data

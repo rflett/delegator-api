@@ -201,13 +201,14 @@ class Task(db.Model):
                     f"({start_of_history.strftime('%Y-%m-%d %H:%M:%S')} "
                     f"to {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}) for task {self.id}. ")
 
-        if app_env in ['Local', 'Docker'] or getenv('MOCK_AWS'):
+        if getenv('MOCK_AWS'):
             activity = MockActivity()
             return activity.data
 
         activity = task_activity_table.query(
             Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('id').eq(self.id) & Key('activity_timestamp').gte(start_of_history_str)
+            KeyConditionExpression=Key('id').eq(self.id) & Key('activity_timestamp').gte(start_of_history_str),
+            ScanIndexForward=False
         )
 
         logger.info(f"Found {activity.get('Count')} activity items for task id {self.id}")
