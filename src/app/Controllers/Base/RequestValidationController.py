@@ -92,9 +92,15 @@ class RequestValidationController(ObjectValidationController):
                 request_body.get('default_description'), 'default_description'
             ),
             "default_time_estimate": self.check_optional_int(
-                request_body.get('default_time_estimate'), 'default_time_estimate'
+                param=request_body.get('default_time_estimate'),
+                param_name='default_time_estimate',
+                allow_negative=True
             ),
-            "default_priority": self.check_optional_int(request_body.get('default_priority'), 'default_priority')
+            "default_priority": self.check_optional_int(
+                param=request_body.get('default_priority'),
+                param_name='default_priority', 
+                allow_negative=True
+            )
         }
         defaults = {k: v for k, v in request_defaults.items() if v is not None}
 
@@ -314,9 +320,15 @@ class RequestValidationController(ObjectValidationController):
                 request_body.get('default_description'), 'default_description'
             ),
             "default_time_estimate": self.check_optional_int(
-                request_body.get('default_time_estimate'), 'default_time_estimate'
+                param=request_body.get('default_time_estimate'),
+                param_name='default_time_estimate',
+                allow_negative=True
             ),
-            "default_priority": self.check_optional_int(request_body.get('default_priority'), 'default_priority')
+            "default_priority": self.check_optional_int(
+                param=request_body.get('default_priority'),
+                param_name='default_priority',
+                allow_negative=True
+            ),
         }
 
         # check that the task type exists
