@@ -108,8 +108,6 @@ class TaskTypes(RequestValidationController):
         req_user = kwargs['req_user']
         request_body = request.get_json()
 
-        print(request_body)
-
         task_type_to_update, defaults, escalations = self.validate_update_task_type_request(
             org_id=req_user.org_id,
             request_body=request_body

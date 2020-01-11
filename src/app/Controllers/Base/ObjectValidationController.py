@@ -41,28 +41,31 @@ class ObjectValidationController(ResponseController):
                 raise ValidationError(f"Task type escalation {task_type_id}:{display_order} already exists.")
 
     @staticmethod
-    def check_int(param: int, param_name: str) -> int:
+    def check_int(param: int, param_name: str, allow_negative: bool = False) -> int:
         """Ensures the param is an int and is positive
         In python bools are ints, so we need to checks that it's a bool before we check that it's an int"""
         if isinstance(param, bool):
             raise ValidationError(f"Bad {param_name}, expected int got {type(param)}.")
         if not isinstance(param, int):
             raise ValidationError(f"Bad {param_name}, expected int got {type(param)}.")
-        if param < 0:
+        if not allow_negative and param < 0:
             raise ValidationError(f"{param_name} is negative.")
         return param
 
-    def check_optional_int(self, param: int, param_name: str) -> typing.Union[int, None]:
+    def check_optional_int(self, param: int, param_name: str, allow_negative: bool = False) -> typing.Union[int, None]:
         """If the param is not None, check that its a valid str."""
         if param is not None:
-            return self.check_int(param, param_name)
+            return self.check_int(param, param_name, allow_negative=allow_negative)
         else:
             return param
 
-    def check_optional_str(self, param: str, param_name: str) -> typing.Union[str, None]:
+    @staticmethod
+    def check_optional_str(param: str, param_name: str) -> typing.Union[str, None]:
         """If the param is not None, check that its a valid str."""
         if param is not None:
-            return self.check_str(param, param_name)
+            if not isinstance(param, str):
+                raise ValidationError(f"Bad {param_name}, expected str got {type(param)}.")
+            return param.strip()
         else:
             return param
 
