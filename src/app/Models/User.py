@@ -10,7 +10,7 @@ from os import getenv
 from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
-from app import db, session_scope, logger, user_activity_table, app, subscription_api, app_env
+from app import db, session_scope, logger, user_activity_table, app, subscription_api
 from app.Exceptions import AuthorizationError
 from app.Models import FailedLogin
 from app.Models.RBAC import Log, Permission
@@ -28,33 +28,33 @@ def _hash_password(password: str) -> str:
 
     :return: The password hashed.
     """
-    salt = hashlib.sha256(os.urandom(60)).hexdigest().encode('ascii')
-    pwdhash = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), salt, 1000)
+    salt = hashlib.sha256(os.urandom(60)).hexdigest().encode("ascii")
+    pwdhash = hashlib.pbkdf2_hmac("sha512", password.encode("utf-8"), salt, 1000)
     pwdhash = binascii.hexlify(pwdhash)
-    return (salt + pwdhash).decode('ascii')
+    return (salt + pwdhash).decode("ascii")
 
 
 class User(db.Model):
     __tablename__ = "users"
 
-    id = db.Column('id', db.Integer, primary_key=True)
-    org_id = db.Column('org_id', db.Integer, db.ForeignKey('organisations.id'))
-    email = db.Column('email', db.String)
-    first_name = db.Column('first_name', db.String)
-    last_name = db.Column('last_name', db.String)
-    password = db.Column('password', db.String, default=None)
-    job_title = db.Column('job_title', db.String)
-    role = db.Column('role', db.String, db.ForeignKey('rbac_roles.id'))
-    role_before_locked = db.Column('role_before_locked', db.String, db.ForeignKey('rbac_roles.id'), default=None)
-    disabled = db.Column('disabled', db.DateTime, default=None)
-    deleted = db.Column('deleted', db.DateTime, default=None)
-    failed_login_attempts = db.Column('failed_login_attempts', db.Integer, default=0)
-    failed_login_time = db.Column('failed_login_time', db.DateTime, default=None)
-    created_at = db.Column('created_at', db.DateTime, default=datetime.datetime.utcnow)
-    created_by = db.Column('created_by', db.Integer, db.ForeignKey('users.id'))
-    updated_at = db.Column('updated_at', db.DateTime, default=datetime.datetime.utcnow)
-    updated_by = db.Column('updated_by', db.Integer, db.ForeignKey('users.id'))
-    password_last_changed = db.Column('password_last_changed', db.DateTime, default=datetime.datetime.utcnow)
+    id = db.Column("id", db.Integer, primary_key=True)
+    org_id = db.Column("org_id", db.Integer, db.ForeignKey("organisations.id"))
+    email = db.Column("email", db.String)
+    first_name = db.Column("first_name", db.String)
+    last_name = db.Column("last_name", db.String)
+    password = db.Column("password", db.String, default=None)
+    job_title = db.Column("job_title", db.String)
+    role = db.Column("role", db.String, db.ForeignKey("rbac_roles.id"))
+    role_before_locked = db.Column("role_before_locked", db.String, db.ForeignKey("rbac_roles.id"), default=None)
+    disabled = db.Column("disabled", db.DateTime, default=None)
+    deleted = db.Column("deleted", db.DateTime, default=None)
+    failed_login_attempts = db.Column("failed_login_attempts", db.Integer, default=0)
+    failed_login_time = db.Column("failed_login_time", db.DateTime, default=None)
+    created_at = db.Column("created_at", db.DateTime, default=datetime.datetime.utcnow)
+    created_by = db.Column("created_by", db.Integer, db.ForeignKey("users.id"))
+    updated_at = db.Column("updated_at", db.DateTime, default=datetime.datetime.utcnow)
+    updated_by = db.Column("updated_by", db.Integer, db.ForeignKey("users.id"))
+    password_last_changed = db.Column("password_last_changed", db.DateTime, default=datetime.datetime.utcnow)
 
     orgs = db.relationship("Organisation", backref="users")
     roles = db.relationship("Role", backref="rbac_roles", foreign_keys=[role])
@@ -62,18 +62,18 @@ class User(db.Model):
     updated_bys = db.relationship("User", foreign_keys=[updated_by])
 
     def __init__(
-            self,
-            org_id: int,
-            email: str,
-            first_name: str,
-            last_name: str,
-            job_title: str,
-            role: str,
-            password: str = None,
-            role_before_locked: str = None,
-            created_by: typing.Union[int, None] = None,
-            disabled: typing.Union[datetime.datetime, None] = None,
-            deleted: typing.Union[datetime.datetime, None] = None
+        self,
+        org_id: int,
+        email: str,
+        first_name: str,
+        last_name: str,
+        job_title: str,
+        role: str,
+        password: str = None,
+        role_before_locked: str = None,
+        created_by: typing.Union[int, None] = None,
+        disabled: typing.Union[datetime.datetime, None] = None,
+        deleted: typing.Union[datetime.datetime, None] = None,
     ):
         self.org_id = org_id
         self.email = email
@@ -95,11 +95,11 @@ class User(db.Model):
         :return:            True if they can do the thing, or False.
         """
         with session_scope() as session:
-            permission = session.query(Permission).filter_by(
-                role_id=self.role,
-                operation_id=operation,
-                resource_id=resource
-            ).first()
+            permission = (
+                session.query(Permission)
+                .filter_by(role_id=self.role, operation_id=operation, resource_id=resource)
+                .first()
+            )
 
         if permission is None:
             raise AuthorizationError(f"No permissions to {operation} {resource}.")
@@ -117,11 +117,8 @@ class User(db.Model):
             return False
         salt = self.password[:64]
         stored_password = self.password[64:]
-        pwdhash = hashlib.pbkdf2_hmac('sha512',
-                                      password.encode('utf-8'),
-                                      salt.encode('ascii'),
-                                      1000)
-        pwdhash = binascii.hexlify(pwdhash).decode('ascii')
+        pwdhash = hashlib.pbkdf2_hmac("sha512", password.encode("utf-8"), salt.encode("ascii"), 1000)
+        pwdhash = binascii.hexlify(pwdhash).decode("ascii")
         return pwdhash == stored_password
 
     def claims(self) -> dict:
@@ -131,12 +128,7 @@ class User(db.Model):
         """
         return {
             "aud": "delegator.com.au",
-            "claims": {
-                "role": self.role,
-                "org": self.org_id,
-                "user-id": self.id,
-                "type": "user"
-            }
+            "claims": {"role": self.role, "org": self.org_id, "user-id": self.id, "type": "user"},
         }
 
     def log(self, operation: str, resource: str, resource_id: typing.Union[int, None] = None) -> None:
@@ -144,16 +136,11 @@ class User(db.Model):
         Logs an action that a user would perform.
         """
         audit_log = Log(
-            org_id=self.org_id,
-            user_id=self.id,
-            operation=operation,
-            resource=resource,
-            resource_id=resource_id
+            org_id=self.org_id, user_id=self.id, operation=operation, resource=resource, resource_id=resource_id
         )
         with session_scope() as session:
             session.add(audit_log)
-        logger.info(f"user with id {self.id} did {operation} on {resource} with "
-                    f"a resource_id of {resource_id}")
+        logger.info(f"user with id {self.id} did {operation} on {resource} with " f"a resource_id of {resource_id}")
 
     def set_password(self, password) -> None:
         """
@@ -169,6 +156,7 @@ class User(db.Model):
         :return:
         """
         from app.Services import ActiveUserService
+
         ActiveUserService.user_is_active(self)
 
     def is_inactive(self) -> None:
@@ -177,6 +165,7 @@ class User(db.Model):
         :return:
         """
         from app.Services import ActiveUserService
+
         ActiveUserService.user_is_inactive(self)
 
     def last_active(self) -> str:
@@ -185,6 +174,7 @@ class User(db.Model):
         :return:
         """
         from app.Services import ActiveUserService
+
         return ActiveUserService.user_last_active(self)
 
     def clear_failed_logins(self) -> None:
@@ -203,7 +193,7 @@ class User(db.Model):
         from app.Models import Task
 
         def make_random() -> str:
-            return ''.join(random.choices(string.ascii_uppercase + string.digits, k=15))
+            return "".join(random.choices(string.ascii_uppercase + string.digits, k=15))
 
         if self.disabled is None:
             subscription_api.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
@@ -226,12 +216,12 @@ class User(db.Model):
         if self.disabled is None:
             disabled = None
         else:
-            disabled = self.disabled.strftime(app.config['RESPONSE_DATE_FORMAT'])
+            disabled = self.disabled.strftime(app.config["RESPONSE_DATE_FORMAT"])
 
         if self.deleted is None:
             deleted = None
         else:
-            deleted = self.deleted.strftime(app.config['RESPONSE_DATE_FORMAT'])
+            deleted = self.deleted.strftime(app.config["RESPONSE_DATE_FORMAT"])
 
         return {
             "id": self.id,
@@ -244,49 +234,48 @@ class User(db.Model):
             "disabled": disabled,
             "job_title": self.job_title,
             "deleted": deleted,
-            "created_at": self.created_at.strftime(app.config['RESPONSE_DATE_FORMAT']),
+            "created_at": self.created_at.strftime(app.config["RESPONSE_DATE_FORMAT"]),
             "created_by": self.created_by,
-            "updated_at": self.updated_at.strftime(app.config['RESPONSE_DATE_FORMAT']),
+            "updated_at": self.updated_at.strftime(app.config["RESPONSE_DATE_FORMAT"]),
             "updated_by": self.updated_by,
             "invite_accepted": self.invite_accepted(),
-            "last_seen": self.last_active()
+            "last_seen": self.last_active(),
         }
 
     def fat_dict(self) -> dict:
         """ Returns a full user dict with all of its FK's joined. """
         from app.Services import SettingsService
+
         with session_scope() as session:
             created_by = session.query(User).filter_by(id=self.created_by).first()
             updated_by = session.query(User).filter_by(id=self.updated_by).first()
 
         user_dict = self.as_dict()
-        user_dict['role'] = self.roles.as_dict()
-        user_dict['created_by'] = created_by.name()
-        user_dict['updated_by'] = updated_by.name() if updated_by is not None else None
-        user_dict['settings'] = SettingsService.get_user_settings(self.id).as_dict()
+        user_dict["role"] = self.roles.as_dict()
+        user_dict["created_by"] = created_by.name()
+        user_dict["updated_by"] = updated_by.name() if updated_by is not None else None
+        user_dict["settings"] = SettingsService.get_user_settings(self.id).as_dict()
 
         return user_dict
 
     def activity(self) -> list:
         """ Returns the activity of a user"""
-        if getenv('MOCK_AWS'):
+        if getenv("MOCK_AWS"):
             activity = MockActivity()
             return activity.data
 
         activity = user_activity_table.query(
-            Select='ALL_ATTRIBUTES',
-            KeyConditionExpression=Key('id').eq(self.id),
-            ScanIndexForward=False
+            Select="ALL_ATTRIBUTES", KeyConditionExpression=Key("id").eq(self.id), ScanIndexForward=False
         )
         logger.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
 
         log = []
 
-        for item in activity.get('Items'):
+        for item in activity.get("Items"):
             try:
-                del item['id']
-                activity_timestamp_date = datetime.datetime.strptime(item['activity_timestamp'], "%Y%m%dT%H%M%S.%fZ")
-                item['activity_timestamp'] = activity_timestamp_date.strftime(app.config['RESPONSE_DATE_FORMAT'])
+                del item["id"]
+                activity_timestamp_date = datetime.datetime.strptime(item["activity_timestamp"], "%Y%m%dT%H%M%S.%fZ")
+                item["activity_timestamp"] = activity_timestamp_date.strftime(app.config["RESPONSE_DATE_FORMAT"])
                 log.append(item)
             except KeyError:
                 logger.error(f"Key 'id' was missing from activity item. Table:{user_activity_table.name} Item:{item}")
@@ -301,6 +290,7 @@ class User(db.Model):
         """ Creates the settings for this user """
         from app.Services import SettingsService
         from app.Models import UserSetting
+
         SettingsService.set_user_settings(UserSetting(self.id))
 
     def invite_accepted(self) -> bool:
@@ -310,6 +300,7 @@ class User(db.Model):
     def get_password_token(self) -> typing.Union[str, None]:
         """Get the password token if it exists"""
         from app.Models import UserPasswordToken
+
         with session_scope() as session:
             token_qry = session.query(UserPasswordToken).filter_by(user_id=self.id).first()
 

@@ -44,11 +44,15 @@ class UserService(object):
             return False
 
         with session_scope() as session:
-            org_admins_cnt = session.query(func.count(User.id)).filter(
-                User.role == Roles.ORG_ADMIN,
-                User.org_id == user.org_id,
-                User.disabled == None,  # noqa
-                User.deleted == None  # noqa
-            ).scalar()
+            org_admins_cnt = (
+                session.query(func.count(User.id))
+                .filter(
+                    User.role == Roles.ORG_ADMIN,
+                    User.org_id == user.org_id,
+                    User.disabled == None,  # noqa
+                    User.deleted == None,  # noqa
+                )
+                .scalar()
+            )
 
         return True if org_admins_cnt == 1 else False

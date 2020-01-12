@@ -13,22 +13,14 @@ class EmailApi(BaseWrapper):
 
     def send_welcome(self, email: str, first_name: str) -> None:
         """Get a subscription's plan quantity"""
-        if getenv('MOCK_SERVICES'):
+        if getenv("MOCK_SERVICES"):
             return
         try:
             r = requests.post(
                 url=f"{self.url}/send/welcome",
-                headers={
-                    'Authorization': f"Bearer {self.create_sa_token()}",
-                    'Content-Type': 'application/json'
-                },
-                data=json.dumps({
-                    "recipient": email,
-                    "template_data": {
-                        "first_name": first_name
-                    }
-                }),
-                timeout=10
+                headers={"Authorization": f"Bearer {self.create_sa_token()}", "Content-Type": "application/json"},
+                data=json.dumps({"recipient": email, "template_data": {"first_name": first_name}}),
+                timeout=10,
             )
             if r.status_code != 204:
                 logger.error(f"Email API - {r.status_code}, {r.content}")
@@ -37,23 +29,14 @@ class EmailApi(BaseWrapper):
 
     def send_reset_password(self, email: str, first_name: str, link: str) -> None:
         """Get a subscription's plan quantity"""
-        if getenv('MOCK_SERVICES'):
+        if getenv("MOCK_SERVICES"):
             return
         try:
             r = requests.post(
                 url=f"{self.url}/send/reset-password",
-                headers={
-                    'Authorization': f"Bearer {self.create_sa_token()}",
-                    'Content-Type': 'application/json'
-                },
-                data=json.dumps({
-                    "recipient": email,
-                    "template_data": {
-                        "first_name": first_name,
-                        "link": link
-                    }
-                }),
-                timeout=10
+                headers={"Authorization": f"Bearer {self.create_sa_token()}", "Content-Type": "application/json"},
+                data=json.dumps({"recipient": email, "template_data": {"first_name": first_name, "link": link}}),
+                timeout=10,
             )
             if r.status_code != 204:
                 logger.error(f"Email API - {r.status_code}, {r.content}")
@@ -62,24 +45,19 @@ class EmailApi(BaseWrapper):
 
     def send_welcome_new_user(self, email: str, first_name: str, inviter_name: str, link: str) -> None:
         """Send a welcome email for a new user"""
-        if getenv('MOCK_SERVICES'):
+        if getenv("MOCK_SERVICES"):
             return
         try:
             r = requests.post(
                 url=f"{self.url}/send/welcome-new-user",
-                headers={
-                    'Authorization': f"Bearer {self.create_sa_token()}",
-                    'Content-Type': 'application/json'
-                },
-                data=json.dumps({
-                    "recipient": email,
-                    "template_data": {
-                        "first_name": first_name,
-                        "link": link,
-                        "inviter_name": inviter_name
+                headers={"Authorization": f"Bearer {self.create_sa_token()}", "Content-Type": "application/json"},
+                data=json.dumps(
+                    {
+                        "recipient": email,
+                        "template_data": {"first_name": first_name, "link": link, "inviter_name": inviter_name},
                     }
-                }),
-                timeout=10
+                ),
+                timeout=10,
             )
             if r.status_code != 204:
                 logger.error(f"Email API - {r.status_code}, {r.content}")

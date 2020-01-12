@@ -14,11 +14,7 @@ class ResponseController(Resource):
         else:
             data = body
 
-        return Response(
-            json.dumps(data),
-            status=200,
-            headers={'Content-Type': 'application/json'}
-        )
+        return Response(json.dumps(data), status=200, headers={"Content-Type": "application/json"})
 
     @staticmethod
     def created(body: typing.Optional[typing.Union[dict, list, str]]) -> Response:
@@ -28,19 +24,12 @@ class ResponseController(Resource):
         else:
             data = body
 
-        return Response(
-            json.dumps(data),
-            status=201,
-            headers={'Content-Type': 'application/json'}
-        )
+        return Response(json.dumps(data), status=201, headers={"Content-Type": "application/json"})
 
     @staticmethod
     def no_content() -> Response:
         """Returns a no content response"""
-        return Response(
-            status=204,
-            headers={'Content-Type': 'application/json'}
-        )
+        return Response(status=204, headers={"Content-Type": "application/json"})
 
     @staticmethod
     def unprocessable(body: typing.Optional[typing.Union[dict, list, str]]) -> Response:
@@ -50,8 +39,4 @@ class ResponseController(Resource):
         else:
             data = body
 
-        return Response(
-            json.dumps(data),
-            status=422,
-            headers={'Content-Type': 'application/json'}
-        )
+        return Response(json.dumps(data), status=422, headers={"Content-Type": "application/json"})

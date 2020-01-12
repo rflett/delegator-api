@@ -14,16 +14,11 @@ from app.Models import Subscription
 from app.Models.Response import get_all_reports_response, message_response_dto
 
 
-report_route = Namespace(
-    path="/reporting",
-    name="Reports",
-    description="Returns statistics around tasks and users"
-)
+report_route = Namespace(path="/reporting", name="Reports", description="Returns statistics around tasks and users")
 
 
 @report_route.route("/all")
 class Reports(RequestValidationController):
-
     @handle_exceptions
     @requires_jwt
     @report_route.response(200, "Success", get_all_reports_response)
@@ -31,7 +26,7 @@ class Reports(RequestValidationController):
     def get(self, **kwargs) -> Response:
         """Returns all of the report queries """
 
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
 
         subscription = Subscription(req_user.orgs.chargebee_subscription_id)
 
@@ -42,16 +37,18 @@ class Reports(RequestValidationController):
         end_period = now = datetime.datetime.utcnow()
         start_period = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())  # start_of_this_month
 
-        return self.ok({
-            'trends': self._get_trends(req_user.org_id),
-            'times': self._get_start_and_finish_times(req_user.org_id, start_period, end_period),
-            'slowest': self._top_five_slowest_tasks(req_user.org_id, start_period, end_period),
-            'time_to_start': self._average_time_to_start_a_task(req_user.org_id, start_period, end_period),
-            'completed': self._completed_tasks(req_user.org_id, (start_period, end_period)),
-            'priority': self._tasks_by_priority(req_user.org_id, start_period, end_period),
-            'status': self._tasks_by_status(req_user.org_id, start_period, end_period),
-            'delays': self._delays_per_task_type(req_user.org_id, start_period, end_period)
-        })
+        return self.ok(
+            {
+                "trends": self._get_trends(req_user.org_id),
+                "times": self._get_start_and_finish_times(req_user.org_id, start_period, end_period),
+                "slowest": self._top_five_slowest_tasks(req_user.org_id, start_period, end_period),
+                "time_to_start": self._average_time_to_start_a_task(req_user.org_id, start_period, end_period),
+                "completed": self._completed_tasks(req_user.org_id, (start_period, end_period)),
+                "priority": self._tasks_by_priority(req_user.org_id, start_period, end_period),
+                "status": self._tasks_by_status(req_user.org_id, start_period, end_period),
+                "delays": self._delays_per_task_type(req_user.org_id, start_period, end_period),
+            }
+        )
 
     @staticmethod
     def _clean_qry(qry) -> list:
@@ -62,13 +59,13 @@ class Reports(RequestValidationController):
         :param qry: The query to convert to a list of dicts from named tuples
         :return:    The list of dicts
         """
-        Record = namedtuple('Record', qry.keys())
+        Record = namedtuple("Record", qry.keys())
         records = [dict(Record(*r)._asdict()) for r in qry.fetchall()]
 
         for record in records:
             for k, v in record.items():
                 if type(v) == datetime.datetime:
-                    record[k] = v.strftime(app.config['RESPONSE_DATE_FORMAT'])
+                    record[k] = v.strftime(app.config["RESPONSE_DATE_FORMAT"])
 
         return records
 
@@ -93,7 +90,7 @@ class Reports(RequestValidationController):
                 WHERE t.finished_at BETWEEN :start_period AND :end_period
                 AND t.org_id = :org_id
                 """,
-                {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
+                {"org_id": org_id, "start_period": start_period, "end_period": end_period},
             )
 
         return self._clean_qry(qry)
@@ -121,7 +118,7 @@ class Reports(RequestValidationController):
                 WHERE td.delayed_at BETWEEN :start_period AND :end_period
                 AND u.org_id = :org_id
                 """,
-                {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
+                {"org_id": org_id, "start_period": start_period, "end_period": end_period},
             )
 
         return self._clean_qry(qry)
@@ -152,7 +149,7 @@ class Reports(RequestValidationController):
                 AND r.resource = 'TASK'
                 AND t.org_id = :org_id
                 """,
-                {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
+                {"org_id": org_id, "start_period": start_period, "end_period": end_period},
             )
 
         return self._clean_qry(qry)
@@ -180,7 +177,7 @@ class Reports(RequestValidationController):
                 AND u.org_id = :org_id
                 ORDER BY t.created_at ASC
                 """,
-                {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
+                {"org_id": org_id, "start_period": start_period, "end_period": end_period},
             )
 
         return self._clean_qry(qry)
@@ -200,11 +197,7 @@ class Reports(RequestValidationController):
         start_of_today = datetime.datetime(now.year, now.month, now.day, tzinfo=tz.tzutc())
         # get the time of the start of yesterday
         yesterday = now - datetime.timedelta(
-            days=1,
-            hours=now.hour,
-            minutes=now.minute,
-            seconds=now.second,
-            microseconds=now.microsecond
+            days=1, hours=now.hour, minutes=now.minute, seconds=now.second, microseconds=now.microsecond
         )
         # get the time for the start of this week
         start_of_this_week = start_of_today - datetime.timedelta(days=now.weekday())
@@ -220,14 +213,14 @@ class Reports(RequestValidationController):
             "Created": self._tasks_created,
             "Completed": self._completed_tasks,
             "Delayed": self._delayed_tasks,
-            "Dropped": self._dropped_tasks
+            "Dropped": self._dropped_tasks,
         }
         # dict of times as calculated earlier
         times = {
             "today": start_of_today,
             "yesterday": yesterday,
             "this_week": start_of_this_week,
-            "this_month": start_of_this_month
+            "this_month": start_of_this_month,
         }
         # for each trend, get the count of tasks in each 'category' for each 'time period'
         for title, func in trends.items():
@@ -239,9 +232,8 @@ class Reports(RequestValidationController):
         return reports
 
     def _get_start_and_finish_times(
-            self,
-            org_id: int,
-            start_period: datetime.datetime, end_period: datetime.datetime) -> list:
+        self, org_id: int, start_period: datetime.datetime, end_period: datetime.datetime
+    ) -> list:
         """Get time to start and time to finish for tasks """
         with session_scope() as session:
             qry = session.execute(
@@ -258,15 +250,14 @@ class Reports(RequestValidationController):
                 GROUP BY tt.label
                 ORDER BY time_to_finish DESC
                 """,
-                {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
+                {"org_id": org_id, "start_period": start_period, "end_period": end_period},
             )
 
         return self._clean_qry(qry)
 
     def _top_five_slowest_tasks(
-            self,
-            org_id: int,
-            start_period: datetime.datetime, end_period: datetime.datetime) -> list:
+        self, org_id: int, start_period: datetime.datetime, end_period: datetime.datetime
+    ) -> list:
         """Get the 5 tasks with longest time to finish """
         with session_scope() as session:
             qry = session.execute(
@@ -286,16 +277,15 @@ class Reports(RequestValidationController):
                 ORDER BY time_to_finish DESC
                 LIMIT 5
                 """,
-                {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
+                {"org_id": org_id, "start_period": start_period, "end_period": end_period},
             )
 
         return self._clean_qry(qry)
 
     @staticmethod
     def _average_time_to_start_a_task(
-            org_id: int,
-            start_period: datetime.datetime,
-            end_period: datetime.datetime) -> int:
+        org_id: int, start_period: datetime.datetime, end_period: datetime.datetime
+    ) -> int:
         """Get the average time to start a task """
         with session_scope() as session:
             qry = session.execute(
@@ -306,7 +296,7 @@ class Reports(RequestValidationController):
                 AND t.started_at BETWEEN :start_period AND :end_period
                 AND t.org_id = :org_id
                 """,
-                {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
+                {"org_id": org_id, "start_period": start_period, "end_period": end_period},
             ).first()
 
         return qry.time_to_start
@@ -330,7 +320,7 @@ class Reports(RequestValidationController):
                 AND u.org_id = :org_id
                 ORDER BY t.priority_changed_at ASC
                 """,
-                {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
+                {"org_id": org_id, "start_period": start_period, "end_period": end_period},
             )
 
         return self._clean_qry(qry)
@@ -355,16 +345,14 @@ class Reports(RequestValidationController):
                 AND u.org_id = :org_id
                 ORDER BY t.status_changed_at ASC
                 """,
-                {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
+                {"org_id": org_id, "start_period": start_period, "end_period": end_period},
             )
 
         return self._clean_qry(qry)
 
     def _delays_per_task_type(
-            self,
-            org_id: int,
-            start_period: datetime.datetime,
-            end_period: datetime.datetime) -> list:
+        self, org_id: int, start_period: datetime.datetime, end_period: datetime.datetime
+    ) -> list:
         """
         Calculate the amount of delay that each task has had. This just querys the total delay time for each task - not
         if it was actually resumed before the delay period finished. It's an upper bound - not the exact delay period.
@@ -382,7 +370,7 @@ class Reports(RequestValidationController):
                 AND t.org_id = :org_id
                 GROUP BY tt.label
                 """,
-                {'org_id': org_id, 'start_period': start_period, 'end_period': end_period}
+                {"org_id": org_id, "start_period": start_period, "end_period": end_period},
             )
 
         return self._clean_qry(qry)

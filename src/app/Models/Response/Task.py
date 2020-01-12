@@ -6,66 +6,68 @@ from app.Models.Response.TaskTypes import task_type_response
 from app.Models.Response.User import user_response
 from app.Models.Response.TaskLabels import task_label_dto
 
-response_statuses = ['SCHEDULED', 'READY', 'IN_PROGRESS', 'DELAYED', 'COMPLETED', 'CANCELLED']
+response_statuses = ["SCHEDULED", "READY", "IN_PROGRESS", "DELAYED", "COMPLETED", "CANCELLED"]
 
-task_status_dto = api.model("Task Status", {
-    "status":  fields.String(enum=response_statuses),
-    "label": fields.String(),
-    "disabled": fields.Boolean(),
-    "tooltip": fields.String()
-})
+task_status_dto = api.model(
+    "Task Status",
+    {
+        "status": fields.String(enum=response_statuses),
+        "label": fields.String(),
+        "disabled": fields.Boolean(),
+        "tooltip": fields.String(),
+    },
+)
 
-task_priority_dto = api.model("Task Priority", {
-    "priority":  fields.Integer(min=0, max=1),
-    "label": fields.String(),
-})
+task_priority_dto = api.model("Task Priority", {"priority": fields.Integer(min=0, max=1), "label": fields.String(),})
 
-task_statuses_response = api.model("Task Statuses Response", {
-    'statuses': fields.List(fields.Nested(task_status_dto))
-})
+task_statuses_response = api.model("Task Statuses Response", {"statuses": fields.List(fields.Nested(task_status_dto))})
 
-task_priorities_response = api.model("Task Priorities Response", {
-    'priorities': fields.List(fields.Nested(task_priority_dto))
-})
+task_priorities_response = api.model(
+    "Task Priorities Response", {"priorities": fields.List(fields.Nested(task_priority_dto))}
+)
 
-task_response = api.model("Task Response", {
-    "id": fields.Integer(),
-    "org_id": fields.Integer(),
-    "type": fields.Nested(task_type_response),
-    "description": fields.String(),
-    "status": fields.Nested(task_status_dto),
-    "time_estimate": fields.String(),
-    "scheduled_for": NullableDateTime,
-    "scheduled_notification_period": fields.Integer(),
-    "scheduled_notification_sent": NullableDateTime,
-    "assignee": fields.Nested(user_response),
-    "priority": fields.Nested(task_priority_dto),
-    "created_by": fields.Nested(user_response),
-    "created_at": fields.DateTime(),
-    "started_at": NullableDateTime,
-    "finished_by": fields.Nested(user_response),
-    "finished_at": NullableDateTime,
-    "status_changed_at": NullableDateTime,
-    "priority_changed_at": NullableDateTime,
-    "labels": fields.List(fields.Nested(task_label_dto))
-})
+task_response = api.model(
+    "Task Response",
+    {
+        "id": fields.Integer(),
+        "org_id": fields.Integer(),
+        "type": fields.Nested(task_type_response),
+        "description": fields.String(),
+        "status": fields.Nested(task_status_dto),
+        "time_estimate": fields.String(),
+        "scheduled_for": NullableDateTime,
+        "scheduled_notification_period": fields.Integer(),
+        "scheduled_notification_sent": NullableDateTime,
+        "assignee": fields.Nested(user_response),
+        "priority": fields.Nested(task_priority_dto),
+        "created_by": fields.Nested(user_response),
+        "created_at": fields.DateTime(),
+        "started_at": NullableDateTime,
+        "finished_by": fields.Nested(user_response),
+        "finished_at": NullableDateTime,
+        "status_changed_at": NullableDateTime,
+        "priority_changed_at": NullableDateTime,
+        "labels": fields.List(fields.Nested(task_label_dto)),
+    },
+)
 
-tasks_response = api.model("Tasks Response", {
-    'tasks': fields.List(fields.Nested(task_response))
-})
+tasks_response = api.model("Tasks Response", {"tasks": fields.List(fields.Nested(task_response))})
 
-delayed_task_response = api.model("Delayed Tasks Response", {
-    "task_id": fields.Integer(),
-    "delay_for": fields.Integer(),
-    "delayed_at": fields.DateTime(),
-    "delayed_by": fields.Nested(user_response),
-    "reason": fields.String(),
-    "snoozed": NullableDateTime,
-    "expired": NullableDateTime
-})
+delayed_task_response = api.model(
+    "Delayed Tasks Response",
+    {
+        "task_id": fields.Integer(),
+        "delay_for": fields.Integer(),
+        "delayed_at": fields.DateTime(),
+        "delayed_by": fields.Nested(user_response),
+        "reason": fields.String(),
+        "snoozed": NullableDateTime,
+        "expired": NullableDateTime,
+    },
+)
 
-task_transition_dto = api.model("Get Task Transitions Dto", {
-    "task_id": fields.Integer(),
-    "valid_transitions": fields.List(fields.String(enum=response_statuses))
-})
+task_transition_dto = api.model(
+    "Get Task Transitions Dto",
+    {"task_id": fields.Integer(), "valid_transitions": fields.List(fields.String(enum=response_statuses))},
+)
 transition_tasks_response = api.model("Get Valid Transitions Dto", task_transition_dto)

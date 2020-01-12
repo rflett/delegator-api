@@ -9,18 +9,13 @@ from app.Models.Enums import TaskStatuses, Operations, Resources, ClickActions, 
 from app.Models.Response import task_response, message_response_dto
 from app.Services import TaskService
 
-cancel_task_route = Namespace(
-    path="/task/cancel",
-    name="Task",
-    description="Manage a task"
-)
+cancel_task_route = Namespace(path="/task/cancel", name="Task", description="Manage a task")
 
 task_service = TaskService()
 
 
 @cancel_task_route.route("/<int:task_id>")
 class CancelTask(RequestValidationController):
-
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.CANCEL, Resources.TASK)
@@ -30,27 +25,19 @@ class CancelTask(RequestValidationController):
     @cancel_task_route.response(404, "Task not found", message_response_dto)
     def post(self, task_id: int, **kwargs) -> Response:
         """Cancels a task"""
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
 
         task_to_cancel = self.validate_cancel_task(task_id, **kwargs)
 
-        task_service.transition(
-            task=task_to_cancel,
-            status=TaskStatuses.CANCELLED,
-            req_user=req_user
-        )
-        req_user.log(
-            operation=Operations.CANCEL,
-            resource=Resources.TASK,
-            resource_id=task_id
-        )
+        task_service.transition(task=task_to_cancel, status=TaskStatuses.CANCELLED, req_user=req_user)
+        req_user.log(operation=Operations.CANCEL, resource=Resources.TASK, resource_id=task_id)
         if task_to_cancel.assignee is not None:
             cancelled_notification = Notification(
                 title="Task cancelled",
                 event_name=Events.task_transitioned_cancelled,
                 msg=f"{task_to_cancel.label()} was cancelled by {req_user.name()}.",
                 user_ids=task_to_cancel.assignee,
-                click_action=ClickActions.CLOSE
+                click_action=ClickActions.CLOSE,
             )
             cancelled_notification.push()
         logger.info(f"User {req_user.id} cancelled task {task_to_cancel.id}")

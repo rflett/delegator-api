@@ -18,7 +18,7 @@ class ActiveUserService(object):
                     org_id=user.org_id,
                     first_name=user.first_name,
                     last_name=user.last_name,
-                    last_active=datetime.datetime.utcnow()
+                    last_active=datetime.datetime.utcnow(),
                 )
                 session.add(active_user)
             else:
@@ -35,4 +35,4 @@ class ActiveUserService(object):
     def user_last_active(user: User) -> typing.Union[str, None]:
         with session_scope() as session:
             qry = session.query(ActiveUser).filter_by(user_id=user.id).first()
-            return None if qry is None else qry.last_active.strftime(app.config['RESPONSE_DATE_FORMAT'])
+            return None if qry is None else qry.last_active.strftime(app.config["RESPONSE_DATE_FORMAT"])

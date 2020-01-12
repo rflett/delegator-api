@@ -14,18 +14,13 @@ from app.Services import UserService
 
 user_service = UserService()
 
-password_setup_route = Namespace(
-    path="/password",
-    name="Password Management",
-    description="Manage passwords"
-)
+password_setup_route = Namespace(path="/password", name="Password Management", description="Manage passwords")
 
 
 @password_setup_route.route("/")
 class PasswordSetup(RequestValidationController):
-
     @handle_exceptions
-    @password_setup_route.param('token', 'The token that the user received to manage their password.')
+    @password_setup_route.param("token", "The token that the user received to manage their password.")
     @password_setup_route.response(204, "The token is still valid.")
     @password_setup_route.response(400, "Bad Request", message_response_dto)
     def get(self):
@@ -35,13 +30,13 @@ class PasswordSetup(RequestValidationController):
         return self.no_content()
 
     @handle_exceptions
-    @password_setup_route.param('email', 'Email address of the user requesting a password reset.')
+    @password_setup_route.param("email", "Email address of the user requesting a password reset.")
     @password_setup_route.response(204, "Email with link to reset password has been sent.")
     @password_setup_route.response(400, "Password Reset Request Failed", message_response_dto)
     def delete(self) -> Response:
         """Request a password reset"""
         try:
-            email = request.args['email']
+            email = request.args["email"]
         except KeyError as e:
             raise ValidationError(f"Missing {e} from query params")
 
@@ -59,7 +54,7 @@ class PasswordSetup(RequestValidationController):
             reset_link = UserPasswordToken(user.id)
             session.add(reset_link)
 
-        link = app.config['PUBLIC_WEB_URL'] + '/reset-password?token=' + reset_link.token
+        link = app.config["PUBLIC_WEB_URL"] + "/reset-password?token=" + reset_link.token
 
         email_api.send_reset_password(email, user.first_name, link)
 
@@ -91,8 +86,10 @@ class PasswordSetup(RequestValidationController):
     def _purge_expired_tokens() -> None:
         """Removes password tokens that have expired."""
         with session_scope() as session:
-            delete_expired = session.query(UserPasswordToken).filter(
-                (UserPasswordToken.expire_after + UserPasswordToken.created_at) < int(time.time())
-            ).delete()
+            delete_expired = (
+                session.query(UserPasswordToken)
+                .filter((UserPasswordToken.expire_after + UserPasswordToken.created_at) < int(time.time()))
+                .delete()
+            )
             if delete_expired > 0:
                 logger.info(f"Purged {delete_expired} password tokens which expired.")

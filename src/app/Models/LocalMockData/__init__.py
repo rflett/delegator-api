@@ -1,5 +1,3 @@
 from app.Models.LocalMockData.MockActivity import MockActivity
 
-__all__ = [
-    MockActivity
-]
+__all__ = [MockActivity]

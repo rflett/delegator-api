@@ -23,5 +23,5 @@ all_task_routes = [
     tasks_route,
     transition_task_route,
     task_activity_route,
-    task_route
+    task_route,
 ]

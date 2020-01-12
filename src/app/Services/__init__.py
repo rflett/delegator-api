@@ -4,10 +4,4 @@ from app.Services.SettingsService import SettingsService
 from app.Services.TaskService import TaskService
 from app.Services.UserService import UserService
 
-__all__ = [
-    ActiveUserService,
-    AuthService,
-    SettingsService,
-    TaskService,
-    UserService
-]
+__all__ = [ActiveUserService, AuthService, SettingsService, TaskService, UserService]

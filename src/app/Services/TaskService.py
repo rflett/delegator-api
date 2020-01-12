@@ -27,19 +27,19 @@ class TaskService(object):
             org_id=task.org_id,
             event=Events.task_assigned,
             event_id=task.id,
-            event_friendly=f"{assigned_user.name()} assigned to task by {req_user.name()}."
+            event_friendly=f"{assigned_user.name()} assigned to task by {req_user.name()}.",
         ).publish()
         Activity(
             org_id=req_user.org_id,
             event=Events.user_assigned_task,
             event_id=req_user.id,
-            event_friendly=f"Assigned {assigned_user.name()} to {task.label()}."
+            event_friendly=f"Assigned {assigned_user.name()} to {task.label()}.",
         ).publish()
         Activity(
             org_id=assigned_user.org_id,
             event=Events.user_assigned_to_task,
             event_id=assigned_user.id,
-            event_friendly=f"Assigned to {task.label()} by {req_user.name()}."
+            event_friendly=f"Assigned to {task.label()} by {req_user.name()}.",
         ).publish()
         if notify:
             assigned_notification = Notification(
@@ -48,14 +48,10 @@ class TaskService(object):
                 msg=f"{req_user.name()} assigned {task.label()} to you.",
                 click_action=ClickActions.VIEW_TASK,
                 task_action_id=task.id,
-                user_ids=assigned_user.id
+                user_ids=assigned_user.id,
             )
             assigned_notification.push()
-        req_user.log(
-            operation=Operations.ASSIGN,
-            resource=Resources.TASK,
-            resource_id=task.id
-        )
+        req_user.log(operation=Operations.ASSIGN, resource=Resources.TASK, resource_id=task.id)
         logger.info(f"assigned task {task.id} to user {assignee}")
 
     @staticmethod
@@ -74,7 +70,7 @@ class TaskService(object):
                     msg=f"{task.label()} task has been escalated.",
                     click_action=ClickActions.ASSIGN_TO_ME,
                     task_action_id=task.id,
-                    user_ids=UserService.get_all_user_ids(task.org_id)
+                    user_ids=UserService.get_all_user_ids(task.org_id),
                 )
                 priority_notification.push()
 
@@ -82,14 +78,11 @@ class TaskService(object):
 
     def drop(self, task: Task, req_user: User) -> None:
         from app.Services import UserService
+
         """Drops a task"""
         self.unassign(task, req_user)
 
-        self.transition(
-            task=task,
-            status=TaskStatuses.READY,
-            req_user=req_user
-        )
+        self.transition(task=task, status=TaskStatuses.READY, req_user=req_user)
 
         dropped_notification = Notification(
             title="Task dropped",
@@ -97,17 +90,12 @@ class TaskService(object):
             msg=f"{task.label()} has been dropped.",
             click_action=ClickActions.ASSIGN_TO_ME,
             task_action_id=task.id,
-            user_ids=UserService.get_all_user_ids(req_user.org_id)
+            user_ids=UserService.get_all_user_ids(req_user.org_id),
         )
         dropped_notification.push()
 
-        req_user.log(
-            operation=Operations.DROP,
-            resource=Resources.TASK,
-            resource_id=task.id
-        )
-        logger.info(f"User {req_user.id} dropped task {task.id} "
-                    f"which was assigned to {task.assignee}.")
+        req_user.log(operation=Operations.DROP, resource=Resources.TASK, resource_id=task.id)
+        logger.info(f"User {req_user.id} dropped task {task.id} " f"which was assigned to {task.assignee}.")
 
     @staticmethod
     def get(task_id: int, org_id: int) -> Task:
@@ -160,21 +148,17 @@ class TaskService(object):
 
         Activity(
             org_id=task.org_id,
-            event=f'task_transitioned_{task.status.lower()}',
+            event=f"task_transitioned_{task.status.lower()}",
             event_id=task.id,
-            event_friendly=f"Transitioned from {old_status_label} to {new_status_label}."
+            event_friendly=f"Transitioned from {old_status_label} to {new_status_label}.",
         ).publish()
         Activity(
             org_id=req_user.org_id,
             event=Events.user_transitioned_task,
             event_id=req_user.id,
-            event_friendly=f"Transitioned {task.label()} from {old_status_label} to {new_status_label}."
+            event_friendly=f"Transitioned {task.label()} from {old_status_label} to {new_status_label}.",
         ).publish()
-        req_user.log(
-            operation=Operations.TRANSITION,
-            resource=Resources.TASK,
-            resource_id=task.id
-        )
+        req_user.log(operation=Operations.TRANSITION, resource=Resources.TASK, resource_id=task.id)
         logger.info(f"User {req_user.id} transitioned task {task.id} from {old_status} to {status}")
 
     @staticmethod
@@ -194,32 +178,28 @@ class TaskService(object):
                 org_id=task.org_id,
                 event=Events.task_unassigned,
                 event_id=task.id,
-                event_friendly=f"{old_assignee.name()} unassigned from task by {req_user.name()}."
+                event_friendly=f"{old_assignee.name()} unassigned from task by {req_user.name()}.",
             ).publish()
             Activity(
                 org_id=req_user.org_id,
                 event=Events.user_unassigned_task,
                 event_id=req_user.id,
-                event_friendly=f"Unassigned {old_assignee.name()} from {task.label()}."
+                event_friendly=f"Unassigned {old_assignee.name()} from {task.label()}.",
             ).publish()
             Activity(
                 org_id=old_assignee.org_id,
                 event=Events.user_unassigned_from_task,
                 event_id=old_assignee.id,
-                event_friendly=f"Unassigned from {task.label()} by {req_user.name()}."
+                event_friendly=f"Unassigned from {task.label()} by {req_user.name()}.",
             ).publish()
-            req_user.log(
-                operation=Operations.ASSIGN,
-                resource=Resources.TASK,
-                resource_id=task.id
-            )
+            req_user.log(operation=Operations.ASSIGN, resource=Resources.TASK, resource_id=task.id)
             logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
 
     @staticmethod
     def _pretty_status_label(status: str) -> str:
         """Converts a task status from IN_PROGRESS to 'In Progress' """
         if "_" in status:
-            words = status.lower().split('_')
+            words = status.lower().split("_")
             return " ".join([w.capitalize() for w in words])
         else:
             return status.lower().capitalize()

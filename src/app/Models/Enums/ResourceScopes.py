@@ -1,3 +1,3 @@
 class ResourceScopes(str):
-    SELF = 'SELF'
-    ORG = 'ORG'
+    SELF = "SELF"
+    ORG = "ORG"

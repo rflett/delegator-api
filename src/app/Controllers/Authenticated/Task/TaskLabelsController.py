@@ -9,16 +9,11 @@ from app.Models.Enums import Operations, Resources
 from app.Models.Response import task_labels_response, message_response_dto
 from app.Models.Request import new_task_label_dto, task_label_dto
 
-task_labels_route = Namespace(
-    path="/task-labels",
-    name="Task Labels",
-    description="Manage Task Labels"
-)
+task_labels_route = Namespace(path="/task-labels", name="Task Labels", description="Manage Task Labels")
 
 
-@task_labels_route.route('/')
+@task_labels_route.route("/")
 class TaskLabels(RequestValidationController):
-
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_LABELS)
@@ -26,13 +21,13 @@ class TaskLabels(RequestValidationController):
     @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Returns all task labels """
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
 
         with session_scope() as session:
             task_labels_qry = session.query(TaskLabel).filter_by(org_id=req_user.org_id).all()
 
         req_user.log(Operations.GET, Resources.TASK_LABELS)
-        return self.ok({'labels': [tl.as_dict() for tl in task_labels_qry]})
+        return self.ok({"labels": [tl.as_dict() for tl in task_labels_qry]})
 
     @handle_exceptions
     @requires_jwt
@@ -43,7 +38,7 @@ class TaskLabels(RequestValidationController):
     @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
     def post(self, **kwargs) -> Response:
         """Creates a task label"""
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
         request_body = request.get_json()
 
         label, colour = self.validate_create_task_label_request(request_body)
@@ -65,7 +60,7 @@ class TaskLabels(RequestValidationController):
     @task_labels_route.response(404, "Task label not found", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Updates a task label"""
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
         request_body = request.get_json()
 
         label = self.validate_update_task_labels_request(request_body, req_user.org_id)
@@ -73,14 +68,14 @@ class TaskLabels(RequestValidationController):
         logger.info(label.id)
 
         with session_scope():
-            label.colour = request_body.get('colour')
-            label.label = request_body.get('label')
+            label.colour = request_body.get("colour")
+            label.label = request_body.get("label")
 
         req_user.log(Operations.UPDATE, Resources.TASK_LABEL, label.id)
         return self.ok(label.as_dict())
 
 
-@task_labels_route.route('/<int:label_id>')
+@task_labels_route.route("/<int:label_id>")
 class DeleteTaskLabel(RequestValidationController):
     @handle_exceptions
     @requires_jwt
@@ -92,7 +87,7 @@ class DeleteTaskLabel(RequestValidationController):
     @task_labels_route.response(404, "Task label not found", message_response_dto)
     def delete(self, label_id: int, **kwargs) -> Response:
         """Deletes a task label"""
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
 
         label = self.validate_delete_task_labels_request(label_id, req_user.org_id)
 

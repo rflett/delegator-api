@@ -19,22 +19,25 @@ class ObjectValidationController(ResponseController):
     def check_auth_scope(affected_user: User, **kwargs):
         """Compares a users scope against the action they're trying to do"""
         if affected_user is not None:
-            if kwargs['auth_scope'] == 'SELF' and kwargs['req_user'].id != affected_user.id:
+            if kwargs["auth_scope"] == "SELF" and kwargs["req_user"].id != affected_user.id:
                 raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this action on themselves.")
-            elif kwargs['auth_scope'] == 'ORG' and kwargs['req_user'].org_id != affected_user.org_id:
-                raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this"
-                                         f" action within their organisation.")
+            elif kwargs["auth_scope"] == "ORG" and kwargs["req_user"].org_id != affected_user.org_id:
+                raise AuthorizationError(
+                    f"User {kwargs['req_user'].id} can only perform this" f" action within their organisation."
+                )
 
     @staticmethod
     def check_escalation(task_type_id: int, display_order: int, should_exist: bool) -> None:
         """Check if a task escalation should exist or not"""
         with session_scope() as session:
-            escalation_exists = session.query(exists().where(
-                and_(
-                    TaskTypeEscalation.task_type_id == task_type_id,
-                    TaskTypeEscalation.display_order == display_order
+            escalation_exists = session.query(
+                exists().where(
+                    and_(
+                        TaskTypeEscalation.task_type_id == task_type_id,
+                        TaskTypeEscalation.display_order == display_order,
+                    )
                 )
-            )).scalar()
+            ).scalar()
             if should_exist and not escalation_exists:
                 raise ResourceNotFoundError(f"Task type escalation {task_type_id}:{display_order} doesn't exist")
             elif not should_exist and escalation_exists:
@@ -75,7 +78,7 @@ class ObjectValidationController(ResponseController):
         min_length = 6
         min_special_chars = 1
         min_caps = 1
-        special_chars = r' !#$%&\'()*+,-./:;<=>?@[\]^_`{|}~'
+        special_chars = r" !#$%&\'()*+,-./:;<=>?@[\]^_`{|}~"
         if len(password) < min_length:
             raise ValidationError(f"Password length less than {min_length}.")
         if len([char for char in password if char in special_chars]) < min_special_chars:
@@ -118,7 +121,7 @@ class ObjectValidationController(ResponseController):
 
     def check_task_id(self, task_id: int, org_id: int) -> Task:
         """Check that the task exist and return it if it does."""
-        task_id = self.check_int(task_id, 'id')  # the request uses 'id'
+        task_id = self.check_int(task_id, "id")  # the request uses 'id'
 
         with session_scope() as session:
             task = session.query(Task).filter_by(id=task_id, org_id=org_id).first()
@@ -130,7 +133,7 @@ class ObjectValidationController(ResponseController):
 
     def check_task_priority(self, priority: typing.Union[int, None]) -> typing.Union[int, None]:
         """Check that a task priority exists."""
-        priority = self.check_int(priority, 'task_priority')
+        priority = self.check_int(priority, "task_priority")
 
         with session_scope() as session:
             if not session.query(exists().where(TaskPriority.priority == priority)).scalar():
@@ -140,7 +143,7 @@ class ObjectValidationController(ResponseController):
 
     def check_task_status(self, task_status: str) -> str:
         """Check that a task status exists."""
-        task_status = self.check_str(task_status, 'task_status')
+        task_status = self.check_str(task_status, "task_status")
 
         with session_scope() as session:
             if not session.query(exists().where(TaskStatus.status == task_status)).scalar():
@@ -150,7 +153,7 @@ class ObjectValidationController(ResponseController):
 
     def check_task_type_id(self, task_type_id: int) -> int:
         """Check if a task type exists."""
-        task_type_id = self.check_int(task_type_id, 'task_type_id')
+        task_type_id = self.check_int(task_type_id, "task_type_id")
 
         with session_scope() as session:
             if not session.query(exists().where(TaskType.id == task_type_id)).scalar():
@@ -164,10 +167,10 @@ class ObjectValidationController(ResponseController):
             raise ValidationError(f"Tasks can only have up to 3 labels, you've supplied {len(labels)}.")
         with session_scope() as session:
             for label_id in labels:
-                self.check_int(label_id, 'label id')
-                if not session.query(exists().where(
-                        and_(TaskLabel.id == label_id, TaskLabel.org_id == org_id)
-                )).scalar():
+                self.check_int(label_id, "label id")
+                if not session.query(
+                    exists().where(and_(TaskLabel.id == label_id, TaskLabel.org_id == org_id))
+                ).scalar():
                     raise ResourceNotFoundError(f"Label {label_id} doesn't exist")
         return labels
 
@@ -176,16 +179,18 @@ class ObjectValidationController(ResponseController):
         """Verify that the user disabled field can be converted to a datetime."""
         if disabled is not None:
             try:
-                disabled = datetime.datetime.strptime(disabled, app.config['REQUEST_DATE_FORMAT'])
+                disabled = datetime.datetime.strptime(disabled, app.config["REQUEST_DATE_FORMAT"])
                 return disabled
             except ValueError:
-                raise ValidationError(f"Couldn't convert disabled {disabled} to datetime.datetime, please ensure it is "
-                                      f"in the format {app.config['REQUEST_DATE_FORMAT']}")
+                raise ValidationError(
+                    f"Couldn't convert disabled {disabled} to datetime.datetime, please ensure it is "
+                    f"in the format {app.config['REQUEST_DATE_FORMAT']}"
+                )
 
     @staticmethod
     def check_user_id(
-            identifier: typing.Union[str, int],
-            should_exist: typing.Optional[bool] = None) -> typing.Union[None, User, str]:
+        identifier: typing.Union[str, int], should_exist: typing.Optional[bool] = None
+    ) -> typing.Union[None, User, str]:
         """Given a users email or ID, check whether it should or shouldn't exist"""
         # validate the identifier
         if isinstance(identifier, bool):
@@ -214,7 +219,7 @@ class ObjectValidationController(ResponseController):
 
     def check_user_role(self, req_user: User, role: str, user_to_update: User = None) -> str:
         """Given a users role, check that it exist and that the user can pass the role on to the recipient."""
-        role = self.check_str(role, 'role')
+        role = self.check_str(role, "role")
         with session_scope() as session:
             _role = session.query(Role).filter_by(id=role).first()
         if _role is None:
@@ -232,7 +237,7 @@ class ObjectValidationController(ResponseController):
 
     def validate_password_token(self, token: str) -> UserPasswordToken:
         """Validates the create first time password link"""
-        self.check_str(token, 'token')
+        self.check_str(token, "token")
 
         with session_scope() as session:
             password_token = session.query(UserPasswordToken).filter_by(token=token).first()
