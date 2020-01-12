@@ -4,7 +4,7 @@ from os import getenv
 from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
 
-from app import db, session_scope, logger, task_activity_table, app, app_env
+from app import db, session_scope, logger, task_activity_table, app
 from app.Exceptions import ValidationError
 from app.Models import DelayedTask, User
 from app.Models.LocalMockData import MockActivity

@@ -98,7 +98,7 @@ class RequestValidationController(ObjectValidationController):
             ),
             "default_priority": self.check_optional_int(
                 param=request_body.get('default_priority'),
-                param_name='default_priority', 
+                param_name='default_priority',
                 allow_negative=True
             )
         }

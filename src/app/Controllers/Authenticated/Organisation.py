@@ -220,8 +220,8 @@ class OrganisationSubscription(RequestValidationController):
             request_body = request.get_json()
             customer_id = request_body['customer_id']
             subscription_id = request_body['subscription_id']
-        except KeyError:
-            raise ValidationError("Missing subscription_id or customer_id from request")
+        except KeyError as e:
+            raise ValidationError(f"Missing {e} from request")
 
         with session_scope() as session:
             org = session.query(Organisation).filter_by(chargebee_customer_id=customer_id).first()

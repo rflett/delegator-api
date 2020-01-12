@@ -15,7 +15,7 @@ class Subscription(object):
 
     def max_users(self) -> int:
         """The maximum users that can be created on this plan"""
-        if self._status == "trial":
+        if self._status == "in_trial":
             return -1
         if self._status in self._unusable_statuses:
             return 0
@@ -29,7 +29,7 @@ class Subscription(object):
 
     def can_get_reports(self) -> bool:
         """Can the subscription get reports?"""
-        if self._status == "trial":
+        if self._status == "in_trial":
             return True
         if self._status in self._unusable_statuses:
             return False
@@ -43,7 +43,7 @@ class Subscription(object):
 
     def task_activity_log_history(self) -> int:
         """The amount of days of task activity log that can be viewed"""
-        if self._status == "trial":
+        if self._status == "in_trial":
             return -1
         if self._status in self._unusable_statuses:
             return 0
@@ -57,7 +57,7 @@ class Subscription(object):
 
     def can_search_dashboard(self) -> bool:
         """Can the subscription search the dashboard"""
-        if self._status == "trial":
+        if self._status == "in_trial":
             return True
         if self._status in self._unusable_statuses:
             return False
@@ -71,7 +71,7 @@ class Subscription(object):
 
     def can_view_user_activity(self) -> bool:
         """Can the subscription view user activity logs"""
-        if self._status == "trial":
+        if self._status == "in_trial":
             return True
         if self._status in self._unusable_statuses:
             return False

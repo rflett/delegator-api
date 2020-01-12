@@ -3,7 +3,7 @@ import typing
 import uuid
 
 import jwt
-from flask import Response, request, redirect
+from flask import Response, request
 from flask_restplus import Namespace
 
 from app import app, session_scope, logger, subscription_api, email_api

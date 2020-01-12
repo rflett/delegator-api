@@ -10,7 +10,7 @@ from os import getenv
 from boto3.dynamodb.conditions import Key
 from sqlalchemy import exists
 
-from app import db, session_scope, logger, user_activity_table, app, subscription_api, app_env
+from app import db, session_scope, logger, user_activity_table, app, subscription_api
 from app.Exceptions import AuthorizationError
 from app.Models import FailedLogin
 from app.Models.RBAC import Log, Permission
