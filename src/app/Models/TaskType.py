@@ -7,24 +7,24 @@ from app import db, session_scope, app
 class TaskType(db.Model):
     __tablename__ = "task_types"
 
-    id = db.Column('id', db.Integer, primary_key=True)
-    label = db.Column('label', db.String)
-    org_id = db.Column('org_id', db.Integer, db.ForeignKey('organisations.id'))
-    disabled = db.Column('disabled', db.DateTime, default=None)
-    default_time_estimate = db.Column('default_time_estimate', db.Integer, default=0)
-    default_description = db.Column('default_description', db.String)
-    default_priority = db.Column('default_priority', db.Integer, db.ForeignKey('task_priorities.priority'), default=1)
+    id = db.Column("id", db.Integer, primary_key=True)
+    label = db.Column("label", db.String)
+    org_id = db.Column("org_id", db.Integer, db.ForeignKey("organisations.id"))
+    disabled = db.Column("disabled", db.DateTime, default=None)
+    default_time_estimate = db.Column("default_time_estimate", db.Integer, default=0)
+    default_description = db.Column("default_description", db.String)
+    default_priority = db.Column("default_priority", db.Integer, db.ForeignKey("task_priorities.priority"), default=1)
 
     orgs = db.relationship("Organisation")
 
     def __init__(
-            self,
-            label: str,
-            org_id: int,
-            disabled: typing.Union[datetime.datetime, None] = None,
-            default_time_estimate: int = 0,
-            default_description: str = None,
-            default_priority: int = 1
+        self,
+        label: str,
+        org_id: int,
+        disabled: typing.Union[datetime.datetime, None] = None,
+        default_time_estimate: int = 0,
+        default_description: str = None,
+        default_priority: int = 1,
     ):
         self.label = label
         self.org_id = org_id
@@ -40,7 +40,7 @@ class TaskType(db.Model):
         if self.disabled is None:
             disabled = None
         else:
-            disabled = self.disabled.strftime(app.config['RESPONSE_DATE_FORMAT'])
+            disabled = self.disabled.strftime(app.config["RESPONSE_DATE_FORMAT"])
 
         return {
             "id": self.id,
@@ -50,11 +50,12 @@ class TaskType(db.Model):
             "tooltip": "Type has been disabled" if disabled else None,
             "default_description": self.default_description,
             "default_priority": self.default_priority,
-            "default_time_estimate": self.default_time_estimate
+            "default_time_estimate": self.default_time_estimate,
         }
 
     def fat_dict(self) -> dict:
         from app.Models import TaskTypeEscalation
+
         task_type_dict = self.as_dict()
 
         # get task type escalations
@@ -63,6 +64,6 @@ class TaskType(db.Model):
             escalation_policies = [escalation.as_dict() for escalation in tte_qry]
 
         # sort by display order
-        task_type_dict['escalation_policies'] = list(sorted(escalation_policies, key=lambda i: i['display_order']))
+        task_type_dict["escalation_policies"] = list(sorted(escalation_policies, key=lambda i: i["display_order"]))
 
         return task_type_dict

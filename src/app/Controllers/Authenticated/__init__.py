@@ -5,11 +5,4 @@ from app.Controllers.Authenticated.Roles import roles_route
 from app.Controllers.Authenticated.Task import all_task_routes
 from app.Controllers.Authenticated.User import all_user_routes
 
-all_authenticated = [
-    active_user_route,
-    org_route,
-    report_route,
-    roles_route,
-    *all_task_routes,
-    *all_user_routes
-]
+all_authenticated = [active_user_route, org_route, report_route, roles_route, *all_task_routes, *all_user_routes]

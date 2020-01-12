@@ -6,25 +6,26 @@ from app.Models.Response.Account import user_settings_response
 from app.Models.Response.Common import NullableString, NullableDateTime
 
 
-user_response = api.model("User Response", {
-    "id": fields.Integer,
-    "org_id": fields.Integer,
-    "email": fields.String,
-    "first_name": fields.String,
-    "last_name": fields.String,
-    "role": fields.Nested(roles_response),
-    "role_before_locked": NullableString,
-    "disabled": NullableDateTime,
-    "job_title": fields.String,
-    "deleted": NullableDateTime,
-    "created_at": fields.String,
-    "created_by": fields.String,
-    "updated_at": NullableDateTime,
-    "updated_by": NullableString,
-    "invite_accepted": fields.Boolean,
-    "settings": fields.Nested(user_settings_response)
-})
+user_response = api.model(
+    "User Response",
+    {
+        "id": fields.Integer,
+        "org_id": fields.Integer,
+        "email": fields.String,
+        "first_name": fields.String,
+        "last_name": fields.String,
+        "role": fields.Nested(roles_response),
+        "role_before_locked": NullableString,
+        "disabled": NullableDateTime,
+        "job_title": fields.String,
+        "deleted": NullableDateTime,
+        "created_at": fields.String,
+        "created_by": fields.String,
+        "updated_at": NullableDateTime,
+        "updated_by": NullableString,
+        "invite_accepted": fields.Boolean,
+        "settings": fields.Nested(user_settings_response),
+    },
+)
 
-get_users_response = api.model("Get Users Response", {
-    "users": fields.List(fields.Nested(user_response))
-})
+get_users_response = api.model("Get Users Response", {"users": fields.List(fields.Nested(user_response))})

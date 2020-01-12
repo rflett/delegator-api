@@ -5,14 +5,10 @@ from app import db
 class TaskStatus(db.Model):
     __tablename__ = "task_statuses"
 
-    status = db.Column('status', db.String, primary_key=True)
-    label = db.Column('label', db.String, default=None)
+    status = db.Column("status", db.String, primary_key=True)
+    label = db.Column("label", db.String, default=None)
 
-    def __init__(
-            self,
-            status: str,
-            label: str
-    ):
+    def __init__(self, status: str, label: str):
         self.status = status
         self.label = label
 
@@ -20,9 +16,4 @@ class TaskStatus(db.Model):
         """
         :return: dict repr of a TaskStatus object
         """
-        return {
-            "status": self.status,
-            "label": self.label,
-            "disabled": disabled,
-            "tooltip": tooltip
-        }
+        return {"status": self.status, "label": self.label, "disabled": disabled, "tooltip": tooltip}

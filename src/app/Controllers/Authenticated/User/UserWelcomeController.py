@@ -8,16 +8,11 @@ from app.Models.Enums import Operations, Resources
 from app.Models.Request import resend_welcome_request
 from app.Models.Response import message_response_dto
 
-user_welcome_route = Namespace(
-    path="/user",
-    name="User",
-    description="Manage a user"
-)
+user_welcome_route = Namespace(path="/user", name="User", description="Manage a user")
 
 
 @user_welcome_route.route("/resend-welcome")
 class UserController(RequestValidationController):
-
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER)
@@ -29,7 +24,7 @@ class UserController(RequestValidationController):
     def post(self, **kwargs) -> Response:
         """Resend the welcome email for a user"""
         request_body = request.get_json()
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
 
         user, token = self.validate_resend_welcome_request(request_body)
 
@@ -38,15 +33,11 @@ class UserController(RequestValidationController):
             email=user.email,
             first_name=user.first_name,
             inviter_name=req_user.first_name,
-            link=app.config['PUBLIC_WEB_URL'] + '/account-setup?token=' + token
+            link=app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + token,
         )
 
         logger.info(f"User {req_user.id} resent verification email to user {user.id}.")
 
-        req_user.log(
-            operation=Operations.UPDATE,
-            resource=Resources.USER,
-            resource_id=user.id
-        )
+        req_user.log(operation=Operations.UPDATE, resource=Resources.USER, resource_id=user.id)
 
         return self.no_content()

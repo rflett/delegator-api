@@ -21,25 +21,23 @@ class RequestValidationController(ObjectValidationController):
         :param request_body:    The request body from the update task request
         :return:                Response if invalid, else a complex dict
         """
-        task = self.check_task_id(request_body.get('task_id'), kwargs['req_user'].org_id)
-        assignee_id = self.check_task_assignee(request_body.get('assignee'), **kwargs)
+        task = self.check_task_id(request_body.get("task_id"), kwargs["req_user"].org_id)
+        assignee_id = self.check_task_assignee(request_body.get("assignee"), **kwargs)
 
         return task, assignee_id
 
     def validate_cancel_task(self, task_id: int, **kwargs) -> Task:
         """Validates the cancel task request"""
-        task = self.check_task_id(task_id, kwargs['req_user'].org_id)
+        task = self.check_task_id(task_id, kwargs["req_user"].org_id)
         self.check_auth_scope(task.assignees, **kwargs)
         return task
 
     def validate_create_org_request(self, request_body: dict) -> str:
         """ Validates a create org request body """
-        org_name = self.check_str(request_body.get('org_name'), 'org_name')
+        org_name = self.check_str(request_body.get("org_name"), "org_name")
 
         with session_scope() as session:
-            org_exists = session.query(exists().where(
-                func.lower(Organisation.name) == func.lower(org_name)
-            )).scalar()
+            org_exists = session.query(exists().where(func.lower(Organisation.name) == func.lower(org_name))).scalar()
 
         if org_exists:
             raise ValidationError("That organisation already exists.")
@@ -49,17 +47,17 @@ class RequestValidationController(ObjectValidationController):
     def validate_create_signup_user(self, request_body: dict) -> dict:
         """ Validates creating a user from the signup page """
         # check email
-        email = request_body.get('email')
+        email = request_body.get("email")
         self.validate_email(email)
 
         return {
             "email": self.check_user_id(email, should_exist=False),
-            "password": self.validate_password(request_body.get('password')),
-            "role": app.config['SIGNUP_ROLE'],
-            "first_name": self.check_str(request_body.get('first_name'), 'first_name'),
-            "last_name": self.check_str(request_body.get('last_name'), 'last_name'),
-            "job_title": self.check_optional_str(request_body.get('job_title'), 'job_title'),
-            "disabled": self.check_user_disabled(request_body.get('disabled'))
+            "password": self.validate_password(request_body.get("password")),
+            "role": app.config["SIGNUP_ROLE"],
+            "first_name": self.check_str(request_body.get("first_name"), "first_name"),
+            "last_name": self.check_str(request_body.get("last_name"), "last_name"),
+            "job_title": self.check_optional_str(request_body.get("job_title"), "job_title"),
+            "disabled": self.check_user_disabled(request_body.get("disabled")),
         }
 
     def validate_create_task_request(self, request_body: dict, **kwargs) -> dict:
@@ -68,48 +66,43 @@ class RequestValidationController(ObjectValidationController):
         :return:                Response if the request body contains invalid values, or the TaskRequest dataclass
         """
         return {
-            'type': self.check_task_type_id(task_type_id=request_body.get('type_id')),
-            'description': self.check_optional_str(request_body.get('description'), 'description'),
-            'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
-            'scheduled_for': self.check_optional_date(request_body.get('scheduled_for'), 'scheduled_for'),
-            'scheduled_notification_period': self.check_optional_int(
-                request_body.get('scheduled_notification_period'), 'scheduled_notification_period'
+            "type": self.check_task_type_id(task_type_id=request_body.get("type_id")),
+            "description": self.check_optional_str(request_body.get("description"), "description"),
+            "time_estimate": self.check_optional_int(request_body.get("time_estimate"), "time_estimate"),
+            "scheduled_for": self.check_optional_date(request_body.get("scheduled_for"), "scheduled_for"),
+            "scheduled_notification_period": self.check_optional_int(
+                request_body.get("scheduled_notification_period"), "scheduled_notification_period"
             ),
-            'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
-            'priority': self.check_task_priority(request_body.get('priority')),
-            'labels': self.check_task_labels(request_body.get('labels', []), kwargs['req_user'].org_id)
+            "assignee": self.check_task_assignee(request_body.get("assignee"), **kwargs),
+            "priority": self.check_task_priority(request_body.get("priority")),
+            "labels": self.check_task_labels(request_body.get("labels", []), kwargs["req_user"].org_id),
         }
 
     def validate_create_task_type_request(
-            self,
-            request_body: dict,
-            **kwargs
+        self, request_body: dict, **kwargs
     ) -> typing.Tuple[dict, typing.Optional[TaskType]]:
         """ Validates a create task type request body """
-        label = self.check_str(request_body.get('label'), 'label')
+        label = self.check_str(request_body.get("label"), "label")
         request_defaults = {
             "default_description": self.check_optional_str(
-                request_body.get('default_description'), 'default_description'
+                request_body.get("default_description"), "default_description"
             ),
             "default_time_estimate": self.check_optional_int(
-                param=request_body.get('default_time_estimate'),
-                param_name='default_time_estimate',
-                allow_negative=True
+                param=request_body.get("default_time_estimate"), param_name="default_time_estimate", allow_negative=True
             ),
             "default_priority": self.check_optional_int(
-                param=request_body.get('default_priority'),
-                param_name='default_priority',
-                allow_negative=True
-            )
+                param=request_body.get("default_priority"), param_name="default_priority", allow_negative=True
+            ),
         }
         defaults = {k: v for k, v in request_defaults.items() if v is not None}
 
         # check if it exists and needs enabling
         with session_scope() as session:
-            task_type = session.query(TaskType).filter(
-                func.lower(TaskType.label) == func.lower(label),
-                TaskType.org_id == kwargs['req_user'].org_id
-            ).first()
+            task_type = (
+                session.query(TaskType)
+                .filter(func.lower(TaskType.label) == func.lower(label), TaskType.org_id == kwargs["req_user"].org_id)
+                .first()
+            )
             if task_type is None:
                 return defaults, None
             else:
@@ -123,24 +116,24 @@ class RequestValidationController(ObjectValidationController):
         :return:                Response if the request body contains invalid values, or the UserRequest dataclass
         """
         # check email
-        email = request_body.get('email')
+        email = request_body.get("email")
         self.validate_email(email)
 
         self.check_user_id(email, should_exist=False)
-        self.check_user_role(req_user, request_body.get('role_id'))
-        self.check_str(request_body.get('first_name'), 'first_name')
-        self.check_str(request_body.get('last_name'), 'last_name')
-        self.check_optional_str(request_body.get('job_title'), 'job_title')
-        self.check_user_disabled(request_body.get('disabled'))
+        self.check_user_role(req_user, request_body.get("role_id"))
+        self.check_str(request_body.get("first_name"), "first_name")
+        self.check_str(request_body.get("last_name"), "last_name")
+        self.check_optional_str(request_body.get("job_title"), "job_title")
+        self.check_user_disabled(request_body.get("disabled"))
 
     def validate_delay_task_request(self, request_body: dict, **kwargs) -> tuple:
         """ Validates the transition task request """
-        task = self.check_task_id(request_body.get('task_id'), kwargs['req_user'].org_id)
+        task = self.check_task_id(request_body.get("task_id"), kwargs["req_user"].org_id)
         if task.assignee is not None:
             self.check_auth_scope(task.assignees, **kwargs)
-        delay_for = self.check_int(request_body.get('delay_for'), 'delay_for')
+        delay_for = self.check_int(request_body.get("delay_for"), "delay_for")
         try:
-            return task, delay_for, self.check_str(request_body['reason'], 'reason')
+            return task, delay_for, self.check_str(request_body["reason"], "reason")
         except KeyError:
             return task, delay_for, None
 
@@ -154,7 +147,7 @@ class RequestValidationController(ObjectValidationController):
 
     def validate_disable_task_type_request(self, task_type_id: int) -> TaskType:
         """ Validates the disable task request """
-        type_id = self.check_int(task_type_id, 'task_type_id')
+        type_id = self.check_int(task_type_id, "task_type_id")
 
         with session_scope() as session:
             task_type = session.query(TaskType).filter_by(id=type_id).first()
@@ -170,7 +163,7 @@ class RequestValidationController(ObjectValidationController):
         :param task_id:         The id of the task to drop
         :return:                Response if invalid, else a complex dict
         """
-        task = self.check_task_id(task_id, kwargs['req_user'].org_id)
+        task = self.check_task_id(task_id, kwargs["req_user"].org_id)
 
         if task.assignee is None:
             raise ValidationError("Can't drop task because it is not assigned to anyone.")
@@ -186,7 +179,7 @@ class RequestValidationController(ObjectValidationController):
         :param email:   The email to validate
         :return:        True if the email is valid, or a Flask Response.
         """
-        if validate_email(self.check_str(email, 'email')) is False:
+        if validate_email(self.check_str(email, "email")) is False:
             raise ValidationError("Invalid email")
         return True
 
@@ -225,15 +218,17 @@ class RequestValidationController(ObjectValidationController):
         """ Validate that two dates are a valid comparision period """
         # check they exist in the request and can be converted to dates
         try:
-            _start_period = self.check_str(request_body['start_period'], 'start_period')
-            _end_period = self.check_str(request_body['end_period'], 'end_period')
-            start_period = datetime.datetime.strptime(_start_period, app.config['REQUEST_DATE_FORMAT'])
-            end_period = datetime.datetime.strptime(_end_period, app.config['REQUEST_DATE_FORMAT'])
+            _start_period = self.check_str(request_body["start_period"], "start_period")
+            _end_period = self.check_str(request_body["end_period"], "end_period")
+            start_period = datetime.datetime.strptime(_start_period, app.config["REQUEST_DATE_FORMAT"])
+            end_period = datetime.datetime.strptime(_end_period, app.config["REQUEST_DATE_FORMAT"])
         except KeyError as e:
             raise ValidationError(f"Missing {e} from request body")
         except ValueError:
-            raise ValidationError("Couldn't convert start_period|end_period to datetime.datetime, make sure they're "
-                                  f"in the format {app.config['REQUEST_DATE_FORMAT']}")
+            raise ValidationError(
+                "Couldn't convert start_period|end_period to datetime.datetime, make sure they're "
+                f"in the format {app.config['REQUEST_DATE_FORMAT']}"
+            )
 
         # start must be before end
         if end_period < start_period:
@@ -247,16 +242,16 @@ class RequestValidationController(ObjectValidationController):
 
     def validate_transition_task(self, request_body: dict, **kwargs) -> tuple:
         """ Validates the transition task request """
-        task = self.check_task_id(request_body.get('task_id'), kwargs['req_user'].org_id)
+        task = self.check_task_id(request_body.get("task_id"), kwargs["req_user"].org_id)
         if task.assignee is not None:
             self.check_auth_scope(task.assignees, **kwargs)
-        task_status = self.check_task_status(request_body.get('task_status'))
+        task_status = self.check_task_status(request_body.get("task_status"))
         return task, task_status
 
     def validate_update_org_request(self, req_user: User, request_body: dict) -> str:
         """ Validates a create org request body """
-        org_name = self.check_str(request_body.get('org_name'), 'org_name')
-        org_id = self.check_int(request_body.get('org_id'), 'org_id')
+        org_name = self.check_str(request_body.get("org_name"), "org_name")
+        org_id = self.check_int(request_body.get("org_id"), "org_id")
 
         with session_scope() as session:
             # check org exists
@@ -269,12 +264,11 @@ class RequestValidationController(ObjectValidationController):
                 raise ValidationError("You can only update your own organisation's name.")
 
             # check an org with that name doesn't exist already
-            org_name_exists = session.query(exists().where(
-                and_(
-                    func.lower(Organisation.name) == func.lower(org_name),
-                    Organisation.id != req_user.org_id
+            org_name_exists = session.query(
+                exists().where(
+                    and_(func.lower(Organisation.name) == func.lower(org_name), Organisation.id != req_user.org_id)
                 )
-            )).scalar()
+            ).scalar()
 
             if org_name_exists:
                 raise ValidationError("That organisation name already exists.")
@@ -294,46 +288,42 @@ class RequestValidationController(ObjectValidationController):
 
     def validate_update_task_request(self, request_body: dict, **kwargs) -> dict:
         """Validates an update task request"""
-        task = self.check_task_id(request_body.get('id'), kwargs['req_user'].org_id)
+        task = self.check_task_id(request_body.get("id"), kwargs["req_user"].org_id)
         return {
-            'task': task,
-            'type': self.check_task_type_id(request_body.get('type_id')),
-            'description': self.check_optional_str(request_body.get('description'), 'description'),
-            'status': self.check_task_status(request_body.get('status')),
-            'time_estimate': self.check_optional_int(request_body.get('time_estimate'), 'time_estimate'),
-            'scheduled_for': self.check_optional_date(request_body.get('scheduled_for'), 'scheduled_for'),
-            'scheduled_notification_period': self.check_optional_int(
-                request_body.get('scheduled_notification_period'), 'scheduled_notification_period'
+            "task": task,
+            "type": self.check_task_type_id(request_body.get("type_id")),
+            "description": self.check_optional_str(request_body.get("description"), "description"),
+            "status": self.check_task_status(request_body.get("status")),
+            "time_estimate": self.check_optional_int(request_body.get("time_estimate"), "time_estimate"),
+            "scheduled_for": self.check_optional_date(request_body.get("scheduled_for"), "scheduled_for"),
+            "scheduled_notification_period": self.check_optional_int(
+                request_body.get("scheduled_notification_period"), "scheduled_notification_period"
             ),
-            'assignee': self.check_task_assignee(request_body.get('assignee'), **kwargs),
-            'priority': self.check_task_priority(request_body.get('priority')),
-            'labels': self.check_task_labels(request_body.get('labels', []), kwargs['req_user'].org_id)
+            "assignee": self.check_task_assignee(request_body.get("assignee"), **kwargs),
+            "priority": self.check_task_priority(request_body.get("priority")),
+            "labels": self.check_task_labels(request_body.get("labels", []), kwargs["req_user"].org_id),
         }
 
     def validate_update_task_type_request(self, org_id: int, request_body: dict) -> typing.Tuple[TaskType, dict, list]:
         """ Validates an update task type request body """
         # check label and that escalations are in the request
-        label = self.check_str(request_body.get('label'), 'label')
+        label = self.check_str(request_body.get("label"), "label")
 
         defaults = {
             "default_description": self.check_optional_str(
-                request_body.get('default_description'), 'default_description'
+                request_body.get("default_description"), "default_description"
             ),
             "default_time_estimate": self.check_optional_int(
-                param=request_body.get('default_time_estimate'),
-                param_name='default_time_estimate',
-                allow_negative=True
+                param=request_body.get("default_time_estimate"), param_name="default_time_estimate", allow_negative=True
             ),
             "default_priority": self.check_optional_int(
-                param=request_body.get('default_priority'),
-                param_name='default_priority',
-                allow_negative=True
+                param=request_body.get("default_priority"), param_name="default_priority", allow_negative=True
             ),
         }
 
         # check that the task type exists
         with session_scope() as session:
-            task_type = session.query(TaskType).filter_by(id=request_body['id'], org_id=org_id).first()
+            task_type = session.query(TaskType).filter_by(id=request_body["id"], org_id=org_id).first()
             if task_type is None:
                 raise ResourceNotFoundError(f"Task type {label} doesn't exist.")
 
@@ -341,55 +331,52 @@ class RequestValidationController(ObjectValidationController):
                 raise ValidationError(f"Task type {label} is disabled.")
 
             # check if it's a new label and it already exists
-            label_exists = session.query(exists().where(
-                and_(
-                    func.lower(TaskType.label) == func.lower(label),
-                    TaskType.org_id == org_id
-                )
-            )).scalar()
+            label_exists = session.query(
+                exists().where(and_(func.lower(TaskType.label) == func.lower(label), TaskType.org_id == org_id))
+            ).scalar()
 
             if task_type.label != label and label_exists:
-                raise ValidationError(f"{task_type.label} cannot be renamed to {label} because a task type with "
-                                      f"this name already exists.")
+                raise ValidationError(
+                    f"{task_type.label} cannot be renamed to {label} because a task type with "
+                    f"this name already exists."
+                )
 
         # check the escalations
-        if not isinstance(request_body.get('escalation_policies'), list):
+        if not isinstance(request_body.get("escalation_policies"), list):
             raise ValidationError(f"Missing escalation_policies from update task type request")
 
         valid_escalations = []
 
-        for escalation in request_body['escalation_policies']:
+        for escalation in request_body["escalation_policies"]:
             esc_attrs = {
-                "display_order": self.check_int(escalation.get('display_order'), 'display_order'),
-                "delay": self.check_int(escalation.get('delay'), 'delay'),
-                "from_priority": self.check_task_priority(escalation.get('from_priority')),
-                "to_priority": self.check_task_priority(escalation.get('to_priority'))
+                "display_order": self.check_int(escalation.get("display_order"), "display_order"),
+                "delay": self.check_int(escalation.get("delay"), "delay"),
+                "from_priority": self.check_task_priority(escalation.get("from_priority")),
+                "to_priority": self.check_task_priority(escalation.get("to_priority")),
             }
 
             with session_scope() as session:
-                escalation_exists = session.query(exists().where(
-                    and_(
-                        TaskTypeEscalation.task_type_id == task_type.id,
-                        TaskTypeEscalation.display_order == esc_attrs['display_order']
+                escalation_exists = session.query(
+                    exists().where(
+                        and_(
+                            TaskTypeEscalation.task_type_id == task_type.id,
+                            TaskTypeEscalation.display_order == esc_attrs["display_order"],
+                        )
                     )
-                )).scalar()
+                ).scalar()
 
                 if escalation_exists:
                     # validate update
                     self.check_escalation(
-                        task_type_id=task_type.id,
-                        display_order=esc_attrs['display_order'],
-                        should_exist=True
+                        task_type_id=task_type.id, display_order=esc_attrs["display_order"], should_exist=True
                     )
-                    esc_attrs['action'] = 'update'
+                    esc_attrs["action"] = "update"
                 else:
                     # validate create
                     self.check_escalation(
-                        task_type_id=task_type.id,
-                        display_order=esc_attrs['display_order'],
-                        should_exist=False
+                        task_type_id=task_type.id, display_order=esc_attrs["display_order"], should_exist=False
                     )
-                    esc_attrs['action'] = 'create'
+                    esc_attrs["action"] = "create"
 
             valid_escalations.append(esc_attrs)
 
@@ -397,21 +384,21 @@ class RequestValidationController(ObjectValidationController):
 
     def validate_update_user_request(self, request_body: dict, **kwargs) -> dict:
         """  Validates an update user request body """
-        user_to_update = self.check_user_id(request_body.get('id'), should_exist=True)
+        user_to_update = self.check_user_id(request_body.get("id"), should_exist=True)
         self.check_auth_scope(user_to_update, **kwargs)
         return {
             "id": user_to_update.id,
-            "first_name": self.check_str(request_body.get('first_name'), 'first_name'),
-            "last_name": self.check_str(request_body.get('last_name'), 'last_name'),
-            "role": self.check_user_role(kwargs['req_user'], request_body.get('role_id'), user_to_update),
-            "job_title": self.check_optional_str(request_body.get('job_title'), 'job_title'),
-            "disabled": self.check_user_disabled(request_body.get('disabled'))
+            "first_name": self.check_str(request_body.get("first_name"), "first_name"),
+            "last_name": self.check_str(request_body.get("last_name"), "last_name"),
+            "role": self.check_user_role(kwargs["req_user"], request_body.get("role_id"), user_to_update),
+            "job_title": self.check_optional_str(request_body.get("job_title"), "job_title"),
+            "disabled": self.check_user_disabled(request_body.get("disabled")),
         }
 
     def validate_password_link(self) -> None:
         """Validates that the token query string param is valid"""
         try:
-            token = request.args['token']
+            token = request.args["token"]
         except KeyError:
             raise ValidationError("Missing token from request.")
 
@@ -419,22 +406,22 @@ class RequestValidationController(ObjectValidationController):
 
     def validate_password_setup_request(self, request_body: dict) -> typing.Tuple[UserPasswordToken, str]:
         """Validates the create first time password link"""
-        password_token = self.validate_password_token(request_body.get('token'))
-        password = self.validate_password(request_body.get('password'))
+        password_token = self.validate_password_token(request_body.get("token"))
+        password = self.validate_password(request_body.get("password"))
 
         return password_token, password
 
     def validate_create_task_label_request(self, request_body: dict) -> typing.Tuple[str, str]:
         """Validates that the incoming task label is valid"""
-        label = self.check_str(request_body.get('label'), 'label')
-        colour = self.check_str(request_body.get('colour'), 'colour')
+        label = self.check_str(request_body.get("label"), "label")
+        colour = self.check_str(request_body.get("colour"), "colour")
         return label, colour
 
     def validate_update_task_labels_request(self, request_body: dict, org_id: int) -> TaskLabel:
         """Validates that the incoming task labels are valid"""
-        label_id = self.check_int(request_body.get('id'), 'id')
-        self.check_str(request_body.get('label'), 'label')
-        self.check_str(request_body.get('colour'), 'colour')
+        label_id = self.check_int(request_body.get("id"), "id")
+        self.check_str(request_body.get("label"), "label")
+        self.check_str(request_body.get("colour"), "colour")
 
         with session_scope() as session:
             task_label = session.query(TaskLabel).filter_by(id=label_id, org_id=org_id).first()
@@ -446,7 +433,7 @@ class RequestValidationController(ObjectValidationController):
 
     def validate_delete_task_labels_request(self, label_id: int, org_id: int) -> TaskLabel:
         """Validates that the incoming task labels are valid"""
-        label_id = self.check_int(label_id, 'label_id')
+        label_id = self.check_int(label_id, "label_id")
 
         with session_scope() as session:
             task_label = session.query(TaskLabel).filter_by(id=label_id, org_id=org_id).first()
@@ -458,8 +445,8 @@ class RequestValidationController(ObjectValidationController):
 
     def validate_silence_notifications_request(self, request_body: dict) -> typing.Tuple[typing.Union[int, None], int]:
         """Validates the silencing notifications"""
-        silence_until = self.check_optional_date(request_body.get('silence_until'), 'silence_until')
-        silenced_option = self.check_int(request_body.get('silenced_option'), 'silenced_option')
+        silence_until = self.check_optional_date(request_body.get("silence_until"), "silence_until")
+        silenced_option = self.check_int(request_body.get("silenced_option"), "silenced_option")
         if silence_until is not None:
             return int(silence_until.timestamp()), silenced_option
         else:
@@ -467,7 +454,7 @@ class RequestValidationController(ObjectValidationController):
 
     def validate_resend_welcome_request(self, request_body: dict) -> typing.Tuple[User, str]:
         """Validate the resend welcome request"""
-        user = self.check_user_id(request_body.get('user_id'), should_exist=True)
+        user = self.check_user_id(request_body.get("user_id"), should_exist=True)
 
         # check if invite accepted
         token = user.get_password_token()

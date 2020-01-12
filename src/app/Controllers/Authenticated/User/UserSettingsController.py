@@ -14,18 +14,13 @@ from app.Models.Response import message_response_dto, get_silenced_info_dto
 from app.Models.Response.Account import user_settings_response
 from app.Services.SettingsService import SettingsService
 
-user_settings_route = Namespace(
-    path="/user/settings",
-    name="User",
-    description="Manage a user"
-)
+user_settings_route = Namespace(path="/user/settings", name="User", description="Manage a user")
 
 settings_service = SettingsService()
 
 
 @user_settings_route.route("/")
 class UserSettingsController(RequestValidationController):
-
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.USER_SETTINGS)
@@ -34,12 +29,8 @@ class UserSettingsController(RequestValidationController):
     @user_settings_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs) -> Response:
         """Returns the user's settings"""
-        req_user = kwargs['req_user']
-        req_user.log(
-            operation=Operations.GET,
-            resource=Resources.USER_SETTINGS,
-            resource_id=req_user.id
-        )
+        req_user = kwargs["req_user"]
+        req_user.log(operation=Operations.GET, resource=Resources.USER_SETTINGS, resource_id=req_user.id)
         logger.info(f"got user settings for {req_user.id}")
         return self.ok(settings_service.get_user_settings(req_user.id).as_dict())
 
@@ -53,25 +44,20 @@ class UserSettingsController(RequestValidationController):
     @user_settings_route.response(404, "User does not exist", message_response_dto)
     def put(self, **kwargs) -> Response:
         """Updates the user's settings"""
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
 
         new_settings = UserSetting(user_id=Decimal(req_user.id))
         for k, v in request.get_json().items():
             new_settings.__setattr__(k, v)
 
         settings_service.set_user_settings(new_settings)
-        req_user.log(
-            operation=Operations.UPDATE,
-            resource=Resources.USER_SETTINGS,
-            resource_id=req_user.id
-        )
+        req_user.log(operation=Operations.UPDATE, resource=Resources.USER_SETTINGS, resource_id=req_user.id)
         logger.info(f"updated user {req_user.id} settings")
         return self.ok(new_settings.as_dict())
 
 
 @user_settings_route.route("/silence-notifications")
 class NotificationSnooze(RequestValidationController):
-
     @handle_exceptions
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER_SETTINGS)
@@ -83,15 +69,13 @@ class NotificationSnooze(RequestValidationController):
     def put(self, **kwargs):
         """Silence notifications for a user"""
         request_body = request.get_json()
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
 
         silence_until, silenced_option = self.validate_silence_notifications_request(request_body)
 
-        notification_api.silence_notifications({
-            "user_id": req_user.id,
-            "silence_until": silence_until,
-            "silenced_option": silenced_option
-        })
+        notification_api.silence_notifications(
+            {"user_id": req_user.id, "silence_until": silence_until, "silenced_option": silenced_option}
+        )
 
         return self.no_content()
 
@@ -104,7 +88,7 @@ class NotificationSnooze(RequestValidationController):
     @user_settings_route.response(404, "User does not exist", message_response_dto)
     def delete(self, **kwargs):
         """Un-silence notifications for a user"""
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
         notification_api.unsilence_notifications({"user_id": req_user.id})
         return self.no_content()
 
@@ -116,17 +100,14 @@ class NotificationSnooze(RequestValidationController):
     @user_settings_route.response(403, "Insufficient privileges", message_response_dto)
     def get(self, **kwargs):
         """Get the info from when notifications were silenced"""
-        req_user = kwargs['req_user']
+        req_user = kwargs["req_user"]
 
         info = notification_api.get_silenced_option(req_user.id)
 
-        if info.get('silence_until') is not None:
-            silence_until_date = datetime.datetime.utcfromtimestamp(info.get('silence_until'))
-            silence_until = silence_until_date.strftime(app.config['RESPONSE_DATE_FORMAT'])
+        if info.get("silence_until") is not None:
+            silence_until_date = datetime.datetime.utcfromtimestamp(info.get("silence_until"))
+            silence_until = silence_until_date.strftime(app.config["RESPONSE_DATE_FORMAT"])
         else:
             silence_until = None
 
-        return self.ok({
-            "silence_until": silence_until,
-            "silenced_option": info.get('silenced_option')
-        })
+        return self.ok({"silence_until": silence_until, "silenced_option": info.get("silenced_option")})

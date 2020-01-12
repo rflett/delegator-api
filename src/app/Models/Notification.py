@@ -16,7 +16,7 @@ class Notification(object):
 
     def push(self) -> None:
         """ Publish the message to SNS for pushing to the user """
-        if app_env == 'Local':
+        if app_env == "Local":
             logger.info(f"WOULD have pushed notification {self.as_dict()} to NotificationApi")
             return None
         notification_api.send_notification(self.as_dict())
@@ -29,8 +29,5 @@ class Notification(object):
             "msg": self.msg,
             "user_ids": self.user_ids,
             "click_action": self.click_action,
-            "action_ids": {
-                "user_id": self.user_action_id,
-                "task_id": self.task_action_id
-            }
+            "action_ids": {"user_id": self.user_action_id, "task_id": self.task_action_id},
         }

@@ -13,14 +13,11 @@ class BaseWrapper(object):
         """Create a JWT token to make requests to other services"""
         return jwt.encode(
             payload={
-                "claims": {
-                    "type": "service-account",
-                    "service-account-name": "delegator-api"
-                },
+                "claims": {"type": "service-account", "service-account-name": "delegator-api"},
                 "jti": str(uuid.uuid4()),
                 "aud": "delegator.com.au",
-                "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=30)
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=30),
             },
             key=self._jwt_secret,
-            algorithm='HS256'
+            algorithm="HS256",
         ).decode("utf-8")

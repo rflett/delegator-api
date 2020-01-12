@@ -6,12 +6,4 @@ from app.Models.Enums.ResourceScopes import ResourceScopes
 from app.Models.Enums.Roles import Roles
 from app.Models.Enums.TaskStatuses import TaskStatuses
 
-__all__ = [
-    ClickActions,
-    Events,
-    Operations,
-    Roles,
-    Resources,
-    ResourceScopes,
-    TaskStatuses
-]
+__all__ = [ClickActions, Events, Operations, Roles, Resources, ResourceScopes, TaskStatuses]

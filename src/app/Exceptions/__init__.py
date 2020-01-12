@@ -1,5 +1,11 @@
-from app.Exceptions.Exceptions import AuthenticationError, AuthorizationError, ProductTierLimitError, \
-    ValidationError, WrapperCallFailedException, ResourceNotFoundError
+from app.Exceptions.Exceptions import (
+    AuthenticationError,
+    AuthorizationError,
+    ProductTierLimitError,
+    ValidationError,
+    WrapperCallFailedException,
+    ResourceNotFoundError,
+)
 
 
 __all__ = [
@@ -8,5 +14,5 @@ __all__ = [
     ProductTierLimitError,
     ValidationError,
     WrapperCallFailedException,
-    ResourceNotFoundError
+    ResourceNotFoundError,
 ]

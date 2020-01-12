@@ -15,14 +15,11 @@ class AuthService(object):
         """Determine the requester and return their object"""
         try:
             # get token from header
-            auth = request.headers['Authorization']
-            token = auth.replace('Bearer ', '')
+            auth = request.headers["Authorization"]
+            token = auth.replace("Bearer ", "")
             # decode JWT
             decoded = jwt.decode(
-                jwt=token,
-                key=app.config['JWT_SECRET'],
-                audience='delegator.com.au',
-                algorithms='HS256'
+                jwt=token, key=app.config["JWT_SECRET"], audience="delegator.com.au", algorithms="HS256"
             )
         except (KeyError, AttributeError) as e:
             raise AuthorizationError(f"Invalid request - {e}")
@@ -33,12 +30,12 @@ class AuthService(object):
 
         document = xray_recorder.current_segment()
 
-        if decoded['claims']['type'] == 'user':
-            document.set_user(str(decoded['claims']['user-id']))
-            return self._get_user(decoded['claims']['user-id'])
-        elif decoded['claims']['type'] == 'service-account':
-            document.set_user(str(decoded['claims']['service-account-name']))
-            return self._get_service_account(decoded['claims']['service-account-name'])
+        if decoded["claims"]["type"] == "user":
+            document.set_user(str(decoded["claims"]["user-id"]))
+            return self._get_user(decoded["claims"]["user-id"])
+        elif decoded["claims"]["type"] == "service-account":
+            document.set_user(str(decoded["claims"]["service-account-name"]))
+            return self._get_service_account(decoded["claims"]["service-account-name"])
         else:
             raise AuthorizationError("Can't determine requester type from token.")
 
