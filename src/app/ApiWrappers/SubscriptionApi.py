@@ -54,13 +54,13 @@ class SubscriptionApi(BaseWrapper):
         else:
             raise WrapperCallFailedException(f"Subscription API - {r.status_code} - {r.text}")
 
-    def get_customer(self, customer_id: str) -> dict:
-        """Get a customer"""
+    def get_subscription(self, subscription_id: str) -> dict:
+        """Get a subscription"""
         if getenv("MOCK_SERVICES"):
             return {}
         try:
             r = requests.get(
-                url=f"{self.url}/customer/?customer_id={customer_id}",
+                url=f"{self.url}/subscription/{subscription_id}",
                 headers={"Authorization": f"Bearer {self.create_sa_token()}"},
                 timeout=10,
             )
@@ -71,7 +71,7 @@ class SubscriptionApi(BaseWrapper):
         else:
             raise WrapperCallFailedException(f"Subscription API - {r.status_code}")
 
-    def create_customer(self, plan_id: str, user_dict: dict, org_name: str) -> dict:
+    def create_customer(self, plan_id: str, user_dict: dict) -> dict:
         """Create a customer on chargebee with the signup details"""
         if getenv("MOCK_SERVICES"):
             return {"customer_id": "mock_cust_id", "subscription_id": "mock_sub_id", "url": "https://delegator.com.au"}
