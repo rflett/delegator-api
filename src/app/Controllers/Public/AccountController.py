@@ -83,9 +83,7 @@ class AccountController(RequestValidationController):
         logger.info(f"User {user.id} signed up.")
 
         try:
-            response = subscription_api.create_customer(
-                plan_id=request_body.get("plan_id"), user_dict=user.as_dict(), org_name=organisation.name
-            )
+            response = subscription_api.create_customer(request_body.get("plan_id"), user.as_dict())
         except WrapperCallFailedException as e:
             logger.error(str(e))
             return self.unprocessable(
@@ -120,12 +118,11 @@ class AccountController(RequestValidationController):
             # check that the org is setup
             if not user.orgs.chargebee_setup_complete:
                 # check with the subscription api to see if it has been completed
-                customer = subscription_api.get_customer(user.orgs.chargebee_customer_id)
-                if not customer["meta_data"]["signup_finished"]:
+                customer_id = user.orgs.chargebee_customer_id
+                subscription = subscription_api.get_subscription(customer_id)
+                if not subscription["id"] == customer_id:
                     # redirect to setup chargebee stuff
-                    url = subscription_api.checkout_subscription(
-                        customer_id=customer["id"], plan_id=user.orgs.chargebee_signup_plan
-                    )
+                    url = subscription_api.checkout_subscription(subscription["id"], user.orgs.chargebee_signup_plan)
                     return self.ok({"url": url})
                 else:
                     # the setup has been complete, and the webhook probably hasn't occurred fast enough
