@@ -12,9 +12,7 @@ class TaskType(db.Model):
     org_id = db.Column("org_id", db.Integer, db.ForeignKey("organisations.id"))
     disabled = db.Column("disabled", db.DateTime, default=None)
     default_time_estimate = db.Column("default_time_estimate", db.Integer, default=-1)
-    default_priority = db.Column(
-        "default_priority", db.Integer, db.ForeignKey("task_priorities.priority"), default=-1
-    )
+    default_priority = db.Column("default_priority", db.Integer, db.ForeignKey("task_priorities.priority"), default=-1)
     default_description = db.Column("default_description", db.String)
 
     orgs = db.relationship("Organisation")

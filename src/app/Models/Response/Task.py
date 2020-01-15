@@ -18,7 +18,7 @@ task_status_dto = api.model(
     },
 )
 
-task_priority_dto = api.model("Task Priority", {"priority": fields.Integer(min=0, max=1), "label": fields.String(),})
+task_priority_dto = api.model("Task Priority", {"priority": fields.Integer(min=0, max=1), "label": fields.String()})
 
 task_statuses_response = api.model("Task Statuses Response", {"statuses": fields.List(fields.Nested(task_status_dto))})
 

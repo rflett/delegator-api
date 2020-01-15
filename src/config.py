@@ -11,6 +11,7 @@ class Config(object):
     REQUEST_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
     RESPONSE_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
     DYN_DB_ACTIVITY_DATE_FORMAT = "%Y%m%dT%H%M%S.%fZ"
+    SENTRY_DSN = "https://1b44956bd3544f70b7ae66f0c126b76f@sentry.io/1881906"
 
 
 class Dev(Config):
