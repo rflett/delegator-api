@@ -13,6 +13,4 @@ class VersionController(RequestValidationController):
     @version_route.response(200, "Version Info", version_route.model("Version", {"commit_sha": fields.String}))
     def get(self) -> Response:
         """ Returns details of the running application for debugging/verification """
-        # TODO testing sentry
-        division_by_zero = 1 / 0
         return self.ok({"commit_sha": environ.get("COMMIT_SHA")})

@@ -128,7 +128,7 @@ class User(db.Model):
         """
         return {
             "aud": "delegator.com.au",
-            "claims": {"role": self.role, "org": self.org_id, "user-id": self.id, "type": "user"},
+            "claims": {"role": self.role, "org": self.org_id, "user-id": self.id, "type": "user", "email": self.email},
         }
 
     def log(self, operation: str, resource: str, resource_id: typing.Union[int, None] = None) -> None:

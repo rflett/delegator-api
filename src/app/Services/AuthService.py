@@ -3,6 +3,7 @@ import typing
 import jwt
 from flask import request
 from aws_xray_sdk.core import xray_recorder
+from sentry_sdk import configure_scope
 
 from app import logger, session_scope, app
 from app.Exceptions import ResourceNotFoundError, AuthorizationError
@@ -29,15 +30,18 @@ class AuthService(object):
             raise AuthorizationError("Couldn't validate the JWT.")
 
         document = xray_recorder.current_segment()
+        with configure_scope as sentry_scope:
 
-        if decoded["claims"]["type"] == "user":
-            document.set_user(str(decoded["claims"]["user-id"]))
-            return self._get_user(decoded["claims"]["user-id"])
-        elif decoded["claims"]["type"] == "service-account":
-            document.set_user(str(decoded["claims"]["service-account-name"]))
-            return self._get_service_account(decoded["claims"]["service-account-name"])
-        else:
-            raise AuthorizationError("Can't determine requester type from token.")
+            if decoded["claims"]["type"] == "user":
+                document.set_user(str(decoded["claims"]["user-id"]))
+                sentry_scope.user = {"id": str(decoded["claims"]["user-id"]), "email": decoded["claims"]["email"]}
+                return self._get_user(decoded["claims"]["user-id"])
+            elif decoded["claims"]["type"] == "service-account":
+                document.set_user(str(decoded["claims"]["service-account-name"]))
+                sentry_scope.user = {"id": str(decoded["claims"]["service-account-name"])}
+                return self._get_service_account(decoded["claims"]["service-account-name"])
+            else:
+                raise AuthorizationError("Can't determine requester type from token.")
 
     @staticmethod
     def _get_user(user_id: int) -> User:
