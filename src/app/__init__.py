@@ -12,6 +12,7 @@ from aws_xray_sdk.ext.flask_sqlalchemy.query import XRayFlaskSqlAlchemy
 from flask import Flask, url_for
 from flask_cors import CORS
 from flask_restplus import Api
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 from config_ssm import SsmConfig
 from config_secretsman import SecretsManConfig
@@ -27,7 +28,9 @@ if app_env not in ["Local", "Docker", "Ci"]:
     params = SsmConfig().get_params(app_env)
     app.config.update(params)
     # sentry
-    sentry_sdk.init(app.config["SENTRY_DSN"], environment=app_env)
+    sentry_sdk.init(
+        app.config["SENTRY_DSN"], environment=app_env, integrations=[FlaskIntegration()]
+    )
 
 # load secrets from aws secrets manager in production
 if app_env == "Production":
