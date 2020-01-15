@@ -1,4 +1,3 @@
-import json
 import logging
 from contextlib import contextmanager
 from os import getenv
@@ -22,15 +21,40 @@ app = Flask(__name__)
 app_env = getenv("APP_ENV", "Local")
 app.config.from_object(f"config.{app_env}")
 
+# xray
+xray_recorder.configure(
+    service="delegator-api",
+    context_missing="LOG_ERROR",
+    plugins=("ECSPlugin",),
+    sampling_rules={
+        "version": 2,
+        "rules": [
+            {
+                "description": "Ignore health checks",
+                "host": "*",
+                "http_method": "*",
+                "url_path": "/health/",
+                "fixed_target": 0,
+                "rate": 0,
+            }
+        ],
+        "default": {"fixed_target": 0, "rate": 0},
+    },
+)
+XRayMiddleware(app, xray_recorder)
+logging.getLogger("aws_xray_sdk").setLevel(logging.WARNING)
+
+# begin init segment
+init_segment = xray_recorder.begin_segment("init")
+init_subsegment = xray_recorder.begin_subsegment("init")
+
 # load in values from parameter store in higher envs
 if app_env not in ["Local", "Docker", "Ci"]:
     # parameter store
     params = SsmConfig().get_params(app_env)
     app.config.update(params)
     # sentry
-    sentry_sdk.init(
-        app.config["SENTRY_DSN"], environment=app_env, integrations=[FlaskIntegration()]
-    )
+    sentry_sdk.init(app.config["SENTRY_DSN"], environment=app_env, integrations=[FlaskIntegration()])
 
 # load secrets from aws secrets manager in production
 if app_env == "Production":
@@ -39,15 +63,6 @@ if app_env == "Production":
 
 app.config["SQLALCHEMY_DATABASE_URI"] = app.config["DB_URI"]
 
-# xray
-xray_recorder.configure(
-    service="delegator-api",
-    context_missing="LOG_ERROR",
-    plugins=("ECSPlugin",),
-    sampling_rules=json.loads(app.config["XRAY_RULE_IGNORE_HEALTH"]),
-)
-XRayMiddleware(app, xray_recorder)
-logging.getLogger("aws_xray_sdk").setLevel(logging.WARNING)
 
 # flask profiler
 app.config["flask_profiler"] = {
@@ -133,9 +148,10 @@ for route in sorted(all_routes, key=lambda x: x.name):
 
 api.init_app(app)
 
-# xray
+# finish xray init
 patch_all()
-
+xray_recorder.end_subsegment()
+xray_recorder.end_segment()
 
 if app_env not in ["Local", "Docker", "Ci"]:
     # flask profiler
