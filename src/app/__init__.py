@@ -5,6 +5,7 @@ from os import getenv
 
 import boto3
 import flask_profiler
+import sentry_sdk
 from aws_xray_sdk.core import xray_recorder, patch_all
 from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 from aws_xray_sdk.ext.flask_sqlalchemy.query import XRayFlaskSqlAlchemy
@@ -25,6 +26,8 @@ if app_env not in ["Local", "Docker", "Ci"]:
     # parameter store
     params = SsmConfig().get_params(app_env)
     app.config.update(params)
+    # sentry
+    sentry_sdk.init(app.config["SENTRY_DSN"], environment=app_env)
 
 # load secrets from aws secrets manager in production
 if app_env == "Production":

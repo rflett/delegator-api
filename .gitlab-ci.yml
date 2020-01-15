@@ -5,8 +5,8 @@ stages:
   - Deploy
 
 variables:
-  AMZ_REGISTRY: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com
-  GITLAB_REGISTRY: registry.gitlab.com/delegator-au/containers
+  AMZ_REGISTRY: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/delegator-api
+  GITLAB_REGISTRY: registry.gitlab.com/delegator-au/infrastructure/containers
   IMAGE_TAG: $CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
 
 Flake8:
@@ -31,18 +31,15 @@ Build:
     # docker-login to ecr
     - eval $(aws ecr get-login --no-include-email --registry-ids 650215746119)
     # build, tag, and push commit
-    - docker pull $AMZ_REGISTRY/delegator-api:latest
-    - docker build --build-arg COMMIT_SHA=$CI_COMMIT_SHORT_SHA -t $AMZ_REGISTRY/delegator-api:$IMAGE_TAG --cache-from $AMZ_REGISTRY/delegator-api:latest src/
-    - docker push $AMZ_REGISTRY/delegator-api:$IMAGE_TAG
+    - docker pull $AMZ_REGISTRY:latest
+    - docker build --build-arg COMMIT_SHA=$CI_COMMIT_SHORT_SHA -t $AMZ_REGISTRY:$IMAGE_TAG --cache-from $AMZ_REGISTRY:latest src/
+    - docker push $AMZ_REGISTRY:$IMAGE_TAG
     # tag and push latest
-    - docker tag $AMZ_REGISTRY/delegator-api:$IMAGE_TAG $AMZ_REGISTRY/delegator-api:latest
-    - docker push $AMZ_REGISTRY/delegator-api:latest
+    - docker tag $AMZ_REGISTRY:$IMAGE_TAG $AMZ_REGISTRY:latest
+    - docker push $AMZ_REGISTRY:latest
 
 .deploy:
   stage: Deploy
-  environment:
-    name: $DEPLOY_ENV
-    url: https://api.$DEPLOY_ENV.delegator.com.au/
   only:
     - master
   script:
@@ -50,7 +47,7 @@ Build:
       -X POST
       -F token=4087c68b61838a88958e72580177a2 
       -F ref=master 
-      -F variables[IMAGE]=$AMZ_REGISTRY/delegator-api:$IMAGE_TAG
+      -F variables[IMAGE]=$AMZ_REGISTRY:$IMAGE_TAG
       -F variables[DEPLOY_ENV]=$DEPLOY_ENV 
       -F variables[PROJECT]=delegator-api
       https://gitlab.com/api/v4/projects/14042887/trigger/pipeline"
@@ -59,6 +56,9 @@ Staging:
   extends: .deploy
   variables:
     DEPLOY_ENV: staging
+  environment:
+    name: $DEPLOY_ENV
+    url: https://api.$DEPLOY_ENV.delegator.com.au/
 
 Production:
   extends: .deploy

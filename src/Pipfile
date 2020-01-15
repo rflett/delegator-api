@@ -21,6 +21,7 @@ werkzeug = "*"
 requests = "*"
 flask-restplus = "*"
 aws-xray-sdk = "*"
+sentry-sdk = "*"
 
 [requires]
 python_version = "3.7"
