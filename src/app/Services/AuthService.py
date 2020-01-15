@@ -30,15 +30,15 @@ class AuthService(object):
             raise AuthorizationError("Couldn't validate the JWT.")
 
         document = xray_recorder.current_segment()
-        with configure_scope as sentry_scope:
+        with configure_scope() as sentry_scope:
 
             if decoded["claims"]["type"] == "user":
                 document.set_user(str(decoded["claims"]["user-id"]))
-                sentry_scope.user = {"id": str(decoded["claims"]["user-id"]), "email": decoded["claims"]["email"]}
+                sentry_scope.set_user({"id": str(decoded["claims"]["user-id"]), "email": decoded["claims"]["email"]})
                 return self._get_user(decoded["claims"]["user-id"])
             elif decoded["claims"]["type"] == "service-account":
                 document.set_user(str(decoded["claims"]["service-account-name"]))
-                sentry_scope.user = {"id": str(decoded["claims"]["service-account-name"])}
+                sentry_scope.set_user({"id": str(decoded["claims"]["service-account-name"])})
                 return self._get_service_account(decoded["claims"]["service-account-name"])
             else:
                 raise AuthorizationError("Can't determine requester type from token.")
