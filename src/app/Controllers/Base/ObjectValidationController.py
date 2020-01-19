@@ -143,7 +143,7 @@ class ObjectValidationController(ResponseController):
 
     def check_task_status(self, task_status: str) -> str:
         """Check that a task status exists."""
-        task_status = self.check_str(task_status, "task_status")
+        task_status = self.check_str(task_status, "status")
 
         with session_scope() as session:
             if not session.query(exists().where(TaskStatus.status == task_status)).scalar():

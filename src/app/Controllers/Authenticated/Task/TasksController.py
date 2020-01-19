@@ -9,7 +9,7 @@ from sqlalchemy.orm import aliased
 from app import session_scope
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
-from app.Models import User, Task
+from app.Models import User, Task, TaskLabel
 from app.Models.Enums import Operations, Resources
 from app.Models.Response import tasks_response, message_response_dto
 from app.Services import TaskService
@@ -58,7 +58,7 @@ class Tasks(RequestValidationController):
         tasks = []
 
         for t, ta, tcb, tfb in tasks_qry:
-            task_dict = t.as_dict()
+            task_dict = t.fat_dict()
             task_dict["assignee"] = ta.as_dict() if ta is not None else None
             task_dict["created_by"] = tcb.as_dict()
             task_dict["finished_by"] = tfb.as_dict() if tfb is not None else None

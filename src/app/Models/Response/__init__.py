@@ -11,7 +11,7 @@ from app.Models.Response.Organisation import (
 )
 from app.Models.Response.PasswordSetup import password_setup_response
 from app.Models.Response.Reporting import get_all_reports_response
-from app.Models.Response.Roles import roles_response
+from app.Models.Response.Roles import roles_response, role_dto
 from app.Models.Response.Task import (
     task_response,
     task_statuses_response,
@@ -40,6 +40,7 @@ __all__ = [
     message_response_dto,
     password_setup_response,
     roles_response,
+    role_dto,
     signup_response,
     task_response,
     task_label_dto,
