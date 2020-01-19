@@ -1,7 +1,7 @@
 from flask_restplus import fields
 
 from app import api
-from app.Models.Response import roles_response
+from app.Models.Response import role_dto
 from app.Models.Response.Account import user_settings_response
 from app.Models.Response.Common import NullableString, NullableDateTime
 
@@ -14,7 +14,7 @@ user_response = api.model(
         "email": fields.String,
         "first_name": fields.String,
         "last_name": fields.String,
-        "role": fields.Nested(roles_response),
+        "role": fields.Nested(role_dto),
         "role_before_locked": NullableString,
         "disabled": NullableDateTime,
         "job_title": fields.String,

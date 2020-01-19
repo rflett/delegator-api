@@ -14,7 +14,10 @@ class SubscriptionApi(BaseWrapper):
     def get_subscription_meta(self, subscription_id: str) -> dict:
         """Get a subscription's metadata"""
         if getenv("MOCK_SERVICES"):
-            return {}
+            return {
+                "status": "in_trial",
+                "meta_data": {}
+            }
         try:
             r = requests.get(
                 url=f"{self.url}/subscription/{subscription_id}/quantity",
