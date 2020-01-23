@@ -3,6 +3,7 @@ import datetime
 from flask import Response, request
 from flask_restplus import Namespace
 from sqlalchemy import and_
+from sqlalchemy.orm import aliased
 
 from app import session_scope, subscription_api, logger, email_api, app
 from app.Controllers.Base import RequestValidationController
@@ -34,11 +35,25 @@ class UserController(RequestValidationController):
 
         # query for all users in the requesting user's organisation
         with session_scope() as session:
+            this_user, created_by, updated_by = aliased(User), aliased(User), aliased(User)
             users_qry = (
-                session.query(User)
-                .join(Role, Role.id == User.role)
+                session.query(
+                    this_user,
+                    Role,
+                    created_by.first_name,
+                    created_by.last_name,
+                    updated_by.first_name,
+                    updated_by.last_name
+                )
+                .join(Role, Role.id == this_user.role)
+                .join(created_by, created_by.id == this_user.created_by)
+                .outerjoin(updated_by, updated_by.id == this_user.updated_by)
                 .filter(
-                    and_(User.org_id == req_user.org_id, Role.rank >= req_user.roles.rank, User.deleted == None)  # noqa
+                    and_(
+                        this_user.org_id == req_user.org_id,
+                        Role.rank >= req_user.roles.rank,
+                        this_user.deleted == None  # noqa
+                    )
                 )
                 .all()
             )
@@ -46,15 +61,27 @@ class UserController(RequestValidationController):
         users = []
 
         for user in users_qry:
-            with session_scope() as session:
-                created_by = session.query(User).filter_by(id=user.created_by).first()
-                updated_by = session.query(User).filter_by(id=user.updated_by).first()
+            (
+                user_,
+                role,
+                created_by_fn,
+                created_by_ln,
+                updated_by_fn,
+                updated_by_ln
+            ) = user
 
-            user_dict = user.as_dict()
-            # TODO change to user not their name?
-            user_dict["created_by"] = created_by.name()
-            user_dict["updated_by"] = updated_by.name() if updated_by is not None else None
-            user_dict["role"] = user.roles.as_dict()
+            created_by = created_by_fn + " " + created_by_ln
+
+            if updated_by_fn is not None and updated_by_ln is not None:
+                updated_by = updated_by_fn + " " + created_by_ln
+            else:
+                updated_by = None
+
+            user_dict = user_.as_dict()
+            user_dict["created_by"] = created_by
+            user_dict["updated_by"] = updated_by
+            user_dict["role"] = role.as_dict()
+
             users.append(user_dict)
 
         logger.info(f"found {len(users)} users.")
