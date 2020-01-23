@@ -51,7 +51,23 @@ task_response = api.model(
     },
 )
 
+min_task_response = api.model(
+    "Minimal Task Response",
+    {
+        "id": fields.Integer(),
+        "type": fields.String(),
+        "description": fields.String(),
+        "status": fields.String(),
+        "scheduled_for": NullableDateTime,
+        "assignee": fields.String(),
+        "priority": fields.Integer(),
+        "labels": fields.List(fields.Nested(task_label_dto)),
+    },
+)
+
 tasks_response = api.model("Tasks Response", {"tasks": fields.List(fields.Nested(task_response))})
+min_tasks_response = api.model("Tasks Response", {"tasks": fields.List(fields.Nested(min_task_response))})
+
 
 delayed_task_response = api.model(
     "Delayed Tasks Response",

@@ -19,6 +19,7 @@ from app.Models.Response.Task import (
     tasks_response,
     delayed_task_response,
     transition_tasks_response,
+    min_tasks_response
 )
 from app.Models.Response.TaskLabels import task_labels_response, task_label_dto
 from app.Models.Response.TaskTypes import task_type_response, task_types_response
@@ -38,6 +39,7 @@ __all__ = [
     get_org_response_dto,
     get_org_settings_response_dto,
     message_response_dto,
+    min_tasks_response,
     password_setup_response,
     roles_response,
     role_dto,
