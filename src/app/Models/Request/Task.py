@@ -32,7 +32,7 @@ create_task_request = api.model(
         "scheduled_notification_period": fields.Integer(),
         "assignee": fields.Integer(),
         "priority": fields.Integer(min=0, max=2),
-        "labels": fields.List(fields.Integer(), max_items=3)
+        "labels": fields.List(fields.Integer(), max_items=3),
     },
 )
 

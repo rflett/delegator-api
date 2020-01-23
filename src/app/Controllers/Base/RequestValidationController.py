@@ -68,7 +68,9 @@ class RequestValidationController(ObjectValidationController):
         return {
             "type": self.check_task_type_id(task_type_id=request_body.get("type_id")),
             "description": self.check_optional_str(request_body.get("description"), "description"),
-            "time_estimate": self.check_optional_int(request_body.get("time_estimate"), "time_estimate"),
+            "time_estimate": self.check_optional_int(
+                request_body.get("time_estimate"), "time_estimate", allow_negative=True
+            ),
             "scheduled_for": self.check_optional_date(request_body.get("scheduled_for"), "scheduled_for"),
             "scheduled_notification_period": self.check_optional_int(
                 request_body.get("scheduled_notification_period"), "scheduled_notification_period"
@@ -294,7 +296,9 @@ class RequestValidationController(ObjectValidationController):
             "type": self.check_task_type_id(request_body.get("type_id")),
             "description": self.check_optional_str(request_body.get("description"), "description"),
             "status": self.check_task_status(request_body.get("status")),
-            "time_estimate": self.check_optional_int(request_body.get("time_estimate"), "time_estimate"),
+            "time_estimate": self.check_optional_int(
+                request_body.get("time_estimate"), "time_estimate", allow_negative=True
+            ),
             "scheduled_for": self.check_optional_date(request_body.get("scheduled_for"), "scheduled_for"),
             "scheduled_notification_period": self.check_optional_int(
                 request_body.get("scheduled_notification_period"), "scheduled_notification_period"
