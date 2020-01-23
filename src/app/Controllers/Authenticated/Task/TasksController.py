@@ -96,6 +96,7 @@ class TasksMinimal(RequestValidationController):
                     Task.scheduled_for,
                     Task.status,
                     TaskType.label,
+                    User.id,
                     User.first_name,
                     User.last_name,
                     label1,
@@ -129,6 +130,7 @@ class TasksMinimal(RequestValidationController):
                 scheduled_for,
                 status,
                 type_,
+                assignee_id,
                 assignee_fn,
                 assignee_ln,
                 label_1,
@@ -157,6 +159,7 @@ class TasksMinimal(RequestValidationController):
                     "priority": priority,
                     "status": status,
                     "assignee": assignee,
+                    "assignee_id": assignee_id,
                     "labels": labels,
                     "scheduled_for": scheduled_for,
                 }

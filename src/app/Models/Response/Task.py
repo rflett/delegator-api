@@ -60,6 +60,7 @@ min_task_response = api.model(
         "status": fields.String(),
         "scheduled_for": NullableDateTime,
         "assignee": fields.String(),
+        "assignee_id": fields.Integer(),
         "priority": fields.Integer(),
         "labels": fields.List(fields.Nested(task_label_dto)),
     },
