@@ -6,10 +6,10 @@ from flask_restplus import Namespace
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import aliased
 
-from app import session_scope
+from app import session_scope, app
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
-from app.Models import User, Task, TaskLabel, TaskType, TaskStatus
+from app.Models import User, Task, TaskLabel, TaskType
 from app.Models.Enums import Operations, Resources
 from app.Models.Response import tasks_response, message_response_dto, min_tasks_response
 from app.Services import TaskService
@@ -144,6 +144,10 @@ class TasksMinimal(RequestValidationController):
 
             # convert labels to a list
             labels = [l.as_dict() for l in [label_1, label_2, label_3] if l is not None]
+
+            # convert scheduled for to date
+            if scheduled_for is not None:
+                scheduled_for = scheduled_for.strftime(app.config["RESPONSE_DATE_FORMAT"])
 
             tasks.append(
                 {
