@@ -19,7 +19,7 @@ from app.Models.Response.Task import (
     tasks_response,
     delayed_task_response,
     transition_tasks_response,
-    min_tasks_response
+    min_tasks_response,
 )
 from app.Models.Response.TaskLabels import task_labels_response, task_label_dto
 from app.Models.Response.TaskTypes import task_type_response, task_types_response
