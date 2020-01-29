@@ -293,7 +293,6 @@ class RequestValidationController(ObjectValidationController):
         task = self.check_task_id(request_body.get("id"), kwargs["req_user"].org_id)
         return {
             "task": task,
-            "type": self.check_task_type_id(request_body.get("type_id")),
             "description": self.check_optional_str(request_body.get("description"), "description"),
             "status": self.check_task_status(request_body.get("status")),
             "time_estimate": self.check_optional_int(
