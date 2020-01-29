@@ -52,7 +52,7 @@ class ManageTask(RequestValidationController):
         task_attrs = self.validate_update_task_request(request.get_json(), **kwargs)
 
         # update the task
-        task_to_update = task_attrs["task"]
+        task_to_update = task_attrs.pop("task")
 
         # if the assignee isn't the same as before then assign someone to it, if the new assignee is null or
         # omitted from the request, then assign the task

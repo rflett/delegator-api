@@ -2,6 +2,7 @@ import datetime
 
 from flask import request, Response
 from flask_restplus import Namespace
+from sqlalchemy import and_
 
 from app import logger, session_scope
 from app.Controllers.Base import RequestValidationController
@@ -27,7 +28,12 @@ class TaskTypes(RequestValidationController):
         req_user = kwargs["req_user"]
 
         with session_scope() as session:
-            task_type_query = session.query(TaskType).filter_by(org_id=req_user.org_id).all()
+            task_type_query = session.query(TaskType).filter(
+                and_(
+                    TaskType.org_id == req_user.org_id,
+                    TaskType.disabled == None  # noqa
+                )
+            ).all()
 
         task_types = [tt.fat_dict() for tt in task_type_query]
         req_user.log(operation=Operations.GET, resource=Resources.TASK_TYPES)

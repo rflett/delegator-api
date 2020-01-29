@@ -163,7 +163,9 @@ class ObjectValidationController(ResponseController):
 
     def check_task_labels(self, labels: typing.List[int], org_id: int) -> typing.List[int]:
         """Check to make sure that the labels are valid"""
-        if len(labels) > 3:
+        if labels is None:
+            return []
+        elif len(labels) > 3:
             raise ValidationError(f"Tasks can only have up to 3 labels, you've supplied {len(labels)}.")
         with session_scope() as session:
             for label_id in labels:
