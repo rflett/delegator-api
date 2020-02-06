@@ -28,4 +28,18 @@ user_response = api.model(
     },
 )
 
+min_user_response = api.model(
+    "Minimal User Response",
+    {
+        "id": fields.Integer,
+        "email": fields.String,
+        "first_name": fields.String,
+        "last_name": fields.String,
+        "job_title": fields.String
+    }
+)
+
 get_users_response = api.model("Get Users Response", {"users": fields.List(fields.Nested(user_response))})
+get_min_users_response = api.model(
+    "Get Minimal Users Response", {"users": fields.List(fields.Nested(min_user_response))}
+)
