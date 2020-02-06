@@ -14,14 +14,13 @@ from flask_restplus import Api
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from app.ApiWrappers import SubscriptionApi, NotificationApi, EmailApi
-from app.Bootstrap.config_ssm import SsmConfig
-from app.Bootstrap.config_secretsman import SecretsManConfig
-from app.Bootstrap.logger import logger
+from app.Setup.config_ssm import SsmConfig
+from app.Setup.config_secretsman import SecretsManConfig
 
 # flask conf and CORS
 app = Flask(__name__)
 app_env = getenv("APP_ENV", "Local")
-app.config.from_object(f"app.Bootstrap.config.{app_env}")
+app.config.from_object(f"app.Setup.config.{app_env}")
 CORS(app)
 
 # get config from parameter store
@@ -36,6 +35,15 @@ if app_env not in ["Local", "Docker", "Ci"]:
 if app_env == "Production":
     secrets = SecretsManConfig().get_params()
     app.config.update(secrets)
+
+# logging
+logger = logging.getLogger()
+for handler in logger.handlers:
+    logger.removeHandler(handler)
+
+log_format = "%(asctime)s delegator-api %(levelname)s %(message)s"
+logging.basicConfig(format=log_format, level=logging.INFO)
+
 
 # db conf
 app.config["SQLALCHEMY_DATABASE_URI"] = app.config["DB_URI"]
