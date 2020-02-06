@@ -3,8 +3,8 @@ from os import getenv
 
 import requests
 
-from app import logger
 from app.ApiWrappers import BaseWrapper
+from app.Exceptions import WrapperCallFailedException
 
 
 class EmailApi(BaseWrapper):
@@ -23,9 +23,9 @@ class EmailApi(BaseWrapper):
                 timeout=10,
             )
             if r.status_code != 204:
-                logger.error(f"Email API - {r.status_code}, {r.content}")
+                raise WrapperCallFailedException(f"Email API - {r.status_code}, {r.content}")
         except Exception as e:
-            logger.error(f"Email API - {e}")
+            raise WrapperCallFailedException(f"Email API - {e}")
 
     def send_reset_password(self, email: str, first_name: str, link: str) -> None:
         """Get a subscription's plan quantity"""
@@ -39,9 +39,9 @@ class EmailApi(BaseWrapper):
                 timeout=10,
             )
             if r.status_code != 204:
-                logger.error(f"Email API - {r.status_code}, {r.content}")
+                raise WrapperCallFailedException(f"Email API - {r.status_code}, {r.content}")
         except Exception as e:
-            logger.error(f"Email API - {e}")
+            raise WrapperCallFailedException(f"Email API - {e}")
 
     def send_welcome_new_user(self, email: str, first_name: str, inviter_name: str, link: str) -> None:
         """Send a welcome email for a new user"""
@@ -60,6 +60,6 @@ class EmailApi(BaseWrapper):
                 timeout=10,
             )
             if r.status_code != 204:
-                logger.error(f"Email API - {r.status_code}, {r.content}")
+                raise WrapperCallFailedException(f"Email API - {r.status_code}, {r.content}")
         except Exception as e:
-            logger.error(f"Email API - {e}")
+            raise WrapperCallFailedException(f"Email API - {e}")
