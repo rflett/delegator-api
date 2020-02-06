@@ -13,12 +13,59 @@ from app.Models import User, Activity, Task, UserPasswordToken, Subscription
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.RBAC import Role
 from app.Models.Request import create_user_request, update_user_request
-from app.Models.Response import message_response_dto, user_response, get_users_response
+from app.Models.Response import message_response_dto, user_response, get_users_response, get_min_users_response
 from app.Services import UserService
 
 users_route = Namespace(path="/users", name="Users", description="Manage a user or users")
 
 user_service = UserService()
+
+
+@users_route.route("/minimal")
+class MinimalUsers(RequestValidationController):
+    @handle_exceptions
+    @requires_jwt
+    @authorize(Operations.GET, Resources.USERS)
+    @users_route.response(200, "Users retrieved", get_min_users_response)
+    @users_route.response(403, "Insufficient privileges", message_response_dto)
+    def get(self, **kwargs) -> Response:
+        """Get all users with minimal dto"""
+        req_user = kwargs["req_user"]
+
+        with session_scope() as session:
+            users_qry = (
+                session.query(
+                    User.id,
+                    User.email,
+                    User.first_name,
+                    User.last_name,
+                    User.job_title
+                )
+                .filter(
+                    and_(
+                        User.org_id == req_user.org_id,
+                        User.deleted == None  # noqa
+                    )
+                )
+                .all()
+            )
+
+        users = []
+
+        for user in users_qry:
+            id_, email, first_name, last_name, job_title = user
+            users.append(
+                {
+                    "id": id_,
+                    "email": email,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "job_title": job_title
+                }
+            )
+
+        req_user.log(operation=Operations.GET, resource=Resources.USERS)
+        return self.ok({"users": users})
 
 
 @users_route.route("/")
@@ -51,7 +98,6 @@ class UserController(RequestValidationController):
                 .filter(
                     and_(
                         this_user.org_id == req_user.org_id,
-                        Role.rank >= req_user.roles.rank,
                         this_user.deleted == None  # noqa
                     )
                 )
