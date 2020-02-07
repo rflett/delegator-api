@@ -23,7 +23,7 @@ from app.Models.Response.Task import (
 )
 from app.Models.Response.TaskLabels import task_labels_response, task_label_dto
 from app.Models.Response.TaskTypes import task_type_response, task_types_response
-from app.Models.Response.User import user_response, get_users_response
+from app.Models.Response.User import user_response, get_users_response, get_min_users_response
 from app.Models.Response.NotificationSilencing import get_silenced_info_dto
 
 __all__ = [
@@ -32,6 +32,7 @@ __all__ = [
     delayed_task_response,
     get_all_reports_response,
     get_silenced_info_dto,
+    get_min_users_response,
     task_types_response,
     task_priorities_response,
     task_statuses_response,
