@@ -35,8 +35,8 @@ min_user_response = api.model(
         "email": fields.String,
         "first_name": fields.String,
         "last_name": fields.String,
-        "job_title": fields.String
-    }
+        "job_title": fields.String,
+    },
 )
 
 get_users_response = api.model("Get Users Response", {"users": fields.List(fields.Nested(user_response))})

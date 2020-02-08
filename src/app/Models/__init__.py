@@ -1,6 +1,7 @@
 from app.Models.ActiveUser import ActiveUser
 from app.Models.Activity import Activity
 from app.Models.DelayedTask import DelayedTask
+from app.Models.Email import Email
 from app.Models.FailedLogin import FailedLogin
 from app.Models.Notification import Notification
 from app.Models.Organisation import Organisation
@@ -20,6 +21,7 @@ __all__ = [
     ActiveUser,
     Activity,
     DelayedTask,
+    Email,
     FailedLogin,
     Notification,
     Organisation,

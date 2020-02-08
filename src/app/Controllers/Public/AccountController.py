@@ -6,11 +6,11 @@ import jwt
 from flask import Response, request
 from flask_restplus import Namespace
 
-from app import app, session_scope, logger, subscription_api, email_api
+from app import app, session_scope, logger, subscription_api
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import handle_exceptions, requires_jwt
 from app.Exceptions import AuthenticationError, WrapperCallFailedException
-from app.Models import User, Activity, Organisation, TaskType, FailedLogin
+from app.Models import User, Activity, Organisation, TaskType, FailedLogin, Email
 from app.Models.Enums import Events, Operations, Resources
 from app.Models.Request import login_request, signup_request
 from app.Models.Response import login_response, message_response_dto, signup_response
@@ -82,19 +82,20 @@ class AccountController(RequestValidationController):
         ).publish()
         logger.info(f"User {user.id} signed up.")
 
+        email = Email(user)
+        email.send_welcome()
+
         try:
             response = subscription_api.create_customer(request_body.get("plan_id"), user.as_dict())
+            with session_scope():
+                organisation.chargebee_customer_id = response["customer_id"]
+                organisation.chargebee_subscription_id = response["customer_id"]
         except WrapperCallFailedException as e:
             logger.error(str(e))
             return self.unprocessable(
                 "Sorry, something unexpected occurred during the signup process. Please contact "
                 "us at support@delegator.com.au"
             )
-        with session_scope():
-            organisation.chargebee_customer_id = response["customer_id"]
-            organisation.chargebee_subscription_id = response["customer_id"]
-
-        email_api.send_welcome(user.email, user.first_name)
 
         return self.ok({"url": response["url"]})
 
