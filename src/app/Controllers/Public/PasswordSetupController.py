@@ -3,11 +3,11 @@ import time
 from flask import Response, request
 from flask_restplus import Namespace
 
-from app import session_scope, logger, email_api, app
+from app import session_scope, logger, app
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import handle_exceptions
 from app.Exceptions import ValidationError, ResourceNotFoundError
-from app.Models import UserPasswordToken
+from app.Models import UserPasswordToken, Email
 from app.Models.Request import password_setup_request
 from app.Models.Response import password_setup_response, message_response_dto
 from app.Services import UserService
@@ -36,13 +36,13 @@ class PasswordSetup(RequestValidationController):
     def delete(self) -> Response:
         """Request a password reset"""
         try:
-            email = request.args["email"]
+            user_email = request.args["email"]
         except KeyError as e:
             raise ValidationError(f"Missing {e} from query params")
 
         try:
-            self.validate_email(email)
-            user = user_service.get_by_email(email)
+            self.validate_email(user_email)
+            user = user_service.get_by_email(user_email)
             logger.info(f"User {user.name()} requested password reset.")
         except (ValidationError, ResourceNotFoundError):
             return self.no_content()
@@ -56,7 +56,8 @@ class PasswordSetup(RequestValidationController):
 
         link = app.config["PUBLIC_WEB_URL"] + "/reset-password?token=" + reset_link.token
 
-        email_api.send_reset_password(email, user.first_name, link)
+        email = Email(user)
+        email.send_password_reset(link)
 
         return self.no_content()
 
