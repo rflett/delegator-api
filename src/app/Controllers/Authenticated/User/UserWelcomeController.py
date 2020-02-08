@@ -1,9 +1,10 @@
 from flask import Response, request
 from flask_restplus import Namespace
 
-from app import logger, email_api, app
+from app import logger, app
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import authorize, handle_exceptions, requires_jwt
+from app.Models import Email
 from app.Models.Enums import Operations, Resources
 from app.Models.Request import resend_welcome_request
 from app.Models.Response import message_response_dto
@@ -29,11 +30,10 @@ class UserController(RequestValidationController):
         user, token = self.validate_resend_welcome_request(request_body)
 
         # resend
-        email_api.send_welcome_new_user(
-            email=user.email,
-            first_name=user.first_name,
-            inviter_name=req_user.first_name,
+        email = Email(user)
+        email.send_welcome_new_user(
             link=app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + token,
+            inviter=req_user
         )
 
         logger.info(f"User {req_user.id} resent verification email to user {user.id}.")

@@ -5,11 +5,11 @@ from flask_restplus import Namespace
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
-from app import session_scope, subscription_api, logger, email_api, app
+from app import session_scope, subscription_api, logger, app
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize
 from app.Exceptions import ProductTierLimitError, ValidationError
-from app.Models import User, Activity, Task, UserPasswordToken, Subscription
+from app.Models import User, Activity, Task, UserPasswordToken, Subscription, Email
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.RBAC import Role
 from app.Models.Request import create_user_request, update_user_request
@@ -34,19 +34,8 @@ class MinimalUsers(RequestValidationController):
 
         with session_scope() as session:
             users_qry = (
-                session.query(
-                    User.id,
-                    User.email,
-                    User.first_name,
-                    User.last_name,
-                    User.job_title
-                )
-                .filter(
-                    and_(
-                        User.org_id == req_user.org_id,
-                        User.deleted == None  # noqa
-                    )
-                )
+                session.query(User.id, User.email, User.first_name, User.last_name, User.job_title)
+                .filter(and_(User.org_id == req_user.org_id, User.deleted == None))  # noqa
                 .all()
             )
 
@@ -55,13 +44,7 @@ class MinimalUsers(RequestValidationController):
         for user in users_qry:
             id_, email, first_name, last_name, job_title = user
             users.append(
-                {
-                    "id": id_,
-                    "email": email,
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "job_title": job_title
-                }
+                {"id": id_, "email": email, "first_name": first_name, "last_name": last_name, "job_title": job_title}
             )
 
         req_user.log(operation=Operations.GET, resource=Resources.USERS)
@@ -90,7 +73,7 @@ class UserController(RequestValidationController):
                     created_by.first_name,
                     created_by.last_name,
                     updated_by.first_name,
-                    updated_by.last_name
+                    updated_by.last_name,
                 )
                 .join(Role, Role.id == this_user.role)
                 .join(created_by, created_by.id == this_user.created_by)
@@ -99,7 +82,7 @@ class UserController(RequestValidationController):
                     and_(
                         this_user.org_id == req_user.org_id,
                         Role.rank >= req_user.roles.rank,
-                        this_user.deleted == None  # noqa
+                        this_user.deleted == None,  # noqa
                     )
                 )
                 .all()
@@ -108,14 +91,7 @@ class UserController(RequestValidationController):
         users = []
 
         for user in users_qry:
-            (
-                user_,
-                role,
-                created_by_fn,
-                created_by_ln,
-                updated_by_fn,
-                updated_by_ln
-            ) = user
+            (user_, role, created_by_fn, created_by_ln, updated_by_fn, updated_by_ln) = user
 
             created_by = created_by_fn + " " + created_by_ln
 
@@ -192,11 +168,10 @@ class UserController(RequestValidationController):
         subscription_api.increment_plan_quantity(user.orgs.chargebee_subscription_id)
 
         # send welcome email
-        email_api.send_welcome_new_user(
-            email=user.email,
-            first_name=user.first_name,
-            inviter_name=req_user.first_name,
+        email = Email(user)
+        email.send_welcome_new_user(
             link=app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + password_token.token,
+            inviter=req_user
         )
 
         req_user.log(operation=Operations.CREATE, resource=Resources.USER, resource_id=user.id)

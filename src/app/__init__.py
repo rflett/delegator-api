@@ -13,7 +13,7 @@ from flask_cors import CORS
 from flask_restplus import Api
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from app.ApiWrappers import SubscriptionApi, NotificationApi, EmailApi
+from app.ApiWrappers import SubscriptionApi, NotificationApi
 from app.Setup.config_ssm import SsmConfig
 from app.Setup.config_secretsman import SecretsManConfig
 
@@ -69,7 +69,12 @@ def shutdown_session(exception=None):
 
 # aws resources
 if getenv("MOCK_AWS"):
-    user_settings_table = org_settings_table = user_activity_table = task_activity_table = api_events_sns_topic = None
+    user_settings_table = None
+    org_settings_table = None
+    user_activity_table = None
+    task_activity_table = None
+    api_events_sns_topic = None
+    email_sns_topic = None
 else:
     dyn_db = boto3.resource("dynamodb")
     sns = boto3.resource("sns")
@@ -78,12 +83,12 @@ else:
     user_activity_table = dyn_db.Table(app.config["USER_ACTIVITY_TABLE"])
     task_activity_table = dyn_db.Table(app.config["TASK_ACTIVITY_TABLE"])
     api_events_sns_topic = sns.Topic(app.config["EVENTS_SNS_TOPIC_ARN"])
+    email_sns_topic = sns.Topic(app.config["EMAIL_SNS_TOPIC_ARN"])
 
 
 # api wrappers
 notification_api = NotificationApi(app.config["JWT_SECRET"], app.config["NOTIFICATION_API_PUBLIC_URL"])
 subscription_api = SubscriptionApi(app.config["JWT_SECRET"], app.config["SUBSCRIPTION_API_PUBLIC_URL"])
-email_api = EmailApi(app.config["JWT_SECRET"], app.config["EMAIL_API_PUBLIC_URL"])
 
 
 # api docs need to be monkey patched for HTTPS to work
