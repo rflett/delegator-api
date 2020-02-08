@@ -12,7 +12,6 @@ from sqlalchemy import exists
 
 from app import db, session_scope, logger, user_activity_table, app, subscription_api
 from app.Exceptions import AuthorizationError
-from app.Models import FailedLogin
 from app.Models.RBAC import Log, Permission
 from app.Models.LocalMockData import MockActivity
 
@@ -179,6 +178,7 @@ class User(db.Model):
 
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """
+        from app.Models import FailedLogin
 
         with session_scope() as session:
             failed_email = session.query(exists().where(FailedLogin.email == self.email)).scalar()
