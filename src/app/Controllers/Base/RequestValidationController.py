@@ -446,15 +446,6 @@ class RequestValidationController(ObjectValidationController):
         else:
             return task_label
 
-    def validate_silence_notifications_request(self, request_body: dict) -> typing.Tuple[typing.Union[int, None], int]:
-        """Validates the silencing notifications"""
-        silence_until = self.check_optional_date(request_body.get("silence_until"), "silence_until")
-        silenced_option = self.check_int(request_body.get("silenced_option"), "silenced_option")
-        if silence_until is not None:
-            return int(silence_until.timestamp()), silenced_option
-        else:
-            return silence_until, silenced_option
-
     def validate_resend_welcome_request(self, request_body: dict) -> typing.Tuple[User, str]:
         """Validate the resend welcome request"""
         user = self.check_user_id(request_body.get("user_id"), should_exist=True)

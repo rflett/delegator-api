@@ -13,7 +13,7 @@ from flask_cors import CORS
 from flask_restplus import Api
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from app.ApiWrappers import SubscriptionApi, NotificationApi
+from app.ApiWrappers import SubscriptionApi
 from app.Setup.config_ssm import SsmConfig
 from app.Setup.config_secretsman import SecretsManConfig
 
@@ -87,7 +87,6 @@ else:
 
 
 # api wrappers
-notification_api = NotificationApi(app.config["JWT_SECRET"], app.config["NOTIFICATION_API_PUBLIC_URL"])
 subscription_api = SubscriptionApi(app.config["JWT_SECRET"], app.config["SUBSCRIPTION_API_PUBLIC_URL"])
 
 
