@@ -1,4 +1,0 @@
-Public Routes:
-    login moved to: /account:POST
-    signup moved to: /account:PUT
-    reset_password moved to : /account:PATCH
