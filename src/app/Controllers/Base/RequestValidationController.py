@@ -263,17 +263,6 @@ class RequestValidationController(ObjectValidationController):
 
         return org_name
 
-    @staticmethod
-    def validate_update_org_settings_request(org_id: int, request_body: dict) -> OrgSetting:
-        """ Validates updating org settings """
-        from decimal import Decimal
-
-        org_setting_obj = OrgSetting(org_id=Decimal(org_id))
-        for k, v in request_body.items():
-            org_setting_obj.__setattr__(k, v)
-
-        return org_setting_obj
-
     def validate_update_task_request(self, request_body: dict, **kwargs) -> dict:
         """Validates an update task request"""
         task = self.check_task_id(request_body.get("id"), kwargs["req_user"].org_id)

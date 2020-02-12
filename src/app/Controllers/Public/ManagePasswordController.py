@@ -66,7 +66,7 @@ class PasswordSetup(RequestValidationController):
     response = api.model("Password setup response", {"email": fields.String()})
 
     @api.expect(request, validate=True)
-    @api.marshal_with(response, 200)
+    @api.marshal_with(response, code=200)
     def post(self):
         """Config a password after user creation or password reset"""
         request_body = request.get_json()

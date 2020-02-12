@@ -39,7 +39,7 @@ class AccountController(RequestValidationController):
     signup_response = api.model("Signup Response", {"url": fields.String()})
 
     @api.expect(signup_request, validate=True)
-    @api.marshal_with(signup_response, 200)
+    @api.marshal_with(signup_response, code=200)
     def put(self, **kwargs):
         """Signup a user."""
         request_body = request.get_json()
@@ -139,7 +139,7 @@ class AccountController(RequestValidationController):
     )
 
     @api.expect(login_request, validate=True)
-    @api.marshal_with(login_response, 200)
+    @api.marshal_with(login_response, code=200)
     def post(self):
         """Log a user in."""
         request_body = request.get_json()

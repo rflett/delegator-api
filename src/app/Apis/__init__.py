@@ -7,6 +7,9 @@ from app.Controllers.Public.AccountController import api as account_v1
 from app.Controllers.Public.HealthController import api as health_v1
 from app.Controllers.Public.VersionController import api as version_v1
 from app.Controllers.Public.ManagePasswordController import api as password_v1
+from app.Controllers.Authenticated.ActiveUsers import api as active_users_v1
+from app.Controllers.Authenticated.Roles import api as roles_v1
+from app.Controllers.Authenticated.Organisation import api as organisation_v1
 
 
 # swagger monkey patch
@@ -27,5 +30,8 @@ api = Api(
 
 api.add_namespace(account_v1)
 api.add_namespace(password_v1)
+api.add_namespace(active_users_v1)
+api.add_namespace(roles_v1)
+api.add_namespace(organisation_v1)
 api.add_namespace(health_v1)
 api.add_namespace(version_v1)
