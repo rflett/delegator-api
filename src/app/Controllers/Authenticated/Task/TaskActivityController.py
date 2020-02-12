@@ -1,4 +1,4 @@
-from flask_restplus import Namespace
+from flask_restx import Namespace
 
 from app import logger
 from app.Decorators import authorize, requires_jwt, handle_exceptions

@@ -1,14 +1,14 @@
 import datetime
 import typing
 
-from flask import request
+from flask import request, current_app
 from sqlalchemy import func, exists, and_
 from validate_email import validate_email
 
-from app import app, session_scope
 from app.Controllers.Base import ObjectValidationController
-from app.Exceptions import ValidationError, ResourceNotFoundError
-from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting, UserPasswordToken, TaskLabel
+from app.Extensions.Errors import ValidationError, ResourceNotFoundError
+from app.Extensions.Database import session_scope
+from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting, TaskLabel
 from app.Services import UserService
 
 user_service = UserService()
@@ -32,9 +32,11 @@ class RequestValidationController(ObjectValidationController):
         self.check_auth_scope(task.assignees, **kwargs)
         return task
 
-    def validate_create_org_request(self, request_body: dict) -> str:
+    @staticmethod
+    def validate_create_org_request() -> str:
         """ Validates a create org request body """
-        org_name = self.check_str(request_body.get("org_name"), "org_name")
+        request_body = request.get_json()
+        org_name = request_body["org_name"]
 
         with session_scope() as session:
             org_exists = session.query(exists().where(func.lower(Organisation.name) == func.lower(org_name))).scalar()
@@ -43,22 +45,6 @@ class RequestValidationController(ObjectValidationController):
             raise ValidationError("That organisation already exists.")
         else:
             return org_name
-
-    def validate_create_signup_user(self, request_body: dict) -> dict:
-        """ Validates creating a user from the signup page """
-        # check email
-        email = request_body.get("email")
-        self.validate_email(email)
-
-        return {
-            "email": self.check_user_id(email, should_exist=False),
-            "password": self.validate_password(request_body.get("password")),
-            "role": app.config["SIGNUP_ROLE"],
-            "first_name": self.check_str(request_body.get("first_name"), "first_name"),
-            "last_name": self.check_str(request_body.get("last_name"), "last_name"),
-            "job_title": self.check_optional_str(request_body.get("job_title"), "job_title"),
-            "disabled": self.check_user_disabled(request_body.get("disabled")),
-        }
 
     def validate_create_task_request(self, request_body: dict, **kwargs) -> dict:
         """Validates a task request body
@@ -222,14 +208,14 @@ class RequestValidationController(ObjectValidationController):
         try:
             _start_period = self.check_str(request_body["start_period"], "start_period")
             _end_period = self.check_str(request_body["end_period"], "end_period")
-            start_period = datetime.datetime.strptime(_start_period, app.config["REQUEST_DATE_FORMAT"])
-            end_period = datetime.datetime.strptime(_end_period, app.config["REQUEST_DATE_FORMAT"])
+            start_period = datetime.datetime.strptime(_start_period, current_app.config["REQUEST_DATE_FORMAT"])
+            end_period = datetime.datetime.strptime(_end_period, current_app.config["REQUEST_DATE_FORMAT"])
         except KeyError as e:
             raise ValidationError(f"Missing {e} from request body")
         except ValueError:
             raise ValidationError(
                 "Couldn't convert start_period|end_period to datetime.datetime, make sure they're "
-                f"in the format {app.config['REQUEST_DATE_FORMAT']}"
+                f"in the format {current_app.config['REQUEST_DATE_FORMAT']}"
             )
 
         # start must be before end
@@ -397,22 +383,6 @@ class RequestValidationController(ObjectValidationController):
             "job_title": self.check_optional_str(request_body.get("job_title"), "job_title"),
             "disabled": self.check_user_disabled(request_body.get("disabled")),
         }
-
-    def validate_password_link(self) -> None:
-        """Validates that the token query string param is valid"""
-        try:
-            token = request.args["token"]
-        except KeyError:
-            raise ValidationError("Missing token from request.")
-
-        self.validate_password_token(token)
-
-    def validate_password_setup_request(self, request_body: dict) -> typing.Tuple[UserPasswordToken, str]:
-        """Validates the create first time password link"""
-        password_token = self.validate_password_token(request_body.get("token"))
-        password = self.validate_password(request_body.get("password"))
-
-        return password_token, password
 
     def validate_create_task_label_request(self, request_body: dict) -> typing.Tuple[str, str]:
         """Validates that the incoming task label is valid"""

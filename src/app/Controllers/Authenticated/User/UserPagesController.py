@@ -1,4 +1,4 @@
-from flask_restplus import Namespace, fields
+from flask_restx import Namespace, fields
 
 from app import session_scope, logger
 from app.Controllers.Base import RequestValidationController

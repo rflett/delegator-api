@@ -2,10 +2,10 @@ import typing
 
 from sqlalchemy import func
 
-from app import session_scope
+from app.Extensions.Database import session_scope
+from app.Extensions.Errors import  ResourceNotFoundError
 from app.Models import User
 from app.Models.Enums import Roles
-from app.Exceptions import ResourceNotFoundError
 
 
 class UserService(object):

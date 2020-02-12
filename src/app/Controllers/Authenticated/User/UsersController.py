@@ -1,7 +1,7 @@
 import datetime
 
 from flask import Response, request
-from flask_restplus import Namespace
+from flask_restx import Namespace
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
@@ -128,21 +128,6 @@ class UserController(RequestValidationController):
 
         # validate user
         self.validate_create_user_request(req_user, request_body)
-
-        # Check that the user hasn't surpassed limits on their product tier
-        with session_scope() as session:
-            existing_user_count = session.query(User).filter_by(org_id=req_user.org_id).count()
-
-        # check the subscription limitations
-        subscription = Subscription(req_user.orgs.chargebee_subscription_id)
-        max_users = subscription.max_users()
-
-        if max_users == -1:
-            # infinite users
-            pass
-        elif existing_user_count >= max_users:
-            logger.info(f"Organisation {req_user.orgs.name} has reached the user limit for their product tier.")
-            raise ProductTierLimitError(f"You have reached the limit of users you can create.")
 
         with session_scope() as session:
             user = User(

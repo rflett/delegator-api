@@ -1,7 +1,7 @@
 import boto3
 
 
-class SsmConfig(object):
+class ParameterStore(object):
     def get_params(self, app_env: str) -> dict:
         """Get the parameters from parameter store"""
         ssm = boto3.client("ssm")

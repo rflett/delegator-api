@@ -1,5 +1,5 @@
 from flask import request, Response
-from flask_restplus import Namespace
+from flask_restx import Namespace
 
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, handle_exceptions, authorize

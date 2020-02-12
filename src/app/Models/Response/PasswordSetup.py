@@ -1,6 +1,6 @@
-from flask_restplus import fields
+from flask_restx import fields
 
 from app import api
 
 
-password_setup_response = api.model("New Password Setup Response", {"email": fields.String()})
+password_setup_response = api.model("New Password Config Response", {"email": fields.String()})

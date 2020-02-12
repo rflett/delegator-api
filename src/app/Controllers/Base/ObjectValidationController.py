@@ -1,12 +1,15 @@
 import datetime
 import dateutil
 import typing
+import uuid
 
+import jwt
+from flask_restx import Resource
+from flask import current_app
 from sqlalchemy import exists, and_, func
 
-from app import logger, app, session_scope
-from app.Controllers.Base.ResponseController import ResponseController
-from app.Exceptions import AuthorizationError, ValidationError, ResourceNotFoundError
+from app.Extensions.Database import session_scope
+from app.Extensions.Errors import AuthorizationError, ValidationError, ResourceNotFoundError
 from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskTypeEscalation, TaskLabel, UserPasswordToken
 from app.Models.RBAC import Role
 from app.Services import UserService
@@ -14,7 +17,22 @@ from app.Services import UserService
 user_service = UserService()
 
 
-class ObjectValidationController(ResponseController):
+class ObjectValidationController(Resource):
+    @staticmethod
+    def create_service_account_jwt() -> str:
+        """Create a JWT token to make requests to other services"""
+        token = jwt.encode(
+            payload={
+                "claims": {"type": "service-account", "service-account-name": "delegator-api"},
+                "jti": str(uuid.uuid4()),
+                "aud": "delegator.com.au",
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=30),
+            },
+            key=current_app.config["JWT_SECRET"],
+            algorithm="HS256",
+        ).decode("utf-8")
+        return "Bearer " + token
+
     @staticmethod
     def check_auth_scope(affected_user: User, **kwargs):
         """Compares a users scope against the action they're trying to do"""
@@ -106,7 +124,7 @@ class ObjectValidationController(ResponseController):
                     raise ValidationError(f"{param_name} is in the past.")
                 return date_parsed
             except ValueError as e:
-                logger.error(str(e))
+                current_app.logger.error(str(e))
                 raise ValidationError(f"Could not parse {param_name} {date_str} to date.")
         return None
 
@@ -181,12 +199,12 @@ class ObjectValidationController(ResponseController):
         """Verify that the user disabled field can be converted to a datetime."""
         if disabled is not None:
             try:
-                disabled = datetime.datetime.strptime(disabled, app.config["REQUEST_DATE_FORMAT"])
+                disabled = datetime.datetime.strptime(disabled, current_app.config["REQUEST_DATE_FORMAT"])
                 return disabled
             except ValueError:
                 raise ValidationError(
                     f"Couldn't convert disabled {disabled} to datetime.datetime, please ensure it is "
-                    f"in the format {app.config['REQUEST_DATE_FORMAT']}"
+                    f"in the format {current_app.config['REQUEST_DATE_FORMAT']}"
                 )
 
     @staticmethod
@@ -237,10 +255,9 @@ class ObjectValidationController(ResponseController):
         else:
             return _role.id
 
-    def validate_password_token(self, token: str) -> UserPasswordToken:
+    @staticmethod
+    def validate_password_token(token: str) -> UserPasswordToken:
         """Validates the create first time password link"""
-        self.check_str(token, "token")
-
         with session_scope() as session:
             password_token = session.query(UserPasswordToken).filter_by(token=token).first()
 

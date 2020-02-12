@@ -1,118 +1,159 @@
 import datetime
-import typing
+import json
 import uuid
+from os import getenv
 
 import jwt
-from flask import Response, request
-from flask_restplus import Namespace
+import requests
+from flask import request, current_app
+from flask_restx import Namespace, fields
 
-from app import app, session_scope, logger, subscription_api
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import handle_exceptions, requires_jwt
-from app.Exceptions import AuthenticationError, WrapperCallFailedException
+from app.Decorators import requires_jwt
+from app.Extensions.Database import session_scope
+from app.Extensions.Errors import AuthenticationError
 from app.Models import User, Activity, Organisation, TaskType, FailedLogin, Email
 from app.Models.Enums import Events, Operations, Resources
-from app.Models.Request import login_request, signup_request
-from app.Models.Response import login_response, message_response_dto, signup_response
 from app.Services import UserService
 
-account_route = Namespace(path="/account", name="Account", description="Contains routes for logging in and registering")
+api = Namespace(path="/account", name="Account", description="Manage an account")
 
 user_service = UserService()
 
 
-@account_route.route("/")
+@api.route("/")
 class AccountController(RequestValidationController):
-    @handle_exceptions
-    @account_route.expect(signup_request)
-    @account_route.response(200, "Registration Successful", signup_response)
-    @account_route.response(400, "Registration Failed", message_response_dto)
-    def put(self) -> Response:
+
+    signup_request = api.model(
+        "Signup Request",
+        {
+            "org_name": fields.String(required=True),
+            "email": fields.String(required=True),
+            "password": fields.String(required=True),
+            "first_name": fields.String(required=True),
+            "last_name": fields.String(required=True),
+            "job_title": fields.String(),
+            "plan_id": fields.String(required=True, enum=["basic"]),
+        },
+    )
+    signup_response = api.model("Signup Response", {"url": fields.String()})
+
+    @api.expect(signup_request, validate=True)
+    @api.marshal_with(signup_response, 200)
+    def put(self, **kwargs):
         """Signup a user."""
-        # get the request body
         request_body = request.get_json()
 
-        # validate org
-        org_name = self.validate_create_org_request(request_body)
+        self.validate_create_org_request()
+        self.validate_email(request_body["email"])
+        self.validate_password(request_body["password"])
 
-        # validate user
-        valid_user = self.validate_create_signup_user(request_body)
-
-        # try and create the org, if there are issues then
+        # create organisation
         try:
-            # create the organisation
             with session_scope() as session:
-                organisation = Organisation(name=org_name, chargebee_signup_plan=request_body.get("plan_id"))
+                organisation = Organisation(
+                    name=request_body["org_name"], chargebee_signup_plan=request_body["plan_id"]
+                )
                 session.add(organisation)
 
-            # add default task type
             with session_scope() as session:
                 session.add(TaskType(label="Other", org_id=organisation.id))
 
-            # create org settings
             organisation.create_settings()
 
         except Exception as e:
-            logger.error(str(e))
-            return self.unprocessable("There was an issue creating the organisation.")
+            # rollback
+            current_app.logger.error(str(e))
+            with session_scope() as session:
+                if organisation is not None:
+                    session.delete(organisation)
+            return "Hmm, we couldn't sign you up! Please contact support@delegator.com.au", 500
 
-        # try and create the user since the org was created successfully
+        # create user
         with session_scope() as session:
             user = User(
                 org_id=organisation.id,
-                email=valid_user.get("email"),
-                first_name=valid_user.get("first_name"),
-                last_name=valid_user.get("last_name"),
-                password=valid_user.get("password"),
-                role=valid_user.get("role"),
-                job_title=valid_user.get("job_title"),
+                email=request_body["email"],
+                first_name=request_body["first_name"],
+                last_name=request_body["last_name"],
+                password=request_body["password"],
+                role=current_app.config["SIGNUP_ROLE"],
+                job_title=request_body["job_title"],
             )
             session.add(user)
 
-        with session_scope():
-            user.created_by = user.id
-
-        # create user settings
         user.create_settings()
-
         user.log(operation=Operations.CREATE, resource=Resources.USER, resource_id=user.id)
-        # publish event
-        Activity(
-            org_id=user.org_id, event=Events.user_created, event_id=user.id, event_friendly=f"Created by {user.name()}"
-        ).publish()
-        logger.info(f"User {user.id} signed up.")
+        current_app.logger.info(f"User {user.id} signed up.")
 
+        # send email
         email = Email(user)
         email.send_welcome()
 
-        try:
-            response = subscription_api.create_customer(request_body.get("plan_id"), user.as_dict())
+        # local mocking
+        if getenv("MOCK_SERVICES"):
             with session_scope():
-                organisation.chargebee_customer_id = response["customer_id"]
-                organisation.chargebee_subscription_id = response["customer_id"]
-        except WrapperCallFailedException as e:
-            logger.error(str(e))
-            return self.unprocessable(
-                "Sorry, something unexpected occurred during the signup process. Please contact "
-                "us at support@delegator.com.au"
+                organisation.chargebee_customer_id = "mock_customer_id"
+                organisation.chargebee_subscription_id = "mock_customer_id"
+                return {"url": "https://app.delegator.com.au/login"}, 200
+
+        try:
+            r = requests.post(
+                url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/customer/",
+                headers={"Content-Type": "application/json", "Authorization": self.create_service_account_jwt()},
+                data=json.dumps(
+                    {
+                        "plan_id": request_body["plan_id"],
+                        "user": {"email": user.email, "first_name": user.first_name, "last_name": user.last_name,},
+                    }
+                ),
+                timeout=10,
             )
+            if r.status_code != 200:
+                current_app.logger.error(str(r.content))
+                return "Hmm, we couldn't sign you up! Please contact support@delegator.com.au", 500
 
-        return self.ok({"url": response["url"]})
+        except requests.exceptions.RequestException as e:
+            current_app.logger.error(str(e))
+            return "Hmm, we couldn't sign you up! Please contact support@delegator.com.au", 500
 
-    @handle_exceptions
-    @account_route.expect(login_request)
-    @account_route.response(200, "Login Successful", login_response)
-    @account_route.response(400, "Login Failed", message_response_dto)
-    def post(self) -> Response:
+        response = r.json()
+        with session_scope():
+            organisation.chargebee_customer_id = response["customer_id"]
+            organisation.chargebee_subscription_id = response["customer_id"]
+
+        return {"url": response["url"]}, 200
+
+    login_request = api.model(
+        "Login Request", {"email": fields.String(required=True), "password": fields.String(required=True),}
+    )
+    login_response = api.model(
+        "Login Response",
+        {
+            "id": fields.Integer(min=1),
+            "jwt": fields.String(),
+            "first_name": fields.String(),
+            "role": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER", "LOCKED"]),
+            "url": fields.String(),
+        },
+    )
+
+    @api.expect(login_request, validate=True)
+    @api.marshal_with(login_response, 200)
+    def post(self):
         """Log a user in."""
-        # get params from http request
-        login_data = self._get_login_body()
+        request_body = request.get_json()
+
+        email = request_body["email"]
+        password = request_body["password"]
+        self.validate_email(email)
+        self.validate_password(password)
 
         with session_scope() as session:
-            user: User = session.query(User).filter_by(email=login_data["email"]).first()
+            user: User = session.query(User).filter_by(email=email).first()
 
             if user is None:
-                self._failed_login_attempt(login_data["email"])
+                self._failed_login_attempt(email)
             else:
                 user.clear_failed_logins()
 
@@ -120,11 +161,39 @@ class AccountController(RequestValidationController):
             if not user.orgs.chargebee_setup_complete:
                 # check with the subscription api to see if it has been completed
                 customer_id = user.orgs.chargebee_customer_id
-                subscription = subscription_api.get_subscription(customer_id)
-                if not subscription["id"] == customer_id:
+                try:
+                    r = requests.get(
+                        url=f"{self.url}/subscription/{customer_id}",
+                        headers={"Authorization": f"Bearer {self.create_service_account_jwt()}"},
+                        timeout=10,
+                    )
+                    if r.status_code != 200:
+                        current_app.logger.error(str(r.content))
+                        return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
+                    subscription_id = r.json()["id"]
+                except requests.exceptions.RequestException as e:
+                    current_app.logger.error(str(e))
+                    return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
+
+                if not subscription_id == customer_id:
                     # redirect to setup chargebee stuff
-                    url = subscription_api.checkout_subscription(subscription["id"], user.orgs.chargebee_signup_plan)
-                    return self.ok({"url": url})
+                    try:
+                        r = requests.post(
+                            url=f"{self.url}/subscription/checkout/",
+                            headers={"Content-Type": "application/json",
+                                     "Authorization": f"Bearer {self.create_service_account_jwt()}"},
+                            data=json.dumps({"customer_id": customer_id, "plan_id": user.orgs.chargebee_signup_plan}),
+                            timeout=10,
+                        )
+                        if r.status_code != 200:
+                            current_app.logger.error(str(r.content))
+                            return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
+                        url = r.json()["url"]
+                        return {"url": url}, 200
+                    except requests.exceptions.RequestException as e:
+                        current_app.logger.error(str(e))
+                        return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
+
                 else:
                     # the setup has been complete, and the webhook probably hasn't occurred fast enough
                     org = session.query(Organisation).filter_by(id=user.orgs.id).first()
@@ -132,7 +201,7 @@ class AccountController(RequestValidationController):
 
             # don't let them log in if they are disabled
             if user.disabled is not None:
-                logger.info(f"Disabled user {user.id} tried to log in.")
+                current_app.logger.info(f"Disabled user {user.id} tried to log in.")
                 raise AuthenticationError(
                     "Cannot log in since this account has been disabled. Please consult your "
                     "Administrator for assistance."
@@ -140,36 +209,36 @@ class AccountController(RequestValidationController):
 
             # don't let them log in if they are deleted (unlikely to happen)
             if user.deleted is not None:
-                logger.warning(f"Deleted user {user.id} tried to log in.")
+                current_app.logger.warning(f"Deleted user {user.id} tried to log in.")
                 raise AuthenticationError(f"Email or password incorrect")
 
             # check login attempts
             if user.failed_login_attempts > 0:
-                logger.info(
+                current_app.logger.info(
                     f"User {user.id} has failed to log in "
-                    f"{user.failed_login_attempts} / {app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times."
+                    f"{user.failed_login_attempts} / {current_app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times."
                 )
-                if user.failed_login_attempts >= app.config["FAILED_LOGIN_ATTEMPTS_MAX"]:
+                if user.failed_login_attempts >= current_app.config["FAILED_LOGIN_ATTEMPTS_MAX"]:
                     # check timeout
                     diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
-                    if diff < app.config["FAILED_LOGIN_ATTEMPTS_TIMEOUT"]:
-                        logger.info(
+                    if diff < current_app.config["FAILED_LOGIN_ATTEMPTS_TIMEOUT"]:
+                        current_app.logger.info(
                             f"user last failed {diff}s ago. "
-                            f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s"
+                            f"timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s"
                         )
                         raise AuthenticationError("Too many incorrect password attempts.")
                     else:
                         with session_scope():
                             # reset timeout
-                            logger.info(
+                            current_app.logger.info(
                                 f"User last failed {diff}s ago. "
-                                f"timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s."
+                                f"timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s."
                             )
                             user.failed_login_attempts = 0
                             user.failed_login_time = None
 
             # check password
-            if user.password_correct(login_data["password"]):
+            if user.password_correct(password):
                 # reset failed attempts
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
@@ -179,38 +248,24 @@ class AccountController(RequestValidationController):
                 ).publish()
 
                 # return the user dict and their JWT token
-                return self.ok({**user.fat_dict(), **{"jwt": self._generate_jwt_token(user)}})
+                return {**user.as_dict(), **{"jwt": self._generate_jwt_token(user)}}, 200
             else:
-                logger.info(f"Incorrect password attempt for user {user.id}.")
+                current_app.logger.info(f"Incorrect password attempt for user {user.id}.")
                 user.failed_login_attempts += 1
                 user.failed_login_time = datetime.datetime.utcnow()
                 raise AuthenticationError("Password incorrect.")
 
-    @handle_exceptions
     @requires_jwt
-    @account_route.response(200, "Logout Successful")
-    @account_route.response(400, "Logout Failed")
-    def delete(self, **kwargs) -> Response:
+    @api.response(200, "Successfully logged out")
+    def delete(self, **kwargs):
         """Log a user out"""
         req_user = kwargs["req_user"]
         req_user.is_inactive()
         Activity(
             org_id=req_user.org_id, event=Events.user_logout, event_id=req_user.id, event_friendly="Logged out."
         ).publish()
-        logger.info(f"user {req_user.id} logged out")
-        return self.ok("Successfully logged out")
-
-    def _get_login_body(self) -> typing.Dict:
-        """get params from http request"""
-        request_body: dict = request.get_json()
-        email = request_body.get("email")
-        password = request_body.get("password")
-        # validate email
-        self.validate_email(email)
-        # validate password
-        self.validate_password(password)
-
-        return {"email": email, "password": password}
+        current_app.logger.info(f"user {req_user.id} logged out")
+        return "Successfully logged out", 200
 
     @staticmethod
     def _failed_login_attempt(email: str):
@@ -227,20 +282,20 @@ class AccountController(RequestValidationController):
             failed_email = session.query(FailedLogin).filter_by(email=email).first()
             if failed_email is not None:
                 # check if it has breached the limits
-                if failed_email.failed_attempts >= app.config["FAILED_LOGIN_ATTEMPTS_MAX"]:
+                if failed_email.failed_attempts >= current_app.config["FAILED_LOGIN_ATTEMPTS_MAX"]:
                     # check timeout
                     diff = (datetime.datetime.utcnow() - failed_email.failed_time).seconds
-                    if diff < app.config["FAILED_LOGIN_ATTEMPTS_TIMEOUT"]:
-                        logger.info(
+                    if diff < current_app.config["FAILED_LOGIN_ATTEMPTS_TIMEOUT"]:
+                        current_app.logger.info(
                             f"Email last failed {diff}s ago. "
-                            f"Timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s"
+                            f"Timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s"
                         )
                         raise AuthenticationError("Too many incorrect attempts.")
                     else:
                         # reset
-                        logger.info(
+                        current_app.logger.info(
                             f"Email last failed {diff}s ago. "
-                            f"Timeout is {app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s, resetting timeout."
+                            f"Timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s, resetting timeout."
                         )
                         session.delete(failed_email)
                         raise AuthenticationError("Email incorrect.")
@@ -248,13 +303,13 @@ class AccountController(RequestValidationController):
                     # increment failed attempts
                     failed_email.failed_attempts += 1
                     failed_email.failed_time = datetime.datetime.utcnow()
-                    logger.info(
+                    current_app.logger.info(
                         f"Incorrect email attempt for user, " f"total failed attempts: {failed_email.failed_attempts}"
                     )
                     raise AuthenticationError("Email incorrect.")
             else:
                 # hasn't failed before, so create it
-                logger.info("User failed to log in.")
+                current_app.logger.info("User failed to log in.")
                 new_failure = FailedLogin(email=email)
                 session.add(new_failure)
                 raise AuthenticationError("Email incorrect.")
@@ -276,8 +331,9 @@ class AccountController(RequestValidationController):
             payload={
                 **payload,
                 "jti": str(uuid.uuid4()),
-                "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=app.config["TOKEN_TTL_IN_MINUTES"]),
+                "exp": datetime.datetime.utcnow()
+                + datetime.timedelta(minutes=current_app.config["TOKEN_TTL_IN_MINUTES"]),
             },
-            key=app.config["JWT_SECRET"],
+            key=current_app.config["JWT_SECRET"],
             algorithm="HS256",
         ).decode("utf-8")

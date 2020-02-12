@@ -2,7 +2,7 @@ import datetime
 from dateutil import tz
 
 from flask import Response
-from flask_restplus import Namespace
+from flask_restx import Namespace
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import aliased
 

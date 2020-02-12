@@ -1,5 +1,5 @@
 from flask import request, Response
-from flask_restplus import Namespace
+from flask_restx import Namespace
 
 from app import session_scope
 from app.Controllers.Base import RequestValidationController

@@ -1,5 +1,5 @@
 from flask import Response
-from flask_restplus import Namespace
+from flask_restx import Namespace
 
 from app import logger
 from app.Controllers.Base import RequestValidationController
@@ -26,11 +26,8 @@ class UserActivityController(RequestValidationController):
         """Returns the activity for a user """
         req_user = kwargs["req_user"]
 
-        # check subscription limitations
-        subscription = Subscription(req_user.orgs.chargebee_subscription_id)
-
-        if not subscription.can_view_user_activity():
-            raise ProductTierLimitError("You cannot view user activity on your plan.")
+        # TODO limit the history based on plan
+        # subscription = Subscription(req_user.orgs.chargebee_subscription_id)
 
         user = self.validate_get_user_activity(user_id, **kwargs)
 

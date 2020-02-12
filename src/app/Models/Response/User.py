@@ -1,4 +1,4 @@
-from flask_restplus import fields
+from flask_restx import fields
 
 from app import api
 from app.Models.Response import role_dto

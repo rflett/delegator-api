@@ -3,7 +3,7 @@ import json
 import boto3
 
 
-class SecretsManConfig(object):
+class SecretsManager(object):
     def get_params(self) -> dict:
         """Get the secrets from AWS Secrets Manager"""
         secrets = boto3.client("secretsmanager")
