@@ -10,6 +10,9 @@ from app.Controllers.Public.ManagePasswordController import api as password_v1
 from app.Controllers.Authenticated.ActiveUsers import api as active_users_v1
 from app.Controllers.Authenticated.Roles import api as roles_v1
 from app.Controllers.Authenticated.Organisation import api as organisation_v1
+from app.Controllers.Authenticated.Task.AssignTaskController import api as assign_task_v1
+from app.Controllers.Authenticated.Task.CancelTaskController import api as cancel_task_v1
+from app.Controllers.Authenticated.Task.DelayTaskController import api as delay_task_v1
 
 
 # swagger monkey patch
@@ -33,5 +36,8 @@ api.add_namespace(password_v1)
 api.add_namespace(active_users_v1)
 api.add_namespace(roles_v1)
 api.add_namespace(organisation_v1)
+api.add_namespace(assign_task_v1)
+api.add_namespace(cancel_task_v1)
+api.add_namespace(delay_task_v1)
 api.add_namespace(health_v1)
 api.add_namespace(version_v1)

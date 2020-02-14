@@ -229,13 +229,18 @@ class Task(db.Model):
     def delayed_info(self) -> dict:
         """ Gets the latest delayed information about a task """
         with session_scope() as session:
-            delayed_task = session.query(DelayedTask).filter_by(task_id=self.id).first()
+            qry = session.query(
+                DelayedTask,
+                User.first_name,
+                User.last_name
+            ).filter_by(task_id=self.id).join(DelayedTask.delayed_by == User.id).first()
 
-        if delayed_task is None:
+        if qry is None:
             raise ValidationError("Task has not been delayed before.")
         else:
-            delayed_task_dict = delayed_task.as_dict()
-            delayed_task_dict["delayed_by"] = delayed_task.users.as_dict()
+            task, db_fn, db_ln = qry
+            delayed_task_dict = task.as_dict()
+            delayed_task_dict["delayed_by"] = db_fn + " " + db_ln
             return delayed_task_dict
 
     def drop(self, req_user: User) -> None:

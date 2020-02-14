@@ -142,6 +142,7 @@ class ObjectValidationController(Resource):
         task_id = self.check_int(task_id, "id")  # the request uses 'id'
 
         with session_scope() as session:
+            # filter with the org so that's scoped to the requesting user
             task = session.query(Task).filter_by(id=task_id, org_id=org_id).first()
 
         if task is None:

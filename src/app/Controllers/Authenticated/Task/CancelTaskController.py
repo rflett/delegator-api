@@ -1,36 +1,35 @@
-from flask import Response
+from flask import current_app
 from flask_restx import Namespace
 
-from app import logger
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
+from app.Decorators import requires_jwt, authorize
 from app.Models import Notification
 from app.Models.Enums import TaskStatuses, Operations, Resources, ClickActions, Events
-from app.Models.Response import task_response, message_response_dto
 from app.Services import TaskService
 
-cancel_task_route = Namespace(path="/task/cancel", name="Task", description="Manage a task")
+api = Namespace(path="/task/cancel", name="Task", description="Manage a task")
 
 task_service = TaskService()
 
 
-@cancel_task_route.route("/<int:task_id>")
+@api.route("/<int:task_id>")
 class CancelTask(RequestValidationController):
-    @handle_exceptions
     @requires_jwt
     @authorize(Operations.CANCEL, Resources.TASK)
-    @cancel_task_route.response(200, "Cancelled the task", task_response)
-    @cancel_task_route.response(400, "Bad request", message_response_dto)
-    @cancel_task_route.response(403, "Insufficient privileges", message_response_dto)
-    @cancel_task_route.response(404, "Task not found", message_response_dto)
-    def post(self, task_id: int, **kwargs) -> Response:
+    @api.response(204, "Success")
+    def post(self, task_id: int, **kwargs):
         """Cancels a task"""
         req_user = kwargs["req_user"]
 
-        task_to_cancel = self.validate_cancel_task(task_id, **kwargs)
+        # validate
+        task_to_cancel = self.check_task_id(task_id, kwargs["req_user"].org_id)
+        self.check_auth_scope(task_to_cancel.assignees, **kwargs)
 
+        # transition
         task_service.transition(task=task_to_cancel, status=TaskStatuses.CANCELLED, req_user=req_user)
         req_user.log(operation=Operations.CANCEL, resource=Resources.TASK, resource_id=task_id)
+
+        # send notifications if required
         if task_to_cancel.assignee is not None:
             cancelled_notification = Notification(
                 title="Task cancelled",
@@ -40,5 +39,6 @@ class CancelTask(RequestValidationController):
                 click_action=ClickActions.CLOSE,
             )
             cancelled_notification.push()
-        logger.info(f"User {req_user.id} cancelled task {task_to_cancel.id}")
-        return self.ok(task_to_cancel.fat_dict())
+
+        current_app.logger.info(f"User {req_user.id} cancelled task {task_to_cancel.id}")
+        return "", 204

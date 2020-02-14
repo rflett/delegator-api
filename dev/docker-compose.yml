@@ -1,89 +1,89 @@
 version: '3.7'
 services:
 
-  postgres:
-    image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
-    # this command enable pg stat statements which pghero below uses
-    command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track='all'
-    ports:
-      - 5432:5432
+  # postgres:
+  #   image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/postgres:latest
+  #   # this command enable pg stat statements which pghero below uses
+  #   command: postgres -c shared_preload_libraries='pg_stat_statements' -c pg_stat_statements.track='all'
+  #   ports:
+  #     - 5432:5432
 
   redis:
     image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/redis:latest
     ports:
       - 6379:6379
 
-  xray:
-    image: amazon/aws-xray-daemon
-    restart: always
-    env_file:
-    - .env
-    command: -o
-    environment:
-      AWS_REGION: ap-southeast-2
-    ports:
-      - 2000:2000/udp
-      - 2000:2000
+  # xray:
+  #   image: amazon/aws-xray-daemon
+  #   restart: always
+  #   env_file:
+  #   - .env
+  #   command: -o
+  #   environment:
+  #     AWS_REGION: ap-southeast-2
+  #   ports:
+  #     - 2000:2000/udp
+  #     - 2000:2000
 
-  delegator-api:
-    # use the image from ECR
-    # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/delegator-api:latest
+  # delegator-api:
+  #   # use the image from ECR
+  #   # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/delegator-api:latest
 
-    # build the api image instead
-    image: delegator_api
-    build:
-      cache_from: 
-        - delegator_api
-      context: ../src/
+  #   # build the api image instead
+  #   image: delegator_api
+  #   build:
+  #     cache_from: 
+  #       - delegator_api
+  #     context: ../src/
 
-    restart: always
-    depends_on:
-      - postgres
-      - redis
-      - xray
-    env_file:
-    - .env
-    environment:
-      APP_ENV: Docker
-      AWS_XRAY_DAEMON_ADDRESS: xray:2000
-      # MOCK_SERVICES: 'true'
-      # MOCK_AWS: 'true'
-      AWS_DEFAULT_REGION: ap-southeast-2
-    ports:
-      - 5000:5000
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #     - xray
+  #   env_file:
+  #   - .env
+  #   environment:
+  #     APP_ENV: Docker
+  #     AWS_XRAY_DAEMON_ADDRESS: xray:2000
+  #     # MOCK_SERVICES: 'true'
+  #     # MOCK_AWS: 'true'
+  #     AWS_DEFAULT_REGION: ap-southeast-2
+  #   ports:
+  #     - 5000:5000
 
-  subscription-api:
-    # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/subscription-api:latest
-    image: sub_api
-    build:
-      cache_from: 
-        - sub_api
-      context: ../../subscription-api/src/
-    restart: always
-    environment:
-      APP_ENV: Docker
-    ports:
-      - 5001:5001
-    depends_on:
-      - redis
+  # subscription-api:
+  #   # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/subscription-api:latest
+  #   image: sub_api
+  #   build:
+  #     cache_from: 
+  #       - sub_api
+  #     context: ../../subscription-api/src/
+  #   restart: always
+  #   environment:
+  #     APP_ENV: Docker
+  #   ports:
+  #     - 5001:5001
+  #   depends_on:
+  #     - redis
 
-  notification-api:
-    # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/notification-api:latest
-    image: note_api
-    build:
-      cache_from: 
-        - note_api
-      context: ../../notification-api/src/
-    restart: always
-    env_file:
-    - .env
-    environment:
-      APP_ENV: Docker
-      AWS_DEFAULT_REGION: ap-southeast-2
-    ports:
-      - 5002:5002
-    depends_on:
-      - redis
+  # notification-api:
+  #   # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/notification-api:latest
+  #   image: note_api
+  #   build:
+  #     cache_from: 
+  #       - note_api
+  #     context: ../../notification-api/src/
+  #   restart: always
+  #   env_file:
+  #   - .env
+  #   environment:
+  #     APP_ENV: Docker
+  #     AWS_DEFAULT_REGION: ap-southeast-2
+  #   ports:
+  #     - 5002:5002
+  #   depends_on:
+  #     - redis
 
   # OPTIONAL - if you run this then you will need to run the api
   # task_escalator:

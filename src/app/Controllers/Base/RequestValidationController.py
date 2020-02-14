@@ -15,23 +15,6 @@ user_service = UserService()
 
 
 class RequestValidationController(ObjectValidationController):
-    def validate_assign_task(self, request_body: dict, **kwargs) -> tuple:
-        """Validates the assign task request
-        :param: users_org_id:   The org id of the user making the request
-        :param request_body:    The request body from the update task request
-        :return:                Response if invalid, else a complex dict
-        """
-        task = self.check_task_id(request_body.get("task_id"), kwargs["req_user"].org_id)
-        assignee_id = self.check_task_assignee(request_body.get("assignee"), **kwargs)
-
-        return task, assignee_id
-
-    def validate_cancel_task(self, task_id: int, **kwargs) -> Task:
-        """Validates the cancel task request"""
-        task = self.check_task_id(task_id, kwargs["req_user"].org_id)
-        self.check_auth_scope(task.assignees, **kwargs)
-        return task
-
     @staticmethod
     def validate_create_org_request() -> str:
         """ Validates a create org request body """
@@ -114,8 +97,9 @@ class RequestValidationController(ObjectValidationController):
         self.check_optional_str(request_body.get("job_title"), "job_title")
         self.check_user_disabled(request_body.get("disabled"))
 
-    def validate_delay_task_request(self, request_body: dict, **kwargs) -> tuple:
+    def validate_delay_task_request(self, **kwargs) -> tuple:
         """ Validates the transition task request """
+        request_body = request.get_json()
         task = self.check_task_id(request_body.get("task_id"), kwargs["req_user"].org_id)
         if task.assignee is not None:
             self.check_auth_scope(task.assignees, **kwargs)

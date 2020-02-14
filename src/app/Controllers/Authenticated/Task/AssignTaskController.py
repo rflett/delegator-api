@@ -1,30 +1,38 @@
-from flask import request, Response
-from flask_restx import Namespace
+from flask import request
+from flask_restx import Namespace, fields
 
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
+from app.Decorators import requires_jwt, authorize
 from app.Models.Enums import Operations, Resources
-from app.Models.Request import assign_task_request
-from app.Models.Response import task_response, message_response_dto
 from app.Services import TaskService
-
-assign_task_route = Namespace(path="/task/assign", name="Task", description="Manage a task")
 
 task_service = TaskService()
 
+api = Namespace(path="/task/assign", name="Task", description="Manage a task")
+request_dto = api.model(
+    "Assign Task Request",
+    {
+        "task_id": fields.Integer(required=True),
+        "assignee": fields.Integer(required=True),
+    }
+)
 
-@assign_task_route.route("/")
+
+@api.route("/")
 class AssignTask(RequestValidationController):
-    @handle_exceptions
     @requires_jwt
     @authorize(Operations.ASSIGN, Resources.TASK)
-    @assign_task_route.expect(assign_task_request)
-    @assign_task_route.response(200, "A user was assigned to the task", task_response)
-    @assign_task_route.response(400, "The request was invalid", message_response_dto)
-    @assign_task_route.response(403, "Insufficient privileges", message_response_dto)
-    @assign_task_route.response(404, "User or task not found", message_response_dto)
-    def post(self, **kwargs) -> Response:
+    @api.expect(request_dto, validate=True)
+    @api.response(204, "Success")
+    def post(self, **kwargs):
         """Assigns a user to task """
-        task, assignee_id = self.validate_assign_task(request.get_json(), **kwargs)
+        request_body = request.get_json()
+
+        # validate
+        task = self.check_task_id(request_body["task_id"], kwargs["req_user"].org_id)
+        assignee_id = self.check_task_assignee(request_body["assignee"], **kwargs)
+
+        # assign
         task_service.assign(task=task, assignee=assignee_id, req_user=kwargs["req_user"])
-        return self.ok(task.fat_dict())
+
+        return "", 204
