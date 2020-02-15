@@ -1,7 +1,9 @@
 import datetime
 import typing
 
-from app import db, session_scope, app
+from flask import current_app
+
+from app.Extensions.Database import db, session_scope
 
 
 class TaskType(db.Model):
@@ -40,7 +42,7 @@ class TaskType(db.Model):
         if self.disabled is None:
             disabled = None
         else:
-            disabled = self.disabled.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            disabled = self.disabled.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         return {
             "id": self.id,

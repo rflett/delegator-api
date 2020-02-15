@@ -1,9 +1,11 @@
 import datetime
 
-from app import session_scope, logger
+from flask import current_app
+
+from app.Extensions.Database import session_scope
 from app.Models import Task, User, Activity, Notification, DelayedTask
 from app.Models.Enums import Events, Operations, Resources, TaskStatuses, ClickActions
-from app.Exceptions import ResourceNotFoundError, ValidationError
+from app.Extensions.Errors import ResourceNotFoundError, ValidationError
 
 
 class TaskService(object):
@@ -52,7 +54,7 @@ class TaskService(object):
             )
             assigned_notification.push()
         req_user.log(operation=Operations.ASSIGN, resource=Resources.TASK, resource_id=task.id)
-        logger.info(f"assigned task {task.id} to user {assignee}")
+        current_app.logger.info(f"assigned task {task.id} to user {assignee}")
 
     @staticmethod
     def change_priority(task: Task, priority: int) -> None:
@@ -74,7 +76,7 @@ class TaskService(object):
                 )
                 priority_notification.push()
 
-        logger.info(f"Changed task {task.id} priority to {priority}")
+        current_app.logger.info(f"Changed task {task.id} priority to {priority}")
 
     def drop(self, task: Task, req_user: User) -> None:
         from app.Services import UserService
@@ -95,7 +97,7 @@ class TaskService(object):
         dropped_notification.push()
 
         req_user.log(operation=Operations.DROP, resource=Resources.TASK, resource_id=task.id)
-        logger.info(f"User {req_user.id} dropped task {task.id} " f"which was assigned to {task.assignee}.")
+        current_app.logger.info(f"User {req_user.id} dropped task {task.id} " f"which was assigned to {task.assignee}.")
 
     @staticmethod
     def get(task_id: int, org_id: int) -> Task:
@@ -159,7 +161,7 @@ class TaskService(object):
             event_friendly=f"Transitioned {task.label()} from {old_status_label} to {new_status_label}.",
         ).publish()
         req_user.log(operation=Operations.TRANSITION, resource=Resources.TASK, resource_id=task.id)
-        logger.info(f"User {req_user.id} transitioned task {task.id} from {old_status} to {status}")
+        current_app.logger.info(f"User {req_user.id} transitioned task {task.id} from {old_status} to {status}")
 
     @staticmethod
     def unassign(task: Task, req_user: User) -> None:
@@ -193,7 +195,7 @@ class TaskService(object):
                 event_friendly=f"Unassigned from {task.label()} by {req_user.name()}.",
             ).publish()
             req_user.log(operation=Operations.ASSIGN, resource=Resources.TASK, resource_id=task.id)
-            logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
+            current_app.logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
 
     @staticmethod
     def _pretty_status_label(status: str) -> str:

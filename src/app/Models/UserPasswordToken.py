@@ -2,7 +2,7 @@ import random
 import string
 import time
 
-from app import db
+from app.Extensions.Database import db
 
 
 class UserPasswordToken(db.Model):

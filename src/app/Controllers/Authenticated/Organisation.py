@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from flask import request, current_app
 from flask_restx import Namespace, fields
+from sqlalchemy import exists, and_, func
 
 
 from app.Controllers.Base import RequestValidationController
@@ -43,7 +44,20 @@ class OrganisationManage(RequestValidationController):
     def put(self, **kwargs):
         """Update an organisation"""
         req_user = kwargs["req_user"]
+        request_body = request.get_json()
         org_name = self.validate_update_org_request(req_user, request.get_json())
+
+        # check an org with that name doesn't exist already
+        with session_scope() as session:
+            if session.query(
+                exists().where(
+                    and_(
+                        func.lower(Organisation.name) == func.lower(request_body["org_name"]),
+                        Organisation.id != req_user.org_id
+                    )
+                )
+            ).scalar():
+                raise ValidationError("That organisation name already exists.")
 
         with session_scope():
             req_user.orgs.name = org_name

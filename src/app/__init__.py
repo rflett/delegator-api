@@ -1,7 +1,6 @@
 import logging
 from os import getenv
 
-import boto3
 import flask_profiler
 import sentry_sdk
 from aws_xray_sdk.core import xray_recorder, patch_all
@@ -60,24 +59,6 @@ db.init_app(app)
 def shutdown_session(exception=None):
     db.session.close()
 
-
-# TODO move to the class that they're used in if possible, otherwise, an extension
-if getenv("MOCK_AWS"):
-    user_settings_table = None
-    org_settings_table = None
-    user_activity_table = None
-    task_activity_table = None
-    api_events_sns_topic = None
-    email_sns_topic = None
-else:
-    dyn_db = boto3.resource("dynamodb")
-    sns = boto3.resource("sns")
-    user_settings_table = dyn_db.Table(app.config["USER_SETTINGS_TABLE"])
-    org_settings_table = dyn_db.Table(app.config["ORG_SETTINGS_TABLE"])
-    user_activity_table = dyn_db.Table(app.config["USER_ACTIVITY_TABLE"])
-    task_activity_table = dyn_db.Table(app.config["TASK_ACTIVITY_TABLE"])
-    api_events_sns_topic = sns.Topic(app.config["EVENTS_SNS_TOPIC_ARN"])
-    email_sns_topic = sns.Topic(app.config["EMAIL_SNS_TOPIC_ARN"])
 
 # add the api and its namespaces to the app
 api.init_app(app)

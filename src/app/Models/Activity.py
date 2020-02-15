@@ -3,7 +3,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from os import getenv
 
-from app import api_events_sns_topic, app, logger, app_env
+import boto3
+from flask import current_app
+
+if not getenv("MOCK_AWS"):
+    sns = boto3.resource("sns")
+    api_events_sns_topic = sns.Topic(current_app.config["EVENTS_SNS_TOPIC_ARN"])
 
 
 @dataclass
@@ -14,12 +19,12 @@ class Activity(object):
     event_friendly: str = ""
 
     def __post_init__(self):
-        self.event_time = datetime.utcnow().strftime(app.config["DYN_DB_ACTIVITY_DATE_FORMAT"])
+        self.event_time = datetime.utcnow().strftime(current_app.config["DYN_DB_ACTIVITY_DATE_FORMAT"])
 
     def publish(self) -> None:
         """ Publishes an event to SNS """
-        if app_env in ["Local"] or getenv("MOCK_AWS"):
-            logger.info(f"WOULD have published message {self.event}")
+        if getenv("MOCK_AWS"):
+            current_app.logger.info(f"WOULD have published message {self.event}")
             return None
 
         api_events_sns_topic.publish(

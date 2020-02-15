@@ -7,11 +7,12 @@ import jwt
 import requests
 from flask import request, current_app
 from flask_restx import Namespace, fields
+from sqlalchemy import func, exists
 
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt
 from app.Extensions.Database import session_scope
-from app.Extensions.Errors import AuthenticationError
+from app.Extensions.Errors import AuthenticationError, ValidationError
 from app.Models import User, Activity, Organisation, TaskType, FailedLogin, Email
 from app.Models.Enums import Events, Operations, Resources
 from app.Services import UserService
@@ -44,7 +45,12 @@ class AccountController(RequestValidationController):
         """Signup a user."""
         request_body = request.get_json()
 
-        self.validate_create_org_request()
+        with session_scope() as session:
+            if session.query(exists().where(
+                func.lower(Organisation.name) == func.lower(request_body["org_name"])
+            )).scalar():
+                raise ValidationError("That organisation already exists.")
+
         self.validate_email(request_body["email"])
         self.validate_password(request_body["password"])
 

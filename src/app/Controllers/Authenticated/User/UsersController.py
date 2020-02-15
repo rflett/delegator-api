@@ -10,7 +10,7 @@ from app.Extensions.Database import session_scope
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Errors import ValidationError
-from app.Models import User, Activity, Task, UserPasswordToken, Email
+from app.Models import User, Activity, Task, UserPasswordToken, Email, Subscription
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.RBAC import Role
 from app.Services import UserService
@@ -265,7 +265,8 @@ class UserController(RequestValidationController):
                 raise ValidationError("Cannot disable only remaining Administrator.")
 
             # decrement plan quantity
-            self._decrement_subscription(req_user.orgs.chargebee_subscription_id, req_user)
+            subscription = Subscription(req_user.orgs.chargebee_subscription_id)
+            subscription.decrement_subscription(req_user)
 
             # drop the tasks
             with session_scope() as session:
@@ -276,7 +277,8 @@ class UserController(RequestValidationController):
         # user is being re-enabled
         elif user_to_update.disabled is not None and disabled is None:
             # increment plan quantity
-            self._increment_subscription(req_user.orgs.chargebee_subscription_id, req_user)
+            subscription = Subscription(req_user.orgs.chargebee_subscription_id)
+            subscription.increment_subscription(req_user)
 
         # for all attributes in the request, update them on the user if they exist
         with session_scope():
@@ -303,29 +305,3 @@ class UserController(RequestValidationController):
         req_user.log(operation=Operations.UPDATE, resource=Resources.USER, resource_id=user_to_update.id)
         current_app.logger.info(f"User {req_user.id} updated user {user_to_update.id}")
         return "", 204
-
-    def _increment_subscription(self, subscription_id, req_user):
-        """Increment the subscription quantity"""
-        try:
-            r = requests.put(
-                url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/{subscription_id}/quantity",
-                headers={"Content-Type": "application/json", "Authorization": self.create_service_account_jwt()},
-                timeout=10,
-            )
-            if r.status_code != 204:
-                current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
-        except requests.exceptions.RequestException as e:
-            current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
-
-    def _decrement_subscription(self, subscription_id, req_user):
-        """Decrement the subscription quantity"""
-        try:
-            r = requests.delete(
-                url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/{subscription_id}/quantity",
-                headers={"Content-Type": "application/json", "Authorization": self.create_service_account_jwt()},
-                timeout=10,
-            )
-            if r.status_code != 204:
-                current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
-        except requests.exceptions.RequestException as e:
-            current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")

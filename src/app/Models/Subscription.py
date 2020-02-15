@@ -1,5 +1,8 @@
+import datetime
+import uuid
 from os import getenv
 
+import jwt
 import requests
 from flask import current_app
 
@@ -50,8 +53,8 @@ class Subscription(object):
             return {"status": "in_trial", "meta_data": {}}
         try:
             r = requests.get(
-                url=f"{self.url}/subscription/{subscription_id}/quantity",
-                headers={"Authorization": f"Bearer {self.create_sa_token()}"},
+                url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/{subscription_id}/quantity",
+                headers={"Authorization": self.create_service_account_jwt()},
                 timeout=10,
             )
             if r.status_code != 200:
@@ -63,3 +66,44 @@ class Subscription(object):
         except requests.exceptions.RequestException:
             current_app.logger.error(f"There was an error getting the subscription quantity for {subscription_id}")
             raise InternalServerError("Something went wrong getting details about your subscription!")
+
+    def increment_subscription(self, req_user):
+        """Increment the subscription quantity"""
+        try:
+            r = requests.put(
+                url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/{self._subscription_id}/quantity",
+                headers={"Content-Type": "application/json", "Authorization": self.create_service_account_jwt()},
+                timeout=10,
+            )
+            if r.status_code != 204:
+                current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
+        except requests.exceptions.RequestException as e:
+            current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
+
+    def decrement_subscription(self, req_user):
+        """Decrement the subscription quantity"""
+        try:
+            r = requests.delete(
+                url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/{self._subscription_id}/quantity",
+                headers={"Content-Type": "application/json", "Authorization": self.create_service_account_jwt()},
+                timeout=10,
+            )
+            if r.status_code != 204:
+                current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
+        except requests.exceptions.RequestException as e:
+            current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
+
+    @staticmethod
+    def create_service_account_jwt() -> str:
+        """Create a JWT token to make requests to other services"""
+        token = jwt.encode(
+            payload={
+                "claims": {"type": "service-account", "service-account-name": "delegator-api"},
+                "jti": str(uuid.uuid4()),
+                "aud": "delegator.com.au",
+                "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=30),
+            },
+            key=current_app.config["JWT_SECRET"],
+            algorithm="HS256",
+        ).decode("utf-8")
+        return "Bearer " + token

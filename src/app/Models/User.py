@@ -7,13 +7,19 @@ import string
 import typing
 from os import getenv
 
+import boto3
 from boto3.dynamodb.conditions import Key
+from flask import current_app
 from sqlalchemy import exists
 
-from app import db, session_scope, logger, user_activity_table, app, subscription_api
-from app.Exceptions import AuthorizationError
+from app.Extensions.Database import db, session_scope
+from app.Extensions.Errors import AuthorizationError
+from app.Models import Subscription
 from app.Models.RBAC import Log, Permission
 from app.Models.LocalMockData import MockActivity
+
+
+dyn_db = boto3.resource("dynamodb")
 
 
 def _hash_password(password: str) -> str:
@@ -139,7 +145,7 @@ class User(db.Model):
         )
         with session_scope() as session:
             session.add(audit_log)
-        logger.info(f"user with id {self.id} did {operation} on {resource} with " f"a resource_id of {resource_id}")
+        current_app.info(f"user with id {self.id} did {operation} on {resource} with " f"a resource_id of {resource_id}")
 
     def set_password(self, password) -> None:
         """
@@ -186,7 +192,7 @@ class User(db.Model):
             if failed_email:
                 session.query(FailedLogin).filter_by(email=self.email).delete()
 
-            logger.info(f"cleared failed logins for {self.email}")
+            current_app.info(f"cleared failed logins for {self.email}")
 
     def delete(self, req_user) -> None:
         """ Deletes the user """
@@ -196,7 +202,8 @@ class User(db.Model):
             return "".join(random.choices(string.ascii_uppercase + string.digits, k=15))
 
         if self.disabled is None:
-            subscription_api.decrement_plan_quantity(self.orgs.chargebee_subscription_id)
+            subscription = Subscription(self.orgs.chargebee_subscription_id)
+            subscription.decrement_subscription(req_user)
 
         # drop their tasks
         with session_scope() as session:
@@ -205,7 +212,6 @@ class User(db.Model):
         for task in users_tasks:
             task.drop(req_user)
 
-        self.email = f"{make_random()}@{make_random()}.com"
         self.password = _hash_password(make_random())
         self.deleted = datetime.datetime.utcnow()
 
@@ -216,12 +222,12 @@ class User(db.Model):
         if self.disabled is None:
             disabled = None
         else:
-            disabled = self.disabled.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            disabled = self.disabled.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.deleted is None:
             deleted = None
         else:
-            deleted = self.deleted.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            deleted = self.deleted.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         return {
             "id": self.id,
@@ -234,9 +240,9 @@ class User(db.Model):
             "disabled": disabled,
             "job_title": self.job_title,
             "deleted": deleted,
-            "created_at": self.created_at.strftime(app.config["RESPONSE_DATE_FORMAT"]),
+            "created_at": self.created_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"]),
             "created_by": self.created_by,
-            "updated_at": self.updated_at.strftime(app.config["RESPONSE_DATE_FORMAT"]),
+            "updated_at": self.updated_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"]),
             "updated_by": self.updated_by,
             "invite_accepted": self.invite_accepted(),
             "last_seen": self.last_active(),
@@ -261,10 +267,12 @@ class User(db.Model):
             activity = MockActivity()
             return activity.data
 
+        user_activity_table = dyn_db.Table(current_app.config["USER_ACTIVITY_TABLE"])
+
         activity = user_activity_table.query(
             Select="ALL_ATTRIBUTES", KeyConditionExpression=Key("id").eq(self.id), ScanIndexForward=False
         )
-        logger.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
+        current_app.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
 
         log = []
 
@@ -272,10 +280,10 @@ class User(db.Model):
             try:
                 del item["id"]
                 activity_timestamp_date = datetime.datetime.strptime(item["activity_timestamp"], "%Y%m%dT%H%M%S.%fZ")
-                item["activity_timestamp"] = activity_timestamp_date.strftime(app.config["RESPONSE_DATE_FORMAT"])
+                item["activity_timestamp"] = activity_timestamp_date.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
                 log.append(item)
             except KeyError:
-                logger.error(f"Key 'id' was missing from activity item. Table:{user_activity_table.name} Item:{item}")
+                current_app.error(f"Key 'id' was missing from activity item. Table:{user_activity_table.name} Item:{item}")
 
         return log
 

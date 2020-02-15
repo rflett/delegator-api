@@ -1,45 +1,21 @@
-import datetime
-import typing
-
-from flask import request, current_app
-from sqlalchemy import func, exists, and_
-from validate_email import validate_email
+from flask import request
 
 from app.Controllers.Base import ObjectValidationController
-from app.Extensions.Errors import ValidationError, ResourceNotFoundError
-from app.Extensions.Database import session_scope
-from app.Models import TaskType, TaskTypeEscalation, User, Task, Organisation, OrgSetting, TaskLabel
+from app.Extensions.Errors import ValidationError
+from app.Models import User, Task
 from app.Services import UserService
 
 user_service = UserService()
 
 
 class RequestValidationController(ObjectValidationController):
-    @staticmethod
-    def validate_create_org_request() -> str:
-        """ Validates a create org request body """
-        request_body = request.get_json()
-        org_name = request_body["org_name"]
-
-        with session_scope() as session:
-            org_exists = session.query(exists().where(func.lower(Organisation.name) == func.lower(org_name))).scalar()
-
-        if org_exists:
-            raise ValidationError("That organisation already exists.")
-        else:
-            return org_name
-
-    def validate_delay_task_request(self, **kwargs) -> tuple:
+    def validate_delay_task_request(self, **kwargs) -> Task:
         """ Validates the transition task request """
         request_body = request.get_json()
         task = self.check_task_id(request_body.get("task_id"), kwargs["req_user"].org_id)
         if task.assignee is not None:
             self.check_auth_scope(task.assignees, **kwargs)
-        delay_for = self.check_int(request_body.get("delay_for"), "delay_for")
-        try:
-            return task, delay_for, self.check_str(request_body["reason"], "reason")
-        except KeyError:
-            return task, delay_for, None
+        return task
 
     def validate_delete_user(self, user_id: int, **kwargs) -> User:
         """Validates the delete user request"""
@@ -63,7 +39,8 @@ class RequestValidationController(ObjectValidationController):
             self.check_auth_scope(task.assignees, **kwargs)
             return task
 
-    def validate_email(self, email: str) -> bool:
+    @staticmethod
+    def validate_email(email: str) -> bool:
         """
         Validates an email address. It checks to make sure it's a string, and calls the
         validate_email package which compares it to a huge regex. This package has support
@@ -71,16 +48,7 @@ class RequestValidationController(ObjectValidationController):
         :param email:   The email to validate
         :return:        True if the email is valid, or a Flask Response.
         """
-        if validate_email(self.check_str(email, "email")) is False:
-            raise ValidationError("Invalid email")
         return True
-
-    @staticmethod
-    def validate_get_transitions(users_org_id: int) -> typing.List[Task]:
-        """Validates the get task available task transitions request"""
-        with session_scope() as session:
-            tasks = session.query(Task).filter_by(org_id=users_org_id).all()
-        return tasks
 
     def validate_get_user(self, user_id: int, **kwargs) -> User:
         """Validates the get user request"""
@@ -106,32 +74,6 @@ class RequestValidationController(ObjectValidationController):
         # password_check = self.check_password_reqs(password)
         return password
 
-    def validate_time_period(self, request_body: dict) -> typing.Tuple[datetime.datetime, datetime.datetime]:
-        """ Validate that two dates are a valid comparision period """
-        # check they exist in the request and can be converted to dates
-        try:
-            _start_period = self.check_str(request_body["start_period"], "start_period")
-            _end_period = self.check_str(request_body["end_period"], "end_period")
-            start_period = datetime.datetime.strptime(_start_period, current_app.config["REQUEST_DATE_FORMAT"])
-            end_period = datetime.datetime.strptime(_end_period, current_app.config["REQUEST_DATE_FORMAT"])
-        except KeyError as e:
-            raise ValidationError(f"Missing {e} from request body")
-        except ValueError:
-            raise ValidationError(
-                "Couldn't convert start_period|end_period to datetime.datetime, make sure they're "
-                f"in the format {current_app.config['REQUEST_DATE_FORMAT']}"
-            )
-
-        # start must be before end
-        if end_period < start_period:
-            raise ValidationError("start_period must be before end_period")
-
-        # start period can't be in the future
-        if start_period > datetime.datetime.utcnow():
-            raise ValidationError("start_period is in the future")
-
-        return start_period, end_period
-
     def validate_transition_task(self, **kwargs) -> Task:
         """ Validates the transition task request """
         request_body = request.get_json()
@@ -140,30 +82,3 @@ class RequestValidationController(ObjectValidationController):
             self.check_auth_scope(task.assignees, **kwargs)
         self.check_task_status(request_body["task_status"])
         return task
-
-    def validate_update_org_request(self, req_user: User, request_body: dict) -> str:
-        """ Validates a create org request body """
-        org_name = self.check_str(request_body.get("org_name"), "org_name")
-        org_id = self.check_int(request_body.get("org_id"), "org_id")
-
-        with session_scope() as session:
-            # check org exists
-            org = session.query(Organisation).filter_by(id=org_id).first()
-            if org is None:
-                raise ResourceNotFoundError("That organisation doesn't exist.")
-
-            # check that it's the user's org
-            if req_user.org_id != org.id:
-                raise ValidationError("You can only update your own organisation's name.")
-
-            # check an org with that name doesn't exist already
-            org_name_exists = session.query(
-                exists().where(
-                    and_(func.lower(Organisation.name) == func.lower(org_name), Organisation.id != req_user.org_id)
-                )
-            ).scalar()
-
-            if org_name_exists:
-                raise ValidationError("That organisation name already exists.")
-
-        return org_name

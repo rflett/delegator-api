@@ -1,5 +1,4 @@
 import datetime
-import dateutil
 import typing
 import uuid
 
@@ -45,35 +44,6 @@ class ObjectValidationController(Resource):
                 )
 
     @staticmethod
-    def check_int(param: int, param_name: str, allow_negative: bool = False) -> int:
-        """Ensures the param is an int and is positive
-        In python bools are ints, so we need to checks that it's a bool before we check that it's an int"""
-        if isinstance(param, bool):
-            raise ValidationError(f"Bad {param_name}, expected int got {type(param)}.")
-        if not isinstance(param, int):
-            raise ValidationError(f"Bad {param_name}, expected int got {type(param)}.")
-        if not allow_negative and param < 0:
-            raise ValidationError(f"{param_name} is negative.")
-        return param
-
-    def check_optional_int(self, param: int, param_name: str, allow_negative: bool = False) -> typing.Union[int, None]:
-        """If the param is not None, check that its a valid str."""
-        if param is not None:
-            return self.check_int(param, param_name, allow_negative=allow_negative)
-        else:
-            return param
-
-    @staticmethod
-    def check_optional_str(param: str, param_name: str) -> typing.Union[str, None]:
-        """If the param is not None, check that its a valid str."""
-        if param is not None:
-            if not isinstance(param, str):
-                raise ValidationError(f"Bad {param_name}, expected str got {type(param)}.")
-            return param.strip()
-        else:
-            return param
-
-    @staticmethod
     def check_password_reqs(password: str) -> bool:
         """Ensures a password meets minimum security requirements."""
         min_length = 6
@@ -88,29 +58,6 @@ class ObjectValidationController(Resource):
             raise ValidationError(f"Password requires more than {min_caps} capital letter(s).")
         return True
 
-    @staticmethod
-    def check_str(param: str, param_name: str) -> str:
-        """Checks that the param is a str, has more than 0 chars in it, and returns the stripped str."""
-        if not isinstance(param, str):
-            raise ValidationError(f"Bad {param_name}, expected str got {type(param)}.")
-        if len(param.strip()) == 0:
-            raise ValidationError(f"{param_name} is required.")
-        return param.strip()
-
-    @staticmethod
-    def check_optional_date(date_str: typing.Optional[str], param_name: str) -> typing.Union[None, datetime.datetime]:
-        """Verify a date can be converted to a datetime and is not in the past"""
-        if date_str is not None:
-            try:
-                date_parsed = dateutil.parser.parse(date_str)
-                if date_parsed < datetime.datetime.now(datetime.timezone.utc):
-                    raise ValidationError(f"{param_name} is in the past.")
-                return date_parsed
-            except ValueError as e:
-                current_app.logger.error(str(e))
-                raise ValidationError(f"Could not parse {param_name} {date_str} to date.")
-        return None
-
     def check_task_assignee(self, assignee: typing.Optional[int], **kwargs) -> typing.Union[int, None]:
         """Check if the user has permissions to assign this person to a task."""
         if assignee is not None:
@@ -120,10 +67,9 @@ class ObjectValidationController(Resource):
         else:
             return None
 
-    def check_task_id(self, task_id: int, org_id: int) -> Task:
+    @staticmethod
+    def check_task_id(task_id: int, org_id: int) -> Task:
         """Check that the task exist and return it if it does."""
-        task_id = self.check_int(task_id, "id")  # the request uses 'id'
-
         with session_scope() as session:
             # filter with the org so that's scoped to the requesting user
             task = session.query(Task).filter_by(id=task_id, org_id=org_id).first()
@@ -133,37 +79,35 @@ class ObjectValidationController(Resource):
         else:
             return task
 
-    def check_task_priority(self, priority: typing.Union[int, None]) -> typing.Union[int, None]:
+    @staticmethod
+    def check_task_priority(priority: typing.Union[int, None]) -> typing.Union[int, None]:
         """Check that a task priority exists."""
-        priority = self.check_int(priority, "task_priority")
-
         with session_scope() as session:
             if not session.query(exists().where(TaskPriority.priority == priority)).scalar():
                 raise ResourceNotFoundError(f"Priority {priority} doesn't exist")
 
         return priority
 
-    def check_task_status(self, task_status: str) -> str:
+    @staticmethod
+    def check_task_status(task_status: str) -> str:
         """Check that a task status exists."""
-        task_status = self.check_str(task_status, "status")
-
         with session_scope() as session:
             if not session.query(exists().where(TaskStatus.status == task_status)).scalar():
                 raise ResourceNotFoundError(f"Task status {task_status} doesn't exist")
 
         return task_status.strip()
 
-    def check_task_type_id(self, task_type_id: int) -> int:
+    @staticmethod
+    def check_task_type_id(task_type_id: int) -> int:
         """Check if a task type exists."""
-        task_type_id = self.check_int(task_type_id, "task_type_id")
-
         with session_scope() as session:
             if not session.query(exists().where(TaskType.id == task_type_id)).scalar():
                 raise ResourceNotFoundError(f"Task type {task_type_id} doesn't exist")
 
         return task_type_id
 
-    def check_task_labels(self, labels: typing.List[int], org_id: int) -> typing.List[int]:
+    @staticmethod
+    def check_task_labels(labels: typing.List[int], org_id: int) -> typing.List[int]:
         """Check to make sure that the labels are valid"""
         if labels is None:
             return []
@@ -171,7 +115,6 @@ class ObjectValidationController(Resource):
             raise ValidationError(f"Tasks can only have up to 3 labels, you've supplied {len(labels)}.")
         with session_scope() as session:
             for label_id in labels:
-                self.check_int(label_id, "label id")
                 if not session.query(
                     exists().where(and_(TaskLabel.id == label_id, TaskLabel.org_id == org_id))
                 ).scalar():
@@ -221,11 +164,11 @@ class ObjectValidationController(Resource):
                 # return the email
                 return identifier
 
-        return user
+            return user
 
-    def check_user_role(self, req_user: User, role: str, user_to_update: User = None) -> str:
+    @staticmethod
+    def check_user_role(req_user: User, role: str, user_to_update: User = None) -> str:
         """Given a users role, check that it exist and that the user can pass the role on to the recipient."""
-        role = self.check_str(role, "role")
         with session_scope() as session:
             _role = session.query(Role).filter_by(id=role).first()
         if _role is None:

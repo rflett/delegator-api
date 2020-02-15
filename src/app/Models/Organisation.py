@@ -1,6 +1,8 @@
 import datetime
 
-from app import db, app
+from flask import current_app
+
+from app.Extensions.Database import db
 
 
 class Organisation(db.Model):
@@ -49,7 +51,7 @@ class Organisation(db.Model):
         if self.locked is None:
             locked = None
         else:
-            locked = self.locked.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            locked = self.locked.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         return {
             "name": self.name,

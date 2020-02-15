@@ -1,6 +1,6 @@
 import datetime
 
-from flask import current_app
+from flask import current_app, request
 from flask_restx import Namespace, fields
 
 from app.Controllers.Base import RequestValidationController
@@ -34,8 +34,11 @@ class DelayTask(RequestValidationController):
     def put(self, **kwargs):
         """Delays a task """
         req_user = kwargs["req_user"]
+        request_body = request.get_json()
 
-        task, delay_for, reason = self.validate_delay_task_request(**kwargs)
+        task = self.validate_delay_task_request(**kwargs)
+        reason = request_body["reason"]
+        delay_for = request_body["delay_for"]
 
         with session_scope() as session:
             # transition a task to delayed

@@ -1,6 +1,9 @@
 import datetime
 import typing
-from app import app, db
+
+from flask import current_app
+
+from app.Extensions.Database import db
 
 
 class DelayedTask(db.Model):
@@ -40,17 +43,17 @@ class DelayedTask(db.Model):
         if self.snoozed is None:
             snoozed = None
         else:
-            snoozed = self.snoozed.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            snoozed = self.snoozed.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.expired is None:
             expired = None
         else:
-            expired = self.expired.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            expired = self.expired.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         return {
             "task_id": self.task_id,
             "delay_for": self.delay_for,
-            "delayed_at": self.delayed_at.strftime(app.config["RESPONSE_DATE_FORMAT"]),
+            "delayed_at": self.delayed_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"]),
             "delayed_by": self.delayed_by,
             "reason": self.reason,
             "snoozed": snoozed,

@@ -3,11 +3,15 @@ from os import getenv
 
 from boto3.dynamodb.conditions import Key
 from sqlalchemy.orm import aliased
+from flask import current_app
+import boto3
 
-from app import db, session_scope, logger, task_activity_table, app
-from app.Exceptions import ValidationError
+from app.Extensions.Database import db, session_scope
+from app.Extensions.Errors import ValidationError
 from app.Models import DelayedTask, User
 from app.Models.LocalMockData import MockActivity
+
+dyn_db = boto3.resource("dynamodb")
 
 
 class Task(db.Model):
@@ -94,37 +98,37 @@ class Task(db.Model):
         if self.created_at is None:
             created_at = None
         else:
-            created_at = self.created_at.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            created_at = self.created_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.started_at is None:
             started_at = None
         else:
-            started_at = self.started_at.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            started_at = self.started_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.finished_at is None:
             finished_at = None
         else:
-            finished_at = self.finished_at.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            finished_at = self.finished_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.status_changed_at is None:
             status_changed_at = None
         else:
-            status_changed_at = self.status_changed_at.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            status_changed_at = self.status_changed_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.priority_changed_at is None:
             priority_changed_at = None
         else:
-            priority_changed_at = self.priority_changed_at.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            priority_changed_at = self.priority_changed_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.scheduled_for is None:
             scheduled_for = None
         else:
-            scheduled_for = self.scheduled_for.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            scheduled_for = self.scheduled_for.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.scheduled_notification_sent is None:
             scheduled_notification_sent = None
         else:
-            scheduled_notification_sent = self.scheduled_notification_sent.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            scheduled_notification_sent = self.scheduled_notification_sent.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         return {
             "id": self.id,
@@ -191,9 +195,9 @@ class Task(db.Model):
         else:
             start_of_history = datetime.datetime.utcnow() - datetime.timedelta(days=max_days_of_history)
 
-        start_of_history_str = start_of_history.strftime(app.config["DYN_DB_ACTIVITY_DATE_FORMAT"])
+        start_of_history_str = start_of_history.strftime(current_app.config["DYN_DB_ACTIVITY_DATE_FORMAT"])
 
-        logger.info(
+        current_app.logger.info(
             f"Retrieving {max_days_of_history} days of history "
             f"({start_of_history.strftime('%Y-%m-%d %H:%M:%S')} "
             f"to {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}) for task {self.id}. "
@@ -203,13 +207,15 @@ class Task(db.Model):
             activity = MockActivity()
             return activity.data
 
+        task_activity_table = dyn_db.Table(current_app.config["TASK_ACTIVITY_TABLE"])
+
         activity = task_activity_table.query(
             Select="ALL_ATTRIBUTES",
             KeyConditionExpression=Key("id").eq(self.id) & Key("activity_timestamp").gte(start_of_history_str),
             ScanIndexForward=False,
         )
 
-        logger.info(f"Found {activity.get('Count')} activity items for task id {self.id}")
+        current_app.logger.info(f"Found {activity.get('Count')} activity items for task id {self.id}")
 
         log = []
 
@@ -218,7 +224,7 @@ class Task(db.Model):
                 del item["id"]
                 log.append(item)
             except KeyError:
-                logger.error(f"Key 'id' was missing from activity item. Table:{task_activity_table.name} Item:{item}")
+                current_app.logger.error(f"Key 'id' was missing from activity item. Table:{task_activity_table.name}")
 
         return log
 

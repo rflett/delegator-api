@@ -1,4 +1,4 @@
-from app import db
+from app.Extensions.Database import db
 from app.Models import TaskType, TaskPriority  # noqa
 
 

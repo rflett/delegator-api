@@ -1,5 +1,6 @@
 import typing
-from app import db
+
+from app.Extensions.Database import db
 
 
 class TaskStatus(db.Model):
