@@ -15,3 +15,4 @@ A list of important changes that may break things
 10. `GET` `/task/{id}` response payload has changed dramatically
 11. `PUT` `/task/{id}` returns `204` instead of `200`
 12. `POST` `/task/{id}` returns `204` instead of `200` (create and schedule)
+13. Create, Update and Delete `/task-labels` now return `204`

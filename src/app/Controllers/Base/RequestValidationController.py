@@ -318,38 +318,6 @@ class RequestValidationController(ObjectValidationController):
             "disabled": self.check_user_disabled(request_body.get("disabled")),
         }
 
-    def validate_create_task_label_request(self, request_body: dict) -> typing.Tuple[str, str]:
-        """Validates that the incoming task label is valid"""
-        label = self.check_str(request_body.get("label"), "label")
-        colour = self.check_str(request_body.get("colour"), "colour")
-        return label, colour
-
-    def validate_update_task_labels_request(self, request_body: dict, org_id: int) -> TaskLabel:
-        """Validates that the incoming task labels are valid"""
-        label_id = self.check_int(request_body.get("id"), "id")
-        self.check_str(request_body.get("label"), "label")
-        self.check_str(request_body.get("colour"), "colour")
-
-        with session_scope() as session:
-            task_label = session.query(TaskLabel).filter_by(id=label_id, org_id=org_id).first()
-
-        if task_label is None:
-            raise ResourceNotFoundError("Task label doesn't exist.")
-        else:
-            return task_label
-
-    def validate_delete_task_labels_request(self, label_id: int, org_id: int) -> TaskLabel:
-        """Validates that the incoming task labels are valid"""
-        label_id = self.check_int(label_id, "label_id")
-
-        with session_scope() as session:
-            task_label = session.query(TaskLabel).filter_by(id=label_id, org_id=org_id).first()
-
-        if task_label is None:
-            raise ResourceNotFoundError("Task label doesn't exist.")
-        else:
-            return task_label
-
     def validate_resend_welcome_request(self, request_body: dict) -> typing.Tuple[User, str]:
         """Validate the resend welcome request"""
         user = self.check_user_id(request_body.get("user_id"), should_exist=True)
