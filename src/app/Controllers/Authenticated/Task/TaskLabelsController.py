@@ -32,7 +32,9 @@ class TaskLabels(RequestValidationController):
         req_user.log(Operations.GET, Resources.TASK_LABELS)
         return {"labels": [tl.as_dict() for tl in task_labels_qry]}, 200
 
-    create_label_dto = api.model("Create Label Dto", {"label": fields.String(required=True), "colour": fields.String(required=True)})
+    create_label_dto = api.model(
+        "Create Label Dto", {"label": fields.String(required=True), "colour": fields.String(required=True)}
+    )
 
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK_LABEL)

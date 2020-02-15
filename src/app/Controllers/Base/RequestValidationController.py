@@ -29,36 +29,6 @@ class RequestValidationController(ObjectValidationController):
         else:
             return org_name
 
-    def validate_create_task_type_request(
-        self, request_body: dict, **kwargs
-    ) -> typing.Tuple[dict, typing.Optional[TaskType]]:
-        """ Validates a create task type request body """
-        label = self.check_str(request_body.get("label"), "label")
-        request_defaults = {
-            "default_description": self.check_optional_str(
-                request_body.get("default_description"), "default_description"
-            ),
-            "default_time_estimate": self.check_optional_int(
-                param=request_body.get("default_time_estimate"), param_name="default_time_estimate", allow_negative=True
-            ),
-            "default_priority": self.check_optional_int(
-                param=request_body.get("default_priority"), param_name="default_priority", allow_negative=True
-            ),
-        }
-        defaults = {k: v for k, v in request_defaults.items() if v is not None}
-
-        # check if it exists and needs enabling
-        with session_scope() as session:
-            task_type = (
-                session.query(TaskType)
-                .filter(func.lower(TaskType.label) == func.lower(label), TaskType.org_id == kwargs["req_user"].org_id)
-                .first()
-            )
-            if task_type is None:
-                return defaults, None
-            else:
-                return defaults, task_type
-
     def validate_create_user_request(self, req_user: User, request_body: dict) -> None:
         """
         Validates a create user request body
@@ -96,18 +66,6 @@ class RequestValidationController(ObjectValidationController):
         if user_service.is_user_only_org_admin(user):
             raise ValidationError("Can't delete the only remaining Administrator")
         return user
-
-    def validate_disable_task_type_request(self, task_type_id: int) -> TaskType:
-        """ Validates the disable task request """
-        type_id = self.check_int(task_type_id, "task_type_id")
-
-        with session_scope() as session:
-            task_type = session.query(TaskType).filter_by(id=type_id).first()
-
-        if task_type is None:
-            raise ResourceNotFoundError(f"Task type {task_type_id} doesn't exist.")
-        else:
-            return task_type
 
     def validate_drop_task(self, task_id: int, **kwargs) -> Task:
         """Validates the assign task request
@@ -192,13 +150,14 @@ class RequestValidationController(ObjectValidationController):
 
         return start_period, end_period
 
-    def validate_transition_task(self, request_body: dict, **kwargs) -> tuple:
+    def validate_transition_task(self, **kwargs) -> Task:
         """ Validates the transition task request """
-        task = self.check_task_id(request_body.get("task_id"), kwargs["req_user"].org_id)
+        request_body = request.get_json()
+        task = self.check_task_id(request_body["task_id"], kwargs["req_user"].org_id)
         if task.assignee is not None:
             self.check_auth_scope(task.assignees, **kwargs)
-        task_status = self.check_task_status(request_body.get("task_status"))
-        return task, task_status
+        self.check_task_status(request_body["task_status"])
+        return task
 
     def validate_update_org_request(self, req_user: User, request_body: dict) -> str:
         """ Validates a create org request body """
@@ -226,84 +185,6 @@ class RequestValidationController(ObjectValidationController):
                 raise ValidationError("That organisation name already exists.")
 
         return org_name
-
-    def validate_update_task_type_request(self, org_id: int, request_body: dict) -> typing.Tuple[TaskType, dict, list]:
-        """ Validates an update task type request body """
-        # check label and that escalations are in the request
-        label = self.check_str(request_body.get("label"), "label")
-
-        defaults = {
-            "default_description": self.check_optional_str(
-                request_body.get("default_description"), "default_description"
-            ),
-            "default_time_estimate": self.check_optional_int(
-                param=request_body.get("default_time_estimate"), param_name="default_time_estimate", allow_negative=True
-            ),
-            "default_priority": self.check_optional_int(
-                param=request_body.get("default_priority"), param_name="default_priority", allow_negative=True
-            ),
-        }
-
-        # check that the task type exists
-        with session_scope() as session:
-            task_type = session.query(TaskType).filter_by(id=request_body["id"], org_id=org_id).first()
-            if task_type is None:
-                raise ResourceNotFoundError(f"Task type {label} doesn't exist.")
-
-            if task_type.disabled is not None:
-                raise ValidationError(f"Task type {label} is disabled.")
-
-            # check if it's a new label and it already exists
-            label_exists = session.query(
-                exists().where(and_(func.lower(TaskType.label) == func.lower(label), TaskType.org_id == org_id))
-            ).scalar()
-
-            if task_type.label != label and label_exists:
-                raise ValidationError(
-                    f"{task_type.label} cannot be renamed to {label} because a task type with "
-                    f"this name already exists."
-                )
-
-        # check the escalations
-        if not isinstance(request_body.get("escalation_policies"), list):
-            raise ValidationError(f"Missing escalation_policies from update task type request")
-
-        valid_escalations = []
-
-        for escalation in request_body["escalation_policies"]:
-            esc_attrs = {
-                "display_order": self.check_int(escalation.get("display_order"), "display_order"),
-                "delay": self.check_int(escalation.get("delay"), "delay"),
-                "from_priority": self.check_task_priority(escalation.get("from_priority")),
-                "to_priority": self.check_task_priority(escalation.get("to_priority")),
-            }
-
-            with session_scope() as session:
-                escalation_exists = session.query(
-                    exists().where(
-                        and_(
-                            TaskTypeEscalation.task_type_id == task_type.id,
-                            TaskTypeEscalation.display_order == esc_attrs["display_order"],
-                        )
-                    )
-                ).scalar()
-
-                if escalation_exists:
-                    # validate update
-                    self.check_escalation(
-                        task_type_id=task_type.id, display_order=esc_attrs["display_order"], should_exist=True
-                    )
-                    esc_attrs["action"] = "update"
-                else:
-                    # validate create
-                    self.check_escalation(
-                        task_type_id=task_type.id, display_order=esc_attrs["display_order"], should_exist=False
-                    )
-                    esc_attrs["action"] = "create"
-
-            valid_escalations.append(esc_attrs)
-
-        return task_type, defaults, valid_escalations
 
     def validate_update_user_request(self, request_body: dict, **kwargs) -> dict:
         """  Validates an update user request body """

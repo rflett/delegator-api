@@ -10,7 +10,7 @@ from sqlalchemy import exists, and_, func
 
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import AuthorizationError, ValidationError, ResourceNotFoundError
-from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskTypeEscalation, TaskLabel, UserPasswordToken
+from app.Models import User, TaskType, Task, TaskPriority, TaskStatus, TaskLabel, UserPasswordToken
 from app.Models.RBAC import Role
 from app.Services import UserService
 
@@ -43,23 +43,6 @@ class ObjectValidationController(Resource):
                 raise AuthorizationError(
                     f"User {kwargs['req_user'].id} can only perform this" f" action within their organisation."
                 )
-
-    @staticmethod
-    def check_escalation(task_type_id: int, display_order: int, should_exist: bool) -> None:
-        """Check if a task escalation should exist or not"""
-        with session_scope() as session:
-            escalation_exists = session.query(
-                exists().where(
-                    and_(
-                        TaskTypeEscalation.task_type_id == task_type_id,
-                        TaskTypeEscalation.display_order == display_order,
-                    )
-                )
-            ).scalar()
-            if should_exist and not escalation_exists:
-                raise ResourceNotFoundError(f"Task type escalation {task_type_id}:{display_order} doesn't exist")
-            elif not should_exist and escalation_exists:
-                raise ValidationError(f"Task type escalation {task_type_id}:{display_order} already exists.")
 
     @staticmethod
     def check_int(param: int, param_name: str, allow_negative: bool = False) -> int:

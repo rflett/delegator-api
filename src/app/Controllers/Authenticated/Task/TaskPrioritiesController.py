@@ -17,9 +17,7 @@ task_service = TaskService()
 class TaskPriorities(RequestValidationController):
 
     task_priority_dto = api.model("Task Priority", {"priority": fields.Integer(min=0, max=1), "label": fields.String()})
-    get_response = api.model(
-        "Task Priorities Response", {"priorities": fields.List(fields.Nested(task_priority_dto))}
-    )
+    get_response = api.model("Task Priorities Response", {"priorities": fields.List(fields.Nested(task_priority_dto))})
 
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_PRIORITIES)

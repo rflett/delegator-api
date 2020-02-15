@@ -17,6 +17,9 @@ from app.Controllers.Authenticated.Task.DropTaskController import api as drop_ta
 from app.Controllers.Authenticated.Task.TaskActivityController import api as task_activity_v1
 from app.Controllers.Authenticated.Task.TaskController import api as task_v1
 from app.Controllers.Authenticated.Task.TaskPrioritiesController import api as task_priorities_v1
+from app.Controllers.Authenticated.Task.TaskStatusesController import api as task_statuses_v1
+from app.Controllers.Authenticated.Task.TaskTypesController import api as task_types_v1
+from app.Controllers.Authenticated.Task.TransitionTaskController import api as transition_task_v1
 
 
 # swagger monkey patch
@@ -47,6 +50,9 @@ api.add_namespace(drop_task_v1)
 api.add_namespace(task_activity_v1)
 api.add_namespace(task_v1)
 api.add_namespace(task_priorities_v1)
+api.add_namespace(task_statuses_v1)
+api.add_namespace(task_types_v1)
+api.add_namespace(transition_task_v1)
 
 
 api.add_namespace(health_v1)

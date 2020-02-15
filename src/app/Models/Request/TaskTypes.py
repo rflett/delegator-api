@@ -31,7 +31,7 @@ update_task_type_request = api.model(
         "default_time_estimate": fields.Integer(min=0),
         "default_description": fields.String(),
         "default_priority": fields.Integer(enum=[1, 2, 3]),
-        "escalation_policies": fields.List(fields.Nested(escalation_policy_dto)),
+        "escalation_policies": fields.List(fields.Nested(escalation_policy_dto), required=True),
     },
 )
 

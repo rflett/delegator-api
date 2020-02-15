@@ -33,6 +33,7 @@ class Events(str):
     user_scheduled_task = "user_scheduled_task"
     user_created_tasktype = "user_created_tasktype"
     user_created_tasktype_escalation = "user_created_tasktype_escalation"
+    user_updated_tasktype_escalation = "user_updated_tasktype_escalation"
     user_updated = "user_updated"
     user_updated_user = "user_updated_user"
     user_deleted = "user_deleted"

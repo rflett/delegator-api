@@ -1,60 +1,55 @@
-from flask import request, Response
-from flask_restx import Namespace
+from flask import request
+from flask_restx import Namespace, fields
 
-from app import session_scope
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
+from app.Decorators import requires_jwt, authorize
+from app.Extensions.Database import session_scope
 from app.Models import TaskStatus, Task
 from app.Models.Enums import TaskStatuses, Operations, Resources
 from app.Models.RBAC import ServiceAccount
-from app.Models.Request import transition_task_request
-from app.Models.Response import task_response, message_response_dto, transition_tasks_response
-from app.Models.Response.Task import task_transition_dto
 from app.Services import TaskService
 
-transition_task_route = Namespace(path="/task/transition", name="Task", description="Manage a task")
+api = Namespace(path="/task/transition", name="Task", description="Manage a task")
 
 task_service = TaskService()
 
 
-@transition_task_route.route("/")
+@api.route("/")
 class TransitionTask(RequestValidationController):
-    @handle_exceptions
+    statuses = ["READY", "IN_PROGRESS", "COMPLETED"]
+    request_dto = api.model(
+        "Transition Task Request",
+        {"task_id": fields.Integer(required=True), "task_status": fields.String(enum=statuses, required=True),},
+    )
+
     @requires_jwt
     @authorize(Operations.TRANSITION, Resources.TASK)
-    @transition_task_route.expect(transition_task_request)
-    @transition_task_route.response(200, "Transitioned the task to another status", task_response)
-    @transition_task_route.response(400, "Bad request", message_response_dto)
-    @transition_task_route.response(403, "Insufficient privileges", message_response_dto)
-    @transition_task_route.response(404, "Task not found", message_response_dto)
-    def put(self, **kwargs) -> Response:
+    @api.expect(request_dto, validate=True)
+    @api.response(204, "Success")
+    def put(self, **kwargs):
         """Transitions a task to another status"""
         req_user = kwargs["req_user"]
         request_body = request.get_json()
 
         if isinstance(req_user, ServiceAccount):
             task = task_service.get(request_body["task_id"], request_body["org_id"])
-            result = self._transition_task(task, request_body["task_status"])
+            task_service.transition(task, request_body["task_status"])
         else:
-            task, task_status = self.validate_transition_task(request.get_json(), **kwargs)
-            result = self._transition_task(task, task_status, kwargs["req_user"])
+            task = self.validate_transition_task(**kwargs)
+            task_service.transition(task, request_body["task_status"], kwargs["req_user"])
 
-        return self.ok(result)
+        return "", 204
 
-    @staticmethod
-    def _transition_task(task, task_status: str, req_user=None) -> dict:
-        """Transitions a task to another status"""
-        task_service.transition(task=task, status=task_status, req_user=req_user)
-        return task.fat_dict()
+    task_transition_dto = api.model(
+        "Get Task Transitions Dto",
+        {"task_id": fields.Integer(), "valid_transitions": fields.List(fields.String(enum=statuses))},
+    )
+    transition_tasks_response = api.model("Get Valid Transitions Dto", task_transition_dto)
 
-    @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_TRANSITIONS)
-    @transition_task_route.response(200, "Success", [transition_tasks_response])
-    @transition_task_route.response(400, "Bad request", message_response_dto)
-    @transition_task_route.response(403, "Insufficient privileges", message_response_dto)
-    @transition_task_route.response(404, "Task not found", message_response_dto)
-    def get(self, **kwargs) -> Response:
+    @api.marshal_with([transition_tasks_response], code=200)
+    def get(self, **kwargs):
         """Returns all tasks and the statuses they can be transitioned to"""
         req_user = kwargs["req_user"]
 
@@ -62,9 +57,9 @@ class TransitionTask(RequestValidationController):
             tasks = session.query(Task).filter_by(org_id=req_user.org_id).all()
 
         # handle case where no-one is assigned to the task
-        all_task_transitions: transition_tasks_response = []
+        all_task_transitions = []
         for task in tasks:
-            this_task_transitions: task_transition_dto = {"task_id": task.id, "valid_transitions": []}
+            this_task_transitions = {"task_id": task.id, "valid_transitions": []}
 
             if task.assignee is None:
                 # you can move from ready to ready, cancelled and dropped are not included because they are handled
@@ -105,4 +100,4 @@ class TransitionTask(RequestValidationController):
 
             all_task_transitions.append(this_task_transitions)
 
-        return self.ok(all_task_transitions)
+        return all_task_transitions, 200

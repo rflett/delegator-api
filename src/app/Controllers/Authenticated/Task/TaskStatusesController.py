@@ -1,24 +1,33 @@
-from flask import Response
-from flask_restx import Namespace
+from flask_restx import Namespace, fields
 
-from app import session_scope
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
+from app.Decorators import requires_jwt, authorize
+from app.Extensions.Database import session_scope
 from app.Models import TaskStatus
 from app.Models.Enums import Operations, Resources
-from app.Models.Response import task_statuses_response, message_response_dto
 
-task_statuses_route = Namespace(path="/tasks/statuses", name="Tasks", description="Manage tasks")
+api = Namespace(path="/tasks/statuses", name="Tasks", description="Manage tasks")
 
 
-@task_statuses_route.route("/")
+@api.route("/")
 class TaskStatuses(RequestValidationController):
-    @handle_exceptions
+
+    statuses = ["SCHEDULED", "READY", "IN_PROGRESS", "DELAYED", "COMPLETED", "CANCELLED"]
+    task_status_dto = api.model(
+        "Task Status",
+        {
+            "status": fields.String(enum=statuses),
+            "label": fields.String(),
+            "disabled": fields.Boolean(),
+            "tooltip": fields.String(),
+        },
+    )
+    response_dto = api.model("Get Task Statuses Response", {"statuses": fields.List(fields.Nested(task_status_dto))})
+
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_STATUSES)
-    @task_statuses_route.response(200, "Success", task_statuses_response)
-    @task_statuses_route.response(403, "Insufficient privileges", message_response_dto)
-    def get(self, **kwargs) -> Response:
+    @api.marshal_with(response_dto, code=200)
+    def get(self, **kwargs):
         """Returns all task statuses """
         req_user = kwargs["req_user"]
 
@@ -27,4 +36,4 @@ class TaskStatuses(RequestValidationController):
 
         task_statuses = [ts.as_dict() for ts in task_status_qry if ts.status not in ["DELAYED", "CANCELLED"]]
         req_user.log(operation=Operations.GET, resource=Resources.TASK_STATUSES)
-        return self.ok({"statuses": task_statuses})
+        return {"statuses": task_statuses}, 200

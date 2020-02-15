@@ -28,12 +28,7 @@ class GetTask(RequestValidationController):
 
     task_type_dto = api.model(
         "Task Type Dto",
-        {
-            "id": fields.Integer(),
-            "label": fields.String(),
-            "disabled": NullableDateTime,
-            "tooltip": fields.String(),
-        },
+        {"id": fields.Integer(), "label": fields.String(), "disabled": NullableDateTime, "tooltip": fields.String(),},
     )
     task_status_dto = api.model(
         "Task Status Dto",
@@ -45,12 +40,7 @@ class GetTask(RequestValidationController):
         },
     )
     user_dto = api.model(
-        "Task User Dto",
-        {
-            "id": fields.Integer(),
-            "first_name": fields.String(),
-            "last_name": fields.String(),
-        },
+        "Task User Dto", {"id": fields.Integer(), "first_name": fields.String(), "last_name": fields.String(),},
     )
     priority_dto = api.model("Task Priority Dto", {"priority": fields.Integer(min=0, max=1), "label": fields.String()})
     task_label_dto = api.model(
@@ -148,26 +138,19 @@ class GetTask(RequestValidationController):
                     WHERE t.id = :task_id
                     AND   t.org_id = :org_id
                 """,
-                {"task_id": task_id, "org_id": req_user.org_id}
+                {"task_id": task_id, "org_id": req_user.org_id},
             )
 
         result = qry[0].items()
 
         ret = {
-            "type": {
-                "id": result["type_id"],
-                "label": result["type_label"],
-                "disabled": result["type_disabled"],
-            },
+            "type": {"id": result["type_id"], "label": result["type_label"], "disabled": result["type_disabled"],},
             "status": {
                 "status": result["status_status"],
                 "label": result["status_label"],
                 "disabled": result["status_disabled"],
             },
-            "priority": {
-                "priority": result["priority_priority"],
-                "label": result["priority_label"],
-            },
+            "priority": {"priority": result["priority_priority"], "label": result["priority_label"],},
             "assignee": {
                 "id": result["assignee_id"],
                 "first_name": result["assignee_first_name"],
@@ -183,13 +166,13 @@ class GetTask(RequestValidationController):
                 "first_name": result["finished_by_first_name"],
                 "last_name": result["finished_by_last_name"],
             },
-            "labels": []
+            "labels": [],
         }
 
         # add task attributes to top level of ret dict
         for alias, value in result:
             if alias.startswith("task_"):
-                ret[alias[len("task_"):]] = value
+                ret[alias[len("task_") :]] = value
 
         # add the labels (at most 3)
         for i in range(1, 4):
@@ -198,7 +181,7 @@ class GetTask(RequestValidationController):
                     {
                         "id": result[f"label{i}_id"],
                         "label": result[f"label{i}_label"],
-                        "colour": result[f"label{i}_colour"]
+                        "colour": result[f"label{i}_colour"],
                     }
                 )
 
@@ -326,8 +309,10 @@ class ManageTask(RequestValidationController):
         self.check_task_assignee(request_body["assignee"], **kwargs)
         self.check_task_labels(request_body.get("labels", []), req_user.org_id)
 
-        if request_body.get("scheduled_for") is not None \
-                and request_body.get("scheduled_notification_period") is not None:
+        if (
+            request_body.get("scheduled_for") is not None
+            and request_body.get("scheduled_notification_period") is not None
+        ):
             self._schedule_task(req_user)
         else:
             self._create_task(req_user)
