@@ -190,6 +190,8 @@ class ObjectValidationController(Resource):
                     f"Couldn't convert disabled {disabled} to datetime.datetime, please ensure it is "
                     f"in the format {current_app.config['REQUEST_DATE_FORMAT']}"
                 )
+        else:
+            return None
 
     @staticmethod
     def check_user_id(

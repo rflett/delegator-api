@@ -20,6 +20,12 @@ from app.Controllers.Authenticated.Task.TaskPrioritiesController import api as t
 from app.Controllers.Authenticated.Task.TaskStatusesController import api as task_statuses_v1
 from app.Controllers.Authenticated.Task.TaskTypesController import api as task_types_v1
 from app.Controllers.Authenticated.Task.TransitionTaskController import api as transition_task_v1
+from app.Controllers.Authenticated.User.UserActivityController import api as user_activity_v1
+from app.Controllers.Authenticated.User.UserController import api as user_v1
+from app.Controllers.Authenticated.User.UserPagesController import api as user_pages_v1
+from app.Controllers.Authenticated.User.UsersController import api as users_v1
+from app.Controllers.Authenticated.User.UserSettingsController import api as user_settings_v1
+from app.Controllers.Authenticated.User.UserWelcomeController import api as user_welcome_v1
 
 
 # swagger monkey patch
@@ -53,7 +59,11 @@ api.add_namespace(task_priorities_v1)
 api.add_namespace(task_statuses_v1)
 api.add_namespace(task_types_v1)
 api.add_namespace(transition_task_v1)
-
-
+api.add_namespace(user_activity_v1)
+api.add_namespace(user_v1)
+api.add_namespace(user_pages_v1)
+api.add_namespace(users_v1)
+api.add_namespace(user_settings_v1)
+api.add_namespace(user_welcome_v1)
 api.add_namespace(health_v1)
 api.add_namespace(version_v1)

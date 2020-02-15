@@ -18,3 +18,5 @@ A list of important changes that may break things
 13. Create, Update and Delete `/task-labels` now return `204`
 14. Create, Update and Delete `/task-type` returns `204`
 15. Transition task returns 204
+16. Create user is a 204
+17. Update user settings is a 204

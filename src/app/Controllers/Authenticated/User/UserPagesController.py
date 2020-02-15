@@ -1,24 +1,20 @@
+from flask import current_app
 from flask_restx import Namespace, fields
 
-from app import session_scope, logger
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
-from app.Models import Subscription
+from app.Decorators import requires_jwt, authorize
+from app.Extensions.Database import session_scope
 from app.Models.Enums import Operations, Resources
 from app.Models.RBAC import Permission
-from app.Models.Response import message_response_dto
 
-user_pages_route = Namespace(path="/user/pages", name="User", description="Manage a user")
+api = Namespace(path="/user/pages", name="User", description="Manage a user")
 
 
-@user_pages_route.route("/")
+@api.route("/")
 class UserPagesController(RequestValidationController):
-    @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.PAGES)
-    @user_pages_route.response(200, "Retreived the pages the user can access", [fields.String])
-    @user_pages_route.response(400, "Bad request", message_response_dto)
-    @user_pages_route.response(403, "Insufficient privileges", message_response_dto)
+    @api.marshal_with([fields.String()], code=200)
     def get(self, **kwargs):
         """Returns the pages a user can access """
         req_user = kwargs["req_user"]
@@ -38,5 +34,5 @@ class UserPagesController(RequestValidationController):
                     pages.append(page.split("_PAGE")[0])
 
             req_user.log(operation=Operations.GET, resource=Resources.PAGES)
-            logger.info(f"found {len(pages)} pages.")
-            return self.ok(sorted(pages))
+            current_app.logger.info(f"found {len(pages)} pages.")
+            return sorted(pages), 200

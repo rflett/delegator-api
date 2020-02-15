@@ -1,28 +1,26 @@
-from flask import Response
-from flask_restx import Namespace
+from flask import current_app
+from flask_restx import Namespace, fields
 
-from app import logger
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
-from app.Exceptions import ProductTierLimitError
-from app.Models import Subscription
+from app.Decorators import requires_jwt, authorize
 from app.Models.Enums import Operations, Resources
-from app.Models.Response import message_response_dto, activity_response_dto
 
-user_activity_route = Namespace(path="/user/activity", name="User", description="Manage a user")
+api = Namespace(path="/user/activity", name="User", description="Manage a user")
 
 
-@user_activity_route.route("/<int:user_id>")
+@api.route("/<int:user_id>")
 class UserActivityController(RequestValidationController):
+
+    activity_dto = api.model(
+        "Activity",
+        {"activity": fields.String(), "activity_timestamp": fields.String(), "event_friendly": fields.String()}
+    )
+    activity_response_dto = api.model("Activity Model", {"activity": fields.List(fields.Nested(activity_dto))})
+
     @requires_jwt
-    @handle_exceptions
     @authorize(Operations.GET, Resources.USER_ACTIVITY)
-    @user_activity_route.response(200, "User activity retrieved", activity_response_dto)
-    @user_activity_route.response(400, "Bad request", message_response_dto)
-    @user_activity_route.response(402, "Plan doesn't include this functionality", message_response_dto)
-    @user_activity_route.response(403, "Insufficient privileges", message_response_dto)
-    @user_activity_route.response(404, "User does not exist", message_response_dto)
-    def get(self, user_id: int, **kwargs) -> Response:
+    @api.marshal_with(activity_response_dto, code=200)
+    def get(self, user_id: int, **kwargs):
         """Returns the activity for a user """
         req_user = kwargs["req_user"]
 
@@ -30,7 +28,6 @@ class UserActivityController(RequestValidationController):
         # subscription = Subscription(req_user.orgs.chargebee_subscription_id)
 
         user = self.validate_get_user_activity(user_id, **kwargs)
-
         req_user.log(operation=Operations.GET, resource=Resources.USER_ACTIVITY, resource_id=user.id)
-        logger.info(f"getting activity for user with id {user.id}")
-        return self.ok({"activity": user.activity()})
+        current_app.logger.info(f"getting activity for user with id {user.id}")
+        return {"activity": user.activity()}, 200

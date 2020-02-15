@@ -29,24 +29,6 @@ class RequestValidationController(ObjectValidationController):
         else:
             return org_name
 
-    def validate_create_user_request(self, req_user: User, request_body: dict) -> None:
-        """
-        Validates a create user request body
-        :param req_user:        The user making the request
-        :param request_body:    The request body from the create user request
-        :return:                Response if the request body contains invalid values, or the UserRequest dataclass
-        """
-        # check email
-        email = request_body.get("email")
-        self.validate_email(email)
-
-        self.check_user_id(email, should_exist=False)
-        self.check_user_role(req_user, request_body.get("role_id"))
-        self.check_str(request_body.get("first_name"), "first_name")
-        self.check_str(request_body.get("last_name"), "last_name")
-        self.check_optional_str(request_body.get("job_title"), "job_title")
-        self.check_user_disabled(request_body.get("disabled"))
-
     def validate_delay_task_request(self, **kwargs) -> tuple:
         """ Validates the transition task request """
         request_body = request.get_json()
@@ -185,27 +167,3 @@ class RequestValidationController(ObjectValidationController):
                 raise ValidationError("That organisation name already exists.")
 
         return org_name
-
-    def validate_update_user_request(self, request_body: dict, **kwargs) -> dict:
-        """  Validates an update user request body """
-        user_to_update = self.check_user_id(request_body.get("id"), should_exist=True)
-        self.check_auth_scope(user_to_update, **kwargs)
-        return {
-            "id": user_to_update.id,
-            "first_name": self.check_str(request_body.get("first_name"), "first_name"),
-            "last_name": self.check_str(request_body.get("last_name"), "last_name"),
-            "role": self.check_user_role(kwargs["req_user"], request_body.get("role_id"), user_to_update),
-            "job_title": self.check_optional_str(request_body.get("job_title"), "job_title"),
-            "disabled": self.check_user_disabled(request_body.get("disabled")),
-        }
-
-    def validate_resend_welcome_request(self, request_body: dict) -> typing.Tuple[User, str]:
-        """Validate the resend welcome request"""
-        user = self.check_user_id(request_body.get("user_id"), should_exist=True)
-
-        # check if invite accepted
-        token = user.get_password_token()
-        if user.invite_accepted() or token is None:
-            raise ValidationError("User has already accepted their invitation.")
-        else:
-            return user, token

@@ -244,17 +244,14 @@ class User(db.Model):
 
     def fat_dict(self) -> dict:
         """ Returns a full user dict with all of its FK's joined. """
-        from app.Services import SettingsService
-
         with session_scope() as session:
-            created_by = session.query(User).filter_by(id=self.created_by).first()
-            updated_by = session.query(User).filter_by(id=self.updated_by).first()
+            created_by = session.query(User.first_name, User.last_name).filter_by(id=self.created_by).first()
+            updated_by = session.query(User.first_name, User.last_name).filter_by(id=self.updated_by).first()
 
         user_dict = self.as_dict()
         user_dict["role"] = self.roles.as_dict()
-        user_dict["created_by"] = created_by.name()
-        user_dict["updated_by"] = updated_by.name() if updated_by is not None else None
-        user_dict["settings"] = SettingsService.get_user_settings(self.id).as_dict()
+        user_dict["created_by"] = created_by[0] + " " + created_by[1]
+        user_dict["updated_by"] = updated_by[0] + " " + updated_by[1] if updated_by[0] is not None else None
 
         return user_dict
 

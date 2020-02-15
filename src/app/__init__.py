@@ -11,7 +11,6 @@ from flask_cors import CORS
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from app.Apis import api
-from app.ApiWrappers import SubscriptionApi
 from app.Config.parameter_store import ParameterStore
 from app.Config.secrets_manager import SecretsManager
 from app.Extensions.Database import db
