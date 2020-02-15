@@ -6,7 +6,7 @@ from app.Models.Request.Common import NullableDateTime, NullableInteger
 
 statuses = ["READY", "IN_PROGRESS", "COMPLETED"]
 
-update_task_request = api.model(
+update_task_dtoupdate_task_request = api.model(
     "Update Task Request",
     {
         "id": fields.Integer(),

@@ -30,7 +30,7 @@ class Task(db.Model):
     finished_by = db.Column("finished_by", db.Integer, db.ForeignKey("users.id"), default=None)
     finished_at = db.Column("finished_at", db.DateTime)
     status_changed_at = db.Column("status_changed_at", db.DateTime)
-    priority_changed_at = db.Column("priority_changed_at", db.DateTime)
+    priority_changed_at = db.Column("p  riority_changed_at", db.DateTime)
     label_1 = db.Column("label_1", db.Integer, default=None)
     label_2 = db.Column("label_2", db.Integer, default=None)
     label_3 = db.Column("label_3", db.Integer, default=None)

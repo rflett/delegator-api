@@ -37,11 +37,6 @@ class UserPagesController(RequestValidationController):
                     # strip _PAGE
                     pages.append(page.split("_PAGE")[0])
 
-            # Remove reports if user hasn't paid for them
-            subscription = Subscription(req_user.orgs.chargebee_subscription_id)
-            if not subscription.can_get_reports():
-                pages.remove("REPORTS")
-
             req_user.log(operation=Operations.GET, resource=Resources.PAGES)
             logger.info(f"found {len(pages)} pages.")
             return self.ok(sorted(pages))

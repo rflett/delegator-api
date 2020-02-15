@@ -13,6 +13,9 @@ from app.Controllers.Authenticated.Organisation import api as organisation_v1
 from app.Controllers.Authenticated.Task.AssignTaskController import api as assign_task_v1
 from app.Controllers.Authenticated.Task.CancelTaskController import api as cancel_task_v1
 from app.Controllers.Authenticated.Task.DelayTaskController import api as delay_task_v1
+from app.Controllers.Authenticated.Task.DropTaskController import api as drop_task_v1
+from app.Controllers.Authenticated.Task.TaskActivityController import api as task_activity_v1
+from app.Controllers.Authenticated.Task.TaskController import api as task_v1
 
 
 # swagger monkey patch
@@ -39,5 +42,10 @@ api.add_namespace(organisation_v1)
 api.add_namespace(assign_task_v1)
 api.add_namespace(cancel_task_v1)
 api.add_namespace(delay_task_v1)
+api.add_namespace(drop_task_v1)
+api.add_namespace(task_activity_v1)
+api.add_namespace(task_v1)
+
+
 api.add_namespace(health_v1)
 api.add_namespace(version_v1)

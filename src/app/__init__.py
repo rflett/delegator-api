@@ -19,6 +19,7 @@ from app.Extensions.ErrorHandlers import handle_error
 from app.Extensions.Errors import ValidationError
 from app.Extensions.Errors import AuthenticationError
 from app.Extensions.Errors import AuthorizationError
+from app.Extensions.Errors import InternalServerError
 from app.Extensions.Errors import ResourceNotFoundError
 
 # flask conf
@@ -86,6 +87,7 @@ api.init_app(app)
 app.register_error_handler(ValidationError, handle_error)
 app.register_error_handler(AuthenticationError, handle_error)
 app.register_error_handler(AuthorizationError, handle_error)
+app.register_error_handler(InternalServerError, handle_error)
 app.register_error_handler(ResourceNotFoundError, handle_error)
 
 # xray

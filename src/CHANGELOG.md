@@ -11,3 +11,7 @@ A list of important changes that may break things
 6. `POST` `/task/cancel` now returns `204` instead of `200`
 7. `POST` `/task/delay` now returns `204` instead of `200`
 8. `GET` `/task/delay/{id}` returns `delayed_by` as str not User
+9. `POST` `/task/drop/{id}` returns `204` instead of `200`
+10. `GET` `/task/{id}` response payload has changed dramatically
+11. `PUT` `/task/{id}` returns `204` instead of `200`
+12. `POST` `/task/{id}` returns `204` instead of `200` (create and schedule)
