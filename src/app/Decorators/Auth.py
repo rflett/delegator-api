@@ -1,7 +1,7 @@
 from functools import wraps
 
 from app.Services import AuthService
-from app.Models import User
+from app.Models.Dao import User
 
 auth_service = AuthService()
 

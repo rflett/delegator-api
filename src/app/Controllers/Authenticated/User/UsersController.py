@@ -1,34 +1,44 @@
 import datetime
 
-from flask import Response, request
-from flask_restplus import Namespace
+from flask import request, current_app
+from flask_restx import Namespace, fields
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
-from app import session_scope, subscription_api, logger, app
+from app.Extensions.Database import session_scope
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
-from app.Exceptions import ProductTierLimitError, ValidationError
-from app.Models import User, Activity, Task, UserPasswordToken, Subscription, Email
+from app.Decorators import requires_jwt, authorize
+from app.Models import Activity, Email, Subscription
+from app.Models.Dao import User, UserPasswordToken
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.RBAC import Role
-from app.Models.Request import create_user_request, update_user_request
-from app.Models.Response import message_response_dto, user_response, get_users_response, get_min_users_response
 from app.Services import UserService
 
-users_route = Namespace(path="/users", name="Users", description="Manage a user or users")
+api = Namespace(path="/users", name="Users", description="Manage a user or users")
 
 user_service = UserService()
 
 
-@users_route.route("/minimal")
+@api.route("/minimal")
 class MinimalUsers(RequestValidationController):
-    @handle_exceptions
+    min_user_response = api.model(
+        "Minimal User Response",
+        {
+            "id": fields.Integer(),
+            "email": fields.String(),
+            "first_name": fields.String(),
+            "last_name": fields.String(),
+            "job_title": fields.String(),
+        },
+    )
+    get_min_users_response = api.model(
+        "Get Minimal Users Response", {"users": fields.List(fields.Nested(min_user_response))}
+    )
+
     @requires_jwt
     @authorize(Operations.GET, Resources.USERS)
-    @users_route.response(200, "Users retrieved", get_min_users_response)
-    @users_route.response(403, "Insufficient privileges", message_response_dto)
-    def get(self, **kwargs) -> Response:
+    @api.marshal_with(get_min_users_response, code=200)
+    def get(self, **kwargs):
         """Get all users with minimal dto"""
         req_user = kwargs["req_user"]
 
@@ -48,18 +58,50 @@ class MinimalUsers(RequestValidationController):
             )
 
         req_user.log(operation=Operations.GET, resource=Resources.USERS)
-        return self.ok({"users": users})
+        return {"users": users}, 200
 
 
-@users_route.route("/")
+@api.route("/")
 class UserController(RequestValidationController):
-    @handle_exceptions
+    class NullableDateTime(fields.DateTime):
+        __schema_type__ = ["datetime", "null"]
+        __schema_example__ = "None|2019-09-17T19:08:00+10:00"
+
+    role_dto = api.model(
+        "Get Users Role",
+        {
+            "id": fields.String(enum=["ADMIN", "DELEGATOR", "USER", "LOCKED"]),
+            "rank": fields.Integer(min=0, max=2),
+            "name": fields.String(enum=["Admin", "Delegator", "User", "Locked"]),
+            "description": fields.String(),
+        },
+    )
+    user_response = api.model(
+        "User Response",
+        {
+            "id": fields.Integer,
+            "org_id": fields.Integer,
+            "email": fields.String,
+            "first_name": fields.String,
+            "last_name": fields.String,
+            "role": fields.Nested(role_dto),
+            "role_before_locked": fields.String(),
+            "disabled": NullableDateTime,
+            "job_title": fields.String,
+            "deleted": NullableDateTime,
+            "created_at": fields.String,
+            "created_by": fields.String,
+            "updated_at": NullableDateTime,
+            "updated_by": fields.String(),
+            "invite_accepted": fields.Boolean,
+        },
+    )
+    get_users_response = api.model("Get Users Response", {"users": fields.List(fields.Nested(user_response))})
+
     @requires_jwt
     @authorize(Operations.GET, Resources.USERS)
-    @users_route.response(200, "Users retrieved", get_users_response)
-    @users_route.response(400, "Bad request", message_response_dto)
-    @users_route.response(403, "Insufficient privileges", message_response_dto)
-    def get(self, **kwargs) -> Response:
+    @api.marshal_with(get_users_response, code=200)
+    def get(self, **kwargs):
         """Get all users """
         req_user = kwargs["req_user"]
 
@@ -107,42 +149,35 @@ class UserController(RequestValidationController):
 
             users.append(user_dict)
 
-        logger.info(f"found {len(users)} users.")
+        current_app.logger.info(f"found {len(users)} users.")
         req_user.log(operation=Operations.GET, resource=Resources.USERS)
-        return self.ok({"users": users})
+        return {"users": users}, 200
 
-    @handle_exceptions
+    create_user_request = api.model(
+        "Create User Request",
+        {
+            "email": fields.String(required=True),
+            "role_id": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER"], required=True),
+            "first_name": fields.String(required=True),
+            "last_name": fields.String(required=True),
+            "job_title": fields.String(),
+        },
+    )
+
     @requires_jwt
     @authorize(Operations.CREATE, Resources.USER)
-    @users_route.expect(create_user_request)
-    @users_route.response(200, "Successfully created user", user_response)
-    @users_route.response(400, "Bad request", message_response_dto)
-    @users_route.response(402, "Subscription limit reached", message_response_dto)
-    @users_route.response(403, "Insufficient privileges", message_response_dto)
-    @users_route.response(404, "User does not exist", message_response_dto)
-    def post(self, **kwargs) -> Response:
+    @api.expect(create_user_request, validate=True)
+    @api.response(204, "Success")
+    def post(self, **kwargs):
         """Create a user"""
         request_body = request.get_json()
-
         req_user = kwargs["req_user"]
 
         # validate user
-        self.validate_create_user_request(req_user, request_body)
-
-        # Check that the user hasn't surpassed limits on their product tier
-        with session_scope() as session:
-            existing_user_count = session.query(User).filter_by(org_id=req_user.org_id).count()
-
-        # check the subscription limitations
-        subscription = Subscription(req_user.orgs.chargebee_subscription_id)
-        max_users = subscription.max_users()
-
-        if max_users == -1:
-            # infinite users
-            pass
-        elif existing_user_count >= max_users:
-            logger.info(f"Organisation {req_user.orgs.name} has reached the user limit for their product tier.")
-            raise ProductTierLimitError(f"You have reached the limit of users you can create.")
+        email = request_body["email"]
+        self.validate_email(email)
+        self.check_user_id(email, should_exist=False)
+        self.check_user_role(req_user, request_body["role_id"])
 
         with session_scope() as session:
             user = User(
@@ -152,7 +187,7 @@ class UserController(RequestValidationController):
                 last_name=request_body["last_name"],
                 role=request_body["role_id"],
                 job_title=request_body.get("job_title"),
-                disabled=request_body.get("disabled"),
+                disabled=None,
                 created_by=req_user.id,
             )
             session.add(user)
@@ -164,14 +199,10 @@ class UserController(RequestValidationController):
         # create user settings
         user.create_settings()
 
-        # increment chargebee subscription plan_quantity
-        subscription_api.increment_plan_quantity(user.orgs.chargebee_subscription_id)
-
         # send welcome email
         email = Email(user)
         email.send_welcome_new_user(
-            link=app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + password_token.token,
-            inviter=req_user
+            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + password_token.token, inviter=req_user
         )
 
         req_user.log(operation=Operations.CREATE, resource=Resources.USER, resource_id=user.id)
@@ -189,51 +220,44 @@ class UserController(RequestValidationController):
             event_id=req_user.id,
             event_friendly=f"Created {user.name()}.",
         ).publish()
-        logger.info(f"User {req_user.id} created user {user.id}")
+        current_app.logger.info(f"User {req_user.id} created user {user.id}")
 
-        return self.created(user.fat_dict())
+        # increment chargebee subscription plan_quantity
+        subscription = Subscription(user.orgs.chargebee_subscription_id)
+        subscription.increment_subscription(req_user)
 
-    @handle_exceptions
+        return "", 204
+
+    update_user_request = api.model(
+        "Update User Request",
+        {
+            "id": fields.Integer(required=True),
+            "role_id": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER"], required=True),
+            "first_name": fields.String(required=True),
+            "last_name": fields.String(required=True),
+            "job_title": fields.String(required=True),
+        },
+    )
+
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER)
-    @users_route.expect(update_user_request)
-    @users_route.response(200, "User Updated", user_response)
-    @users_route.response(400, "Bad request", message_response_dto)
-    @users_route.response(403, "Insufficient privileges", message_response_dto)
-    @users_route.response(404, "User does not exist", message_response_dto)
-    def put(self, **kwargs) -> Response:
+    @api.expect(update_user_request, validate=True)
+    @api.response(204, "Success")
+    def put(self, **kwargs):
         """Update a user. """
         req_user = kwargs["req_user"]
+        request_body = request.get_json()
 
-        user_attrs = self.validate_update_user_request(request.get_json(), **kwargs)
-
-        # get the user to update
-        user_to_update = user_service.get_by_id(user_attrs["id"])
-        is_user_only_org_admin = user_service.is_user_only_org_admin(user_to_update)
-
-        # if the user is going to be disabled
-        if user_to_update.disabled is None and user_attrs["disabled"] is not None:
-            if is_user_only_org_admin:
-                raise ValidationError("Cannot disable only remaining Administrator.")
-
-            # decrement plan quantity
-            subscription_api.decrement_plan_quantity(user_to_update.orgs.chargebee_subscription_id)
-
-            # drop the tasks
-            with session_scope() as session:
-                users_tasks = session.query(Task).filter_by(assignee=user_to_update.id).all()
-            for task in users_tasks:
-                task.drop(req_user)
-
-        # user is being re-enabled
-        elif user_to_update.disabled is not None and user_attrs["disabled"] is None:
-            # increment plan quantity
-            subscription_api.increment_plan_quantity(user_to_update.orgs.chargebee_subscription_id)
+        user_to_update = self.check_user_id(request_body["id"], should_exist=True)
+        self.check_auth_scope(user_to_update, **kwargs)
+        self.check_user_role(req_user, request_body["role_id"], user_to_update)
 
         # for all attributes in the request, update them on the user if they exist
         with session_scope():
-            for k, v in user_attrs.items():
-                user_to_update.__setattr__(k, v)
+            user_to_update.role = request_body["role_id"]
+            user_to_update.first_name = request_body["first_name"]
+            user_to_update.last_name = request_body["last_name"]
+            user_to_update.job_title = request_body.get("job_title")
             user_to_update.updated_at = datetime.datetime.utcnow()
             user_to_update.updated_by = req_user.id
 
@@ -250,5 +274,5 @@ class UserController(RequestValidationController):
             event_friendly=f"Updated {user_to_update.name()}.",
         ).publish()
         req_user.log(operation=Operations.UPDATE, resource=Resources.USER, resource_id=user_to_update.id)
-        logger.info(f"User {req_user.id} updated user {user_to_update.id}")
-        return self.ok(user_to_update.fat_dict())
+        current_app.logger.info(f"User {req_user.id} updated user {user_to_update.id}")
+        return "", 204

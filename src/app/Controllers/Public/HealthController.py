@@ -1,14 +1,11 @@
-from flask_restplus import Namespace
+from flask_restx import Namespace, Resource, fields
 
-from app.Controllers.Base import ResponseController
-from app.Models.Response import message_response_dto
-
-health_route = Namespace("Health", "Retrieves the health of the server", "/health")
+api = Namespace(path="/health", name="Health", description="Check API health")
 
 
-@health_route.route("/")
-class HealthController(ResponseController):
-    @health_route.response(200, "Healthy", message_response_dto)
-    def get(self):
+@api.route("/")
+class Health(Resource):
+    @api.marshal_with(api.model("Health Response", {"msg": fields.String()}), code=200)
+    def get(self, **kwargs):
         """Returns a 200 if the API is healthy"""
-        return self.ok("yeet")
+        return {"msg": "I return, therefore I am healthy"}, 200

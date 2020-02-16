@@ -1,9 +1,11 @@
 import typing
 from dataclasses import dataclass
 
-from app import session_scope, logger
+from flask import current_app
+
+from app.Extensions.Database import session_scope
+from app.Extensions.Errors import AuthorizationError
 from app.Models.RBAC import Permission
-from app.Exceptions import AuthorizationError
 
 
 @dataclass
@@ -37,12 +39,11 @@ class ServiceAccount:
         """
         from app.Models.RBAC import ServiceAccountLog
 
-        logger.info(f"{self.name}  {operation} {resource} {resource_id}")
         audit_log = ServiceAccountLog(
             account_name=self.name, operation=operation, resource=resource, resource_id=resource_id
         )
         with session_scope() as session:
             session.add(audit_log)
-        logger.info(
+        current_app.logger.info(
             f"service account {self.name} did {operation} on {resource} with " f"a resource_id of {resource_id}"
         )

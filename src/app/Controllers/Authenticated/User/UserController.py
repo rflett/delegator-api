@@ -1,39 +1,64 @@
-from flask import Response
-from flask_restplus import Namespace
+from flask import current_app
+from flask_restx import Namespace, fields
 
-from app import session_scope, logger
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import authorize, handle_exceptions, requires_jwt
+from app.Decorators import authorize, requires_jwt
+from app.Extensions.Database import session_scope
 from app.Models import Activity
 from app.Models.Enums import Operations, Resources, Events
-from app.Models.Response import message_response_dto, user_response
 
-user_route = Namespace(path="/user", name="User", description="Manage a user")
+api = Namespace(path="/user", name="User", description="Manage a user")
 
 
-@user_route.route("/<int:user_id>")
+class NullableDateTime(fields.DateTime):
+    __schema_type__ = ["datetime", "null"]
+    __schema_example__ = "None|2019-09-17T19:08:00+10:00"
+
+
+@api.route("/<int:user_id>")
 class UserController(RequestValidationController):
-    @handle_exceptions
+    response_roles = ["ORG_ADMIN", "MANAGER", "STAFF", "USER", "LOCKED"]
+    role_dto = api.model(
+        "Get User Role",
+        {
+            "id": fields.String(enum=["ADMIN", "DELEGATOR", "USER", "LOCKED"]),
+            "rank": fields.Integer(min=0, max=2),
+            "name": fields.String(enum=["Admin", "Delegator", "User", "Locked"]),
+            "description": fields.String(),
+        },
+    )
+    user_response = api.model(
+        "User Response",
+        {
+            "id": fields.Integer,
+            "org_id": fields.Integer,
+            "email": fields.String,
+            "first_name": fields.String,
+            "last_name": fields.String,
+            "role": fields.Nested(role_dto),
+            "disabled": NullableDateTime,
+            "job_title": fields.String,
+            "created_at": fields.String,
+            "created_by": fields.String,
+            "updated_at": NullableDateTime,
+            "updated_by": fields.String(),
+            "invite_accepted": fields.Boolean,
+        },
+    )
+
     @requires_jwt
     @authorize(Operations.GET, Resources.USER)
-    @user_route.response(200, "Retrieved the user", user_response)
-    @user_route.response(400, "Bad request", message_response_dto)
-    @user_route.response(403, "Insufficient privileges", message_response_dto)
-    @user_route.response(404, "User does not exist", message_response_dto)
-    def get(self, user_id: int, **kwargs) -> Response:
+    @api.marshal_with(user_response, code=200)
+    def get(self, user_id: int, **kwargs):
         """Get a single user by email or ID """
         user = self.validate_get_user(user_id, **kwargs)
         kwargs["req_user"].log(operation=Operations.GET, resource=Resources.USER, resource_id=user.id)
-        return self.ok(user.fat_dict())
+        return user.fat_dict(), 200
 
-    @handle_exceptions
     @requires_jwt
     @authorize(Operations.DELETE, Resources.USER)
-    @user_route.response(204, "Successfully deleted the user")
-    @user_route.response(400, "Bad request", message_response_dto)
-    @user_route.response(403, "Insufficient privileges", message_response_dto)
-    @user_route.response(404, "User does not exist", message_response_dto)
-    def delete(self, user_id: int, **kwargs) -> Response:
+    @api.response(204, "Success")
+    def delete(self, user_id: int, **kwargs):
         """Deletes a user """
         req_user = kwargs["req_user"]
 
@@ -51,5 +76,5 @@ class UserController(RequestValidationController):
 
         req_user.log(operation=Operations.DELETE, resource=Resources.USER, resource_id=user_to_delete.id)
 
-        logger.info(f"User {req_user.id} deleted user {user_to_delete.id}")
-        return self.no_content()
+        current_app.logger.info(f"User {req_user.id} deleted user {user_to_delete.id}")
+        return "", 204

@@ -1,8 +1,10 @@
 import datetime
 import typing
 
-from app import session_scope, app
-from app.Models import ActiveUser, User
+from flask import current_app
+
+from app.Extensions.Database import session_scope
+from app.Models.Dao import ActiveUser, User
 
 
 class ActiveUserService(object):
@@ -35,4 +37,4 @@ class ActiveUserService(object):
     def user_last_active(user: User) -> typing.Union[str, None]:
         with session_scope() as session:
             qry = session.query(ActiveUser).filter_by(user_id=user.id).first()
-            return None if qry is None else qry.last_active.strftime(app.config["RESPONSE_DATE_FORMAT"])
+            return None if qry is None else qry.last_active.strftime(current_app.config["RESPONSE_DATE_FORMAT"])

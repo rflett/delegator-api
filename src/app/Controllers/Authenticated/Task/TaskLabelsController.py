@@ -1,25 +1,28 @@
-from flask import Response, request
-from flask_restplus import Namespace
+from flask import request
+from flask_restx import Namespace, fields
 
-from app import session_scope, logger
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
-from app.Models import TaskLabel
+from app.Decorators import requires_jwt, authorize
+from app.Extensions.Database import session_scope
+from app.Extensions.Errors import ResourceNotFoundError
+from app.Models.Dao import TaskLabel
 from app.Models.Enums import Operations, Resources
-from app.Models.Response import task_labels_response, message_response_dto
-from app.Models.Request import new_task_label_dto, task_label_dto
 
-task_labels_route = Namespace(path="/task-labels", name="Task Labels", description="Manage Task Labels")
+api = Namespace(path="/task-labels", name="Task Labels", description="Manage Task Labels")
 
 
-@task_labels_route.route("/")
+@api.route("/")
 class TaskLabels(RequestValidationController):
-    @handle_exceptions
+
+    task_label_dto = api.model(
+        "Get Task Label Dto", {"id": fields.Integer(), "label": fields.String(), "colour": fields.String()}
+    )
+    task_labels_response = api.model("Get Labels Response", {"labels": fields.List(fields.Nested(task_label_dto))})
+
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_LABELS)
-    @task_labels_route.response(200, "Success", task_labels_response)
-    @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
-    def get(self, **kwargs) -> Response:
+    @api.marshal_with(task_labels_response, code=200)
+    def get(self, **kwargs):
         """Returns all task labels """
         req_user = kwargs["req_user"]
 
@@ -27,72 +30,64 @@ class TaskLabels(RequestValidationController):
             task_labels_qry = session.query(TaskLabel).filter_by(org_id=req_user.org_id).all()
 
         req_user.log(Operations.GET, Resources.TASK_LABELS)
-        return self.ok({"labels": [tl.as_dict() for tl in task_labels_qry]})
+        return {"labels": [tl.as_dict() for tl in task_labels_qry]}, 200
 
-    @handle_exceptions
+    create_label_dto = api.model(
+        "Create Label Dto", {"label": fields.String(required=True), "colour": fields.String(required=True)}
+    )
+
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK_LABEL)
-    @task_labels_route.expect(new_task_label_dto)
-    @task_labels_route.response(200, "Created task label", task_label_dto)
-    @task_labels_route.response(400, "Bad request", message_response_dto)
-    @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
-    def post(self, **kwargs) -> Response:
+    @api.expect(create_label_dto, validate=True)
+    @api.response(204, "Success")
+    def post(self, **kwargs):
         """Creates a task label"""
         req_user = kwargs["req_user"]
         request_body = request.get_json()
 
-        label, colour = self.validate_create_task_label_request(request_body)
-
         with session_scope() as session:
-            new_label = TaskLabel(req_user.org_id, label, colour)
+            new_label = TaskLabel(req_user.org_id, request_body["label"], request_body["colour"])
             session.add(new_label)
 
         req_user.log(Operations.CREATE, Resources.TASK_LABEL, new_label.id)
-        return self.created(new_label.as_dict())
+        return "", 204
 
-    @handle_exceptions
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.TASK_LABEL)
-    @task_labels_route.expect(task_label_dto)
-    @task_labels_route.response(200, "Updated the task label", task_label_dto)
-    @task_labels_route.response(400, "Bad request", message_response_dto)
-    @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
-    @task_labels_route.response(404, "Task label not found", message_response_dto)
-    def put(self, **kwargs) -> Response:
+    @api.expect(task_label_dto, validate=True)
+    @api.response(204, "Success")
+    def put(self, **kwargs):
         """Updates a task label"""
         req_user = kwargs["req_user"]
         request_body = request.get_json()
 
-        label = self.validate_update_task_labels_request(request_body, req_user.org_id)
-
-        logger.info(label.id)
-
-        with session_scope():
-            label.colour = request_body.get("colour")
-            label.label = request_body.get("label")
+        with session_scope() as session:
+            label = session.query(TaskLabel).filter_by(id=request_body["id"], org_id=req_user.org_id).first()
+            if label is None:
+                raise ResourceNotFoundError(f"Label {request_body['id']} doesn't exist")
+            else:
+                label.colour = request_body["colour"]
+                label.label = request_body["label"]
 
         req_user.log(Operations.UPDATE, Resources.TASK_LABEL, label.id)
-        return self.ok(label.as_dict())
+        return "", 204
 
 
-@task_labels_route.route("/<int:label_id>")
+@api.route("/<int:label_id>")
 class DeleteTaskLabel(RequestValidationController):
-    @handle_exceptions
     @requires_jwt
     @authorize(Operations.DELETE, Resources.TASK_LABEL)
-    @task_labels_route.param("label_id", "The id of the label you want to delete")
-    @task_labels_route.response(204, "Deleted the task label")
-    @task_labels_route.response(400, "Bad request", message_response_dto)
-    @task_labels_route.response(403, "Insufficient privileges", message_response_dto)
-    @task_labels_route.response(404, "Task label not found", message_response_dto)
-    def delete(self, label_id: int, **kwargs) -> Response:
+    @api.param("label_id", "The id of the label you want to delete")
+    @api.response(204, "Deleted the task label")
+    def delete(self, label_id: int, **kwargs):
         """Deletes a task label"""
         req_user = kwargs["req_user"]
 
-        label = self.validate_delete_task_labels_request(label_id, req_user.org_id)
-
         with session_scope() as session:
+            label = session.query(TaskLabel).filter_by(id=label_id, org_id=req_user.org_id).first()
+            if label is None:
+                raise ResourceNotFoundError(f"Label {label_id} doesn't exist")
             session.delete(label)
 
         req_user.log(Operations.DELETE, Resources.TASK_LABEL, label_id)
-        return self.no_content()
+        return "", 204
