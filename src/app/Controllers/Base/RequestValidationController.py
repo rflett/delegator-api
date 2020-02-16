@@ -25,6 +25,14 @@ class RequestValidationController(ObjectValidationController):
             raise ValidationError("Can't delete the only remaining Administrator")
         return user
 
+    def validate_disable_user(self, user_id: int, **kwargs) -> User:
+        """Validates the disable user request"""
+        user = self.check_user_id(user_id, should_exist=True)
+        self.check_auth_scope(user, **kwargs)
+        if user_service.is_user_only_org_admin(user):
+            raise ValidationError("Can't disable the only remaining Administrator")
+        return user
+
     def validate_drop_task(self, task_id: int, **kwargs) -> Task:
         """Validates the assign task request
         :param: users_org_id:   The org id of the user making the request

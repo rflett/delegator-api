@@ -88,7 +88,6 @@ class GetTask(RequestValidationController):
                 """ SELECT t.id AS task_id,
                            t.org_id AS task_org_id,
                            t.description AS task_description,
-                           t.status AS task_status,
                            t.time_estimate AS task_time_estimate,
                            t.scheduled_for AS task_scheduled_for,
                            t.scheduled_notification_period AS task_scheduled_notification_period,

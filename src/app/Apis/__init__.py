@@ -28,6 +28,7 @@ from app.Controllers.Authenticated.User.UserPagesController import api as user_p
 from app.Controllers.Authenticated.User.UsersController import api as users_v1
 from app.Controllers.Authenticated.User.UserSettingsController import api as user_settings_v1
 from app.Controllers.Authenticated.User.UserWelcomeController import api as user_welcome_v1
+from app.Controllers.Authenticated.User.DisableUserController import api as disable_user_v1
 
 
 # swagger monkey patch
@@ -65,5 +66,6 @@ api.add_namespace(user_pages_v1)
 api.add_namespace(users_v1)
 api.add_namespace(user_settings_v1)
 api.add_namespace(user_welcome_v1)
+api.add_namespace(disable_user_v1)
 api.add_namespace(health_v1)
 api.add_namespace(version_v1)

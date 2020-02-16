@@ -38,6 +38,8 @@ class Events(str):
     user_updated_user = "user_updated_user"
     user_deleted = "user_deleted"
     user_deleted_user = "user_deleted_user"
+    user_enabled_user = "user_enabled_user"
+    user_disabled_user = "user_disabled_user"
     user_disabled_tasktype = "user_disabled_tasktype"
     user_transitioned_task = "user_transitioned_task"
 

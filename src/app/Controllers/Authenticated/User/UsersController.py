@@ -8,8 +8,7 @@ from sqlalchemy.orm import aliased
 from app.Extensions.Database import session_scope
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
-from app.Extensions.Errors import ValidationError
-from app.Models import User, Activity, Task, UserPasswordToken, Email, Subscription
+from app.Models import User, Activity, UserPasswordToken, Email, Subscription
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.RBAC import Role
 from app.Services import UserService
@@ -100,7 +99,7 @@ class UserController(RequestValidationController):
 
     @requires_jwt
     @authorize(Operations.GET, Resources.USERS)
-    @api.marshal_with(user_response, code=200)
+    @api.marshal_with(get_users_response, code=200)
     def get(self, **kwargs):
         """Get all users """
         req_user = kwargs["req_user"]
@@ -187,7 +186,7 @@ class UserController(RequestValidationController):
                 last_name=request_body["last_name"],
                 role=request_body["role_id"],
                 job_title=request_body.get("job_title"),
-                disabled=request_body.get("disabled"),
+                disabled=None,
                 created_by=req_user.id,
             )
             session.add(user)
@@ -236,7 +235,6 @@ class UserController(RequestValidationController):
             "first_name": fields.String(required=True),
             "last_name": fields.String(required=True),
             "job_title": fields.String(required=True),
-            "disabled": NullableDateTime(),
         },
     )
 
@@ -250,33 +248,8 @@ class UserController(RequestValidationController):
         request_body = request.get_json()
 
         user_to_update = self.check_user_id(request_body["id"], should_exist=True)
-        disabled = self.check_user_disabled(request_body.get("disabled"))
         self.check_auth_scope(user_to_update, **kwargs)
         self.check_user_role(req_user, request_body["role_id"], user_to_update)
-
-        # get the user to update
-        is_user_only_org_admin = user_service.is_user_only_org_admin(user_to_update)
-
-        # if the user is going to be disabled
-        if user_to_update.disabled is None and disabled is not None:
-            if is_user_only_org_admin:
-                raise ValidationError("Cannot disable only remaining Administrator.")
-
-            # decrement plan quantity
-            subscription = Subscription(req_user.orgs.chargebee_subscription_id)
-            subscription.decrement_subscription(req_user)
-
-            # drop the tasks
-            with session_scope() as session:
-                users_tasks = session.query(Task).filter_by(assignee=user_to_update.id).all()
-            for task in users_tasks:
-                task.drop(req_user)
-
-        # user is being re-enabled
-        elif user_to_update.disabled is not None and disabled is None:
-            # increment plan quantity
-            subscription = Subscription(req_user.orgs.chargebee_subscription_id)
-            subscription.increment_subscription(req_user)
 
         # for all attributes in the request, update them on the user if they exist
         with session_scope():
@@ -284,7 +257,6 @@ class UserController(RequestValidationController):
             user_to_update.first_name = request_body["first_name"]
             user_to_update.last_name = request_body["last_name"]
             user_to_update.job_title = request_body.get("job_title")
-            user_to_update.disabled = disabled
             user_to_update.updated_at = datetime.datetime.utcnow()
             user_to_update.updated_by = req_user.id
 
