@@ -1,4 +1,3 @@
-
 stages:
   - Lint
   - Build
@@ -38,7 +37,7 @@ Build:
     # push tagged images
     - docker push $AMZ_REGISTRY:$IMAGE_TAG
     - docker push $AMZ_REGISTRY:latest
-    - docker push $GITLAB_REGISTRY/dev/delegator-api
+    - docker push $GITLAB_REGISTRY/dev/api
 
 .deploy:
   stage: Deploy
