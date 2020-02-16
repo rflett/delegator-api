@@ -101,11 +101,8 @@ class GetTask(RequestValidationController):
                            tt.id AS type_id,
                            tt.label AS type_label,
                            tt.disabled AS type_disabled,
-                           tt.tooltip AS type_tooltip,
                            ts.status AS status_status,
                            ts.label AS status_label,
-                           ts.disabled AS status_disabled,
-                           ts.tooltip AS status_tooltip,
                            tp.priority AS priority_priority,
                            tp.label AS priority_label,
                            tl1.id AS label1_id,
@@ -126,29 +123,28 @@ class GetTask(RequestValidationController):
                            tfb.id AS finished_by_id,
                            tfb.first_name AS finished_by_first_name,
                            tfb.last_name AS finished_by_last_name
-                    FROM tasks t INNER JOIN task_types tt ON t.type == tt.id
-                                 INNER JOIN task_status ts ON t.status == ts.status
-                                 INNER JOIN task_priorities tp ON t.priority == tp.priority
-                                 LEFT JOIN task_labels tl1 ON t.label_1 == tl1.id
-                                 LEFT JOIN task_labels tl2 ON t.label_2 == tl2.id
-                                 LEFT JOIN task_labels tl3 ON t.label_3 == tl3.id
-                                 LEFT JOIN users ta ON t.assignee == ta.id
-                                 LEFT JOIN users tcb ON t.created_by == tcb.id
-                                 LEFT JOIN users tfb ON t.finished_by == tfb.id
+                    FROM tasks t INNER JOIN task_types tt ON t.type = tt.id
+                                 INNER JOIN task_statuses ts ON t.status = ts.status
+                                 INNER JOIN task_priorities tp ON t.priority = tp.priority
+                                 LEFT JOIN task_labels tl1 ON t.label_1 = tl1.id
+                                 LEFT JOIN task_labels tl2 ON t.label_2 = tl2.id
+                                 LEFT JOIN task_labels tl3 ON t.label_3 = tl3.id
+                                 LEFT JOIN users ta ON t.assignee = ta.id
+                                 LEFT JOIN users tcb ON t.created_by = tcb.id
+                                 LEFT JOIN users tfb ON t.finished_by = tfb.id
                     WHERE t.id = :task_id
                     AND   t.org_id = :org_id
                 """,
                 {"task_id": task_id, "org_id": req_user.org_id},
             )
 
-        result = qry[0].items()
+        result = dict(qry.fetchone().items())
 
         ret = {
             "type": {"id": result["type_id"], "label": result["type_label"], "disabled": result["type_disabled"],},
             "status": {
                 "status": result["status_status"],
                 "label": result["status_label"],
-                "disabled": result["status_disabled"],
             },
             "priority": {"priority": result["priority_priority"], "label": result["priority_label"],},
             "assignee": {
@@ -170,7 +166,7 @@ class GetTask(RequestValidationController):
         }
 
         # add task attributes to top level of ret dict
-        for alias, value in result:
+        for alias, value in result.items():
             if alias.startswith("task_"):
                 ret[alias[len("task_") :]] = value
 
@@ -198,9 +194,9 @@ class ManageTask(RequestValidationController):
             "id": fields.Integer(required=True),
             "type_id": fields.Integer(required=True),
             "status": fields.String(enum=task_statuses, required=True),
-            "assignee": fields.Integer(required=True),
+            "assignee": fields.Integer(),
             "priority": fields.Integer(min=0, max=2, required=True),
-            "labels": fields.List(fields.Integer(), max_items=3, required=True),
+            "labels": fields.List(fields.Integer(), max_items=3, required=True, min_items=0),
             "description": fields.String(),
             "time_estimate": fields.Integer(),
             "scheduled_for": NullableDateTime(),
@@ -220,13 +216,13 @@ class ManageTask(RequestValidationController):
         # validate
         task_to_update = self.check_task_id(request_body["id"], kwargs["req_user"].org_id)
         self.check_task_status(request_body["status"]),
-        self.check_task_assignee(request_body["assignee"], **kwargs),
+        self.check_task_assignee(request_body.get("assignee"), **kwargs),
         self.check_task_priority(request_body["priority"]),
         self.check_task_labels(request_body["labels"], kwargs["req_user"].org_id)
 
         # if the assignee isn't the same as before then assign someone to it, if the new assignee is null or
         # omitted from the request, then assign the task
-        assignee = request_body["assignee"]
+        assignee = request_body.get("assignee")
         if task_to_update.assignee != assignee:
             if assignee is None:
                 task_service.unassign(task=task_to_update, req_user=req_user)
@@ -255,8 +251,8 @@ class ManageTask(RequestValidationController):
             or task_to_update.scheduled_notification_sent
         ):
             with session_scope():
-                task_to_update.scheduled_for = request_body["scheduled_for"]
-                task_to_update.scheduled_notification_period = request_body["scheduled_notification_period"]
+                task_to_update.scheduled_for = request_body.get("scheduled_for")
+                task_to_update.scheduled_notification_period = request_body.get("scheduled_notification_period")
 
         # update remaining attributes
         with session_scope():
@@ -306,7 +302,7 @@ class ManageTask(RequestValidationController):
 
         self.check_task_type_id(request_body["type_id"])
         self.check_task_priority(request_body["priority"])
-        self.check_task_assignee(request_body["assignee"], **kwargs)
+        self.check_task_assignee(request_body.get("assignee"), **kwargs)
         self.check_task_labels(request_body.get("labels", []), req_user.org_id)
 
         if (

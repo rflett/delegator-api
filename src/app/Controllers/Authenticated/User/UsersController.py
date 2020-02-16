@@ -72,9 +72,9 @@ class UserController(RequestValidationController):
     role_dto = api.model(
         "Get Users Role",
         {
-            "id": fields.Integer(),
+            "id": fields.String(enum=["ADMIN", "DELEGATOR", "USER", "LOCKED"]),
             "rank": fields.Integer(min=0, max=2),
-            "name": fields.String(enum=["ORG_ADMIN", "MANAGER", "STAFF", "USER", "LOCKED"]),
+            "name": fields.String(enum=["Admin", "Delegator", "User", "Locked"]),
             "description": fields.String(),
         },
     )
@@ -226,18 +226,19 @@ class UserController(RequestValidationController):
         current_app.logger.info(f"User {req_user.id} created user {user.id}")
 
         # increment chargebee subscription plan_quantity
-        self._increment_subscription(user.orgs.chargebee_subscription_id)
+        subscription = Subscription(user.orgs.chargebee_subscription_id)
+        subscription.increment_subscription(req_user)
 
         return "", 204
 
     update_user_request = api.model(
         "Update User Request",
         {
-            "id": fields.String(required=True),
+            "id": fields.Integer(required=True),
             "role_id": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER"], required=True),
             "first_name": fields.String(required=True),
             "last_name": fields.String(required=True),
-            "job_title": fields.String(),
+            "job_title": fields.String(required=True),
             "disabled": NullableDateTime(),
         },
     )

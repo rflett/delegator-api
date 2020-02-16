@@ -34,7 +34,7 @@ class Task(db.Model):
     finished_by = db.Column("finished_by", db.Integer, db.ForeignKey("users.id"), default=None)
     finished_at = db.Column("finished_at", db.DateTime)
     status_changed_at = db.Column("status_changed_at", db.DateTime)
-    priority_changed_at = db.Column("p  riority_changed_at", db.DateTime)
+    priority_changed_at = db.Column("priority_changed_at", db.DateTime)
     label_1 = db.Column("label_1", db.Integer, default=None)
     label_2 = db.Column("label_2", db.Integer, default=None)
     label_3 = db.Column("label_3", db.Integer, default=None)
@@ -234,12 +234,13 @@ class Task(db.Model):
 
     def delayed_info(self) -> dict:
         """ Gets the latest delayed information about a task """
+        from app.Models import User
         with session_scope() as session:
             qry = session.query(
                 DelayedTask,
                 User.first_name,
                 User.last_name
-            ).filter_by(task_id=self.id).join(DelayedTask.delayed_by == User.id).first()
+            ).join(User, DelayedTask.delayed_by == User.id).filter(Task.id == self.id).first()
 
         if qry is None:
             raise ValidationError("Task has not been delayed before.")

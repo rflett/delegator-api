@@ -45,7 +45,7 @@ class OrganisationManage(RequestValidationController):
         """Update an organisation"""
         req_user = kwargs["req_user"]
         request_body = request.get_json()
-        org_name = self.validate_update_org_request(req_user, request.get_json())
+        org_name = request_body["org_name"]
 
         # check an org with that name doesn't exist already
         with session_scope() as session:

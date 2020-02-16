@@ -13,7 +13,7 @@ api = Namespace(path="/roles", name="Roles", description="Manage roles")
 role_dto = api.model(
     "Role",
     {
-        "id": fields.Integer(),
+        "id": fields.String(),
         "rank": fields.Integer(min=0, max=2),
         "name": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER", "LOCKED"]),
         "description": fields.String(),

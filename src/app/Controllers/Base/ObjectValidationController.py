@@ -141,12 +141,6 @@ class ObjectValidationController(Resource):
         identifier: typing.Union[str, int], should_exist: typing.Optional[bool] = None
     ) -> typing.Union[None, User, str]:
         """Given a users email or ID, check whether it should or shouldn't exist"""
-        # validate the identifier
-        if isinstance(identifier, bool):
-            raise ValidationError(f"Bad user_id, expected int|str got {type(identifier)}.")
-        if not isinstance(identifier, (int, str)):
-            raise ValidationError(f"Bad user_id, expected int|str got {type(identifier)}.")
-
         # optionally check if it exists or not
         if should_exist is not None:
 

@@ -14,7 +14,7 @@ api = Namespace(path="/user/pages", name="User", description="Manage a user")
 class UserPagesController(RequestValidationController):
     @requires_jwt
     @authorize(Operations.GET, Resources.PAGES)
-    @api.marshal_with([fields.String()], code=200)
+    @api.response(200, "Success", fields.List(fields.String()))
     def get(self, **kwargs):
         """Returns the pages a user can access """
         req_user = kwargs["req_user"]

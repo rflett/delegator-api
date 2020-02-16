@@ -10,7 +10,6 @@ from app.Models.Enums import EmailTemplates
 
 if not getenv("MOCK_AWS"):
     sns = boto3.resource("sns")
-    email_sns_topic = sns.Topic(current_app.config["EMAIL_SNS_TOPIC_ARN"])
 
 
 class Email(object):
@@ -63,6 +62,8 @@ class Email(object):
         if getenv("MOCK_AWS"):
             current_app.logger.info(f"WOULD have sent email message {dto}")
             return None
+
+        email_sns_topic = sns.Topic(current_app.config["EMAIL_SNS_TOPIC_ARN"])
 
         try:
             email_sns_topic.publish(

@@ -8,7 +8,6 @@ from flask import current_app
 
 if not getenv("MOCK_AWS"):
     sns = boto3.resource("sns")
-    api_events_sns_topic = sns.Topic(current_app.config["EVENTS_SNS_TOPIC_ARN"])
 
 
 @dataclass
@@ -27,6 +26,7 @@ class Activity(object):
             current_app.logger.info(f"WOULD have published message {self.event}")
             return None
 
+        api_events_sns_topic = sns.Topic(current_app.config["EVENTS_SNS_TOPIC_ARN"])
         api_events_sns_topic.publish(
             TopicArn=api_events_sns_topic.arn,
             Message=json.dumps({"default": json.dumps(self.as_dict())}),

@@ -14,7 +14,6 @@ from sqlalchemy import exists
 
 from app.Extensions.Database import db, session_scope
 from app.Extensions.Errors import AuthorizationError
-from app.Models import Subscription
 from app.Models.RBAC import Log, Permission
 from app.Models.LocalMockData import MockActivity
 
@@ -145,7 +144,7 @@ class User(db.Model):
         )
         with session_scope() as session:
             session.add(audit_log)
-        current_app.info(f"user with id {self.id} did {operation} on {resource} with " f"a resource_id of {resource_id}")
+        current_app.logger.info(f"user with id {self.id} did {operation} on {resource} with " f"a resource_id of {resource_id}")
 
     def set_password(self, password) -> None:
         """
@@ -192,11 +191,11 @@ class User(db.Model):
             if failed_email:
                 session.query(FailedLogin).filter_by(email=self.email).delete()
 
-            current_app.info(f"cleared failed logins for {self.email}")
+            current_app.logger.info(f"cleared failed logins for {self.email}")
 
     def delete(self, req_user) -> None:
         """ Deletes the user """
-        from app.Models import Task
+        from app.Models import Task, Subscription
 
         def make_random() -> str:
             return "".join(random.choices(string.ascii_uppercase + string.digits, k=15))
@@ -257,7 +256,7 @@ class User(db.Model):
         user_dict = self.as_dict()
         user_dict["role"] = self.roles.as_dict()
         user_dict["created_by"] = created_by[0] + " " + created_by[1]
-        user_dict["updated_by"] = updated_by[0] + " " + updated_by[1] if updated_by[0] is not None else None
+        user_dict["updated_by"] = updated_by[0] + " " + updated_by[1] if updated_by is not None else None
 
         return user_dict
 
@@ -272,7 +271,7 @@ class User(db.Model):
         activity = user_activity_table.query(
             Select="ALL_ATTRIBUTES", KeyConditionExpression=Key("id").eq(self.id), ScanIndexForward=False
         )
-        current_app.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
+        current_app.logger.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
 
         log = []
 

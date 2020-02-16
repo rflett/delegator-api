@@ -50,6 +50,10 @@ class AccountController(RequestValidationController):
                 func.lower(Organisation.name) == func.lower(request_body["org_name"])
             )).scalar():
                 raise ValidationError("That organisation already exists.")
+            if session.query(exists().where(
+                func.lower(User.email) == func.lower(request_body["email"])
+            )).scalar():
+                raise ValidationError("That email already exists.")
 
         self.validate_email(request_body["email"])
         self.validate_password(request_body["password"])
@@ -262,7 +266,7 @@ class AccountController(RequestValidationController):
                 raise AuthenticationError("Password incorrect.")
 
     @requires_jwt
-    @api.response(200, "Successfully logged out")
+    @api.response(204, "Success")
     def delete(self, **kwargs):
         """Log a user out"""
         req_user = kwargs["req_user"]
@@ -271,7 +275,7 @@ class AccountController(RequestValidationController):
             org_id=req_user.org_id, event=Events.user_logout, event_id=req_user.id, event_friendly="Logged out."
         ).publish()
         current_app.logger.info(f"user {req_user.id} logged out")
-        return "Successfully logged out", 200
+        return "Successfully logged out", 204
 
     @staticmethod
     def _failed_login_attempt(email: str):

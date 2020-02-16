@@ -2,7 +2,7 @@ class Config(object):
     """Common settings"""
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    LOG_LEVEL = "DEBUG"
+    LOG_LEVEL = "INFO"
     SIGNUP_ROLE = "ORG_ADMIN"
     TOKEN_TTL_IN_MINUTES = 72000
     FAILED_LOGIN_ATTEMPTS_MAX = 5

@@ -75,6 +75,7 @@ class TaskTypes(RequestValidationController):
             "default_time_estimate": fields.Integer(min=-1, required=True),
             "default_priority": fields.Integer(enum=[-1, 0, 1, 2], required=True),
             "default_description": fields.String(),
+            "escalation_policies": fields.List(fields.Nested(escalation_policy_dto), required=True, min_items=0),
         },
     )
 
@@ -103,12 +104,18 @@ class TaskTypes(RequestValidationController):
                 new_task_type = TaskType(
                     label=request_body["label"],
                     org_id=req_user.org_id,
-                    disabled=request_body["disabled"],
+                    disabled=None,
                     default_time_estimate=request_body["default_time_estimate"],
                     default_priority=request_body["default_priority"],
                     default_description=request_body.get("default_description"),
                 )
                 session.add(new_task_type)
+
+            for escalation in request_body["escalation_policies"]:
+                self.check_task_priority(escalation["from_priority"])
+                self.check_task_priority(escalation["to_priority"])
+                self._create_escalation(req_user, new_task_type, escalation)
+
             Activity(
                 org_id=req_user.org_id,
                 event=Events.tasktype_created,
@@ -140,7 +147,7 @@ class TaskTypes(RequestValidationController):
             "default_time_estimate": fields.Integer(min=-1, required=True),
             "default_priority": fields.Integer(enum=[-1, 0, 1, 2], required=True),
             "default_description": fields.String(),
-            "escalation_policies": fields.List(fields.Nested(escalation_policy_dto), required=True),
+            "escalation_policies": fields.List(fields.Nested(escalation_policy_dto), required=True, min_items=0),
         },
     )
 

@@ -44,11 +44,10 @@ class TransitionTask(RequestValidationController):
         "Get Task Transitions Dto",
         {"task_id": fields.Integer(), "valid_transitions": fields.List(fields.String(enum=statuses))},
     )
-    transition_tasks_response = api.model("Get Valid Transitions Dto", task_transition_dto)
 
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_TRANSITIONS)
-    @api.marshal_with([transition_tasks_response], code=200)
+    @api.marshal_with(task_transition_dto, code=200)
     def get(self, **kwargs):
         """Returns all tasks and the statuses they can be transitioned to"""
         req_user = kwargs["req_user"]

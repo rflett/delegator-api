@@ -1,535 +1,603 @@
 import json
-import typing
+import uuid
+from random import randint
 
 import requests
-from dataclasses import dataclass
 
-from faker import Faker
-
-fake = Faker()
+auth = ""
 
 
-@dataclass
-class Base:
-    url = "http://localhost:5000/"
-    headers = {"Content-Type": "application/json"}
-    user_id: int = None
-    org_id: int = None
-    task_type_id: int = None
-    task_id: int = None
-    task_label_id: int = None
-
-    def send(self, method: str, path: str, data: dict = None):
-        """Sends an HTTP request"""
-        params = {"headers": self.headers}
-        if data is not None:
-            params = {**params, "data": json.dumps(data)}
-
-        method_mapping = {
-            "get": requests.get,
-            "delete": requests.delete,
-            "put": requests.put,
-            "post": requests.post,
-            "path": requests.patch,
-        }
-
-        return method_mapping[method](url=self.url + path, **params)
-
-
-base = Base()
-
-
-# Health Check
-def test_health():
-    r = base.send("get", "health/")
-    assert r.status_code == 200
-
-
-# Version Check
-def test_version():
-    r = base.send("get", "v/")
-    assert r.status_code == 200
-    assert "commit_sha" in r.json()
-
-
-# Signup
-def test_signup():
-    r = base.send(
-        "put",
-        "account/",
-        data={
-            "org_name": "TestOrganisation",
-            "email": "test@sink.delegator.com.au",
-            "password": "S0meSupersafeP&ssword",
-            "first_name": "Test",
-            "last_name": "User",
-            "job_title": "Lead Tester",
-            "plan_id": "basic",
+def test_login():
+    data = {
+      "email": "ryan.flett@delegator.com.au",
+      "password": "B4ckburn3r",
+    }
+    r = requests.post(
+        "http://localhost:5000/account/",
+        headers={
+            "Content-Type": "application/json",
         },
+        data=json.dumps(data),
+    )
+    body = r.json()
+    assert r.status_code == 200
+    assert "jwt" in body
+    global auth
+    auth = "Bearer " + body["jwt"]
+
+
+def test_account_signup():
+    data = {
+      "org_name": str(uuid.uuid4()),
+      "email": f"ryan.flett+apitest{randint(0, 10)}@delegator.com.au",
+      "password": "Ap1t3stAccount!",
+      "first_name": "Ryan",
+      "last_name": "Flett",
+      "job_title": "Director",
+      "plan_id": "basic"
+    }
+    r = requests.put(
+        "http://localhost:5000/account/",
+        headers={
+            "Content-Type": "application/json",
+        },
+        data=json.dumps(data),
     )
     assert r.status_code == 200
     assert "url" in r.json()
 
 
-# Login
-def test_login():
-    r = base.send("post", "account/", data={"email": "ryan.flett@delegator.com.au", "password": "B4ckburn3r"})
+def test_logout():
+    r = requests.delete(
+        "http://localhost:5000/account/",
+        headers={
+            "Authorization": auth
+        },
+    )
+    assert r.status_code == 204
+
+
+def test_get_active_users():
+    r = requests.get(
+        "http://localhost:5000/active-users/",
+        headers={
+            "Authorization": auth
+        },
+    )
     assert r.status_code == 200
 
-    # setup values for other tests
-    base.headers["Authorization"] = f"Bearer {r.json()['jwt']}"
-    base.org_id = r.json()["org_id"]
-    base.user_id = r.json()["id"]
 
-
-# Roles
-def test_get_roles():
-    r = base.send("get", "roles/")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert "roles" in response_body
-    roles = response_body["roles"]
-    assert len(roles) > 0
-    for r in roles:
-        assert isinstance(r, dict)
-        assert isinstance(r["id"], str)
-        assert isinstance(r["rank"], int)
-        assert isinstance(r["name"], str)
-
-
-# Organisation
+# organisation
 def test_get_org():
-    r = base.send("get", "org/")
+    r = requests.get(
+        "http://localhost:5000/org/",
+        headers={
+            "Authorization": auth
+        },
+    )
     assert r.status_code == 200
-    response_body = r.json()
-    assert isinstance(response_body["org_id"], int)
-    assert isinstance(response_body["org_name"], str)
-
-
-def test_get_org_customer_id():
-    r = base.send("get", "org/customer")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert isinstance(response_body["customer_id"], str)
+    assert "org_id" in r.json()
+    assert "org_name" in r.json()
 
 
 def test_update_org():
-    r = base.send("put", "org/", data={"org_id": base.org_id, "org_name": "A new organisation name"})
+    data = {
+      "org_name": str(uuid.uuid4()),
+    }
+    r = requests.put(
+        "http://localhost:5000/org/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
     assert r.status_code == 200
-    response_body = r.json()
-    assert response_body["org_name"] == "A new organisation name"
+    assert "org_name" in r.json()
+
+
+def test_get_org_customer_id():
+    r = requests.get(
+        "http://localhost:5000/org/customer",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+    assert "customer_id" in r.json()
 
 
 def test_get_org_settings():
-    r = base.send("get", "org/settings")
-    assert r.status_code == 200
-
-
-# Users
-def test_get_active_users():
-    r = base.send("get", "active-users/")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert "active_users" in response_body
-    active_users = response_body["active_users"]
-    assert len(active_users) > 0
-    for au in active_users:
-        assert isinstance(au, dict)
-        assert isinstance(au["user_id"], int)
-        assert isinstance(au["org_id"], int)
-        assert isinstance(au["first_name"], str)
-        assert isinstance(au["last_name"], str)
-        assert isinstance(au["last_active"], str)
-
-
-# Task Types
-def test_create_task_types():
-    r = base.send(
-        "post",
-        "task-types/",
-        data={
-            "label": "Patient Transport",
-            "default_time_estimate": 600,
-            "default_description": "A test description",
-            "default_priority": 1,
-        },
-    )
-    assert r.status_code == 201
-    response_body = r.json()
-    assert "id" in response_body
-    assert "label" in response_body
-    assert "org_id" in response_body
-    assert "disabled" in response_body
-    assert "tooltip" in response_body
-    assert "escalation_policies" in response_body
-    assert "default_time_estimate" in response_body
-    assert "default_description" in response_body
-    assert "default_priority" in response_body
-    assert response_body["label"] == "Patient Transport"
-    base.task_type_id = response_body["id"]
-
-
-def test_update_task_type():
-    r = base.send(
-        "put",
-        "task-types/",
-        data={
-            "id": base.task_type_id,
-            "label": "New Patient Transport",
-            "default_time_estimate": 300,
-            "default_description": "A new test description",
-            "default_priority": 0,
-            "escalation_policies": [{"display_order": 1, "delay": 30, "from_priority": 0, "to_priority": 1}],
-        },
-    )
-    response_body = r.json()
-    assert response_body["label"] == "New Patient Transport"
-    assert response_body["default_time_estimate"] == 300
-    assert response_body["default_description"] == "A new test description"
-    assert response_body["default_priority"] == 0
-    assert len(response_body["escalation_policies"]) == 1
-    assert response_body["escalation_policies"][0] == {
-        "task_type_id": base.task_type_id,
-        "display_order": 1,
-        "delay": 30,
-        "from_priority": 0,
-        "to_priority": 1,
-    }
-
-
-def test_disable_task_type():
-    r = base.send("delete", f"task-types/{base.task_type_id}")
-    assert r.status_code == 200
-    assert r.json()["disabled"] is not None
-
-
-def test_get_task_type():
-    r = base.send("get", "task-types/")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert "task_types" in response_body
-    for _type in response_body["task_types"]:
-        assert "id" in _type
-        assert "label" in _type
-        assert "org_id" in _type
-        assert "disabled" in _type
-        assert "tooltip" in _type
-        assert "escalation_policies" in _type
-
-
-# Tasks
-def test_create_task():
-    r = base.send(
-        "post",
-        "task/",
-        data={"type_id": base.task_type_id, "description": "A Task Description", "time_estimate": 300, "priority": 0},
-    )
-    assert r.status_code == 201
-    base.task_id = r.json()["id"]
-
-
-def test_schedule_task():
-    r = base.send(
-        "post",
-        "task/",
-        data={
-            "type_id": base.task_type_id,
-            "description": "A Task Description",
-            "scheduled_for": "2020-11-10T15:46:00+10:00",
-            "scheduled_notification_period": 300,
-            "time_estimate": 300,
-            "priority": 0,
-        },
-    )
-    assert r.status_code == 201
-    response_body = r.json()
-    assert response_body["status"]["status"] == "SCHEDULED"
-
-
-def test_update_task():
-    r = base.send(
-        "put",
-        "task/",
-        data={
-            "id": base.task_id,
-            "type_id": base.task_type_id,
-            "description": "A New Task Description",
-            "status": "READY",
-            "time_estimate": 300,
-            "priority": 0,
+    r = requests.get(
+        "http://localhost:5000/org/settings",
+        headers={
+            "Authorization": auth,
         },
     )
     assert r.status_code == 200
-    assert r.json()["description"] == "A New Task Description"
+    assert "org_id" in r.json()
 
 
-def test_get_tasks():
-    r = base.send("get", "tasks/")
+# password
+def test_reset_password():
+    r = requests.delete(
+        "http://localhost:5000/password/?email=foo@bar.com",
+    )
+    assert r.status_code == 204
+
+
+# roles
+def test_get_role():
+    r = requests.get(
+        "http://localhost:5000/roles/",
+        headers={
+            "Authorization": auth,
+        },
+    )
     assert r.status_code == 200
-    response_body = r.json()
-    assert "tasks" in response_body
-    assert len(response_body["tasks"]) > 0
 
 
-def test_get_task():
-    r = base.send("get", f"task/{base.task_id}")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert response_body["id"] == base.task_id
-
-
-def test_get_task_priorities():
-    r = base.send("get", "tasks/priorities/")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert "priorities" in response_body
-    assert len(response_body["priorities"]) == 3
-    for p in response_body["priorities"]:
-        assert isinstance(p["priority"], int)
-        assert isinstance(p["label"], str)
-
-
-def test_get_task_statuses():
-    r = base.send("get", "tasks/statuses/")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert "statuses" in response_body
-    assert len(response_body["statuses"]) == 4
-    for s in response_body["statuses"]:
-        assert isinstance(s["status"], str)
-        assert isinstance(s["label"], str)
-        assert isinstance(s["disabled"], bool)
-        assert isinstance(s["tooltip"], str) or s["tooltip"] is None
-
-
-# Task Actions
-def test_assign_task():
-    r = base.send("post", "task/assign/", data={"task_id": base.task_id, "assignee": base.user_id})
-    assert r.status_code == 200
-    response_body = r.json()
-    assert "assignee" in response_body
-    assert response_body["assignee"]["id"] == base.user_id
-
-
-def test_get_available_transitions():
-    r = base.send("get", f"task/transition/{base.task_id}")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert "statuses" in response_body
-    assert len(response_body["statuses"]) > 0
-
-
-def transition_task():
-    r = base.send("put", "task/transition", data={"task_id": base.task_id, "task_status": "IN_PROGRESS"})
-    assert r.status_code == 200
-    response_body = r.json()
-    assert response_body["status"]["status"] == "IN_PROGRESS"
-
-
-def test_delay_task():
-    r = base.send("put", "task/delay/", data={"task_id": base.task_id, "delay_for": 20, "reason": "A test delay"})
-    assert r.status_code == 200
-    response_body = r.json()
-    assert response_body["status"]["status"] == "DELAYED"
-
-
-def test_get_delayed_info():
-    r = base.send("get", f"task/delay/{base.task_id}")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert "task_id" in response_body
-    assert "delay_for" in response_body
-    assert "delayed_at" in response_body
-    assert "delayed_by" in response_body
-    assert "reason" in response_body
-    assert "snoozed" in response_body
-    assert "expired" in response_body
-    assert response_body["reason"] == "A test delay"
-
-
-def test_drop_task():
-    r = base.send("post", f"task/drop/{base.task_id}")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert response_body["assignee"] is None
-    assert response_body["status"]["status"] == "READY"
-
-
-def test_cancel_task():
-    r = base.send("post", f"task/cancel/{base.task_id}")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert response_body["status"]["status"] == "CANCELLED"
-
-
-# Task Labels
+# labels
 def test_create_label():
-    create_data = {"label": "labelOne", "colour": "red"}
-    r = base.send("post", "task-labels/", create_data)
-    assert r.status_code == 201
-    label = r.json()
-    assert label["id"] == 1
-    assert label["label"] == create_data["label"]
-    assert label["colour"] == create_data["colour"]
-    base.task_label_id = label["id"]
-
-
-def test_update_label():
-    update_data = {"id": base.task_label_id, "label": "labelOneUpdated", "colour": "blue"}
-    r = base.send("put", "task-labels/", update_data)
-    assert r.status_code == 200
-    label = r.json()
-    assert label["id"] == 1
-    assert label["label"] == update_data["label"]
-    assert label["colour"] == update_data["colour"]
-
-
-def test_get_labels():
-    r = base.send("get", "task-labels/")
-    assert r.status_code == 200
-    response_body = r.json()
-    assert "labels" in response_body
-    assert len(response_body["labels"]) == 1
-
-
-def test_create_task_with_labels():
-    r = base.send(
-        "post",
-        "task/",
-        data={
-            "type_id": base.task_type_id,
-            "description": "A Task Description",
-            "time_estimate": 300,
-            "priority": 0,
-            "labels": [1],
+    data = {
+      "label": "red",
+      "colour": "red"
+    }
+    r = requests.post(
+        "http://localhost:5000/task-labels/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
         },
+        data=json.dumps(data),
     )
-    assert r.status_code == 201
-    response_body = r.json()
-    assert "labels" in response_body
-    assert len(response_body["labels"]) == 1
-
-
-def test_schedule_task_with_labels():
-    r = base.send(
-        "post",
-        "task/",
-        data={
-            "type_id": base.task_type_id,
-            "description": "A Task Description",
-            "scheduled_for": "2020-11-10T15:46:00+10:00",
-            "scheduled_notification_period": 300,
-            "time_estimate": 300,
-            "priority": 0,
-            "labels": [1],
-        },
-    )
-    assert r.status_code == 201
-    response_body = r.json()
-    assert response_body["status"]["status"] == "SCHEDULED"
-    assert "labels" in response_body
-    assert len(response_body["labels"]) == 1
-    assert response_body["labels"][0] == {"id": 1, "label": "labelOneUpdated", "colour": "blue"}
+    assert r.status_code == 204
 
 
 def test_delete_label():
-    r = base.send("delete", f"task-labels/{base.task_label_id}")
+    data = {
+        "label": str(uuid.uuid4()),
+        "colour": "blue"
+    }
+    r = requests.post(
+        "http://localhost:5000/task-labels/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+    r = requests.delete(
+        "http://localhost:5000/task-labels/2",
+        headers={
+            "Authorization": auth,
+        },
+    )
     assert r.status_code == 204
 
 
-# User Activity Controller
-def test_user_activity():
-    response = base.send("get", f"user/activity/{base.user_id}")
-    assert response.status_code == 200
-    # Activity will change so as long as 200 comes back it's okay
-
-
-# User Pages Controller
-def test_user_pages():
-    response = base.send("get", "user/pages")
-    assert response.status_code == 200
-    # Which pages user can see doesn't matter too much
-
-
-# Users Controller
-def test_get_users():
-    response = base.send("get", "users/")
-    assert response.status_code == 200
-    response_body: typing.List = response.json()
-    assert len(response_body) > 0
-
-
-def test_create_user():
-    create_data = {
-        "email": fake.email(),
-        "first_name": fake.name(),
-        "last_name": fake.name(),
-        "role_id": "USER",
-        "job_title": fake.bs(),
-        "disabled": None,
+def test_update_labels():
+    data = {
+        "id": 1,
+        "label": "red label",
+        "colour": "red"
     }
-    response = base.send("post", "users/", create_data)
-    assert response.status_code == 201
-    response_body = response.json()
-    assert response_body["email"] == create_data["email"]
+    r = requests.put(
+        "http://localhost:5000/task-labels/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_get_labels():
+    r = requests.get(
+        "http://localhost:5000/task-labels/",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+# types
+def test_create_type():
+    data = {
+        "label": "TestTaskLabel",
+        "default_time_estimate": 30,
+        "default_priority": 1,
+        "default_description": "A description",
+        "escalation_policies": [
+            {
+                "display_order": 1,
+                "delay": 600,
+                "from_priority": 1,
+                "to_priority": 2
+            }
+        ]
+    }
+    r = requests.post(
+        "http://localhost:5000/task-types/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_delete_type():
+    r = requests.delete(
+        "http://localhost:5000/task-types/1",  # other (default)
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 204
+
+
+def test_update_type():
+    data = {
+        "id": 3,
+        "label": "My Updated Label",
+        "default_time_estimate": 60,
+        "default_priority": 0,
+        "default_description": "A new description",
+        "escalation_policies": []
+    }
+    r = requests.put(
+        "http://localhost:5000/task-types/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_get_types():
+    r = requests.get(
+        "http://localhost:5000/task-types/",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+# task
+def test_create_task():
+    data = {
+      "type_id": 2,
+      "priority": 1,
+      "description": "A description",
+      "time_estimate": 600,
+      "scheduled_for": None,
+      "scheduled_notification_period": None,
+      "labels": [
+        1
+      ]
+    }
+    r = requests.post(
+        "http://localhost:5000/task/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_update_task():
+    data = {
+        "id": 1,
+        "type_id": 2,
+        "priority": 0,
+        "status": "READY",
+        "description": "A new description",
+        "time_estimate": 300,
+        "labels": []
+    }
+    r = requests.put(
+        "http://localhost:5000/task/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_schedule_task():
+    data = {
+      "type_id": 2,
+      "priority": 1,
+      "description": "A description",
+      "time_estimate": 600,
+      "scheduled_for": "2021-10-10T10:00:00+1000",
+      "scheduled_notification_period": 600,
+      "labels": []
+    }
+    r = requests.post(
+        "http://localhost:5000/task/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_get_task():
+    r = requests.get(
+        "http://localhost:5000/task/1",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_assign_task():
+    data = {
+      "task_id": 1,
+      "assignee": 1,
+    }
+    r = requests.post(
+        "http://localhost:5000/task/assign/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_get_task_activity():
+    r = requests.get(
+        "http://localhost:5000/task/activity/1",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_get_transitions():
+    r = requests.get(
+        "http://localhost:5000/task/transition/",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_transition_task():
+    data = {
+        "task_id": 1,
+        "task_status": "IN_PROGRESS",
+    }
+    r = requests.put(
+        "http://localhost:5000/task/transition/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_delay_task():
+    data = {
+        "task_id": 1,
+        "delay_for": 1200,
+        "reason": "Because I'm testing it?"
+    }
+    r = requests.put(
+        "http://localhost:5000/task/delay/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_get_delayed_info():
+    r = requests.get(
+        "http://localhost:5000/task/delay/1",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_drop_task():
+    r = requests.post(
+        "http://localhost:5000/task/drop/1",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        }
+    )
+    assert r.status_code == 204
+
+
+def test_cancel_task():
+    r = requests.post(
+        "http://localhost:5000/task/cancel/1",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 204
+
+
+# tasks
+def test_get_priorities():
+    r = requests.get(
+        "http://localhost:5000/tasks/priorities/",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_get_statuses():
+    r = requests.get(
+        "http://localhost:5000/tasks/statuses/",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_get_tasks():
+    r = requests.get(
+        "http://localhost:5000/tasks/",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+# user
+def test_get_user_activity():
+    r = requests.get(
+        "http://localhost:5000/user/activity/1",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_get_user_pages():
+    r = requests.get(
+        "http://localhost:5000/user/pages/",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_get_user_settings():
+    r = requests.get(
+        "http://localhost:5000/user/settings/",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_get_user():
+    r = requests.get(
+        "http://localhost:5000/user/1",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_get_users():
+    r = requests.get(
+        "http://localhost:5000/users/",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
+
+
+def test_get_minimal_users():
+    r = requests.get(
+        "http://localhost:5000/users/minimal",
+        headers={
+            "Authorization": auth,
+        },
+    )
+    assert r.status_code == 200
 
 
 def test_update_user():
-    update_data = {
-        "id": base.user_id,
-        "first_name": fake.name(),
-        "last_name": fake.name(),
-        "role_id": "MANAGER",
-        "job_title": fake.bs(),
-        "disabled": None,
+    data = {
+        "id": 3,
+        "role_id": "DELEGATOR",
+        "first_name": "New Name",
+        "last_name": "New Name",
+        "job_title": "My new title"
     }
-    # Check how to update without state
-    response = base.send("put", "users/", update_data)
-    assert response.status_code == 200
-
-
-# User Settings Controller
-def test_get_user_settings():
-    response = base.send("get", "user/settings/")
-    assert response.status_code == 200
-    response_body = response.json()
-    assert response_body["user_id"] == base.user_id
-
-
-def test_update_user_settings():
-    update_data = {"tz_offset": "+0900"}
-    response = base.send("put", "user/settings/", update_data)
-    assert response.status_code == 200
-    response_body = response.json()
-    assert response_body["tz_offset"] == update_data["tz_offset"]
-
-
-def test_silence_notifications():
-    silence_data = {"silence_until": "2020-11-17T19:25:00+10:00", "silenced_option": 1}
-    r = base.send("put", "user/settings/silence-notifications", silence_data)
+    r = requests.put(
+        "http://localhost:5000/users/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data)
+    )
     assert r.status_code == 204
 
 
-def test_get_silenced_option():
-    r = base.send("get", "user/settings/silence-notifications")
-    assert r.status_code == 200
-    request_body = r.json()
-    assert request_body["option"] == 1
-
-
-def test_unsilence_notifications():
-    r = base.send("delete", "user/settings/silence-notifications")
+def test_delete_user():
+    r = requests.delete(
+        "http://localhost:5000/user/3",
+        headers={
+            "Authorization": auth,
+        },
+    )
     assert r.status_code == 204
 
 
-# User Controller
-def test_user_get():
-    response = base.send("get", f"user/{base.user_id}")
-    assert response.status_code == 200
-    response_body = response.json()
-    assert response_body["id"] == base.user_id
+def test_create_user():
+    data = {
+        "email": f"ryan.flett+test_user{randint(0, 10)}@delegator.com.au",
+        "role_id": "DELEGATOR",
+        "first_name": "Ryan",
+        "last_name": "Flett",
+        "job_title": "Director"
+    }
+    r = requests.post(
+        "http://localhost:5000/users/",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data)
+    )
+    assert r.status_code == 204
 
 
-def test_user_delete():
-    response = base.send("delete", f"user/{base.user_id}")
-    assert response.status_code == 204
+def test_resend_welcome():
+    data = {
+        "user_id": 6
+    }
+    r = requests.post(
+        "http://localhost:5000/user/resend-welcome",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": auth,
+        },
+        data=json.dumps(data)
+    )
+    assert r.status_code == 204
