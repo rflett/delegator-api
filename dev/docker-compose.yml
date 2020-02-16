@@ -66,6 +66,7 @@ services:
     restart: always
     environment:
       APP_ENV: Docker
+      MOCK_AWS: 'true'
     ports:
       - 5001:5001
     depends_on:
@@ -84,6 +85,7 @@ services:
     environment:
       APP_ENV: Docker
       AWS_DEFAULT_REGION: ap-southeast-2
+      MOCK_AWS: 'true'
     ports:
       - 5002:5002
     depends_on:

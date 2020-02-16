@@ -40,18 +40,18 @@ def test_account_signup():
 
 
 def test_logout():
-    r = requests.delete("http://localhost:5000/account/", headers={"Authorization": auth},)
+    r = requests.delete("http://localhost:5000/account/", headers={"Authorization": auth})
     assert r.status_code == 204
 
 
 def test_get_active_users():
-    r = requests.get("http://localhost:5000/active-users/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/active-users/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
 # organisation
 def test_get_org():
-    r = requests.get("http://localhost:5000/org/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/org/", headers={"Authorization": auth})
     assert r.status_code == 200
     assert "org_id" in r.json()
     assert "org_name" in r.json()
@@ -71,26 +71,26 @@ def test_update_org():
 
 
 def test_get_org_customer_id():
-    r = requests.get("http://localhost:5000/org/customer", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/org/customer", headers={"Authorization": auth})
     assert r.status_code == 200
     assert "customer_id" in r.json()
 
 
 def test_get_org_settings():
-    r = requests.get("http://localhost:5000/org/settings", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/org/settings", headers={"Authorization": auth})
     assert r.status_code == 200
     assert "org_id" in r.json()
 
 
 # password
 def test_reset_password():
-    r = requests.delete("http://localhost:5000/password/?email=foo@bar.com",)
+    r = requests.delete("http://localhost:5000/password/?email=foo@bar.com")
     assert r.status_code == 204
 
 
 # roles
 def test_get_role():
-    r = requests.get("http://localhost:5000/roles/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/roles/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
@@ -113,7 +113,7 @@ def test_delete_label():
         data=json.dumps(data),
     )
     assert r.status_code == 204
-    r = requests.delete("http://localhost:5000/task-labels/2", headers={"Authorization": auth},)
+    r = requests.delete("http://localhost:5000/task-labels/2", headers={"Authorization": auth})
     assert r.status_code == 204
 
 
@@ -128,7 +128,7 @@ def test_update_labels():
 
 
 def test_get_labels():
-    r = requests.get("http://localhost:5000/task-labels/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/task-labels/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
@@ -150,7 +150,7 @@ def test_create_type():
 
 
 def test_delete_type():
-    r = requests.delete("http://localhost:5000/task-types/1", headers={"Authorization": auth},)  # other (default)
+    r = requests.delete("http://localhost:5000/task-types/1", headers={"Authorization": auth})  # other (default)
     assert r.status_code == 204
 
 
@@ -172,7 +172,7 @@ def test_update_type():
 
 
 def test_get_types():
-    r = requests.get("http://localhost:5000/task-types/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/task-types/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
@@ -232,7 +232,7 @@ def test_schedule_task():
 
 
 def test_get_task():
-    r = requests.get("http://localhost:5000/task/1", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/task/1", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
@@ -250,12 +250,12 @@ def test_assign_task():
 
 
 def test_get_task_activity():
-    r = requests.get("http://localhost:5000/task/activity/1", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/task/activity/1", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
 def test_get_transitions():
-    r = requests.get("http://localhost:5000/task/transition/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/task/transition/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
@@ -303,48 +303,48 @@ def test_cancel_task():
 
 # tasks
 def test_get_priorities():
-    r = requests.get("http://localhost:5000/tasks/priorities/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/tasks/priorities/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
 def test_get_statuses():
-    r = requests.get("http://localhost:5000/tasks/statuses/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/tasks/statuses/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
 def test_get_tasks():
-    r = requests.get("http://localhost:5000/tasks/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/tasks/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
 # user
 def test_get_user_activity():
-    r = requests.get("http://localhost:5000/user/activity/1", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/user/activity/1", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
 def test_get_user_pages():
-    r = requests.get("http://localhost:5000/user/pages/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/user/pages/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
 def test_get_user_settings():
-    r = requests.get("http://localhost:5000/user/settings/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/user/settings/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
 def test_get_user():
-    r = requests.get("http://localhost:5000/user/1", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/user/1", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
 def test_get_users():
-    r = requests.get("http://localhost:5000/users/", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/users/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
 def test_get_minimal_users():
-    r = requests.get("http://localhost:5000/users/minimal", headers={"Authorization": auth},)
+    r = requests.get("http://localhost:5000/users/minimal", headers={"Authorization": auth})
     assert r.status_code == 200
 
 
@@ -364,8 +364,18 @@ def test_update_user():
     assert r.status_code == 204
 
 
+def test_disable_user():
+    r = requests.post("http://localhost:5000/user/disable/3", headers={"Authorization": auth})
+    assert r.status_code == 204
+
+
+def test_enable_user():
+    r = requests.delete("http://localhost:5000/user/disable/3", headers={"Authorization": auth})
+    assert r.status_code == 204
+
+
 def test_delete_user():
-    r = requests.delete("http://localhost:5000/user/3", headers={"Authorization": auth},)
+    r = requests.delete("http://localhost:5000/user/3", headers={"Authorization": auth})
     assert r.status_code == 204
 
 

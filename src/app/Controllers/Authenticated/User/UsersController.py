@@ -253,7 +253,7 @@ class UserController(RequestValidationController):
 
         # for all attributes in the request, update them on the user if they exist
         with session_scope():
-            user_to_update.role_id = request_body["role_id"]
+            user_to_update.role = request_body["role_id"]
             user_to_update.first_name = request_body["first_name"]
             user_to_update.last_name = request_body["last_name"]
             user_to_update.job_title = request_body.get("job_title")
