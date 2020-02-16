@@ -29,32 +29,32 @@ services:
       - 2000:2000/udp
       - 2000:2000
 
-  delegator-api:
-    # use the image from ECR
-    # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/delegator-api:latest
+  # delegator-api:
+  #   # use the image from ECR
+  #   # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/delegator-api:latest
 
-    # build the api image instead
-    image: delegator_api
-    build:
-      cache_from: 
-        - delegator_api
-      context: ../src/
+  #   # build the api image instead
+  #   image: delegator_api
+  #   build:
+  #     cache_from: 
+  #       - delegator_api
+  #     context: ../src/
 
-    restart: always
-    depends_on:
-      - postgres
-      - redis
-      - xray
-    env_file:
-    - .env
-    environment:
-      APP_ENV: Docker
-      AWS_XRAY_DAEMON_ADDRESS: xray:2000
-      # MOCK_SERVICES: 'true'
-      MOCK_AWS: 'true'
-      AWS_DEFAULT_REGION: ap-southeast-2
-    ports:
-      - 5000:5000
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #     - xray
+  #   env_file:
+  #   - .env
+  #   environment:
+  #     APP_ENV: Docker
+  #     AWS_XRAY_DAEMON_ADDRESS: xray:2000
+  #     # MOCK_SERVICES: 'true'
+  #     MOCK_AWS: 'true'
+  #     AWS_DEFAULT_REGION: ap-southeast-2
+  #   ports:
+  #     - 5000:5000
 
   subscription-api:
     # image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/subscription-api:latest

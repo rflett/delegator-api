@@ -299,10 +299,10 @@ class User(db.Model):
 
     def create_settings(self) -> None:
         """ Creates the settings for this user """
-        from app.Services import SettingsService
         from app.Models import UserSetting
 
-        SettingsService.set_user_settings(UserSetting(self.id))
+        setting = UserSetting(self.id)
+        setting.update()
 
     def invite_accepted(self) -> bool:
         """Check to see if they have accepted their invite"""

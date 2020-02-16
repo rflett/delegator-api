@@ -13,11 +13,8 @@ from app.Extensions.Errors import ValidationError
 from app.Models import OrgSetting
 from app.Models.Dao import Organisation
 from app.Models.Enums import Operations, Resources
-from app.Services import SettingsService
 
 api = Namespace(path="/org", name="Organisation", description="Manage the organisation")
-
-settings_service = SettingsService()
 
 
 @api.route("/")
@@ -79,7 +76,9 @@ class OrganisationSettings(RequestValidationController):
         """Get an organisation's settings"""
         req_user = kwargs["req_user"]
         req_user.log(operation=Operations.GET, resource=Resources.ORG_SETTINGS)
-        return settings_service.get_org_settings(req_user.org_id).as_dict(), 200
+        org_setting = OrgSetting(req_user.org_id)
+        org_setting.get()
+        return org_setting.as_dict(), 200
 
     update_org_settings_request = api.model("Update Org Settings Request", {"org_id": fields.Integer(required=True)})
     update_org_settings_response = api.model("Get Org Settings Response", {"org_id": fields.Integer()})
@@ -91,15 +90,12 @@ class OrganisationSettings(RequestValidationController):
     def put(self, **kwargs):
         """Update an organisation's settings"""
         req_user = kwargs["req_user"]
-        request_body = request.json()
 
         org_setting = OrgSetting(org_id=Decimal(req_user.org_id))
-        for k, v in request_body.items():
-            org_setting.__setattr__(k, v)
+        # update the org_setting here
 
-        settings_service.set_org_settings(org_setting)
         req_user.log(operation=Operations.UPDATE, resource=Resources.ORG_SETTINGS, resource_id=req_user.org_id)
-        return settings_service.get_org_settings(req_user.org_id).as_dict(), 200
+        return org_setting.as_dict(), 200
 
 
 @api.route("/lock/<string:customer_id>")

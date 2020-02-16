@@ -7,11 +7,8 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Models import UserSetting
 from app.Models.Enums import Operations, Resources
-from app.Services.SettingsService import SettingsService
 
 api = Namespace(path="/user/settings", name="User", description="Manage a user")
-
-settings_service = SettingsService()
 
 
 @api.route("/")
@@ -29,7 +26,9 @@ class UserSettingsController(RequestValidationController):
         req_user = kwargs["req_user"]
         req_user.log(operation=Operations.GET, resource=Resources.USER_SETTINGS, resource_id=req_user.id)
         current_app.logger.info(f"got user settings for {req_user.id}")
-        return settings_service.get_user_settings(req_user.id).as_dict(), 200
+        user_setting = UserSetting(req_user.id)
+        user_setting.get()
+        return user_setting.as_dict(), 200
 
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER_SETTINGS)
@@ -40,9 +39,9 @@ class UserSettingsController(RequestValidationController):
         req_user = kwargs["req_user"]
         request_body = request.get_json()
 
-        new_settings = UserSetting(user_id=Decimal(req_user.id))
-        new_settings.tz_offset = request_body["tz_offset"]
-        settings_service.set_user_settings(new_settings)
+        user_setting = UserSetting(user_id=Decimal(req_user.id))
+        user_setting.tz_offset = request_body["tz_offset"]
+        user_setting.update()
 
         req_user.log(operation=Operations.UPDATE, resource=Resources.USER_SETTINGS, resource_id=req_user.id)
         current_app.logger.info(f"updated user {req_user.id} settings")

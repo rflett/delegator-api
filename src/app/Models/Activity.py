@@ -6,8 +6,7 @@ from os import getenv
 import boto3
 from flask import current_app
 
-if not getenv("MOCK_AWS"):
-    sns = boto3.resource("sns")
+sns = boto3.resource("sns")
 
 
 @dataclass

@@ -7,9 +7,7 @@ import boto3
 from app.Models.Dao import User
 from app.Models.Enums import EmailTemplates
 
-
-if not getenv("MOCK_AWS"):
-    sns = boto3.resource("sns")
+sns = boto3.resource("sns")
 
 
 class Email(object):
