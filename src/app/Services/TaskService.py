@@ -3,7 +3,8 @@ import datetime
 from flask import current_app
 
 from app.Extensions.Database import session_scope
-from app.Models import Task, User, Activity, Notification, DelayedTask
+from app.Models import Activity, Notification
+from app.Models.Dao import Task, User, DelayedTask
 from app.Models.Enums import Events, Operations, Resources, TaskStatuses, ClickActions
 from app.Extensions.Errors import ResourceNotFoundError, ValidationError
 

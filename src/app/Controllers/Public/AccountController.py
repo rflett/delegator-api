@@ -13,7 +13,8 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import AuthenticationError, ValidationError
-from app.Models import User, Activity, Organisation, TaskType, FailedLogin, Email
+from app.Models import Activity, Email
+from app.Models.Dao import User, Organisation, TaskType, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
 from app.Services import UserService
 
@@ -72,9 +73,6 @@ class AccountController(RequestValidationController):
         except Exception as e:
             # rollback
             current_app.logger.error(str(e))
-            with session_scope() as session:
-                if organisation is not None:
-                    session.delete(organisation)
             return "Hmm, we couldn't sign you up! Please contact support@delegator.com.au", 500
 
         # create user

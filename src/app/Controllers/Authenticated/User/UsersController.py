@@ -8,7 +8,8 @@ from sqlalchemy.orm import aliased
 from app.Extensions.Database import session_scope
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
-from app.Models import User, Activity, UserPasswordToken, Email, Subscription
+from app.Models import Activity, Email, Subscription
+from app.Models.Dao import User, UserPasswordToken
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.RBAC import Role
 from app.Services import UserService

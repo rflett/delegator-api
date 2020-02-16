@@ -4,7 +4,7 @@ from flask_restx import Namespace, fields
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models import TaskPriority
+from app.Models.Dao import TaskPriority
 from app.Models.Enums import Operations, Resources
 from app.Services import TaskService
 

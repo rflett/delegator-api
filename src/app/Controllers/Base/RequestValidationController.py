@@ -2,7 +2,7 @@ from flask import request
 
 from app.Controllers.Base import ObjectValidationController
 from app.Extensions.Errors import ValidationError
-from app.Models import User, Task
+from app.Models.Dao import User, Task
 from app.Services import UserService
 
 user_service = UserService()

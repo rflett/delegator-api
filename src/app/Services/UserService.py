@@ -4,7 +4,7 @@ from sqlalchemy import func
 
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError
-from app.Models import User
+from app.Models.Dao import User
 from app.Models.Enums import Roles
 
 

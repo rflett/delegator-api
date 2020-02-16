@@ -6,7 +6,8 @@ from flask_restx import Namespace, fields
 from app.Controllers.Base import RequestValidationController
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError, ResourceNotFoundError
-from app.Models import UserPasswordToken, Email
+from app.Models import Email
+from app.Models.Dao import UserPasswordToken
 from app.Services import UserService
 
 user_service = UserService()

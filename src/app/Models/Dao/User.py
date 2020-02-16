@@ -185,7 +185,7 @@ class User(db.Model):
 
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """
-        from app.Models import FailedLogin
+        from app.Models.Dao import FailedLogin
 
         with session_scope() as session:
             failed_email = session.query(exists().where(FailedLogin.email == self.email)).scalar()
@@ -197,7 +197,8 @@ class User(db.Model):
 
     def delete(self, req_user) -> None:
         """ Deletes the user """
-        from app.Models import Task, Subscription
+        from app.Models.Dao import Task
+        from app.Models import Subscription
 
         def make_random() -> str:
             return "".join(random.choices(string.ascii_uppercase + string.digits, k=15))
@@ -309,7 +310,7 @@ class User(db.Model):
 
     def get_password_token(self) -> typing.Union[str, None]:
         """Get the password token if it exists"""
-        from app.Models import UserPasswordToken
+        from app.Models.Dao import UserPasswordToken
 
         with session_scope() as session:
             token_qry = session.query(UserPasswordToken).filter_by(user_id=self.id).first()

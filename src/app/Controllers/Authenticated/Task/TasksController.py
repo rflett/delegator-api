@@ -9,7 +9,7 @@ from sqlalchemy.orm import aliased
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models import User, Task, TaskLabel, TaskType
+from app.Models.Dao import User, Task, TaskLabel, TaskType
 from app.Models.Enums import Operations, Resources
 from app.Services import TaskService
 

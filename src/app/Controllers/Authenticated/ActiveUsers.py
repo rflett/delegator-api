@@ -6,7 +6,7 @@ from flask_restx import Namespace, fields
 from app.Extensions.Database import session_scope
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import authorize, requires_jwt
-from app.Models import ActiveUser
+from app.Models.Dao import ActiveUser
 from app.Models.Enums import Operations, Resources
 
 api = Namespace(path="/active-users", name="Active Users", description="Get the recently active users")

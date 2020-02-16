@@ -10,7 +10,8 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
-from app.Models import Organisation, OrgSetting
+from app.Models import OrgSetting
+from app.Models.Dao import Organisation
 from app.Models.Enums import Operations, Resources
 from app.Services import SettingsService
 

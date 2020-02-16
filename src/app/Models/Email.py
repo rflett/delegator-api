@@ -4,7 +4,7 @@ from os import getenv
 from flask import current_app
 import boto3
 
-from app.Models import User
+from app.Models.Dao import User
 from app.Models.Enums import EmailTemplates
 
 

@@ -4,7 +4,7 @@ import typing
 from flask import current_app
 
 from app.Extensions.Database import session_scope
-from app.Models import ActiveUser, User
+from app.Models.Dao import ActiveUser, User
 
 
 class ActiveUserService(object):

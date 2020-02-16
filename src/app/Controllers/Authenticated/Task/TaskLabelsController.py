@@ -5,7 +5,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError
-from app.Models import TaskLabel
+from app.Models.Dao import TaskLabel
 from app.Models.Enums import Operations, Resources
 
 api = Namespace(path="/task-labels", name="Task Labels", description="Manage Task Labels")

@@ -8,7 +8,8 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError, ResourceNotFoundError
-from app.Models import TaskType, TaskTypeEscalation, Activity
+from app.Models import Activity
+from app.Models.Dao import TaskType, TaskTypeEscalation
 from app.Models.Enums import Events, Operations, Resources
 
 api = Namespace(path="/task-types", name="Task Types", description="Manage Task Types")

@@ -7,7 +7,7 @@ from sentry_sdk import configure_scope
 
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError, AuthorizationError
-from app.Models import User
+from app.Models.Dao import User
 from app.Models.RBAC import ServiceAccount
 
 

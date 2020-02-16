@@ -1,7 +1,6 @@
 import datetime
 
 from app.Extensions.Database import db
-from app.Models.RBAC import Operation, Resource, ResourceScope  # noqa
 
 
 class Permission(db.Model):

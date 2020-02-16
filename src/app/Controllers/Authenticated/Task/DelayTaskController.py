@@ -6,7 +6,8 @@ from flask_restx import Namespace, fields
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models import DelayedTask, Notification
+from app.Models import Notification
+from app.Models.Dao import DelayedTask
 from app.Models.Enums import TaskStatuses, Operations, Resources, Events, ClickActions
 from app.Services import TaskService
 

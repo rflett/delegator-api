@@ -6,7 +6,8 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError
-from app.Models import Activity, Notification, Task, User
+from app.Models import Activity, Notification
+from app.Models.Dao import Task, User
 from app.Models.Enums import Operations, Resources, Events, TaskStatuses, ClickActions
 from app.Services import TaskService, UserService
 

@@ -3,7 +3,7 @@ from flask_restx import Namespace, fields
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models import TaskStatus
+from app.Models.Dao import TaskStatus
 from app.Models.Enums import Operations, Resources
 
 api = Namespace(path="/tasks/statuses", name="Tasks", description="Manage tasks")

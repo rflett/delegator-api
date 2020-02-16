@@ -56,7 +56,7 @@ class TaskType(db.Model):
         }
 
     def fat_dict(self) -> dict:
-        from app.Models import TaskTypeEscalation
+        from app.Models.Dao import TaskTypeEscalation
 
         task_type_dict = self.as_dict()
 

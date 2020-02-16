@@ -8,7 +8,7 @@ import boto3
 
 from app.Extensions.Database import db, session_scope
 from app.Extensions.Errors import ValidationError
-from app.Models import DelayedTask, User
+from app.Models.Dao import DelayedTask, User
 from app.Models.LocalMockData import MockActivity
 
 dyn_db = boto3.resource("dynamodb")
@@ -156,7 +156,7 @@ class Task(db.Model):
 
     def fat_dict(self) -> dict:
         """ Returns a full task dict with all of its FK's joined. """
-        from app.Models import User, TaskLabel
+        from app.Models.Dao import User, TaskLabel
 
         with session_scope() as session:
             task_assignee, task_created_by, task_finished_by = aliased(User), aliased(User), aliased(User)
@@ -236,7 +236,7 @@ class Task(db.Model):
 
     def delayed_info(self) -> dict:
         """ Gets the latest delayed information about a task """
-        from app.Models import User
+        from app.Models.Dao import User
 
         with session_scope() as session:
             qry = (

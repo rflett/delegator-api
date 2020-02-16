@@ -6,7 +6,8 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import authorize, requires_jwt
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
-from app.Models import Activity, Task, Subscription
+from app.Models import Activity, Subscription
+from app.Models.Dao import Task
 from app.Models.Enums import Operations, Resources, Events
 
 api = Namespace(path="/user/disable", name="User", description="Manage a user")

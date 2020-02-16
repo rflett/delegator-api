@@ -1,5 +1,4 @@
 from app.Extensions.Database import db
-from app.Models import TaskType, TaskPriority  # noqa
 
 
 class TaskTypeEscalation(db.Model):
