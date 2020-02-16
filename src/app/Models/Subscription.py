@@ -76,7 +76,9 @@ class Subscription(object):
                 timeout=10,
             )
             if r.status_code != 204:
-                current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
+                current_app.logger.error(
+                    f"Couldn't increment subscription quantity for req_user {req_user.id} - {r.content}"
+                )
         except requests.exceptions.RequestException as e:
             current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
 
@@ -89,7 +91,9 @@ class Subscription(object):
                 timeout=10,
             )
             if r.status_code != 204:
-                current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
+                current_app.logger.error(
+                    f"Couldn't increment subscription quantity for req_user {req_user.id} - {r.content}"
+                )
         except requests.exceptions.RequestException as e:
             current_app.logger.error(f"Couldn't increment subscription quantity for req_user {req_user.id} - {e}")
 

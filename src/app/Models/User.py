@@ -144,7 +144,9 @@ class User(db.Model):
         )
         with session_scope() as session:
             session.add(audit_log)
-        current_app.logger.info(f"user with id {self.id} did {operation} on {resource} with " f"a resource_id of {resource_id}")
+        current_app.logger.info(
+            f"user with id {self.id} did {operation} on {resource} with " f"a resource_id of {resource_id}"
+        )
 
     def set_password(self, password) -> None:
         """
@@ -279,10 +281,14 @@ class User(db.Model):
             try:
                 del item["id"]
                 activity_timestamp_date = datetime.datetime.strptime(item["activity_timestamp"], "%Y%m%dT%H%M%S.%fZ")
-                item["activity_timestamp"] = activity_timestamp_date.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+                item["activity_timestamp"] = activity_timestamp_date.strftime(
+                    current_app.config["RESPONSE_DATE_FORMAT"]
+                )
                 log.append(item)
             except KeyError:
-                current_app.error(f"Key 'id' was missing from activity item. Table:{user_activity_table.name} Item:{item}")
+                current_app.error(
+                    f"Key 'id' was missing from activity item. Table:{user_activity_table.name} Item:{item}"
+                )
 
         return log
 

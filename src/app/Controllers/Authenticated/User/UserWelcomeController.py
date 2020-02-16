@@ -33,8 +33,7 @@ class UserController(RequestValidationController):
         # resend
         email = Email(user)
         email.send_welcome_new_user(
-            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + token,
-            inviter=req_user
+            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + token, inviter=req_user
         )
 
         current_app.logger.info(f"User {req_user.id} resent verification email to user {user.id}.")

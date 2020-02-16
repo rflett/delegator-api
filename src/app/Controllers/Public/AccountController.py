@@ -41,18 +41,16 @@ class AccountController(RequestValidationController):
 
     @api.expect(signup_request, validate=True)
     @api.marshal_with(signup_response, code=200)
-    def put(self, **kwargs):
+    def put(self):
         """Signup a user."""
         request_body = request.get_json()
 
         with session_scope() as session:
-            if session.query(exists().where(
-                func.lower(Organisation.name) == func.lower(request_body["org_name"])
-            )).scalar():
+            if session.query(
+                exists().where(func.lower(Organisation.name) == func.lower(request_body["org_name"]))
+            ).scalar():
                 raise ValidationError("That organisation already exists.")
-            if session.query(exists().where(
-                func.lower(User.email) == func.lower(request_body["email"])
-            )).scalar():
+            if session.query(exists().where(func.lower(User.email) == func.lower(request_body["email"]))).scalar():
                 raise ValidationError("That email already exists.")
 
         self.validate_email(request_body["email"])
@@ -114,7 +112,7 @@ class AccountController(RequestValidationController):
                 data=json.dumps(
                     {
                         "plan_id": request_body["plan_id"],
-                        "user": {"email": user.email, "first_name": user.first_name, "last_name": user.last_name,},
+                        "user": {"email": user.email, "first_name": user.first_name, "last_name": user.last_name},
                     }
                 ),
                 timeout=10,
@@ -135,7 +133,7 @@ class AccountController(RequestValidationController):
         return {"url": response["url"]}, 200
 
     login_request = api.model(
-        "Login Request", {"email": fields.String(required=True), "password": fields.String(required=True),}
+        "Login Request", {"email": fields.String(required=True), "password": fields.String(required=True)}
     )
     login_response = api.model(
         "Login Response",
@@ -190,8 +188,10 @@ class AccountController(RequestValidationController):
                     try:
                         r = requests.post(
                             url=f"{self.url}/subscription/checkout/",
-                            headers={"Content-Type": "application/json",
-                                     "Authorization": f"Bearer {self.create_service_account_jwt()}"},
+                            headers={
+                                "Content-Type": "application/json",
+                                "Authorization": f"Bearer {self.create_service_account_jwt()}",
+                            },
                             data=json.dumps({"customer_id": customer_id, "plan_id": user.orgs.chargebee_signup_plan}),
                             timeout=10,
                         )

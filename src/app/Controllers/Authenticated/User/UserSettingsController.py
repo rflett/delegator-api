@@ -17,7 +17,9 @@ settings_service = SettingsService()
 @api.route("/")
 class UserSettingsController(RequestValidationController):
 
-    user_settings_dto = api.model("User Settings Response", {"user_id": fields.Integer(required=True), "tz_offset": fields.String(required=True)})
+    user_settings_dto = api.model(
+        "User Settings Response", {"user_id": fields.Integer(required=True), "tz_offset": fields.String(required=True)}
+    )
 
     @requires_jwt
     @authorize(Operations.GET, Resources.USER_SETTINGS)

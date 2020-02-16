@@ -128,7 +128,9 @@ class Task(db.Model):
         if self.scheduled_notification_sent is None:
             scheduled_notification_sent = None
         else:
-            scheduled_notification_sent = self.scheduled_notification_sent.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            scheduled_notification_sent = self.scheduled_notification_sent.strftime(
+                current_app.config["RESPONSE_DATE_FORMAT"]
+            )
 
         return {
             "id": self.id,
@@ -235,12 +237,14 @@ class Task(db.Model):
     def delayed_info(self) -> dict:
         """ Gets the latest delayed information about a task """
         from app.Models import User
+
         with session_scope() as session:
-            qry = session.query(
-                DelayedTask,
-                User.first_name,
-                User.last_name
-            ).join(User, DelayedTask.delayed_by == User.id).filter(Task.id == self.id).first()
+            qry = (
+                session.query(DelayedTask, User.first_name, User.last_name)
+                .join(User, DelayedTask.delayed_by == User.id)
+                .filter(Task.id == self.id)
+                .first()
+            )
 
         if qry is None:
             raise ValidationError("Task has not been delayed before.")

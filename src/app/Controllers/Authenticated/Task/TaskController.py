@@ -28,7 +28,7 @@ class GetTask(RequestValidationController):
 
     task_type_dto = api.model(
         "Task Type Dto",
-        {"id": fields.Integer(), "label": fields.String(), "disabled": NullableDateTime, "tooltip": fields.String(),},
+        {"id": fields.Integer(), "label": fields.String(), "disabled": NullableDateTime, "tooltip": fields.String()},
     )
     task_status_dto = api.model(
         "Task Status Dto",
@@ -40,7 +40,7 @@ class GetTask(RequestValidationController):
         },
     )
     user_dto = api.model(
-        "Task User Dto", {"id": fields.Integer(), "first_name": fields.String(), "last_name": fields.String(),},
+        "Task User Dto", {"id": fields.Integer(), "first_name": fields.String(), "last_name": fields.String()},
     )
     priority_dto = api.model("Task Priority Dto", {"priority": fields.Integer(min=0, max=1), "label": fields.String()})
     task_label_dto = api.model(
@@ -141,12 +141,9 @@ class GetTask(RequestValidationController):
         result = dict(qry.fetchone().items())
 
         ret = {
-            "type": {"id": result["type_id"], "label": result["type_label"], "disabled": result["type_disabled"],},
-            "status": {
-                "status": result["status_status"],
-                "label": result["status_label"],
-            },
-            "priority": {"priority": result["priority_priority"], "label": result["priority_label"],},
+            "type": {"id": result["type_id"], "label": result["type_label"], "disabled": result["type_disabled"]},
+            "status": {"status": result["status_status"], "label": result["status_label"]},
+            "priority": {"priority": result["priority_priority"], "label": result["priority_label"]},
             "assignee": {
                 "id": result["assignee_id"],
                 "first_name": result["assignee_first_name"],

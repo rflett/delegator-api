@@ -10,7 +10,7 @@ task_service = TaskService()
 
 api = Namespace(path="/task/assign", name="Task", description="Manage a task")
 request_dto = api.model(
-    "Assign Task Request", {"task_id": fields.Integer(required=True), "assignee": fields.Integer(required=True),}
+    "Assign Task Request", {"task_id": fields.Integer(required=True), "assignee": fields.Integer(required=True)}
 )
 
 

@@ -13,7 +13,6 @@ if not getenv("MOCK_AWS"):
 
 
 class Email(object):
-
     def __init__(self, recipient: User):
         self.recipient = recipient
 
@@ -22,9 +21,7 @@ class Email(object):
         dto = {
             "recipient": self.recipient.email,
             "template": EmailTemplates.WELCOME,
-            "template_data": {
-                "first_name": self.recipient.first_name
-            }
+            "template_data": {"first_name": self.recipient.first_name},
         }
         current_app.logger.info(f"Sending welcome email to {self.recipient.email}")
         self._publish(dto)
@@ -34,10 +31,7 @@ class Email(object):
         dto = {
             "recipient": self.recipient.email,
             "template": EmailTemplates.RESET_PASSWORD,
-            "template_data": {
-                "first_name": self.recipient.first_name,
-                "c2a_link": link
-            }
+            "template_data": {"first_name": self.recipient.first_name, "c2a_link": link},
         }
         current_app.logger.info(f"Sending password reset email to {self.recipient.email}")
         self._publish(dto)
@@ -50,8 +44,8 @@ class Email(object):
             "template_data": {
                 "first_name": self.recipient.first_name,
                 "c2a_link": link,
-                "inviter_name": inviter.first_name
-            }
+                "inviter_name": inviter.first_name,
+            },
         }
         current_app.logger.info(f"Sending welcome email to {self.recipient.email} from {inviter.email}")
         self._publish(dto)
@@ -67,9 +61,7 @@ class Email(object):
 
         try:
             email_sns_topic.publish(
-                TopicArn=email_sns_topic.arn,
-                Message=json.dumps({"default": json.dumps(dto)}),
-                MessageStructure="json"
+                TopicArn=email_sns_topic.arn, Message=json.dumps({"default": json.dumps(dto)}), MessageStructure="json"
             )
         except Exception as e:
             current_app.logger.error(e)

@@ -4,7 +4,6 @@ from flask import request, current_app
 from flask_restx import Namespace, fields
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
-import requests
 
 from app.Extensions.Database import session_scope
 from app.Controllers.Base import RequestValidationController
@@ -64,7 +63,6 @@ class MinimalUsers(RequestValidationController):
 
 @api.route("/")
 class UserController(RequestValidationController):
-
     class NullableDateTime(fields.DateTime):
         __schema_type__ = ["datetime", "null"]
         __schema_example__ = "None|2019-09-17T19:08:00+10:00"
@@ -95,7 +93,7 @@ class UserController(RequestValidationController):
             "created_by": fields.String,
             "updated_at": NullableDateTime,
             "updated_by": fields.String(),
-            "invite_accepted": fields.Boolean
+            "invite_accepted": fields.Boolean,
         },
     )
     get_users_response = api.model("Get Users Response", {"users": fields.List(fields.Nested(user_response))})
@@ -162,7 +160,7 @@ class UserController(RequestValidationController):
             "role_id": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER"], required=True),
             "first_name": fields.String(required=True),
             "last_name": fields.String(required=True),
-            "job_title": fields.String()
+            "job_title": fields.String(),
         },
     )
 
@@ -204,8 +202,7 @@ class UserController(RequestValidationController):
         # send welcome email
         email = Email(user)
         email.send_welcome_new_user(
-            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + password_token.token,
-            inviter=req_user
+            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + password_token.token, inviter=req_user
         )
 
         req_user.log(operation=Operations.CREATE, resource=Resources.USER, resource_id=user.id)

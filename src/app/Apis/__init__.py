@@ -40,11 +40,7 @@ if getenv("APP_ENV", "Local") in ["Staging", "Production"]:
 
     Api.specs_url = specs_url
 
-api = Api(
-    title="Delegator API",
-    version="1.0",
-    description="The API to get Delegating",
-)
+api = Api(title="Delegator API", version="1.0", description="The API to get Delegating",)
 
 api.add_namespace(account_v1)
 api.add_namespace(active_users_v1)

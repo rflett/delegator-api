@@ -53,7 +53,7 @@ class OrganisationManage(RequestValidationController):
                 exists().where(
                     and_(
                         func.lower(Organisation.name) == func.lower(request_body["org_name"]),
-                        Organisation.id != req_user.org_id
+                        Organisation.id != req_user.org_id,
                     )
                 )
             ).scalar():
@@ -192,10 +192,7 @@ class OrganisationSubscription(RequestValidationController):
 
     request = api.model(
         "Update Org Subscription Request",
-        {
-            "customer_id": fields.String(required=True),
-            "subscription_id": fields.String(required=True),
-        }
+        {"customer_id": fields.String(required=True), "subscription_id": fields.String(required=True)},
     )
 
     @requires_jwt
@@ -216,8 +213,10 @@ class OrganisationSubscription(RequestValidationController):
             else:
                 # check subscription_id matches
                 if not org.chargebee_subscription_id == subscription_id:
-                    current_app.logger.error(f"org subscription id {org.chargebee_subscription_id} doesn't match "
-                                             f"subscription_id in the request {subscription_id}")
+                    current_app.logger.error(
+                        f"org subscription id {org.chargebee_subscription_id} doesn't match "
+                        f"subscription_id in the request {subscription_id}"
+                    )
                     raise ValidationError("subscription_id already against organisation doesn't match request")
                 else:
                     org.chargebee_setup_complete = True
