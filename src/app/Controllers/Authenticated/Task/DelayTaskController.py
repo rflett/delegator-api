@@ -1,37 +1,45 @@
 import datetime
 
-from flask import request, Response
-from flask_restplus import Namespace
+from flask import current_app, request
+from flask_restx import Namespace, fields
 
-from app import logger, session_scope
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
-from app.Models import DelayedTask, Notification
+from app.Decorators import requires_jwt, authorize
+from app.Extensions.Database import session_scope
+from app.Models import Notification
+from app.Models.Dao import DelayedTask
 from app.Models.Enums import TaskStatuses, Operations, Resources, Events, ClickActions
-from app.Models.Request import delay_task_request
-from app.Models.Response import task_response, message_response_dto, delayed_task_response
 from app.Services import TaskService
 
-delay_task_route = Namespace(path="/task/delay", name="Task", description="Manage a task")
+api = Namespace(path="/task/delay", name="Task", description="Manage a task")
 
 task_service = TaskService()
 
 
-@delay_task_route.route("/")
+@api.route("/")
 class DelayTask(RequestValidationController):
-    @handle_exceptions
+
+    request_dto = api.model(
+        "Delay Task Request",
+        {
+            "task_id": fields.Integer(required=True),
+            "delay_for": fields.Integer(required=True),
+            "reason": fields.String(required=True),
+        },
+    )
+
     @requires_jwt
     @authorize(Operations.DELAY, Resources.TASK)
-    @delay_task_route.expect(delay_task_request)
-    @delay_task_route.response(200, "Delayed the task", task_response)
-    @delay_task_route.response(400, "Bad request", message_response_dto)
-    @delay_task_route.response(403, "Insufficient privileges", message_response_dto)
-    @delay_task_route.response(404, "Task not found", message_response_dto)
-    def put(self, **kwargs) -> Response:
+    @api.expect(request_dto, validate=True)
+    @api.response(204, "Success")
+    def put(self, **kwargs):
         """Delays a task """
         req_user = kwargs["req_user"]
+        request_body = request.get_json()
 
-        task, delay_for, reason = self.validate_delay_task_request(request.get_json(), **kwargs)
+        task = self.validate_delay_task_request(**kwargs)
+        reason = request_body["reason"]
+        delay_for = request_body["delay_for"]
 
         with session_scope() as session:
             # transition a task to delayed
@@ -56,6 +64,7 @@ class DelayTask(RequestValidationController):
                 )
                 session.add(delayed_task)
 
+        # send notifications
         delayed_notification = Notification(
             title="Task delayed",
             event_name=Events.task_transitioned_delayed,
@@ -71,25 +80,35 @@ class DelayTask(RequestValidationController):
             delayed_notification.push()
 
         req_user.log(operation=Operations.DELAY, resource=Resources.TASK, resource_id=task.id)
-        logger.info(f"User {req_user.id} delayed task {task.id} for {delay_for}s.")
-        return self.ok(task.fat_dict())
+        current_app.logger.info(f"User {req_user.id} delayed task {task.id} for {delay_for}s.")
+        return "", 204
 
 
-@delay_task_route.route("/<int:task_id>")
+@api.route("/<int:task_id>")
 class GetDelayTask(RequestValidationController):
-    @handle_exceptions
+    class NullableDateTime(fields.DateTime):
+        __schema_type__ = ["datetime", "null"]
+        __schema_example__ = "None|2019-09-17T19:08:00+10:00"
+
+    response_dto = api.model(
+        "Delayed Tasks Response",
+        {
+            "task_id": fields.Integer(),
+            "delay_for": fields.Integer(),
+            "delayed_at": fields.DateTime(),
+            "delayed_by": fields.String(),
+            "reason": fields.String(),
+            "snoozed": NullableDateTime,
+            "expired": NullableDateTime,
+        },
+    )
+
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK)
-    @delay_task_route.response(200, "Success", delayed_task_response)
-    @delay_task_route.response(400, "Bad request", message_response_dto)
-    @delay_task_route.response(403, "Insufficient privileges", message_response_dto)
-    @delay_task_route.response(404, "Task not found", message_response_dto)
-    def get(self, task_id, **kwargs) -> Response:
+    @api.marshal_with(response_dto, code=200)
+    def get(self, task_id: int, **kwargs):
         """Returns the delayed info for a task """
         req_user = kwargs["req_user"]
-
         task = task_service.get(task_id, req_user.org_id)
-
         req_user.log(operation=Operations.GET, resource=Resources.TASK, resource_id=task.id)
-
-        return self.ok(task.delayed_info())
+        return task.delayed_info(), 200

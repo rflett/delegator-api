@@ -1,16 +1,13 @@
 from os import environ
 
-from flask import Response
-from flask_restplus import Namespace, fields
+from flask_restx import Namespace, fields, Resource
 
-from app.Controllers.Base import RequestValidationController
-
-version_route = Namespace(path="/v", name="Version", description="Returns version information for the server")
+api = Namespace(path="/v", name="Version", description="View API version info")
 
 
-@version_route.route("/")
-class VersionController(RequestValidationController):
-    @version_route.response(200, "Version Info", version_route.model("Version", {"commit_sha": fields.String}))
-    def get(self) -> Response:
-        """ Returns details of the running application for debugging/verification """
-        return self.ok({"commit_sha": environ.get("COMMIT_SHA")})
+@api.route("/")
+class Version(Resource):
+    @api.marshal_with(api.model("Version Info", {"commit_sha": fields.String}, code=200))
+    def get(self):
+        """Returns details of the running application for debugging/verification"""
+        return {"commit_sha": environ.get("COMMIT_SHA")}, 200

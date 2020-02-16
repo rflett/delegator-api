@@ -1,54 +1,48 @@
 from decimal import Decimal
 
-from flask import Response, request
-from flask_restplus import Namespace
+from flask import request, current_app
+from flask_restx import Namespace, fields
 
-from app import logger
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
+from app.Decorators import requires_jwt, authorize
 from app.Models import UserSetting
 from app.Models.Enums import Operations, Resources
-from app.Models.Response import message_response_dto
-from app.Models.Response.Account import user_settings_response
-from app.Services.SettingsService import SettingsService
 
-user_settings_route = Namespace(path="/user/settings", name="User", description="Manage a user")
-
-settings_service = SettingsService()
+api = Namespace(path="/user/settings", name="User", description="Manage a user")
 
 
-@user_settings_route.route("/")
+@api.route("/")
 class UserSettingsController(RequestValidationController):
-    @handle_exceptions
+
+    user_settings_dto = api.model(
+        "User Settings Response", {"user_id": fields.Integer(required=True), "tz_offset": fields.String(required=True)}
+    )
+
     @requires_jwt
     @authorize(Operations.GET, Resources.USER_SETTINGS)
-    @user_settings_route.response(200, "User settings retrieved", user_settings_response)
-    @user_settings_route.response(400, "Failed to retrieve settings", message_response_dto)
-    @user_settings_route.response(403, "Insufficient privileges", message_response_dto)
-    def get(self, **kwargs) -> Response:
+    @api.marshal_with(user_settings_dto, code=200)
+    def get(self, **kwargs):
         """Returns the user's settings"""
         req_user = kwargs["req_user"]
         req_user.log(operation=Operations.GET, resource=Resources.USER_SETTINGS, resource_id=req_user.id)
-        logger.info(f"got user settings for {req_user.id}")
-        return self.ok(settings_service.get_user_settings(req_user.id).as_dict())
+        current_app.logger.info(f"got user settings for {req_user.id}")
+        user_setting = UserSetting(req_user.id)
+        user_setting.get()
+        return user_setting.as_dict(), 200
 
-    @handle_exceptions
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER_SETTINGS)
-    @user_settings_route.expect(user_settings_response)
-    @user_settings_route.response(200, "User settings updated", user_settings_response)
-    @user_settings_route.response(400, "Failed to update settings", message_response_dto)
-    @user_settings_route.response(403, "Insufficient privileges", message_response_dto)
-    @user_settings_route.response(404, "User does not exist", message_response_dto)
-    def put(self, **kwargs) -> Response:
+    @api.expect(user_settings_dto, validate=True)
+    @api.response(204, "Success")
+    def put(self, **kwargs):
         """Updates the user's settings"""
         req_user = kwargs["req_user"]
+        request_body = request.get_json()
 
-        new_settings = UserSetting(user_id=Decimal(req_user.id))
-        for k, v in request.get_json().items():
-            new_settings.__setattr__(k, v)
+        user_setting = UserSetting(user_id=Decimal(req_user.id))
+        user_setting.tz_offset = request_body["tz_offset"]
+        user_setting.update()
 
-        settings_service.set_user_settings(new_settings)
         req_user.log(operation=Operations.UPDATE, resource=Resources.USER_SETTINGS, resource_id=req_user.id)
-        logger.info(f"updated user {req_user.id} settings")
-        return self.ok(new_settings.as_dict())
+        current_app.logger.info(f"updated user {req_user.id} settings")
+        return "", 204

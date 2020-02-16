@@ -1,26 +1,35 @@
-from flask import Response
-from flask_restplus import Namespace
+from flask_restx import Namespace, fields
 from sqlalchemy import and_
 
-from app import session_scope
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, handle_exceptions, authorize
+from app.Decorators import requires_jwt, authorize
+from app.Extensions.Database import session_scope
 from app.Models.Enums import Operations, Resources
 from app.Models.RBAC import Role
-from app.Models.Response import message_response_dto
-from app.Models.Response.Roles import roles_response
 
-roles_route = Namespace(path="/roles", name="Roles", description="Contains routes for managing user roles")
+api = Namespace(path="/roles", name="Roles", description="Manage roles")
 
 
-@roles_route.route("/")
+role_dto = api.model(
+    "Role",
+    {
+        "id": fields.String(),
+        "rank": fields.Integer(min=0, max=2),
+        "name": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER", "LOCKED"]),
+        "description": fields.String(),
+    },
+)
+
+roles_response = api.model("Roles Response", {"roles": fields.List(fields.Nested(role_dto))})
+
+
+@api.route("/")
 class Roles(RequestValidationController):
-    @handle_exceptions
     @requires_jwt
     @authorize(Operations.GET, Resources.ROLES)
-    @roles_route.response(200, "Roles Retrieved", roles_response)
-    @roles_route.response(400, "Exception occurred", message_response_dto)
-    def get(self, **kwargs) -> Response:
+    @api.marshal_with(roles_response, code=200)
+    @api.response(200, "Roles Retrieved", roles_response)
+    def get(self, **kwargs):
         """Return all roles lower in rank than the requesting user's role. """
         req_user = kwargs["req_user"]
 
@@ -30,4 +39,4 @@ class Roles(RequestValidationController):
 
         roles = [r.as_dict() for r in roles_qry]
         req_user.log(operation=Operations.GET, resource=Resources.ROLES)
-        return self.ok({"roles": roles})
+        return {"roles": roles}, 200

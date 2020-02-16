@@ -3,12 +3,11 @@ import json
 import typing
 import uuid
 from dataclasses import dataclass
+from os import getenv
 
 import jwt
 from flask import current_app
 import requests
-
-from app import logger, app_env
 
 
 @dataclass
@@ -23,10 +22,9 @@ class Notification(object):
 
     def push(self) -> None:
         """ Publish the message to SNS for pushing to the user """
-        if app_env == "Local":
-            logger.info(f"WOULD have pushed notification {self.as_dict()} to NotificationApi")
-            return None
-
+        if getenv("APP_ENV", "MOCK_SERVICES"):
+            current_app.logger.info(f"WOULD have pushed notification {self.as_dict()} to NotificationApi")
+            return
         try:
             r = requests.post(
                 url=f"{current_app.config['NOTIFICATION_API_PUBLIC_URL']}/notifications/send/",
@@ -35,9 +33,9 @@ class Notification(object):
                 timeout=10,
             )
             if r.status_code != 204:
-                logger.error(f"there was an issue sending the notification {self.as_dict()}")
+                current_app.logger.error(f"there was an issue sending the notification {self.as_dict()}")
         except requests.exceptions.RequestException:
-            logger.error(f"there was an issue sending the notification {self.as_dict()}")
+            current_app.logger.error(f"there was an issue sending the notification {self.as_dict()}")
 
     def as_dict(self) -> dict:
         """ Returns a notification as a dict, ready for SNS message """

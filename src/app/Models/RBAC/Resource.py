@@ -1,6 +1,6 @@
 import datetime
 
-from app import db
+from app.Extensions.Database import db
 
 
 class Resource(db.Model):

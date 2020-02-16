@@ -1,7 +1,7 @@
 import datetime
 import typing
 
-from app import db
+from app.Extensions.Database import db
 
 
 class Log(db.Model):
