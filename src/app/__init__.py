@@ -44,6 +44,7 @@ if app_env == "Production":
 
 # db conf
 app.config["SQLALCHEMY_DATABASE_URI"] = app.config["DB_URI"]
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 db.init_app(app)
 
 
