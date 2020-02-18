@@ -68,7 +68,7 @@ class DelayTask(RequestValidationController):
         delayed_notification = Notification(
             title="Task delayed",
             event_name=Events.task_transitioned_delayed,
-            msg=f"{task.label()} was delayed by {req_user.name()}.",
+            msg=f"{task.title} was delayed by {req_user.name()}.",
             click_action=ClickActions.VIEW_TASK,
             task_action_id=task.id,
         )

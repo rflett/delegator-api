@@ -60,8 +60,8 @@ api.init_app(app)
 app.register_error_handler(ValidationError, handle_error)
 app.register_error_handler(AuthenticationError, handle_error)
 app.register_error_handler(AuthorizationError, handle_error)
-app.register_error_handler(InternalServerError, handle_error)
 app.register_error_handler(ResourceNotFoundError, handle_error)
+app.register_error_handler(InternalServerError, handle_error)
 
 # flask profiler
 app.config["flask_profiler"] = {

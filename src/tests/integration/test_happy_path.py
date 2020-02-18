@@ -132,55 +132,94 @@ def test_get_labels():
     assert r.status_code == 200
 
 
-# types
-def test_create_type():
+# templates
+def test_create_template():
     data = {
-        "label": "TestTaskLabel",
-        "default_time_estimate": 30,
+        "title": "Template Title",
+        "default_time_estimate": 600,
         "default_priority": 1,
-        "default_description": "A description",
-        "escalation_policies": [{"display_order": 1, "delay": 600, "from_priority": 1, "to_priority": 2}],
+        "default_description": "We have some description here.."
     }
     r = requests.post(
-        "http://localhost:5000/task-types/",
+        "http://localhost:5000/task-templates/",
         headers={"Content-Type": "application/json", "Authorization": auth},
         data=json.dumps(data),
     )
     assert r.status_code == 204
 
 
-def test_delete_type():
-    r = requests.delete("http://localhost:5000/task-types/1", headers={"Authorization": auth})  # other (default)
+def test_delete_template():
+    r = requests.delete("http://localhost:5000/task-templates/1", headers={"Authorization": auth})  # Other (default)
     assert r.status_code == 204
 
 
-def test_update_type():
+def test_update_template():
     data = {
         "id": 3,
-        "label": "My Updated Label",
-        "default_time_estimate": 60,
-        "default_priority": 0,
-        "default_description": "A new description",
-        "escalation_policies": [],
+        "title": "New Template Title",
+        "default_time_estimate": -1,
+        "default_priority": -1,
+        "default_description": "We have some new and improved description here.."
     }
     r = requests.put(
-        "http://localhost:5000/task-types/",
+        "http://localhost:5000/task-templates/",
         headers={"Content-Type": "application/json", "Authorization": auth},
         data=json.dumps(data),
     )
     assert r.status_code == 204
 
 
-def test_get_types():
-    r = requests.get("http://localhost:5000/task-types/", headers={"Authorization": auth})
+def test_get_templates():
+    r = requests.get("http://localhost:5000/task-templates/", headers={"Authorization": auth})
     assert r.status_code == 200
+
+
+# escalations
+def test_create_escalation():
+    data = {
+        "delay": 600,
+        "from_priority": 0,
+        "to_priority": 1
+    }
+    r = requests.post(
+        "http://localhost:5000/task-templates/3/escalation",
+        headers={"Content-Type": "application/json", "Authorization": auth},
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_update_escalation():
+    data = {
+        "id": 1,
+        "delay": 1200,
+        "from_priority": 1,
+        "to_priority": 2
+    }
+    r = requests.put(
+        "http://localhost:5000/task-templates/3/escalation",
+        headers={"Content-Type": "application/json", "Authorization": auth},
+        data=json.dumps(data),
+    )
+    assert r.status_code == 204
+
+
+def test_get_escalations():
+    r = requests.get("http://localhost:5000/task-templates/3/escalation", headers={"Authorization": auth})
+    assert r.status_code == 200
+
+
+def test_delete_escalation():
+    r = requests.delete("http://localhost:5000/task-templates/3/escalation/1", headers={"Authorization": auth})
+    assert r.status_code == 204
 
 
 # task
 def test_create_task():
     data = {
-        "type_id": 2,
+        "title": "Some title",
         "priority": 1,
+        "template_id": 2,
         "description": "A description",
         "time_estimate": 600,
         "scheduled_for": None,
@@ -198,7 +237,7 @@ def test_create_task():
 def test_update_task():
     data = {
         "id": 1,
-        "type_id": 2,
+        "title": "Some new title",
         "priority": 0,
         "status": "READY",
         "description": "A new description",
@@ -215,7 +254,7 @@ def test_update_task():
 
 def test_schedule_task():
     data = {
-        "type_id": 2,
+        "title": "Some scheduled title",
         "priority": 1,
         "description": "A description",
         "time_estimate": 600,

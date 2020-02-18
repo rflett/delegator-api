@@ -19,7 +19,8 @@ from app.Controllers.Authenticated.Task.TaskController import api as task_v1
 from app.Controllers.Authenticated.Task.TaskLabelsController import api as task_labels_v1
 from app.Controllers.Authenticated.Task.TaskPrioritiesController import api as task_priorities_v1
 from app.Controllers.Authenticated.Task.TaskStatusesController import api as task_statuses_v1
-from app.Controllers.Authenticated.Task.TaskTypesController import api as task_types_v1
+from app.Controllers.Authenticated.Task.TaskTemplatesController import api as task_templates_v1
+from app.Controllers.Authenticated.Task.TaskEscalationPolicyController import api as template_escalations_v1
 from app.Controllers.Authenticated.Task.TasksController import api as tasks_v1
 from app.Controllers.Authenticated.Task.TransitionTaskController import api as transition_task_v1
 from app.Controllers.Authenticated.User.UserActivityController import api as user_activity_v1
@@ -41,7 +42,7 @@ if getenv("APP_ENV", "Local") in ["Staging", "Production"]:
 
     Api.specs_url = specs_url
 
-api = Api(title="Delegator API", version="1.0", description="The API to get Delegating",)
+api = Api(title="Delegator API", version="1.0", description="The API to get Delegating")
 
 api.add_namespace(account_v1)
 api.add_namespace(active_users_v1)
@@ -57,7 +58,8 @@ api.add_namespace(task_v1)
 api.add_namespace(task_labels_v1)
 api.add_namespace(task_priorities_v1)
 api.add_namespace(task_statuses_v1)
-api.add_namespace(task_types_v1)
+api.add_namespace(task_templates_v1)
+api.add_namespace(template_escalations_v1)
 api.add_namespace(tasks_v1)
 api.add_namespace(transition_task_v1)
 api.add_namespace(user_activity_v1)

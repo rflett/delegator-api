@@ -27,10 +27,6 @@ class NullableDateTime(fields.DateTime):
 @api.route("/<int:task_id>")
 class GetTask(RequestValidationController):
 
-    task_type_dto = api.model(
-        "Task Type Dto",
-        {"id": fields.Integer(), "label": fields.String(), "disabled": NullableDateTime, "tooltip": fields.String()},
-    )
     task_status_dto = api.model(
         "Task Status Dto",
         {
@@ -52,7 +48,7 @@ class GetTask(RequestValidationController):
         {
             "id": fields.Integer(),
             "org_id": fields.Integer(),
-            "type": fields.Nested(task_type_dto),
+            "title": fields.String(),
             "description": fields.String(),
             "status": fields.Nested(task_status_dto),
             "time_estimate": fields.String(),
@@ -88,6 +84,7 @@ class GetTask(RequestValidationController):
             qry = session.execute(
                 """ SELECT t.id AS task_id,
                            t.org_id AS task_org_id,
+                           t.title AS task_title,
                            t.description AS task_description,
                            t.time_estimate AS task_time_estimate,
                            t.scheduled_for AS task_scheduled_for,
@@ -98,9 +95,6 @@ class GetTask(RequestValidationController):
                            t.finished_at AS task_finished_at,
                            t.status_changed_at AS task_status_changed_at,
                            t.priority_changed_at AS task_priority_changed_at,
-                           tt.id AS type_id,
-                           tt.label AS type_label,
-                           tt.disabled AS type_disabled,
                            ts.status AS status_status,
                            ts.label AS status_label,
                            tp.priority AS priority_priority,
@@ -123,8 +117,7 @@ class GetTask(RequestValidationController):
                            tfb.id AS finished_by_id,
                            tfb.first_name AS finished_by_first_name,
                            tfb.last_name AS finished_by_last_name
-                    FROM tasks t INNER JOIN task_types tt ON t.type = tt.id
-                                 INNER JOIN task_statuses ts ON t.status = ts.status
+                    FROM tasks t INNER JOIN task_statuses ts ON t.status = ts.status
                                  INNER JOIN task_priorities tp ON t.priority = tp.priority
                                  LEFT JOIN task_labels tl1 ON t.label_1 = tl1.id
                                  LEFT JOIN task_labels tl2 ON t.label_2 = tl2.id
@@ -141,7 +134,6 @@ class GetTask(RequestValidationController):
         result = dict(qry.fetchone().items())
 
         ret = {
-            "type": {"id": result["type_id"], "label": result["type_label"], "disabled": result["type_disabled"]},
             "status": {"status": result["status_status"], "label": result["status_label"]},
             "priority": {"priority": result["priority_priority"], "label": result["priority_label"]},
             "assignee": {
@@ -189,7 +181,7 @@ class ManageTask(RequestValidationController):
         "Update Task Request",
         {
             "id": fields.Integer(required=True),
-            "type_id": fields.Integer(required=True),
+            "title": fields.String(required=True),
             "status": fields.String(enum=task_statuses, required=True),
             "assignee": fields.Integer(),
             "priority": fields.Integer(min=0, max=2, required=True),
@@ -254,6 +246,7 @@ class ManageTask(RequestValidationController):
         # update remaining attributes
         with session_scope():
             labels = self._get_labels(request_body["labels"])
+            task_to_update.title = request_body["title"]
             task_to_update.label_1 = labels["label_1"]
             task_to_update.label_2 = labels["label_3"]
             task_to_update.label_3 = labels["label_3"]
@@ -277,7 +270,8 @@ class ManageTask(RequestValidationController):
     create_task_dto = api.model(
         "Create Task Request",
         {
-            "type_id": fields.Integer(required=True),
+            "title": fields.String(required=True),
+            "template_id": fields.Integer(),
             "priority": fields.Integer(min=0, max=2, required=True),
             "description": fields.String(),
             "time_estimate": fields.Integer(),
@@ -297,7 +291,7 @@ class ManageTask(RequestValidationController):
         req_user: User = kwargs["req_user"]
         request_body = request.get_json()
 
-        self.check_task_type_id(request_body["type_id"])
+        self.check_task_template_id(request_body.get("template_id"))
         self.check_task_priority(request_body["priority"])
         self.check_task_assignee(request_body.get("assignee"), **kwargs)
         self.check_task_labels(request_body.get("labels", []), req_user.org_id)
@@ -318,7 +312,8 @@ class ManageTask(RequestValidationController):
         with session_scope() as session:
             task = Task(
                 org_id=req_user.org_id,
-                type=request_body["type_id"],
+                title=request_body["title"],
+                template_id=request_body.get("template_id"),
                 description=request_body.get("description"),
                 status=TaskStatuses.READY,
                 time_estimate=request_body.get("time_estimate"),
@@ -338,7 +333,7 @@ class ManageTask(RequestValidationController):
             org_id=req_user.org_id,
             event=Events.user_created_task,
             event_id=req_user.id,
-            event_friendly=f"Created task {task.label()}.",
+            event_friendly=f"Created task {task.title}.",
         ).publish()
         req_user.log(operation=Operations.CREATE, resource=Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"created task {task.id}")
@@ -350,7 +345,7 @@ class ManageTask(RequestValidationController):
             created_notification = Notification(
                 title="Task created",
                 event_name=Events.task_created,
-                msg=f"{task.label()} task has been created.",
+                msg=f"{task.title} task has been created.",
                 click_action=ClickActions.ASSIGN_TO_ME,
                 task_action_id=task.id,
                 user_ids=user_service.get_all_user_ids(req_user.org_id),
@@ -363,7 +358,8 @@ class ManageTask(RequestValidationController):
         with session_scope() as session:
             task = Task(
                 org_id=req_user.org_id,
-                type=request_body["type_id"],
+                title=request_body["title"],
+                template_id=request_body.get("template_id"),
                 description=request_body.get("description"),
                 status=TaskStatuses.SCHEDULED,
                 scheduled_for=request_body["scheduled_for"],
@@ -385,7 +381,7 @@ class ManageTask(RequestValidationController):
             org_id=req_user.org_id,
             event=Events.user_scheduled_task,
             event_id=req_user.id,
-            event_friendly=f"Scheduled task {task.label()}.",
+            event_friendly=f"Scheduled task {task.title}.",
         ).publish()
         req_user.log(operation=Operations.CREATE, resource=Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"Scheduled task {task.id}")

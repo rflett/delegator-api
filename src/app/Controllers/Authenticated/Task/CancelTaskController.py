@@ -34,7 +34,7 @@ class CancelTask(RequestValidationController):
             cancelled_notification = Notification(
                 title="Task cancelled",
                 event_name=Events.task_transitioned_cancelled,
-                msg=f"{task_to_cancel.label()} was cancelled by {req_user.name()}.",
+                msg=f"{task_to_cancel.title} was cancelled by {req_user.name()}.",
                 user_ids=task_to_cancel.assignee,
                 click_action=ClickActions.CLOSE,
             )

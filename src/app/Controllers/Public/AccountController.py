@@ -14,7 +14,7 @@ from app.Decorators import requires_jwt
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import AuthenticationError, ValidationError
 from app.Models import Activity, Email
-from app.Models.Dao import User, Organisation, TaskType, FailedLogin
+from app.Models.Dao import User, Organisation, TaskTemplate, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
 from app.Services import UserService
 
@@ -66,7 +66,7 @@ class AccountController(RequestValidationController):
                 session.add(organisation)
 
             with session_scope() as session:
-                session.add(TaskType(label="Other", org_id=organisation.id))
+                session.add(TaskTemplate(title="Other", org_id=organisation.id))
 
             organisation.create_settings()
 

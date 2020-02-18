@@ -39,6 +39,7 @@ class Organisation(db.Model):
     def create_settings(self) -> None:
         """ Creates the settings for this user """
         from app.Models import OrgSetting
+
         org_setting = OrgSetting(self.id)
         org_setting.update()
 
