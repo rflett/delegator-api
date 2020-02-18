@@ -27,7 +27,7 @@ class CancelTask(RequestValidationController):
 
         # transition
         task_service.transition(task=task_to_cancel, status=TaskStatuses.CANCELLED, req_user=req_user)
-        req_user.log(operation=Operations.CANCEL, resource=Resources.TASK, resource_id=task_id)
+        req_user.log(Operations.CANCEL, Resources.TASK, resource_id=task_id)
 
         # send notifications if required
         if task_to_cancel.assignee is not None:

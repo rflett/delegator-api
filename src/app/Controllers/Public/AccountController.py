@@ -89,7 +89,7 @@ class AccountController(RequestValidationController):
             session.add(user)
 
         user.create_settings()
-        user.log(operation=Operations.CREATE, resource=Resources.USER, resource_id=user.id)
+        user.log(Operations.CREATE, Resources.USER, resource_id=user.id)
         current_app.logger.info(f"User {user.id} signed up.")
 
         # send email

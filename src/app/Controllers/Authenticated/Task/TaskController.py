@@ -170,7 +170,7 @@ class GetTask(RequestValidationController):
                     }
                 )
 
-        req_user.log(operation=Operations.GET, resource=Resources.TASK, resource_id=task_id)
+        req_user.log(Operations.GET, Resources.TASK, resource_id=task_id)
         return ret, 200
 
 
@@ -264,7 +264,7 @@ class ManageTask(RequestValidationController):
             event_friendly=f"Updated by {req_user.name()}.",
         ).publish()
 
-        req_user.log(operation=Operations.UPDATE, resource=Resources.TASK, resource_id=task_to_update.id)
+        req_user.log(Operations.UPDATE, Resources.TASK, resource_id=task_to_update.id)
         return "", 204
 
     create_task_dto = api.model(
@@ -335,7 +335,7 @@ class ManageTask(RequestValidationController):
             event_id=req_user.id,
             event_friendly=f"Created task {task.title}.",
         ).publish()
-        req_user.log(operation=Operations.CREATE, resource=Resources.TASK, resource_id=task.id)
+        req_user.log(Operations.CREATE, Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"created task {task.id}")
 
         # optionally assign the task if an assignee was present in the create task request
@@ -383,7 +383,7 @@ class ManageTask(RequestValidationController):
             event_id=req_user.id,
             event_friendly=f"Scheduled task {task.title}.",
         ).publish()
-        req_user.log(operation=Operations.CREATE, resource=Resources.TASK, resource_id=task.id)
+        req_user.log(Operations.CREATE, Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"Scheduled task {task.id}")
 
         # optionally assign the task if an assignee was present in the create task request

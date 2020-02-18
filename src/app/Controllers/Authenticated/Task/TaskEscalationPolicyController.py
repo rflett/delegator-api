@@ -43,19 +43,19 @@ class EscalationPolicies(RequestValidationController):
         req_user = kwargs["req_user"]
 
         with session_scope() as session:
-            if not session.query(exists().where(
-                and_(
-                    TaskTemplate.org_id == req_user.org_id,
-                    TaskTemplate.disabled == None,
-                    TaskTemplate.id == template_id
+            if not session.query(
+                exists().where(
+                    and_(
+                        TaskTemplate.org_id == req_user.org_id,
+                        TaskTemplate.disabled == None,  # noqa
+                        TaskTemplate.id == template_id,
+                    )
                 )
-            )).scalar():
+            ).scalar():
                 raise ResourceNotFoundError(f"Template {template_id} not found.")
 
             escalations_qry = (
-                session.query(TaskTemplateEscalation)
-                .filter_by(template_id=template_id, org_id=req_user.org_id)
-                .all()
+                session.query(TaskTemplateEscalation).filter_by(template_id=template_id, org_id=req_user.org_id).all()
             )
 
         escalations = [e.as_dict() for e in escalations_qry]
@@ -82,9 +82,7 @@ class EscalationPolicies(RequestValidationController):
 
         with session_scope() as session:
             task_template = (
-                session.query(TaskTemplate)
-                .filter_by(id=template_id, org_id=req_user.org_id, disabled=None)
-                .first()
+                session.query(TaskTemplate).filter_by(id=template_id, org_id=req_user.org_id, disabled=None).first()
             )
             if task_template is None:
                 raise ResourceNotFoundError(f"Template {template_id} not found.")
@@ -143,7 +141,7 @@ class EscalationPolicies(RequestValidationController):
                     and_(
                         TaskTemplate.id == template_id,
                         TaskTemplateEscalation.id == request_body["id"],
-                        TaskTemplateEscalation.org_id == req_user.org_id
+                        TaskTemplateEscalation.org_id == req_user.org_id,
                     )
                 )
                 .join(TaskTemplateEscalation, TaskTemplateEscalation.template_id == template_id)
@@ -171,7 +169,7 @@ class EscalationPolicies(RequestValidationController):
 
 
 @api.route("/<int:template_id>/escalation/<int:escalation_id>")
-class EscalationPolicies(RequestValidationController):
+class DeleteEscalationPolicies(RequestValidationController):
     @requires_jwt
     @authorize(Operations.DELETE, Resources.TASK_TEMPLATE_ESCALATION)
     @api.response(204, "Success")
@@ -187,7 +185,7 @@ class EscalationPolicies(RequestValidationController):
                         TaskTemplate.id == template_id,
                         TaskTemplateEscalation.template_id == template_id,
                         TaskTemplateEscalation.org_id == req_user.org_id,
-                        TaskTemplateEscalation.id == escalation_id
+                        TaskTemplateEscalation.id == escalation_id,
                     )
                 )
                 .join(TaskTemplateEscalation, TaskTemplateEscalation.template_id == template_id)

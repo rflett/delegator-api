@@ -41,7 +41,7 @@ class ActiveUsers(RequestValidationController):
 
         # convert to list of active user dicts
         active_users = [au.as_dict() for au in active_users_qry]
-        req_user.log(operation=Operations.GET, resource=Resources.ACTIVE_USERS)
+        req_user.log(Operations.GET, Resources.ACTIVE_USERS)
         current_app.logger.debug(f"Found {len(active_users)} active users.")
         return {"active_users": active_users}, 200
 

@@ -30,7 +30,7 @@ class TaskPriorities(RequestValidationController):
             qry = session.query(TaskPriority).all()
 
         task_priorities = [tp.as_dict() for tp in qry]
-        req_user.log(operation=Operations.GET, resource=Resources.TASK_PRIORITIES)
+        req_user.log(Operations.GET, Resources.TASK_PRIORITIES)
         return {"priorities": task_priorities}, 200
 
     update_dto = api.model(

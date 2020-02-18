@@ -37,6 +37,6 @@ class UserController(RequestValidationController):
         )
 
         current_app.logger.info(f"User {req_user.id} resent verification email to user {user.id}.")
-        req_user.log(operation=Operations.UPDATE, resource=Resources.USER, resource_id=user.id)
+        req_user.log(Operations.UPDATE, Resources.USER, resource_id=user.id)
 
         return "", 204

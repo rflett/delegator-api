@@ -79,7 +79,7 @@ class DelayTask(RequestValidationController):
             delayed_notification.user_ids = task.assignee
             delayed_notification.push()
 
-        req_user.log(operation=Operations.DELAY, resource=Resources.TASK, resource_id=task.id)
+        req_user.log(Operations.DELAY, Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"User {req_user.id} delayed task {task.id} for {delay_for}s.")
         return "", 204
 
@@ -110,5 +110,5 @@ class GetDelayTask(RequestValidationController):
         """Returns the delayed info for a task """
         req_user = kwargs["req_user"]
         task = task_service.get(task_id, req_user.org_id)
-        req_user.log(operation=Operations.GET, resource=Resources.TASK, resource_id=task.id)
+        req_user.log(Operations.GET, Resources.TASK, resource_id=task.id)
         return task.delayed_info(), 200

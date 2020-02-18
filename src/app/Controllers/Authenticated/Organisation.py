@@ -28,7 +28,7 @@ class OrganisationManage(RequestValidationController):
     def get(self, **kwargs):
         """Get an organisation"""
         req_user = kwargs["req_user"]
-        req_user.log(operation=Operations.GET, resource=Resources.ORGANISATION)
+        req_user.log(Operations.GET, Resources.ORGANISATION)
         org = req_user.orgs
         return {"org_id": org.id, "org_name": org.name}, 200
 
@@ -60,7 +60,7 @@ class OrganisationManage(RequestValidationController):
         with session_scope():
             req_user.orgs.name = org_name
 
-        req_user.log(operation=Operations.UPDATE, resource=Resources.ORGANISATION)
+        req_user.log(Operations.UPDATE, Resources.ORGANISATION)
         return {"org_name": req_user.orgs.name}, 200
 
 
@@ -75,7 +75,7 @@ class OrganisationSettings(RequestValidationController):
     def get(self, **kwargs):
         """Get an organisation's settings"""
         req_user = kwargs["req_user"]
-        req_user.log(operation=Operations.GET, resource=Resources.ORG_SETTINGS)
+        req_user.log(Operations.GET, Resources.ORG_SETTINGS)
         org_setting = OrgSetting(req_user.org_id)
         org_setting.get()
         return org_setting.as_dict(), 200
@@ -94,7 +94,7 @@ class OrganisationSettings(RequestValidationController):
         org_setting = OrgSetting(org_id=Decimal(req_user.org_id))
         # update the org_setting here
 
-        req_user.log(operation=Operations.UPDATE, resource=Resources.ORG_SETTINGS, resource_id=req_user.org_id)
+        req_user.log(Operations.UPDATE, Resources.ORG_SETTINGS, resource_id=req_user.org_id)
         return org_setting.as_dict(), 200
 
 

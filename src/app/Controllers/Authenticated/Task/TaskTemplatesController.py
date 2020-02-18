@@ -51,7 +51,7 @@ class TaskTypes(RequestValidationController):
             task_template_qry = session.query(TaskTemplate).filter_by(org_id=req_user.org_id, disabled=None).all()
 
         task_templates = [tt.as_dict() for tt in task_template_qry]
-        req_user.log(operation=Operations.GET, resource=Resources.TASK_TEMPLATES)
+        req_user.log(Operations.GET, Resources.TASK_TEMPLATES)
         return {"templates": task_templates}, 200
 
     create_request = api.model(
@@ -159,9 +159,7 @@ class DeleteTaskType(RequestValidationController):
 
         with session_scope() as session:
             task_template = (
-                session.query(TaskTemplate)
-                .filter_by(id=template_id, org_id=req_user.org_id, disabled=None)
-                .first()
+                session.query(TaskTemplate).filter_by(id=template_id, org_id=req_user.org_id, disabled=None).first()
             )
 
             if task_template is None:

@@ -54,7 +54,7 @@ class TaskService(object):
                 user_ids=assigned_user.id,
             )
             assigned_notification.push()
-        req_user.log(operation=Operations.ASSIGN, resource=Resources.TASK, resource_id=task.id)
+        req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"assigned task {task.id} to user {assignee}")
 
     @staticmethod
@@ -97,7 +97,7 @@ class TaskService(object):
         )
         dropped_notification.push()
 
-        req_user.log(operation=Operations.DROP, resource=Resources.TASK, resource_id=task.id)
+        req_user.log(Operations.DROP, Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"User {req_user.id} dropped task {task.id} " f"which was assigned to {task.assignee}.")
 
     @staticmethod
@@ -161,7 +161,7 @@ class TaskService(object):
             event_id=req_user.id,
             event_friendly=f"Transitioned {task.title} from {old_status_label} to {new_status_label}.",
         ).publish()
-        req_user.log(operation=Operations.TRANSITION, resource=Resources.TASK, resource_id=task.id)
+        req_user.log(Operations.TRANSITION, Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"User {req_user.id} transitioned task {task.id} from {old_status} to {status}")
 
     @staticmethod
@@ -195,7 +195,7 @@ class TaskService(object):
                 event_id=old_assignee.id,
                 event_friendly=f"Unassigned from {task.title} by {req_user.name()}.",
             ).publish()
-            req_user.log(operation=Operations.ASSIGN, resource=Resources.TASK, resource_id=task.id)
+            req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=task.id)
             current_app.logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
 
     @staticmethod

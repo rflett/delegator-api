@@ -138,7 +138,7 @@ def test_create_template():
         "title": "Template Title",
         "default_time_estimate": 600,
         "default_priority": 1,
-        "default_description": "We have some description here.."
+        "default_description": "We have some description here..",
     }
     r = requests.post(
         "http://localhost:5000/task-templates/",
@@ -159,7 +159,7 @@ def test_update_template():
         "title": "New Template Title",
         "default_time_estimate": -1,
         "default_priority": -1,
-        "default_description": "We have some new and improved description here.."
+        "default_description": "We have some new and improved description here..",
     }
     r = requests.put(
         "http://localhost:5000/task-templates/",
@@ -176,11 +176,7 @@ def test_get_templates():
 
 # escalations
 def test_create_escalation():
-    data = {
-        "delay": 600,
-        "from_priority": 0,
-        "to_priority": 1
-    }
+    data = {"delay": 600, "from_priority": 0, "to_priority": 1}
     r = requests.post(
         "http://localhost:5000/task-templates/3/escalation",
         headers={"Content-Type": "application/json", "Authorization": auth},
@@ -190,12 +186,7 @@ def test_create_escalation():
 
 
 def test_update_escalation():
-    data = {
-        "id": 1,
-        "delay": 1200,
-        "from_priority": 1,
-        "to_priority": 2
-    }
+    data = {"id": 1, "delay": 1200, "from_priority": 1, "to_priority": 2}
     r = requests.put(
         "http://localhost:5000/task-templates/3/escalation",
         headers={"Content-Type": "application/json", "Authorization": auth},

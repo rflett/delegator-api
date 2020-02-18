@@ -28,6 +28,6 @@ class UserActivityController(RequestValidationController):
         # subscription = Subscription(req_user.orgs.chargebee_subscription_id)
 
         user = self.validate_get_user_activity(user_id, **kwargs)
-        req_user.log(operation=Operations.GET, resource=Resources.USER_ACTIVITY, resource_id=user.id)
+        req_user.log(Operations.GET, Resources.USER_ACTIVITY, resource_id=user.id)
         current_app.logger.info(f"getting activity for user with id {user.id}")
         return {"activity": user.activity()}, 200

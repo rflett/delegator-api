@@ -3,7 +3,7 @@ import typing
 
 from flask import current_app
 
-from app.Extensions.Database import db, session_scope
+from app.Extensions.Database import db
 
 
 class TaskTemplate(db.Model):

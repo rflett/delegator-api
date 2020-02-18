@@ -52,7 +52,7 @@ class DisableUserController(RequestValidationController):
         subscription = Subscription(req_user.orgs.chargebee_subscription_id)
         subscription.decrement_subscription(req_user)
 
-        req_user.log(operation=Operations.DISABLE, resource=Resources.USER, resource_id=user_to_disable.id)
+        req_user.log(Operations.DISABLE, Resources.USER, resource_id=user_to_disable.id)
         return "", 204
 
     @requires_jwt
@@ -88,5 +88,5 @@ class DisableUserController(RequestValidationController):
         subscription = Subscription(req_user.orgs.chargebee_subscription_id)
         subscription.increment_subscription(req_user)
 
-        req_user.log(operation=Operations.ENABLE, resource=Resources.USER, resource_id=user_to_enable.id)
+        req_user.log(Operations.ENABLE, Resources.USER, resource_id=user_to_enable.id)
         return "", 204
