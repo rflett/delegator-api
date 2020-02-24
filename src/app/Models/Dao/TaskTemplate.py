@@ -16,6 +16,7 @@ class TaskTemplate(db.Model):
     default_time_estimate = db.Column("default_time_estimate", db.Integer, default=-1)
     default_priority = db.Column("default_priority", db.Integer, db.ForeignKey("task_priorities.priority"), default=-1)
     default_description = db.Column("default_description", db.String, default="")
+    escalations = db.relationship("TaskTemplateEscalation", lazy=True)
 
     def __init__(
         self,

@@ -23,6 +23,15 @@ class NullableDateTime(fields.DateTime):
 @api.route("/")
 class TaskTypes(RequestValidationController):
 
+    escalation_dto = api.model(
+        "Get Templates Escalation dto",
+        {
+            "id": fields.Integer(),
+            "delay": fields.Integer(),
+            "from_priority": fields.Integer(),
+            "to_priority": fields.Integer(),
+        },
+    )
     task_template_response = api.model(
         "Task Template Response",
         {
@@ -34,6 +43,7 @@ class TaskTypes(RequestValidationController):
             "default_description": fields.String(),
             "default_priority": fields.Integer(),
             "tooltip": fields.String(),
+            "escalations": fields.List(fields.Nested(escalation_dto))
         },
     )
     get_response_dto = api.model(
@@ -48,9 +58,18 @@ class TaskTypes(RequestValidationController):
         req_user = kwargs["req_user"]
 
         with session_scope() as session:
-            task_template_qry = session.query(TaskTemplate).filter_by(org_id=req_user.org_id, disabled=None).all()
+            task_template_qry = (
+                session.query(TaskTemplate)
+                .filter_by(org_id=req_user.org_id, disabled=None)
+                .all()
+            )
 
-        task_templates = [tt.as_dict() for tt in task_template_qry]
+            task_templates = []
+            for tt in task_template_qry:
+                tt_dict = tt.as_dict()
+                tt_dict["escalations"] = [e.as_dict for e in tt.escalations]
+                task_templates.append(tt_dict)
+
         req_user.log(Operations.GET, Resources.TASK_TEMPLATES)
         return {"templates": task_templates}, 200
 
@@ -67,7 +86,7 @@ class TaskTypes(RequestValidationController):
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK_TEMPLATE)
     @api.expect(create_request, validate=True)
-    @api.response(204, "Success")
+    @api.marshal_with(task_template_response, code=201)
     def post(self, **kwargs):
         """Creates a task template"""
         req_user = kwargs["req_user"]
@@ -105,7 +124,7 @@ class TaskTypes(RequestValidationController):
                 task_template.disabled = None
             req_user.log(Operations.ENABLE, Resources.TASK_TEMPLATE, task_template.id)
 
-        return "", 204
+        return new_template.as_dict(), 201
 
     update_request = api.model(
         "Update Task Template Request",
