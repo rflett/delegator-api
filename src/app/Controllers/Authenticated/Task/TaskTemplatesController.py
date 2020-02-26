@@ -67,7 +67,7 @@ class TaskTypes(RequestValidationController):
             task_templates = []
             for tt in task_template_qry:
                 tt_dict = tt.as_dict()
-                tt_dict["escalations"] = [e.as_dict for e in tt.escalations]
+                tt_dict["escalations"] = [e.as_dict() for e in tt.escalations]
                 task_templates.append(tt_dict)
 
         req_user.log(Operations.GET, Resources.TASK_TEMPLATES)
@@ -115,6 +115,8 @@ class TaskTypes(RequestValidationController):
                     default_description=request_body.get("default_description"),
                 )
                 session.add(new_template)
+            tt_dict = new_template.as_dict()
+            tt_dict["escalations"] = [e.as_dict() for e in new_template.escalations]
             req_user.log(Operations.CREATE, Resources.TASK_TEMPLATE, new_template.id)
         else:
             # it existed so check if it needs to be enabled
@@ -122,9 +124,11 @@ class TaskTypes(RequestValidationController):
                 raise ValidationError(f"Template with title {request_body['title']} already exists.")
             with session_scope():
                 task_template.disabled = None
+            tt_dict = task_template.as_dict()
+            tt_dict["escalations"] = [e.as_dict() for e in task_template.escalations]
             req_user.log(Operations.ENABLE, Resources.TASK_TEMPLATE, task_template.id)
 
-        return new_template.as_dict(), 201
+        return tt_dict, 201
 
     update_request = api.model(
         "Update Task Template Request",
