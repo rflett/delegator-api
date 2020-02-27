@@ -145,7 +145,7 @@ def test_create_template():
         headers={"Content-Type": "application/json", "Authorization": auth},
         data=json.dumps(data),
     )
-    assert r.status_code == 204
+    assert r.status_code == 201
 
 
 def test_delete_template():
@@ -193,11 +193,6 @@ def test_update_escalation():
         data=json.dumps(data),
     )
     assert r.status_code == 204
-
-
-def test_get_escalations():
-    r = requests.get("http://localhost:5000/task-templates/3/escalation", headers={"Authorization": auth})
-    assert r.status_code == 200
 
 
 def test_delete_escalation():
