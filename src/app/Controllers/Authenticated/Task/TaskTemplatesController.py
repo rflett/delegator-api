@@ -43,7 +43,7 @@ class TaskTypes(RequestValidationController):
             "default_description": fields.String(),
             "default_priority": fields.Integer(),
             "tooltip": fields.String(),
-            "escalations": fields.List(fields.Nested(escalation_dto))
+            "escalations": fields.List(fields.Nested(escalation_dto)),
         },
     )
     get_response_dto = api.model(
@@ -58,11 +58,7 @@ class TaskTypes(RequestValidationController):
         req_user = kwargs["req_user"]
 
         with session_scope() as session:
-            task_template_qry = (
-                session.query(TaskTemplate)
-                .filter_by(org_id=req_user.org_id, disabled=None)
-                .all()
-            )
+            task_template_qry = session.query(TaskTemplate).filter_by(org_id=req_user.org_id, disabled=None).all()
 
             task_templates = []
             for tt in task_template_qry:
