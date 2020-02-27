@@ -62,7 +62,6 @@ class User(db.Model):
 
     orgs = db.relationship("Organisation", backref="users")
     roles = db.relationship("Role", backref="rbac_roles", foreign_keys=[role])
-    created_bys = db.relationship("User", foreign_keys=[created_by])
     updated_bys = db.relationship("User", foreign_keys=[updated_by])
 
     def __init__(

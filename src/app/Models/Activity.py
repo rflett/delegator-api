@@ -22,7 +22,7 @@ class Activity(object):
     def publish(self) -> None:
         """ Publishes an event to SNS """
         if getenv("MOCK_AWS"):
-            current_app.logger.info(f"WOULD have published message {self.event}")
+            current_app.logger.info(f"WOULD have published message {self.as_dict()}")
             return None
 
         api_events_sns_topic = sns.Topic(current_app.config["EVENTS_SNS_TOPIC_ARN"])

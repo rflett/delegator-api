@@ -3,32 +3,31 @@ import typing
 
 from flask import current_app
 
-from app.Extensions.Database import db, session_scope
+from app.Extensions.Database import db
 
 
-class TaskType(db.Model):
-    __tablename__ = "task_types"
+class TaskTemplate(db.Model):
+    __tablename__ = "task_templates"
 
     id = db.Column("id", db.Integer, primary_key=True)
-    label = db.Column("label", db.String)
     org_id = db.Column("org_id", db.Integer, db.ForeignKey("organisations.id"))
     disabled = db.Column("disabled", db.DateTime, default=None)
+    title = db.Column("title", db.String)
     default_time_estimate = db.Column("default_time_estimate", db.Integer, default=-1)
     default_priority = db.Column("default_priority", db.Integer, db.ForeignKey("task_priorities.priority"), default=-1)
-    default_description = db.Column("default_description", db.String)
-
-    orgs = db.relationship("Organisation")
+    default_description = db.Column("default_description", db.String, default="")
+    escalations = db.relationship("TaskTemplateEscalation", lazy=True)
 
     def __init__(
         self,
-        label: str,
         org_id: int,
+        title: str,
         disabled: typing.Union[datetime.datetime, None] = None,
         default_time_estimate: int = -1,
         default_description: str = None,
         default_priority: int = -1,
     ):
-        self.label = label
+        self.title = title
         self.org_id = org_id
         self.disabled = disabled
         self.default_description = default_description
@@ -46,26 +45,11 @@ class TaskType(db.Model):
 
         return {
             "id": self.id,
-            "label": self.label,
             "org_id": self.org_id,
+            "title": self.title,
             "disabled": disabled,
             "tooltip": "Type has been disabled" if disabled else None,
             "default_description": self.default_description,
             "default_priority": self.default_priority,
             "default_time_estimate": self.default_time_estimate,
         }
-
-    def fat_dict(self) -> dict:
-        from app.Models.Dao import TaskTypeEscalation
-
-        task_type_dict = self.as_dict()
-
-        # get task type escalations
-        with session_scope() as session:
-            tte_qry = session.query(TaskTypeEscalation).filter_by(task_type_id=self.id).all()
-            escalation_policies = [escalation.as_dict() for escalation in tte_qry]
-
-        # sort by display order
-        task_type_dict["escalation_policies"] = list(sorted(escalation_policies, key=lambda i: i["display_order"]))
-
-        return task_type_dict

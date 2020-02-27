@@ -36,25 +36,25 @@ class TaskService(object):
             org_id=req_user.org_id,
             event=Events.user_assigned_task,
             event_id=req_user.id,
-            event_friendly=f"Assigned {assigned_user.name()} to {task.label()}.",
+            event_friendly=f"Assigned {assigned_user.name()} to {task.title}.",
         ).publish()
         Activity(
             org_id=assigned_user.org_id,
             event=Events.user_assigned_to_task,
             event_id=assigned_user.id,
-            event_friendly=f"Assigned to {task.label()} by {req_user.name()}.",
+            event_friendly=f"Assigned to {task.title} by {req_user.name()}.",
         ).publish()
         if notify:
             assigned_notification = Notification(
                 title="You've been assigned a task!",
                 event_name=Events.user_assigned_to_task,
-                msg=f"{req_user.name()} assigned {task.label()} to you.",
+                msg=f"{req_user.name()} assigned {task.title} to you.",
                 click_action=ClickActions.VIEW_TASK,
                 task_action_id=task.id,
                 user_ids=assigned_user.id,
             )
             assigned_notification.push()
-        req_user.log(operation=Operations.ASSIGN, resource=Resources.TASK, resource_id=task.id)
+        req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"assigned task {task.id} to user {assignee}")
 
     @staticmethod
@@ -70,7 +70,7 @@ class TaskService(object):
                 priority_notification = Notification(
                     title="Task escalated",
                     event_name=Events.task_escalated,
-                    msg=f"{task.label()} task has been escalated.",
+                    msg=f"{task.title} task has been escalated.",
                     click_action=ClickActions.ASSIGN_TO_ME,
                     task_action_id=task.id,
                     user_ids=UserService.get_all_user_ids(task.org_id),
@@ -90,14 +90,14 @@ class TaskService(object):
         dropped_notification = Notification(
             title="Task dropped",
             event_name=Events.task_transitioned_ready,
-            msg=f"{task.label()} has been dropped.",
+            msg=f"{task.title} has been dropped.",
             click_action=ClickActions.ASSIGN_TO_ME,
             task_action_id=task.id,
             user_ids=UserService.get_all_user_ids(req_user.org_id),
         )
         dropped_notification.push()
 
-        req_user.log(operation=Operations.DROP, resource=Resources.TASK, resource_id=task.id)
+        req_user.log(Operations.DROP, Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"User {req_user.id} dropped task {task.id} " f"which was assigned to {task.assignee}.")
 
     @staticmethod
@@ -159,9 +159,9 @@ class TaskService(object):
             org_id=req_user.org_id,
             event=Events.user_transitioned_task,
             event_id=req_user.id,
-            event_friendly=f"Transitioned {task.label()} from {old_status_label} to {new_status_label}.",
+            event_friendly=f"Transitioned {task.title} from {old_status_label} to {new_status_label}.",
         ).publish()
-        req_user.log(operation=Operations.TRANSITION, resource=Resources.TASK, resource_id=task.id)
+        req_user.log(Operations.TRANSITION, Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"User {req_user.id} transitioned task {task.id} from {old_status} to {status}")
 
     @staticmethod
@@ -187,15 +187,15 @@ class TaskService(object):
                 org_id=req_user.org_id,
                 event=Events.user_unassigned_task,
                 event_id=req_user.id,
-                event_friendly=f"Unassigned {old_assignee.name()} from {task.label()}.",
+                event_friendly=f"Unassigned {old_assignee.name()} from {task.title}.",
             ).publish()
             Activity(
                 org_id=old_assignee.org_id,
                 event=Events.user_unassigned_from_task,
                 event_id=old_assignee.id,
-                event_friendly=f"Unassigned from {task.label()} by {req_user.name()}.",
+                event_friendly=f"Unassigned from {task.title} by {req_user.name()}.",
             ).publish()
-            req_user.log(operation=Operations.ASSIGN, resource=Resources.TASK, resource_id=task.id)
+            req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=task.id)
             current_app.logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
 
     @staticmethod

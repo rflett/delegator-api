@@ -9,7 +9,7 @@ from sqlalchemy import exists, and_, func
 
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import AuthorizationError, ValidationError, ResourceNotFoundError
-from app.Models.Dao import User, TaskType, Task, TaskPriority, TaskStatus, TaskLabel, UserPasswordToken
+from app.Models.Dao import User, TaskTemplate, Task, TaskPriority, TaskStatus, TaskLabel, UserPasswordToken
 from app.Models.RBAC import Role
 from app.Services import UserService
 
@@ -98,13 +98,13 @@ class ObjectValidationController(Resource):
         return task_status.strip()
 
     @staticmethod
-    def check_task_type_id(task_type_id: int) -> int:
+    def check_task_template_id(template_id: int):
         """Check if a task type exists."""
+        if template_id is None:
+            return
         with session_scope() as session:
-            if not session.query(exists().where(TaskType.id == task_type_id)).scalar():
-                raise ResourceNotFoundError(f"Task type {task_type_id} doesn't exist")
-
-        return task_type_id
+            if not session.query(exists().where(TaskTemplate.id == template_id)).scalar():
+                raise ResourceNotFoundError(f"Task template doesn't exist")
 
     @staticmethod
     def check_task_labels(labels: typing.List[int], org_id: int) -> typing.List[int]:

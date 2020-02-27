@@ -33,6 +33,6 @@ class TaskActivity(RequestValidationController):
         activity_log_history_limit = subscription.task_activity_log_history()
         # get the task
         task = task_service.get(task_id, req_user.org_id)
-        req_user.log(operation=Operations.GET, resource=Resources.TASK_ACTIVITY, resource_id=task.id)
+        req_user.log(Operations.GET, Resources.TASK_ACTIVITY, resource_id=task.id)
         current_app.logger.info(f"Getting activity for task with id {task.id}")
         return {"activity": task.activity(activity_log_history_limit)}, 200

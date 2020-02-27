@@ -33,6 +33,6 @@ class UserPagesController(RequestValidationController):
                     # strip _PAGE
                     pages.append(page.split("_PAGE")[0])
 
-            req_user.log(operation=Operations.GET, resource=Resources.PAGES)
+            req_user.log(Operations.GET, Resources.PAGES)
             current_app.logger.info(f"found {len(pages)} pages.")
             return sorted(pages), 200

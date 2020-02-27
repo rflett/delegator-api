@@ -35,5 +35,5 @@ class TaskStatuses(RequestValidationController):
             task_status_qry = session.query(TaskStatus).all()
 
         task_statuses = [ts.as_dict() for ts in task_status_qry if ts.status not in ["DELAYED", "CANCELLED"]]
-        req_user.log(operation=Operations.GET, resource=Resources.TASK_STATUSES)
+        req_user.log(Operations.GET, Resources.TASK_STATUSES)
         return {"statuses": task_statuses}, 200
