@@ -52,7 +52,7 @@ class UserController(RequestValidationController):
     def get(self, user_id: int, **kwargs):
         """Get a single user by email or ID """
         user = self.validate_get_user(user_id, **kwargs)
-        kwargs["req_user"].log(operation=Operations.GET, resource=Resources.USER, resource_id=user.id)
+        kwargs["req_user"].log(Operations.GET, Resources.USER, resource_id=user.id)
         return user.fat_dict(), 200
 
     @requires_jwt
@@ -74,7 +74,7 @@ class UserController(RequestValidationController):
                 event_friendly=f"Deleted user {user_to_delete.name()}.",
             ).publish()
 
-        req_user.log(operation=Operations.DELETE, resource=Resources.USER, resource_id=user_to_delete.id)
+        req_user.log(Operations.DELETE, Resources.USER, resource_id=user_to_delete.id)
 
         current_app.logger.info(f"User {req_user.id} deleted user {user_to_delete.id}")
         return "", 204

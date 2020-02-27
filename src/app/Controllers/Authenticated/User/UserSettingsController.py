@@ -24,7 +24,7 @@ class UserSettingsController(RequestValidationController):
     def get(self, **kwargs):
         """Returns the user's settings"""
         req_user = kwargs["req_user"]
-        req_user.log(operation=Operations.GET, resource=Resources.USER_SETTINGS, resource_id=req_user.id)
+        req_user.log(Operations.GET, Resources.USER_SETTINGS, resource_id=req_user.id)
         current_app.logger.info(f"got user settings for {req_user.id}")
         user_setting = UserSetting(req_user.id)
         user_setting.get()
@@ -43,6 +43,6 @@ class UserSettingsController(RequestValidationController):
         user_setting.tz_offset = request_body["tz_offset"]
         user_setting.update()
 
-        req_user.log(operation=Operations.UPDATE, resource=Resources.USER_SETTINGS, resource_id=req_user.id)
+        req_user.log(Operations.UPDATE, Resources.USER_SETTINGS, resource_id=req_user.id)
         current_app.logger.info(f"updated user {req_user.id} settings")
         return "", 204

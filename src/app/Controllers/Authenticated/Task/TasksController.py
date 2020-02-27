@@ -9,7 +9,7 @@ from sqlalchemy.orm import aliased
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models.Dao import User, Task, TaskLabel, TaskType
+from app.Models.Dao import User, Task, TaskLabel
 from app.Models.Enums import Operations, Resources
 from app.Services import TaskService
 
@@ -33,7 +33,7 @@ class Tasks(RequestValidationController):
         "Get Tasks Dto",
         {
             "id": fields.Integer(),
-            "type": fields.String(),
+            "title": fields.String(),
             "description": fields.String(),
             "status": fields.String(),
             "scheduled_for": NullableDateTime,
@@ -61,11 +61,11 @@ class Tasks(RequestValidationController):
             tasks_qry = (
                 session.query(
                     Task.id,
+                    Task.title,
                     Task.description,
                     Task.priority,
                     Task.scheduled_for,
                     Task.status,
-                    TaskType.label,
                     User.id,
                     User.first_name,
                     User.last_name,
@@ -73,7 +73,6 @@ class Tasks(RequestValidationController):
                     label2,
                     label3,
                 )
-                .join(TaskType, TaskType.id == Task.type)
                 .outerjoin(User, User.id == Task.assignee)
                 .outerjoin(label1, label1.id == Task.label_1)
                 .outerjoin(label2, label2.id == Task.label_2)
@@ -95,11 +94,11 @@ class Tasks(RequestValidationController):
         for task in tasks_qry:
             (
                 id_,
+                title,
                 description,
                 priority,
                 scheduled_for,
                 status,
-                type_,
                 assignee_id,
                 assignee_fn,
                 assignee_ln,
@@ -124,7 +123,7 @@ class Tasks(RequestValidationController):
             tasks.append(
                 {
                     "id": id_,
-                    "type": type_,
+                    "title": title,
                     "description": description,
                     "priority": priority,
                     "status": status,

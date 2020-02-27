@@ -31,9 +31,11 @@ class UserSetting:
         if getenv("MOCK_AWS"):
             return
 
-        settings_obj = self._table().query(
-            Select="ALL_ATTRIBUTES", KeyConditionExpression=Key("user_id").eq(self.user_id)
-        ).get("Items")[0]
+        settings_obj = (
+            self._table()
+            .query(Select="ALL_ATTRIBUTES", KeyConditionExpression=Key("user_id").eq(self.user_id))
+            .get("Items")[0]
+        )
         self.tz_offset = settings_obj["tz_offset"]
 
     @staticmethod

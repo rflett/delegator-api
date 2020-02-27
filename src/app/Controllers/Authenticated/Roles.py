@@ -38,5 +38,5 @@ class Roles(RequestValidationController):
             roles_qry = session.query(Role).filter(and_(Role.rank >= req_user.roles.rank, Role.rank <= 50)).all()
 
         roles = [r.as_dict() for r in roles_qry]
-        req_user.log(operation=Operations.GET, resource=Resources.ROLES)
+        req_user.log(Operations.GET, Resources.ROLES)
         return {"roles": roles}, 200

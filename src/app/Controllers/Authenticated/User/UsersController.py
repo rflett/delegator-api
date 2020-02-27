@@ -57,7 +57,7 @@ class MinimalUsers(RequestValidationController):
                 {"id": id_, "email": email, "first_name": first_name, "last_name": last_name, "job_title": job_title}
             )
 
-        req_user.log(operation=Operations.GET, resource=Resources.USERS)
+        req_user.log(Operations.GET, Resources.USERS)
         return {"users": users}, 200
 
 
@@ -150,7 +150,7 @@ class UserController(RequestValidationController):
             users.append(user_dict)
 
         current_app.logger.info(f"found {len(users)} users.")
-        req_user.log(operation=Operations.GET, resource=Resources.USERS)
+        req_user.log(Operations.GET, Resources.USERS)
         return {"users": users}, 200
 
     create_user_request = api.model(
@@ -205,7 +205,7 @@ class UserController(RequestValidationController):
             link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + password_token.token, inviter=req_user
         )
 
-        req_user.log(operation=Operations.CREATE, resource=Resources.USER, resource_id=user.id)
+        req_user.log(Operations.CREATE, Resources.USER, resource_id=user.id)
 
         Activity(
             org_id=user.org_id,
@@ -273,6 +273,6 @@ class UserController(RequestValidationController):
             event_id=req_user.id,
             event_friendly=f"Updated {user_to_update.name()}.",
         ).publish()
-        req_user.log(operation=Operations.UPDATE, resource=Resources.USER, resource_id=user_to_update.id)
+        req_user.log(Operations.UPDATE, Resources.USER, resource_id=user_to_update.id)
         current_app.logger.info(f"User {req_user.id} updated user {user_to_update.id}")
         return "", 204
