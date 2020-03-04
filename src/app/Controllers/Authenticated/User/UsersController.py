@@ -200,9 +200,11 @@ class UserController(RequestValidationController):
         user.create_settings()
 
         # send welcome email
-        email = Email(user)
+        email = Email(user.email)
         email.send_welcome_new_user(
-            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + password_token.token, inviter=req_user
+            first_name=user.first_name,
+            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + password_token.token,
+            inviter=req_user
         )
 
         req_user.log(Operations.CREATE, Resources.USER, resource_id=user.id)

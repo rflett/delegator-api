@@ -11,41 +11,42 @@ sns = boto3.resource("sns")
 
 
 class Email(object):
-    def __init__(self, recipient: User):
+    def __init__(self, recipient: str):
         self.recipient = recipient
 
-    def send_welcome(self):
+    def send_welcome(self, first_name: str):
         """Sends a welcome email"""
         dto = {
-            "recipient": self.recipient.email,
+            "recipient": self.recipient,
             "template": EmailTemplates.WELCOME,
-            "template_data": {"first_name": self.recipient.first_name},
+            "template_data": {"first_name": first_name},
         }
-        current_app.logger.info(f"Sending welcome email to {self.recipient.email}")
+        current_app.logger.info(f"Sending welcome email to {self.recipient}")
         self._publish(dto)
 
-    def send_password_reset(self, link: str):
+    def send_password_reset(self, first_name: str, link: str):
         """Sends a password reset email"""
         dto = {
-            "recipient": self.recipient.email,
+            "recipient": self.recipient,
             "template": EmailTemplates.RESET_PASSWORD,
-            "template_data": {"first_name": self.recipient.first_name, "c2a_link": link},
+            "template_data": {"first_name": first_name, "c2a_link": link},
         }
-        current_app.logger.info(f"Sending password reset email to {self.recipient.email}")
+        current_app.logger.info(f"Sending password reset email to {self.recipient}")
         self._publish(dto)
 
-    def send_welcome_new_user(self, link: str, inviter: User):
+    def send_welcome_new_user(self, first_name: str, link: str, inviter: User):
         """Sends a welcome email to a new user"""
         dto = {
-            "recipient": self.recipient.email,
+            "recipient": self.recipient,
             "template": EmailTemplates.WELCOME_NEW_USER,
             "template_data": {
-                "first_name": self.recipient.first_name,
+                "first_name": first_name,
                 "c2a_link": link,
                 "inviter_name": inviter.first_name,
             },
         }
-        current_app.logger.info(f"Sending welcome email to {self.recipient.email} from {inviter.email}")
+        current_app.logger.info(f"Sending welcome email to {self.recipient} from {inviter.email}")
+        self._publish(dto)
         self._publish(dto)
 
     @staticmethod
