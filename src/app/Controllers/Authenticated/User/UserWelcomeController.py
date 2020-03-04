@@ -31,9 +31,11 @@ class UserController(RequestValidationController):
             raise ValidationError("User has already accepted their invitation.")
 
         # resend
-        email = Email(user)
+        email = Email(user.email)
         email.send_welcome_new_user(
-            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + token, inviter=req_user
+            first_name=user.first_name,
+            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + token,
+            inviter=req_user
         )
 
         current_app.logger.info(f"User {req_user.id} resent verification email to user {user.id}.")

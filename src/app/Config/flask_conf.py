@@ -26,6 +26,7 @@ class Dev(Config):
     USER_ACTIVITY_TABLE = "user-activity-dev"
     TASK_ACTIVITY_TABLE = "task-activity-dev"
     # the following are retrieved from SSM parameter store in higher envs
+    CONTACT_US_GOOGLE_RECAPTCHA_SECRET = "6Lfmlt4UAAAAAL1nG0CyxtRmoC2o0UjlIpljau1K"
     PUBLIC_WEB_URL = "http://localhost:4200"
     JWT_SECRET = "dev_s3cr3t"
     XRAY_RULE_IGNORE_HEALTH = "{}"

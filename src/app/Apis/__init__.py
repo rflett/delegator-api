@@ -4,6 +4,7 @@ from flask import url_for
 from flask_restx import Api
 
 from app.Controllers.Public.AccountController import api as account_v1
+from app.Controllers.Public.ContactUsController import api as contact_v1
 from app.Controllers.Public.HealthController import api as health_v1
 from app.Controllers.Public.VersionController import api as version_v1
 from app.Controllers.Public.ManagePasswordController import api as password_v1
@@ -46,6 +47,7 @@ api = Api(title="Delegator API", version="1.0", description="The API to get Dele
 
 api.add_namespace(account_v1)
 api.add_namespace(active_users_v1)
+api.add_namespace(contact_v1)
 api.add_namespace(organisation_v1)
 api.add_namespace(password_v1)
 api.add_namespace(roles_v1)

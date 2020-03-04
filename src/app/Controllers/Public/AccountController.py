@@ -93,8 +93,8 @@ class AccountController(RequestValidationController):
         current_app.logger.info(f"User {user.id} signed up.")
 
         # send email
-        email = Email(user)
-        email.send_welcome()
+        email = Email(user.email)
+        email.send_welcome(user.first_name)
 
         # local mocking
         if getenv("MOCK_SERVICES"):
