@@ -1,4 +1,5 @@
 from app.Models.Dao.ActiveUser import ActiveUser
+from app.Models.Dao.ContactUsEntry import ContactUsEntry
 from app.Models.Dao.DelayedTask import DelayedTask
 from app.Models.Dao.FailedLogin import FailedLogin
 from app.Models.Dao.Organisation import Organisation
@@ -13,6 +14,7 @@ from app.Models.Dao.UserPasswordToken import UserPasswordToken
 
 __all__ = [
     ActiveUser,
+    ContactUsEntry,
     DelayedTask,
     FailedLogin,
     Organisation,

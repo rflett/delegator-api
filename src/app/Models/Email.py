@@ -47,6 +47,21 @@ class Email(object):
         }
         current_app.logger.info(f"Sending welcome email to {self.recipient} from {inviter.email}")
         self._publish(dto)
+
+    def send_contact_us(self, first_name: str, last_name: str, email: str, lead: str, question: str):
+        """Sends a contact us email to Delegator"""
+        dto = {
+            "recipient": self.recipient,
+            "template": EmailTemplates.CONTACT_US,
+            "template_data": {
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "lead": lead,
+                "question": question,
+            }
+        }
+        current_app.logger.info(f"Sending contact-us from {email}")
         self._publish(dto)
 
     @staticmethod
