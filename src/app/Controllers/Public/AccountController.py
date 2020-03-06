@@ -139,6 +139,8 @@ class AccountController(RequestValidationController):
             "id": fields.Integer(min=1),
             "jwt": fields.String(),
             "first_name": fields.String(),
+            "last_name": fields.String(),
+            "job_title": fields.String(),
             "role": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER", "LOCKED"]),
             "url": fields.String(),
         },
