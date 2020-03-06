@@ -16,7 +16,7 @@ task_service = TaskService()
 
 @api.route("/")
 class TransitionTask(RequestValidationController):
-    statuses = ["READY", "IN_PROGRESS", "COMPLETED"]
+    statuses = ["READY", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
     request_dto = api.model(
         "Transition Task Request",
         {"task_id": fields.Integer(required=True), "task_status": fields.String(enum=statuses, required=True)},
