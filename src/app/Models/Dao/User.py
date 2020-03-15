@@ -47,7 +47,7 @@ class User(db.Model):
     first_name = db.Column("first_name", db.String)
     last_name = db.Column("last_name", db.String)
     password = db.Column("password", db.String, default=None)
-    job_title = db.Column("job_title", db.String)
+    job_title = db.Column("job_title", db.String, default=None)
     role = db.Column("role", db.String, db.ForeignKey("rbac_roles.id"))
     role_before_locked = db.Column("role_before_locked", db.String, db.ForeignKey("rbac_roles.id"), default=None)
     disabled = db.Column("disabled", db.DateTime, default=None)
@@ -70,8 +70,8 @@ class User(db.Model):
         email: str,
         first_name: str,
         last_name: str,
-        job_title: str,
         role: str,
+        job_title: str = None,
         password: str = None,
         role_before_locked: str = None,
         created_by: typing.Union[int, None] = None,

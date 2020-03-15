@@ -11,7 +11,7 @@ api = Namespace(path="/user", name="User", description="Manage a user")
 
 
 class NullableDateTime(fields.DateTime):
-    __schema_type__ = ["datetime", "null"]
+    __schema_type__ = ["string", "null"]
     __schema_example__ = "None|2019-09-17T19:08:00+10:00"
 
 
