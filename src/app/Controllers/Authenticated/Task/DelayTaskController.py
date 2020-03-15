@@ -87,7 +87,7 @@ class DelayTask(RequestValidationController):
 @api.route("/<int:task_id>")
 class GetDelayTask(RequestValidationController):
     class NullableDateTime(fields.DateTime):
-        __schema_type__ = ["datetime", "null"]
+        __schema_type__ = ["string", "null"]
         __schema_example__ = "None|2019-09-17T19:08:00+10:00"
 
     response_dto = api.model(

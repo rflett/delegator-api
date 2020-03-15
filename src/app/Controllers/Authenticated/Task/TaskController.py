@@ -20,7 +20,7 @@ task_statuses = ["SCHEDULED", "READY", "IN_PROGRESS", "DELAYED", "COMPLETED", "C
 
 
 class NullableDateTime(fields.DateTime):
-    __schema_type__ = ["datetime", "null"]
+    __schema_type__ = ["string", "null"]
     __schema_example__ = "None|2019-09-17T19:08:00+10:00"
 
 
@@ -51,7 +51,7 @@ class GetTask(RequestValidationController):
             "title": fields.String(),
             "description": fields.String(),
             "status": fields.Nested(task_status_dto),
-            "time_estimate": fields.String(),
+            "time_estimate": fields.Integer(),
             "scheduled_for": NullableDateTime,
             "scheduled_notification_period": fields.Integer(),
             "scheduled_notification_sent": NullableDateTime,
@@ -248,7 +248,7 @@ class ManageTask(RequestValidationController):
             labels = self._get_labels(request_body["labels"])
             task_to_update.title = request_body["title"]
             task_to_update.label_1 = labels["label_1"]
-            task_to_update.label_2 = labels["label_3"]
+            task_to_update.label_2 = labels["label_2"]
             task_to_update.label_3 = labels["label_3"]
 
             if request_body.get("description") is not None:

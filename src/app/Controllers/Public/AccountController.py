@@ -34,7 +34,6 @@ class AccountController(RequestValidationController):
             "password": fields.String(required=True),
             "first_name": fields.String(required=True),
             "last_name": fields.String(required=True),
-            "job_title": fields.String(),
             "plan_id": fields.String(required=True, enum=["basic"]),
         },
     )
@@ -83,8 +82,7 @@ class AccountController(RequestValidationController):
                 first_name=request_body["first_name"],
                 last_name=request_body["last_name"],
                 password=request_body["password"],
-                role=current_app.config["SIGNUP_ROLE"],
-                job_title=request_body["job_title"],
+                role=current_app.config["SIGNUP_ROLE"]
             )
             session.add(user)
 
