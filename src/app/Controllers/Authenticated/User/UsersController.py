@@ -9,7 +9,7 @@ from app.Extensions.Database import session_scope
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Models import Activity, Email, Subscription
-from app.Models.Dao import User, UserPasswordToken
+from app.Models.Dao import User, UserPasswordToken, ActiveUser
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.RBAC import Role
 from app.Services import UserService
@@ -93,6 +93,7 @@ class UserController(RequestValidationController):
             "created_by": fields.String,
             "updated_at": NullableDateTime,
             "updated_by": fields.String(),
+            "last_active": fields.String(),
             "invite_accepted": fields.Boolean,
         },
     )
@@ -116,10 +117,12 @@ class UserController(RequestValidationController):
                     created_by.last_name,
                     updated_by.first_name,
                     updated_by.last_name,
+                    ActiveUser.last_active
                 )
                 .join(Role, Role.id == this_user.role)
                 .join(created_by, created_by.id == this_user.created_by)
                 .outerjoin(updated_by, updated_by.id == this_user.updated_by)
+                .outerjoin(ActiveUser, ActiveUser.user_id == this_user.id)
                 .filter(
                     and_(
                         this_user.org_id == req_user.org_id,
@@ -133,18 +136,22 @@ class UserController(RequestValidationController):
         users = []
 
         for user in users_qry:
-            (user_, role, created_by_fn, created_by_ln, updated_by_fn, updated_by_ln) = user
+            (user_, role, created_by_fn, created_by_ln, updated_by_fn, updated_by_ln, last_active) = user
 
             created_by = created_by_fn + " " + created_by_ln
 
             if updated_by_fn is not None and updated_by_ln is not None:
-                updated_by = updated_by_fn + " " + created_by_ln
+                updated_by = updated_by_fn + " " + updated_by_ln
             else:
                 updated_by = None
+
+            if last_active is not None:
+                last_active = last_active.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
             user_dict = user_.as_dict()
             user_dict["created_by"] = created_by
             user_dict["updated_by"] = updated_by
+            user_dict["last_active"] = last_active
             user_dict["role"] = role.as_dict()
 
             users.append(user_dict)
