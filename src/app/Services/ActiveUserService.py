@@ -1,4 +1,5 @@
 import datetime
+import pytz
 import typing
 
 from flask import current_app
@@ -37,4 +38,8 @@ class ActiveUserService(object):
     def user_last_active(user: User) -> typing.Union[str, None]:
         with session_scope() as session:
             qry = session.query(ActiveUser).filter_by(user_id=user.id).first()
-            return None if qry is None else qry.last_active.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            if qry is None:
+                return None
+            else:
+                last_active = pytz.utc.localize(qry.last_active)
+                return last_active.strftime(current_app.config["RESPONSE_DATE_FORMAT"])

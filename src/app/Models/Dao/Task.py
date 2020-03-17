@@ -1,4 +1,5 @@
 import datetime
+import pytz
 from os import getenv
 
 from boto3.dynamodb.conditions import Key
@@ -94,37 +95,44 @@ class Task(db.Model):
         if self.created_at is None:
             created_at = None
         else:
-            created_at = self.created_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            created_at = pytz.utc.localize(self.created_at)
+            created_at = created_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.started_at is None:
             started_at = None
         else:
-            started_at = self.started_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            started_at = pytz.utc.localize(self.started_at)
+            started_at = started_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.finished_at is None:
             finished_at = None
         else:
-            finished_at = self.finished_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            finished_at = pytz.utc.localize(self.finished_at)
+            finished_at = finished_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.status_changed_at is None:
             status_changed_at = None
         else:
-            status_changed_at = self.status_changed_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            status_changed_at = pytz.utc.localize(self.status_changed_at)
+            status_changed_at = status_changed_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.priority_changed_at is None:
             priority_changed_at = None
         else:
-            priority_changed_at = self.priority_changed_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            priority_changed_at = pytz.utc.localize(self.priority_changed_at)
+            priority_changed_at = priority_changed_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.scheduled_for is None:
             scheduled_for = None
         else:
-            scheduled_for = self.scheduled_for.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            scheduled_for = pytz.utc.localize(self.scheduled_for)
+            scheduled_for = scheduled_for.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.scheduled_notification_sent is None:
             scheduled_notification_sent = None
         else:
-            scheduled_notification_sent = self.scheduled_notification_sent.strftime(
+            scheduled_notification_sent = pytz.utc.localize(self.scheduled_notification_sent)
+            scheduled_notification_sent = scheduled_notification_sent.strftime(
                 current_app.config["RESPONSE_DATE_FORMAT"]
             )
 
@@ -184,9 +192,9 @@ class Task(db.Model):
 
         for item in activity.get("Items"):
             activity_timestamp = datetime.datetime.strptime(
-                item["activity_timestamp"],
-                current_app.config["DYN_DB_ACTIVITY_DATE_FORMAT"]
+                item["activity_timestamp"], current_app.config["DYN_DB_ACTIVITY_DATE_FORMAT"]
             )
+            activity_timestamp = pytz.utc.localize(activity_timestamp)
             item["activity_timestamp"] = activity_timestamp.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
             log.append(item)
 

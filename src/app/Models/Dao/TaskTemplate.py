@@ -1,4 +1,5 @@
 import datetime
+import pytz
 import typing
 
 from flask import current_app
@@ -41,7 +42,8 @@ class TaskTemplate(db.Model):
         if self.disabled is None:
             disabled = None
         else:
-            disabled = self.disabled.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            disabled = pytz.utc.localize(self.disabled)
+            disabled = disabled.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         return {
             "id": self.id,

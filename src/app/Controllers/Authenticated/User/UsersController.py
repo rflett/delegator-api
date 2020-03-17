@@ -1,4 +1,5 @@
 import datetime
+import pytz
 
 from flask import request, current_app
 from flask_restx import Namespace, fields
@@ -117,7 +118,7 @@ class UserController(RequestValidationController):
                     created_by.last_name,
                     updated_by.first_name,
                     updated_by.last_name,
-                    ActiveUser.last_active
+                    ActiveUser.last_active,
                 )
                 .join(Role, Role.id == this_user.role)
                 .join(created_by, created_by.id == this_user.created_by)
@@ -146,6 +147,7 @@ class UserController(RequestValidationController):
                 updated_by = None
 
             if last_active is not None:
+                last_active = pytz.utc.localize(last_active)
                 last_active = last_active.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
             user_dict = user_.as_dict()
@@ -211,7 +213,7 @@ class UserController(RequestValidationController):
         email.send_welcome_new_user(
             first_name=user.first_name,
             link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + password_token.token,
-            inviter=req_user
+            inviter=req_user,
         )
 
         req_user.log(Operations.CREATE, Resources.USER, resource_id=user.id)

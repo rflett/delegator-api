@@ -82,7 +82,7 @@ class AccountController(RequestValidationController):
                 first_name=request_body["first_name"],
                 last_name=request_body["last_name"],
                 password=request_body["password"],
-                role=current_app.config["SIGNUP_ROLE"]
+                role=current_app.config["SIGNUP_ROLE"],
             )
             session.add(user)
 
