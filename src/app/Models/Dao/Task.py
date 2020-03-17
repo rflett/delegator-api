@@ -183,11 +183,12 @@ class Task(db.Model):
         log = []
 
         for item in activity.get("Items"):
-            try:
-                del item["id"]
-                log.append(item)
-            except KeyError:
-                current_app.logger.error(f"Key 'id' was missing from activity item. Table:{task_activity_table.name}")
+            activity_timestamp = datetime.datetime.strptime(
+                item["activity_timestamp"],
+                current_app.config["DYN_DB_ACTIVITY_DATE_FORMAT"]
+            )
+            item["activity_timestamp"] = activity_timestamp.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            log.append(item)
 
         return log
 
