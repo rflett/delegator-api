@@ -2,6 +2,7 @@ import binascii
 import datetime
 import hashlib
 import os
+import pytz
 import random
 import string
 import typing
@@ -223,12 +224,17 @@ class User(db.Model):
         if self.disabled is None:
             disabled = None
         else:
-            disabled = self.disabled.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            disabled = pytz.utc.localize(self.disabled)
+            disabled = disabled.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.deleted is None:
             deleted = None
         else:
-            deleted = self.deleted.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            deleted = pytz.utc.localize(self.deleted)
+            deleted = deleted.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+
+        created_at = pytz.utc.localize(self.created_at)
+        updated_at = pytz.utc.localize(self.updated_at)
 
         return {
             "id": self.id,
@@ -241,9 +247,9 @@ class User(db.Model):
             "disabled": disabled,
             "job_title": self.job_title,
             "deleted": deleted,
-            "created_at": self.created_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"]),
+            "created_at": created_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"]),
             "created_by": self.created_by,
-            "updated_at": self.updated_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"]),
+            "updated_at": updated_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"]),
             "updated_by": self.updated_by,
             "invite_accepted": self.invite_accepted(),
             "last_seen": self.last_active(),
@@ -279,9 +285,9 @@ class User(db.Model):
 
         for item in activity.get("Items"):
             activity_timestamp = datetime.datetime.strptime(
-                item["activity_timestamp"],
-                current_app.config["DYN_DB_ACTIVITY_DATE_FORMAT"]
+                item["activity_timestamp"], current_app.config["DYN_DB_ACTIVITY_DATE_FORMAT"]
             )
+            activity_timestamp = pytz.utc.localize(activity_timestamp)
             item["activity_timestamp"] = activity_timestamp.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
             log.append(item)
 

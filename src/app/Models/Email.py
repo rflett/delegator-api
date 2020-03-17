@@ -39,11 +39,7 @@ class Email(object):
         dto = {
             "recipient": self.recipient,
             "template": EmailTemplates.WELCOME_NEW_USER,
-            "template_data": {
-                "first_name": first_name,
-                "c2a_link": link,
-                "inviter_name": inviter.first_name,
-            },
+            "template_data": {"first_name": first_name, "c2a_link": link, "inviter_name": inviter.first_name},
         }
         current_app.logger.info(f"Sending welcome email to {self.recipient} from {inviter.email}")
         self._publish(dto)
@@ -59,7 +55,7 @@ class Email(object):
                 "email": email,
                 "lead": lead,
                 "question": question,
-            }
+            },
         }
         current_app.logger.info(f"Sending contact-us from {email}")
         self._publish(dto)

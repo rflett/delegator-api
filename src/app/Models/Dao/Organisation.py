@@ -1,4 +1,5 @@
 import datetime
+import pytz
 
 from flask import current_app
 
@@ -50,7 +51,8 @@ class Organisation(db.Model):
         if self.locked is None:
             locked = None
         else:
-            locked = self.locked.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            locked = pytz.utc.localize(self.locked)
+            locked = locked.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         return {
             "name": self.name,

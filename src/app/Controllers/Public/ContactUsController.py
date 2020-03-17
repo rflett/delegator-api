@@ -33,9 +33,9 @@ class Version(Resource):
                 url="https://www.google.com/recaptcha/api/siteverify",
                 data={
                     "secret": current_app.config["CONTACT_US_GOOGLE_RECAPTCHA_SECRET"],
-                    "response": args.pop("g-recaptcha-response")
+                    "response": args.pop("g-recaptcha-response"),
                 },
-                timeout=5
+                timeout=5,
             )
             response_body = r.json()
 

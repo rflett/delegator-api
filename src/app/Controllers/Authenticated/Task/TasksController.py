@@ -1,4 +1,5 @@
 import datetime
+import pytz
 from dateutil import tz
 
 from flask import current_app
@@ -118,6 +119,7 @@ class Tasks(RequestValidationController):
 
             # convert scheduled for to date
             if scheduled_for is not None:
+                scheduled_for = pytz.utc.localize(scheduled_for)
                 scheduled_for = scheduled_for.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
             tasks.append(

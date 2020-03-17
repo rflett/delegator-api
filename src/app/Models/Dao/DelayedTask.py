@@ -1,4 +1,5 @@
 import datetime
+import pytz
 import typing
 
 from flask import current_app
@@ -43,17 +44,21 @@ class DelayedTask(db.Model):
         if self.snoozed is None:
             snoozed = None
         else:
-            snoozed = self.snoozed.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            snoozed = pytz.utc.localize(self.snoozed)
+            snoozed = snoozed.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         if self.expired is None:
             expired = None
         else:
-            expired = self.expired.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+            expired = pytz.utc.localize(self.expired)
+            expired = expired.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+
+        delayed_at = pytz.utc.localize(self.delayed_at)
 
         return {
             "task_id": self.task_id,
             "delay_for": self.delay_for,
-            "delayed_at": self.delayed_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"]),
+            "delayed_at": delayed_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"]),
             "delayed_by": self.delayed_by,
             "reason": self.reason,
             "snoozed": snoozed,
