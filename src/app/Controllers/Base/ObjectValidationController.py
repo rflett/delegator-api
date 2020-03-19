@@ -188,3 +188,16 @@ class ObjectValidationController(Resource):
             raise ValidationError("Invite token does not exist or has expired.")
         else:
             return password_token
+
+    @staticmethod
+    def purge_expired_tokens() -> None:
+        """Removes password tokens that have expired."""
+        with session_scope() as session:
+            now = int(datetime.datetime.utcnow().timestamp())
+            delete_expired = (
+                session.query(UserPasswordToken)
+                .filter((UserPasswordToken.expire_after + UserPasswordToken.created_at) < now)
+                .delete()
+            )
+            if delete_expired > 0:
+                current_app.logger.info(f"Purged {delete_expired} password tokens which expired.")
