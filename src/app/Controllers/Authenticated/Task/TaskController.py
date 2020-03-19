@@ -24,6 +24,11 @@ class NullableDateTime(fields.DateTime):
     __schema_example__ = "None|2019-09-17T19:08:00+10:00"
 
 
+class NullableInteger(fields.Integer):
+    __schema_type__ = ['integer', 'null']
+    __schema_example__ = 'nullable string'
+
+
 @api.route("/<int:task_id>")
 class GetTask(RequestValidationController):
 
@@ -183,7 +188,7 @@ class ManageTask(RequestValidationController):
             "id": fields.Integer(required=True),
             "title": fields.String(required=True),
             "status": fields.String(enum=task_statuses, required=True),
-            "assignee": fields.Integer(),
+            "assignee": NullableInteger(),
             "priority": fields.Integer(min=0, max=2, required=True),
             "labels": fields.List(fields.Integer(), max_items=3, required=True, min_items=0),
             "description": fields.String(),
