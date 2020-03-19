@@ -1,5 +1,3 @@
-import datetime
-
 from flask import request, current_app
 from flask_restx import Namespace, fields
 
@@ -24,7 +22,7 @@ class ValidateToken(RequestValidationController):
     @api.response(204, "Valid")
     def post(self, **kwargs):
         """Validates the token is valid and hasn't expired"""
-        self._purge_expired_tokens()
+        self.purge_expired_tokens()
         self.validate_password_token(request.get_json()["token"])
         return "", 204
 
@@ -73,7 +71,7 @@ class PasswordSetup(RequestValidationController):
         request_body = request.get_json()
 
         # expire old and validate
-        self._purge_expired_tokens()
+        self.purge_expired_tokens()
 
         password_token = self.validate_password_token(request_body["token"])
         password = self.validate_password(request_body["password"])
@@ -87,16 +85,3 @@ class PasswordSetup(RequestValidationController):
             session.delete(password_token)
 
         return {"email": user.email}, 200
-
-    @staticmethod
-    def _purge_expired_tokens() -> None:
-        """Removes password tokens that have expired."""
-        with session_scope() as session:
-            now = int(datetime.datetime.utcnow().timestamp())
-            delete_expired = (
-                session.query(UserPasswordToken)
-                .filter((UserPasswordToken.expire_after + UserPasswordToken.created_at) < now)
-                .delete()
-            )
-            if delete_expired > 0:
-                current_app.logger.info(f"Purged {delete_expired} password tokens which expired.")
