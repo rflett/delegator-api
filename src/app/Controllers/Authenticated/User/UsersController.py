@@ -246,7 +246,7 @@ class UserController(RequestValidationController):
             "role_id": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER"], required=True),
             "first_name": fields.String(required=True),
             "last_name": fields.String(required=True),
-            "job_title": fields.String(required=True),
+            "job_title": fields.String(),
         },
     )
 
