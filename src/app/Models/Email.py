@@ -39,7 +39,12 @@ class Email(object):
         dto = {
             "recipient": self.recipient,
             "template": EmailTemplates.WELCOME_NEW_USER,
-            "template_data": {"first_name": first_name, "c2a_link": link, "inviter_name": inviter.first_name},
+            "template_data": {
+                "first_name": first_name,
+                "c2a_link": link,
+                "inviter_name": inviter.first_name,
+                "org_name": inviter.orgs.name,
+            },
         }
         current_app.logger.info(f"Sending welcome email to {self.recipient} from {inviter.email}")
         self._publish(dto)
