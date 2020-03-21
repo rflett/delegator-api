@@ -25,8 +25,8 @@ class NullableDateTime(fields.DateTime):
 
 
 class NullableInteger(fields.Integer):
-    __schema_type__ = ['integer', 'null']
-    __schema_example__ = 'nullable string'
+    __schema_type__ = ["integer", "null"]
+    __schema_example__ = "nullable string"
 
 
 @api.route("/<int:task_id>")

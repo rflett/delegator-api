@@ -6,6 +6,7 @@ import pytz
 import random
 import string
 import typing
+import uuid
 from os import getenv
 
 import boto3
@@ -43,6 +44,7 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column("id", db.Integer, primary_key=True)
+    uuid = db.Column("uuid", db.String)
     org_id = db.Column("org_id", db.Integer, db.ForeignKey("organisations.id"))
     email = db.Column("email", db.String)
     first_name = db.Column("first_name", db.String)
@@ -79,6 +81,7 @@ class User(db.Model):
         disabled: typing.Union[datetime.datetime, None] = None,
         deleted: typing.Union[datetime.datetime, None] = None,
     ):
+        self.uuid = str(uuid.uuid4())
         self.org_id = org_id
         self.email = email
         self.first_name = first_name
@@ -238,6 +241,7 @@ class User(db.Model):
 
         return {
             "id": self.id,
+            "uuid": self.uuid,
             "org_id": self.org_id,
             "email": self.email,
             "first_name": self.first_name,
