@@ -39,6 +39,9 @@ class Task(db.Model):
     label_1 = db.Column("label_1", db.Integer, default=None)
     label_2 = db.Column("label_2", db.Integer, default=None)
     label_3 = db.Column("label_3", db.Integer, default=None)
+    custom_1 = db.Column("custom_1", db.String, default=None)
+    custom_2 = db.Column("custom_2", db.String, default=None)
+    custom_3 = db.Column("custom_3", db.String, default=None)
 
     assignees = db.relationship("User", foreign_keys=[assignee], backref="assigned_user")
 
@@ -65,6 +68,9 @@ class Task(db.Model):
         label_1: int = None,
         label_2: int = None,
         label_3: int = None,
+        custom_1: str = None,
+        custom_2: str = None,
+        custom_3: str = None,
     ):
         self.org_id = org_id
         self.title = title
@@ -87,6 +93,9 @@ class Task(db.Model):
         self.label_1 = label_1
         self.label_2 = label_2
         self.label_3 = label_3
+        self.custom_1 = custom_1
+        self.custom_2 = custom_2
+        self.custom_3 = custom_3
 
     def as_dict(self) -> dict:
         """

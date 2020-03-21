@@ -29,6 +29,11 @@ class NullableInteger(fields.Integer):
     __schema_example__ = "nullable string"
 
 
+class NullableString(fields.Integer):
+    __schema_type__ = ["string", "null"]
+    __schema_example__ = "nullable string"
+
+
 @api.route("/<int:task_id>")
 class GetTask(RequestValidationController):
 
@@ -70,6 +75,9 @@ class GetTask(RequestValidationController):
             "status_changed_at": NullableDateTime,
             "priority_changed_at": NullableDateTime,
             "labels": fields.List(fields.Nested(task_label_dto)),
+            "custom_1": fields.String(),
+            "custom_2": fields.String(),
+            "custom_3": fields.String(),
         },
     )
 
@@ -100,6 +108,9 @@ class GetTask(RequestValidationController):
                            t.finished_at AS task_finished_at,
                            t.status_changed_at AS task_status_changed_at,
                            t.priority_changed_at AS task_priority_changed_at,
+                           t.custom_1 AS task_custom_1,                           
+                           t.custom_2 AS task_custom_2,            
+                           t.custom_3 AS task_custom_3,            
                            ts.status AS status_status,
                            ts.label AS status_label,
                            tp.priority AS priority_priority,
@@ -195,6 +206,9 @@ class ManageTask(RequestValidationController):
             "time_estimate": fields.Integer(),
             "scheduled_for": NullableDateTime(),
             "scheduled_notification_period": fields.Integer(),
+            "custom_1": NullableString(),
+            "custom_2": NullableString(),
+            "custom_3": NullableString(),
         },
     )
 
@@ -255,6 +269,9 @@ class ManageTask(RequestValidationController):
             task_to_update.label_1 = labels["label_1"]
             task_to_update.label_2 = labels["label_2"]
             task_to_update.label_3 = labels["label_3"]
+            task_to_update.custom_1 = request_body.get("custom_1")
+            task_to_update.custom_2 = request_body.get("custom_2")
+            task_to_update.custom_3 = request_body.get("custom_3")
 
             if request_body.get("description") is not None:
                 task_to_update.description = request_body["description"]
@@ -284,6 +301,9 @@ class ManageTask(RequestValidationController):
             "scheduled_notification_period": fields.Integer(),
             "assignee": fields.Integer(),
             "labels": fields.List(fields.Integer(), max_items=3),
+            "custom_1": NullableString(),
+            "custom_2": NullableString(),
+            "custom_3": NullableString(),
         },
     )
 
@@ -301,20 +321,7 @@ class ManageTask(RequestValidationController):
         self.check_task_assignee(request_body.get("assignee"), **kwargs)
         self.check_task_labels(request_body.get("labels", []), req_user.org_id)
 
-        if (
-            request_body.get("scheduled_for") is not None
-            and request_body.get("scheduled_notification_period") is not None
-        ):
-            self._schedule_task(req_user)
-        else:
-            self._create_task(req_user)
-
-        return "", 204
-
-    def _create_task(self, req_user: User):
-        """Creates a new task"""
-        request_body = request.get_json()
-        with session_scope() as session:
+        with session_scope():
             task = Task(
                 org_id=req_user.org_id,
                 title=request_body["title"],
@@ -324,8 +331,27 @@ class ManageTask(RequestValidationController):
                 time_estimate=request_body.get("time_estimate"),
                 priority=request_body["priority"],
                 created_by=req_user.id,
+                custom_1=request_body.get("custom_1"),
+                custom_2=request_body.get("custom_2"),
+                custom_3=request_body.get("custom_3"),
                 **self._get_labels(request_body.get("labels", [])),
             )
+
+        if (
+            request_body.get("scheduled_for") is not None
+            and request_body.get("scheduled_notification_period") is not None
+        ):
+            self._schedule_task(req_user, task)
+        else:
+            self._create_task(req_user, task)
+
+        return "", 204
+
+    @staticmethod
+    def _create_task(req_user: User, task: Task):
+        """Creates a new task"""
+        request_body = request.get_json()
+        with session_scope() as session:
             session.add(task)
 
         Activity(
@@ -357,23 +383,13 @@ class ManageTask(RequestValidationController):
             )
             created_notification.push()
 
-    def _schedule_task(self, req_user: User):
+    @staticmethod
+    def _schedule_task(req_user: User, task: Task):
         """Schedules a new task"""
         request_body = request.get_json()
         with session_scope() as session:
-            task = Task(
-                org_id=req_user.org_id,
-                title=request_body["title"],
-                template_id=request_body.get("template_id"),
-                description=request_body.get("description"),
-                status=TaskStatuses.SCHEDULED,
-                scheduled_for=request_body["scheduled_for"],
-                scheduled_notification_period=request_body["scheduled_notification_period"],
-                time_estimate=request_body.get("time_estimate"),
-                priority=request_body["priority"],
-                created_by=req_user.id,
-                **self._get_labels(request_body.get("labels", [])),
-            )
+            task.scheduled_for = request_body["scheduled_for"]
+            task.scheduled_notification_period = request_body["scheduled_notification_period"]
             session.add(task)
 
         Activity(

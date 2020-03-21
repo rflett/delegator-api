@@ -3,7 +3,6 @@ from decimal import Decimal
 from os import getenv
 
 import boto3
-from boto3.dynamodb.conditions import Key
 from flask import current_app
 
 dyn_db = boto3.resource("dynamodb")
