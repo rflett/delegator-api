@@ -82,6 +82,21 @@ def test_get_org_settings():
     assert "org_id" in r.json()
 
 
+def test_update_org_settings():
+    data = {"org_id": 1, "custom_task_fields": {"custom_1": "foo", "custom_2": "bar", "custom_3": "baz"}}
+    r = requests.put(
+        "http://localhost:5000/org/settings",
+        headers={"Content-Type": "application/json", "Authorization": auth},
+        data=json.dumps(data),
+    )
+    body = r.json()
+    assert r.status_code == 200
+    assert "org_id" in body
+    assert "custom_task_fields" in body
+    for k, v in data["custom_task_fields"].items():
+        assert data["custom_task_fields"][k] == v
+
+
 # password
 def test_reset_password():
     r = requests.delete("http://localhost:5000/password/?email=foo@bar.com")

@@ -30,6 +30,7 @@ class MinimalUsers(RequestValidationController):
             "first_name": fields.String(),
             "last_name": fields.String(),
             "job_title": fields.String(),
+            "uuid": fields.String(),
         },
     )
     get_min_users_response = api.model(
@@ -45,7 +46,7 @@ class MinimalUsers(RequestValidationController):
 
         with session_scope() as session:
             users_qry = (
-                session.query(User.id, User.email, User.first_name, User.last_name, User.job_title)
+                session.query(User.id, User.uuid, User.email, User.first_name, User.last_name, User.job_title)
                 .filter(and_(User.org_id == req_user.org_id, User.deleted == None))  # noqa
                 .all()
             )
@@ -53,9 +54,16 @@ class MinimalUsers(RequestValidationController):
         users = []
 
         for user in users_qry:
-            id_, email, first_name, last_name, job_title = user
+            id_, uuid_, email, first_name, last_name, job_title = user
             users.append(
-                {"id": id_, "email": email, "first_name": first_name, "last_name": last_name, "job_title": job_title}
+                {
+                    "id": id_,
+                    "uuid": uuid_,
+                    "email": email,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "job_title": job_title,
+                }
             )
 
         req_user.log(Operations.GET, Resources.USERS)
@@ -81,6 +89,7 @@ class UserController(RequestValidationController):
         "User Response",
         {
             "id": fields.Integer,
+            "uuid": fields.String(),
             "org_id": fields.Integer,
             "email": fields.String,
             "first_name": fields.String,
@@ -246,7 +255,7 @@ class UserController(RequestValidationController):
             "role_id": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER"], required=True),
             "first_name": fields.String(required=True),
             "last_name": fields.String(required=True),
-            "job_title": fields.String(required=True),
+            "job_title": fields.String(),
         },
     )
 

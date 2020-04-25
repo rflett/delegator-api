@@ -17,6 +17,11 @@ from app.Models.Enums import Operations, Resources
 api = Namespace(path="/org", name="Organisation", description="Manage the organisation")
 
 
+class NullableString(fields.String):
+    __schema_type__ = ["string", "null"]
+    __schema_example__ = "nullable string"
+
+
 @api.route("/")
 class OrganisationManage(RequestValidationController):
 
@@ -66,8 +71,13 @@ class OrganisationManage(RequestValidationController):
 
 @api.route("/settings")
 class OrganisationSettings(RequestValidationController):
-
-    get_org_settings_response = api.model("Get Org Settings Response", {"org_id": fields.Integer()})
+    customer_task_field = api.model(
+        "Custom Task Field", {"custom_1": NullableString(), "custom_2": NullableString(), "custom_3": NullableString(),}
+    )
+    get_org_settings_response = api.model(
+        "Get Org Settings Response",
+        {"org_id": fields.Integer(), "custom_task_fields": fields.Nested(customer_task_field)},
+    )
 
     @requires_jwt
     @authorize(Operations.GET, Resources.ORG_SETTINGS)
@@ -78,21 +88,29 @@ class OrganisationSettings(RequestValidationController):
         req_user.log(Operations.GET, Resources.ORG_SETTINGS)
         org_setting = OrgSetting(req_user.org_id)
         org_setting.get()
-        return org_setting.as_dict(), 200
+        return org_setting, 200
 
-    update_org_settings_request = api.model("Update Org Settings Request", {"org_id": fields.Integer(required=True)})
-    update_org_settings_response = api.model("Get Org Settings Response", {"org_id": fields.Integer()})
+    update_org_settings_request = api.model(
+        "Update Org Settings Request",
+        {
+            "org_id": fields.Integer(required=True),
+            "custom_task_fields": fields.Nested(customer_task_field, required=True),
+        },
+    )
 
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.ORG_SETTINGS)
     @api.expect(update_org_settings_request, validate=True)
-    @api.marshal_with(update_org_settings_response, code=200)
+    @api.marshal_with(get_org_settings_response, code=200)
     def put(self, **kwargs):
         """Update an organisation's settings"""
         req_user = kwargs["req_user"]
+        request_body = request.get_json()
 
-        org_setting = OrgSetting(org_id=Decimal(req_user.org_id))
-        # update the org_setting here
+        org_setting = OrgSetting(Decimal(req_user.org_id))
+
+        org_setting.custom_task_fields = request_body["custom_task_fields"]
+        org_setting.update()
 
         req_user.log(Operations.UPDATE, Resources.ORG_SETTINGS, resource_id=req_user.org_id)
         return org_setting.as_dict(), 200
