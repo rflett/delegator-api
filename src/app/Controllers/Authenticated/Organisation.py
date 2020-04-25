@@ -72,7 +72,7 @@ class OrganisationManage(RequestValidationController):
 @api.route("/settings")
 class OrganisationSettings(RequestValidationController):
     customer_task_field = api.model(
-        "Custom Task Field", {"custom_1": NullableString(), "custom_2": NullableString(), "custom_3": NullableString(),}
+        "Custom Task Field", {"custom_1": NullableString(), "custom_2": NullableString(), "custom_3": NullableString()}
     )
     get_org_settings_response = api.model(
         "Get Org Settings Response",

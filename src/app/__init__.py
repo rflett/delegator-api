@@ -1,7 +1,6 @@
 import logging
 from os import getenv
 
-import flask_profiler
 import sentry_sdk
 from aws_xray_sdk.core import xray_recorder, patch_all
 from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
