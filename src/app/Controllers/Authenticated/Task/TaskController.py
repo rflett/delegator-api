@@ -309,12 +309,24 @@ class ManageTask(RequestValidationController):
 
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK)
-    @api.expect(create_task_dto, validate=True)
+    @api.expect(create_task_dto)
     @api.response(204, "Success")
     def post(self, **kwargs):
         """Creates a task"""
         req_user: User = kwargs["req_user"]
         request_body = request.get_json()
+
+        try:
+            title = request_body["title"]
+            priority = request_body["priority"]
+            if not isinstance(title, str):
+                return "Title is not a string", 400
+            if not isinstance(priority, int):
+                return "priority is not an int", 400
+            if priority not in [0, 1, 2]:
+                return "priority must be 0, 1, or 2", 400
+        except KeyError as e:
+            return f"Missing {e} from body", 400
 
         self.check_task_template_id(request_body.get("template_id"))
         self.check_task_priority(request_body["priority"])
