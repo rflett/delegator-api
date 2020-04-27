@@ -1,7 +1,6 @@
 import logging
 from os import getenv
 
-import flask_profiler
 import sentry_sdk
 from aws_xray_sdk.core import xray_recorder, patch_all
 from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
@@ -62,15 +61,6 @@ app.register_error_handler(AuthenticationError, handle_error)
 app.register_error_handler(AuthorizationError, handle_error)
 app.register_error_handler(ResourceNotFoundError, handle_error)
 app.register_error_handler(InternalServerError, handle_error)
-
-# flask profiler
-app.config["flask_profiler"] = {
-    "enabled": True,
-    "storage": {"engine": "sqlalchemy", "db_url": app.config["SQLALCHEMY_DATABASE_URI"]},
-    "basicAuth": {"enabled": True, "username": "admin", "password": "B4ckburn3r"},
-    "ignore": {"/health/"},
-}
-flask_profiler.init_app(app)
 
 # xray
 xray_recorder.configure(
