@@ -309,7 +309,7 @@ class ManageTask(RequestValidationController):
 
     @requires_jwt
     @authorize(Operations.CREATE, Resources.TASK)
-    @api.expect(create_task_dto)
+    @api.expect(create_task_dto, validate=True)
     @api.response(204, "Success")
     def post(self, **kwargs):
         """Creates a task"""
