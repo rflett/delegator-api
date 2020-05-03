@@ -20,7 +20,7 @@ class Task(db.Model):
     id = db.Column("id", db.Integer, primary_key=True)
     org_id = db.Column("org_id", db.Integer, db.ForeignKey("organisations.id"))
     title = db.Column("title", db.String)
-    template_id = db.Column("template_id", db.Integer, db.ForeignKey("task_templates.id"))
+    template_id = db.Column("template_id", db.Integer, db.ForeignKey("task_templates.id"), default=None)
     description = db.Column("description", db.String)
     status = db.Column("status", db.String, db.ForeignKey("task_statuses.status"))
     time_estimate = db.Column("time_estimate", db.Integer, default=0)
