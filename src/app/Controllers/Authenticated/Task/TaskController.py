@@ -293,7 +293,7 @@ class ManageTask(RequestValidationController):
         "Create Task Request",
         {
             "title": fields.String(required=True),
-            "template_id": fields.Integer(),
+            "template_id": NullableInteger(),
             "priority": fields.Integer(min=0, max=2, required=True),
             "description": NullableString(),
             "time_estimate": NullableInteger(),
