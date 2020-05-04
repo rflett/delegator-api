@@ -246,6 +246,7 @@ class OrgCustomerId(RequestValidationController):
     response = api.model("Get Org Customer ID Response", {"customer_id": fields.String()})
 
     @requires_jwt
+    @authorize(Operations.GET, Resources.ORGANISATION_SUBSCRIPTION)
     @api.marshal_with(response, code=200)
     def get(self, **kwargs):
         """Get the customer_id for an org"""
