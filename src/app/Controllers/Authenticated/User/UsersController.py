@@ -136,7 +136,6 @@ class UserController(RequestValidationController):
                 .filter(
                     and_(
                         this_user.org_id == req_user.org_id,
-                        Role.rank >= req_user.roles.rank,
                         this_user.deleted == None,  # noqa
                     )
                 )
