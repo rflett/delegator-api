@@ -23,6 +23,11 @@ api = Namespace(path="/account", name="Account", description="Manage an account"
 user_service = UserService()
 
 
+class NullableString(fields.Integer):
+    __schema_type__ = ["string", "null"]
+    __schema_example__ = "nullable string"
+
+
 @api.route("/")
 class AccountController(RequestValidationController):
 
@@ -139,9 +144,10 @@ class AccountController(RequestValidationController):
             "jwt": fields.String(),
             "first_name": fields.String(),
             "last_name": fields.String(),
-            "job_title": fields.String(),
+            "job_title": NullableString(),
             "role": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER", "LOCKED"]),
-            "url": fields.String(),
+            "role_before_locked": NullableString(),
+            "url": NullableString(),
         },
     )
 
