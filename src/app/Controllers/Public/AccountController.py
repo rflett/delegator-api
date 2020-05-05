@@ -23,11 +23,6 @@ api = Namespace(path="/account", name="Account", description="Manage an account"
 user_service = UserService()
 
 
-class NullableString(fields.Integer):
-    __schema_type__ = ["string", "null"]
-    __schema_example__ = "nullable string"
-
-
 @api.route("/")
 class AccountController(RequestValidationController):
 
@@ -91,6 +86,9 @@ class AccountController(RequestValidationController):
             )
             session.add(user)
 
+        with session_scope():
+            user.created_by = user.id
+
         user.create_settings()
         user.log(Operations.CREATE, Resources.USER, resource_id=user.id)
         current_app.logger.info(f"User {user.id} signed up.")
@@ -144,10 +142,10 @@ class AccountController(RequestValidationController):
             "jwt": fields.String(),
             "first_name": fields.String(),
             "last_name": fields.String(),
-            "job_title": NullableString(),
+            "job_title": fields.String(),
             "role": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER", "LOCKED"]),
-            "role_before_locked": NullableString(),
-            "url": NullableString(),
+            "role_before_locked": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER"]),
+            "url": fields.String(),
         },
     )
 
@@ -257,12 +255,16 @@ class AccountController(RequestValidationController):
                 # reset failed attempts
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
+
+                if user.role == "LOCKED":
+                    current_app.logger.warning(f"Locked user {user.email} attempted to login.")
+                    return {"role": user.role, "role_before_locked": user.role_before_locked}, 200
+
                 user.is_active()
                 Activity(
                     org_id=user.org_id, event=Events.user_login, event_id=user.id, event_friendly="Logged in."
                 ).publish()
 
-                # return the user dict and their JWT token
                 return {**user.as_dict(), **{"jwt": self._generate_jwt_token(user)}}, 200
             else:
                 current_app.logger.info(f"Incorrect password attempt for user {user.id}.")
