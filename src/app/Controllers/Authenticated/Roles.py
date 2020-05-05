@@ -17,6 +17,8 @@ role_dto = api.model(
         "rank": fields.Integer(min=0, max=2),
         "name": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER", "LOCKED"]),
         "description": fields.String(),
+        "disabled": fields.Boolean(),
+        "tooltip": fields.String(),
     },
 )
 
@@ -35,8 +37,10 @@ class Roles(RequestValidationController):
 
         with session_scope() as session:
             # rank > 50 are reserved for admin duties
-            roles_qry = session.query(Role).filter(and_(Role.rank >= req_user.roles.rank, Role.rank <= 50)).all()
+            roles_qry = session.query(Role).filter(and_(Role.rank <= 50)).all()
 
-        roles = [r.as_dict() for r in roles_qry]
+        # the role will be disabled if its rank is higher than the users rank
+        roles = [r.as_dict(disabled=r.rank < req_user.roles.rank) for r in roles_qry]
+
         req_user.log(Operations.GET, Resources.ROLES)
         return {"roles": roles}, 200

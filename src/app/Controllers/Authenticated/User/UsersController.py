@@ -133,12 +133,7 @@ class UserController(RequestValidationController):
                 .join(created_by, created_by.id == this_user.created_by)
                 .outerjoin(updated_by, updated_by.id == this_user.updated_by)
                 .outerjoin(ActiveUser, ActiveUser.user_id == this_user.id)
-                .filter(
-                    and_(
-                        this_user.org_id == req_user.org_id,
-                        this_user.deleted == None,  # noqa
-                    )
-                )
+                .filter(and_(this_user.org_id == req_user.org_id, this_user.deleted == None,))  # noqa
                 .all()
             )
 

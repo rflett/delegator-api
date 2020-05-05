@@ -18,8 +18,15 @@ class Role(db.Model):
         self.name = name
         self.description = description
 
-    def as_dict(self) -> dict:
+    def as_dict(self, disabled: bool = False) -> dict:
         """
         :return: The dict repr of a Role object
         """
-        return {"id": self.id, "rank": self.rank, "name": self.name, "description": self.description}
+        return {
+            "id": self.id,
+            "rank": self.rank,
+            "name": self.name,
+            "description": self.description,
+            "disabled": disabled,
+            "tooltip": "You lack permissions to access this role" if disabled else None,
+        }
