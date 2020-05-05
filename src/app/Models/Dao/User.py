@@ -5,12 +5,14 @@ import os
 import pytz
 import random
 import string
+import time
 import typing
 import uuid
 from os import getenv
 
 import boto3
 from boto3.dynamodb.conditions import Key
+from botocore.exceptions import ClientError
 from flask import current_app
 from sqlalchemy import exists
 
@@ -21,6 +23,8 @@ from app.Models.LocalMockData import MockActivity
 
 
 dyn_db = boto3.resource("dynamodb")
+s3 = boto3.client("s3")
+cloudfront = boto3.client("cloudfront")
 
 
 def _hash_password(password: str) -> str:
@@ -323,3 +327,39 @@ class User(db.Model):
             return None
         else:
             return token_qry.token
+
+    def set_avatar(self, file: typing.IO) -> None:
+        """Sets the avatar for the user"""
+        try:
+            s3.upload_fileobj(file, current_app.config["ASSETS_BUCKET"], f"user/avatar/{self.uuid}.jpg")
+            current_app.logger.info(f"Uploaded avatar {self.uuid}.jpg")
+            self._invalidate_avatar_cache()
+        except ClientError as e:
+            current_app.logger.error(f"error uploading profile avatar - {e}")
+
+    def reset_avatar(self) -> None:
+        """Copies the default.jpg avatar to the user uuid to 'reset' it"""
+        try:
+            s3.copy_object(
+                Bucket=current_app.config["ASSETS_BUCKET"],
+                CopySource={"Bucket": current_app.config["ASSETS_BUCKET"], "Key": "user/avatar/default.jpg"},
+                Key=f"user/avatar/{self.uuid}.jpg",
+            )
+            current_app.logger.info(f"Reset avatar {self.uuid}.jpg")
+            self._invalidate_avatar_cache()
+        except ClientError as e:
+            current_app.logger.error(f"Error resetting user avatar - {e}")
+
+    def _invalidate_avatar_cache(self) -> None:
+        """Calls a CloudFront invalidation on the uuid path"""
+        try:
+            cloudfront.create_invalidation(
+                DistributionId=current_app.config["ASSETS_DISTRIBUTION_ID"],
+                InvalidationBatch={
+                    "Paths": {"Quantity": 1, "Items": [f"/user/avatar/{self.uuid}.jpg"]},
+                    "CallerReference": f"{self.uuid}-{time.time()}",
+                },
+            )
+            current_app.logger.info(f"Invalidated avatar cache for {self.uuid}.jpg")
+        except ClientError as e:
+            current_app.logger.error(f"Error invalidating user avatar cache for /user/avatar/{self.uuid}.jpg - {e}")
