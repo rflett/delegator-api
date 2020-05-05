@@ -13,6 +13,8 @@ class Config(object):
     RESPONSE_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
     DYN_DB_ACTIVITY_DATE_FORMAT = "%Y%m%dT%H%M%S.%fZ"
     SENTRY_DSN = "https://1b44956bd3544f70b7ae66f0c126b76f@sentry.io/1881906"
+    ASSETS_BUCKET = "assets.delegator.com.au"
+    ASSETS_DISTRIBUTION_ID = "EZPY1QFZCY2Y6"
 
 
 class Dev(Config):
