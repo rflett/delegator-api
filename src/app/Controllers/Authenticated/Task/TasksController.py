@@ -40,6 +40,7 @@ class Tasks(RequestValidationController):
             "scheduled_for": NullableDateTime,
             "assignee": fields.String(),
             "assignee_id": fields.Integer(),
+            "assignee_uuid": fields.String(),
             "priority": fields.Integer(),
             "labels": fields.List(fields.Nested(task_label_dto)),
         },
@@ -50,7 +51,7 @@ class Tasks(RequestValidationController):
     @authorize(Operations.GET, Resources.TASKS)
     @api.marshal_with(response_dto, code=200)
     def get(self, **kwargs):
-        """Get all tasks in an organisation with minimal info"""
+        """Get all tasks"""
         req_user = kwargs["req_user"]
 
         # start_period, end_period = self.validate_time_period(req.get_json())
@@ -68,6 +69,7 @@ class Tasks(RequestValidationController):
                     Task.scheduled_for,
                     Task.status,
                     User.id,
+                    User.uuid,
                     User.first_name,
                     User.last_name,
                     label1,
@@ -101,6 +103,7 @@ class Tasks(RequestValidationController):
                 scheduled_for,
                 status,
                 assignee_id,
+                assignee_uuid,
                 assignee_fn,
                 assignee_ln,
                 label_1,
@@ -131,6 +134,7 @@ class Tasks(RequestValidationController):
                     "status": status,
                     "assignee": assignee,
                     "assignee_id": assignee_id,
+                    "assignee_uuid": assignee_uuid,
                     "labels": labels,
                     "scheduled_for": scheduled_for,
                 }
