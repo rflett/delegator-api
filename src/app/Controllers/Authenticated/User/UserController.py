@@ -31,6 +31,7 @@ class UserController(RequestValidationController):
         "User Response",
         {
             "id": fields.Integer,
+            "uuid": fields.Integer,
             "org_id": fields.Integer,
             "email": fields.String,
             "first_name": fields.String,
