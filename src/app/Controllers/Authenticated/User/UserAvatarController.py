@@ -14,9 +14,9 @@ api = Namespace(path="/user/avatar", name="User", description="Manage a user")
 class UserAvatarController(RequestValidationController):
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER)
-    @api.response(200, "Success")
+    @api.response(204, "Success")
     def post(self, **kwargs):
-        """Sets the avatar for a user"""
+        """Sets the avatar for the requesting user"""
         req_user: User = kwargs["req_user"]
 
         if "file" not in request.files:
@@ -36,9 +36,9 @@ class UserAvatarController(RequestValidationController):
 
     @requires_jwt
     @authorize(Operations.UPDATE, Resources.USER)
-    @api.response(200, "Success")
+    @api.response(204, "Success")
     def delete(self, **kwargs):
-        """Sets the avatar for a user"""
+        """Resets the avatar for the requesting user"""
         req_user: User = kwargs["req_user"]
         req_user.reset_avatar()
         return "", 204

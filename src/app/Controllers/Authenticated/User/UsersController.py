@@ -26,11 +26,11 @@ class MinimalUsers(RequestValidationController):
         "Minimal User Response",
         {
             "id": fields.Integer(),
+            "uuid": fields.String(),
             "email": fields.String(),
             "first_name": fields.String(),
             "last_name": fields.String(),
             "job_title": fields.String(),
-            "uuid": fields.String(),
         },
     )
     get_min_users_response = api.model(
