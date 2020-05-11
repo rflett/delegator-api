@@ -174,7 +174,7 @@ class AccountController(RequestValidationController):
                 customer_id = user.orgs.chargebee_customer_id
                 try:
                     r = requests.get(
-                        url=f"{self.url}/subscription/{customer_id}",
+                        url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/{customer_id}",
                         headers={"Authorization": f"Bearer {self.create_service_account_jwt()}"},
                         timeout=10,
                     )
@@ -190,7 +190,7 @@ class AccountController(RequestValidationController):
                     # redirect to setup chargebee stuff
                     try:
                         r = requests.post(
-                            url=f"{self.url}/subscription/checkout/",
+                            url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/checkout/",
                             headers={
                                 "Content-Type": "application/json",
                                 "Authorization": f"Bearer {self.create_service_account_jwt()}",
