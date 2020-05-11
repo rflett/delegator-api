@@ -22,7 +22,7 @@ class Notification(object):
 
     def push(self) -> None:
         """ Publish the message to SNS for pushing to the user """
-        if getenv("APP_ENV", "MOCK_SERVICES"):
+        if getenv("MOCK_SERVICES"):
             current_app.logger.info(f"WOULD have pushed notification {self.as_dict()} to NotificationApi")
             return
         try:

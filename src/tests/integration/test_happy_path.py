@@ -9,7 +9,7 @@ auth = ""
 
 def test_login():
     data = {
-        "email": "ryan.flett@delegator.com.au",
+        "email": "admin@delegator.com.au",
         "password": "B4ckburn3r",
     }
     r = requests.post(

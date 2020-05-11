@@ -331,7 +331,12 @@ class User(db.Model):
     def set_avatar(self, file: typing.IO) -> None:
         """Sets the avatar for the user"""
         try:
-            s3.upload_fileobj(file, current_app.config["ASSETS_BUCKET"], f"user/avatar/{self.uuid}.jpg")
+            s3.upload_fileobj(
+                file,
+                current_app.config["ASSETS_BUCKET"],
+                f"user/avatar/{self.uuid}.jpg",
+                ExtraArgs={"Metadata": {"Content-Type": "image/jpeg"}},
+            )
             current_app.logger.info(f"Uploaded avatar {self.uuid}.jpg")
             self._invalidate_avatar_cache()
         except ClientError as e:

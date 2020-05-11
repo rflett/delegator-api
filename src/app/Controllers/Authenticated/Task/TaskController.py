@@ -298,7 +298,7 @@ class ManageTask(RequestValidationController):
             "description": NullableString(),
             "time_estimate": NullableInteger(),
             "scheduled_for": NullableDateTime(),
-            "scheduled_notification_period": fields.Integer(),
+            "scheduled_notification_period": NullableInteger(),
             "assignee": NullableInteger(),
             "labels": fields.List(fields.Integer(), max_items=3),
             "custom_1": NullableString(),
