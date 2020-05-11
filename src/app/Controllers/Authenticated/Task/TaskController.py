@@ -327,7 +327,6 @@ class ManageTask(RequestValidationController):
                 title=request_body["title"],
                 template_id=request_body.get("template_id"),
                 description=request_body.get("description"),
-                status=TaskStatuses.READY,
                 time_estimate=request_body.get("time_estimate"),
                 priority=request_body["priority"],
                 created_by=req_user.id,
@@ -352,6 +351,7 @@ class ManageTask(RequestValidationController):
         """Creates a new task"""
         request_body = request.get_json()
         with session_scope() as session:
+            task.status = TaskStatuses.READY
             session.add(task)
 
         Activity(
@@ -388,6 +388,7 @@ class ManageTask(RequestValidationController):
         """Schedules a new task"""
         request_body = request.get_json()
         with session_scope() as session:
+            task.status = TaskStatuses.SCHEDULED
             task.scheduled_for = request_body["scheduled_for"]
             task.scheduled_notification_period = request_body["scheduled_notification_period"]
             session.add(task)
