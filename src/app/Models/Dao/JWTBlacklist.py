@@ -13,7 +13,4 @@ class JWTBlacklist(db.Model):
 
     def as_dict(self) -> dict:
         """dict repr of a JWTBlacklist object"""
-        return {
-            "jti": self.jti,
-            "exp": self.exp
-        }
+        return {"jti": self.jti, "exp": self.exp}

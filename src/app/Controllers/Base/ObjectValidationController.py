@@ -9,7 +9,7 @@ from sqlalchemy import exists, and_, func
 
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import AuthorizationError, ValidationError, ResourceNotFoundError
-from app.Models.Dao import User, TaskTemplate, Task, TaskPriority, TaskStatus, TaskLabel, UserPasswordToken
+from app.Models.Dao import User, TaskTemplate, Task, TaskLabel, UserPasswordToken
 from app.Models.RBAC import Role
 from app.Services import UserService
 
