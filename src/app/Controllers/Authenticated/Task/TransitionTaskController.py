@@ -82,7 +82,12 @@ class TransitionTask(RequestValidationController):
                 # if someone is assigned to the task, then these are the available transitions
                 valid_transitions = {
                     TaskStatuses.READY: [TaskStatuses.READY, TaskStatuses.IN_PROGRESS, TaskStatuses.CANCELLED],
-                    TaskStatuses.IN_PROGRESS: [TaskStatuses.IN_PROGRESS, TaskStatuses.COMPLETED, TaskStatuses.DELAYED],
+                    TaskStatuses.IN_PROGRESS: [
+                        TaskStatuses.IN_PROGRESS,
+                        TaskStatuses.DELAYED,
+                        TaskStatuses.COMPLETED,
+                        TaskStatuses.CANCELLED,
+                    ],
                     TaskStatuses.DELAYED: [TaskStatuses.DELAYED, TaskStatuses.IN_PROGRESS],
                     TaskStatuses.SCHEDULED: [TaskStatuses.READY],
                 }

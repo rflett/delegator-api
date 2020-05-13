@@ -1,3 +1,6 @@
+import datetime
+import pytz
+
 from flask import request, current_app
 from flask_restx import Namespace, fields
 from sqlalchemy import exists, and_
@@ -16,7 +19,7 @@ api = Namespace(path="/task", name="Task", description="Manage a task")
 task_service = TaskService()
 user_service = UserService()
 
-task_statuses = ["SCHEDULED", "READY", "IN_PROGRESS", "DELAYED", "COMPLETED", "CANCELLED"]
+task_statuses = ["SCHEDULED", "READY", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
 
 
 class NullableDateTime(fields.DateTime):
@@ -170,7 +173,6 @@ class GetTask(RequestValidationController):
             "labels": [],
         }
 
-        # add task attributes to top level of ret dict
         for alias, value in result.items():
             if alias.startswith("task_"):
                 ret[alias[len("task_") :]] = value
@@ -185,6 +187,11 @@ class GetTask(RequestValidationController):
                         "colour": result[f"label{i}_colour"],
                     }
                 )
+
+        # convert to correct time format
+        for k, v in ret.items():
+            if isinstance(v, datetime.datetime):
+                ret[k] = pytz.utc.localize(v).strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         req_user.log(Operations.GET, Resources.TASK, resource_id=task_id)
         return ret, 200
@@ -336,10 +343,7 @@ class ManageTask(RequestValidationController):
                 **self._get_labels(request_body.get("labels", [])),
             )
 
-        if (
-            request_body.get("scheduled_for") is not None
-            and request_body.get("scheduled_notification_period") is not None
-        ):
+        if request_body.get("scheduled_for") is not None:
             self._schedule_task(req_user, task)
         else:
             self._create_task(req_user, task)
@@ -390,7 +394,7 @@ class ManageTask(RequestValidationController):
         with session_scope() as session:
             task.status = TaskStatuses.SCHEDULED
             task.scheduled_for = request_body["scheduled_for"]
-            task.scheduled_notification_period = request_body["scheduled_notification_period"]
+            task.scheduled_notification_period = request_body.get("scheduled_notification_period")
             session.add(task)
 
         Activity(

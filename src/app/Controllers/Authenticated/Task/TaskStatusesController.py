@@ -11,6 +11,7 @@ api = Namespace(path="/tasks/statuses", name="Tasks", description="Manage tasks"
 
 @api.route("/")
 class TaskStatuses(RequestValidationController):
+    # TODO can be removed if unused in mobile app
 
     statuses = ["SCHEDULED", "READY", "IN_PROGRESS", "DELAYED", "COMPLETED", "CANCELLED"]
     task_status_dto = api.model(
@@ -34,6 +35,6 @@ class TaskStatuses(RequestValidationController):
         with session_scope() as session:
             task_status_qry = session.query(TaskStatus).all()
 
-        task_statuses = [ts.as_dict() for ts in task_status_qry if ts.status not in ["DELAYED", "CANCELLED"]]
+        task_statuses = [ts.as_dict() for ts in task_status_qry]
         req_user.log(Operations.GET, Resources.TASK_STATUSES)
         return {"statuses": task_statuses}, 200
