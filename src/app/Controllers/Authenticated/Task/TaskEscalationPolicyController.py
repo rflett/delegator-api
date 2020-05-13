@@ -46,9 +46,6 @@ class EscalationPolicies(RequestValidationController):
             if task_template is None:
                 raise ResourceNotFoundError(f"Template {template_id} not found.")
 
-        self.check_task_priority(request_body["from_priority"])
-        self.check_task_priority(request_body["to_priority"])
-
         with session_scope() as session:
             new_policy = TaskTemplateEscalation(
                 org_id=req_user.org_id,
@@ -88,9 +85,6 @@ class EscalationPolicies(RequestValidationController):
         """Update a escalation policy"""
         req_user = kwargs["req_user"]
         request_body = request.get_json()
-
-        self.check_task_priority(request_body["from_priority"])
-        self.check_task_priority(request_body["to_priority"])
 
         # check that the template and policy exist
         with session_scope() as session:

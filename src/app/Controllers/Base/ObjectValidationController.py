@@ -40,7 +40,7 @@ class ObjectValidationController(Resource):
                 raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this action on themselves.")
             elif kwargs["auth_scope"] == "ORG" and kwargs["req_user"].org_id != affected_user.org_id:
                 raise AuthorizationError(
-                    f"User {kwargs['req_user'].id} can only perform this" f" action within their organisation."
+                    f"User {kwargs['req_user'].id} can only perform this action within their organisation."
                 )
 
     @staticmethod
@@ -80,24 +80,6 @@ class ObjectValidationController(Resource):
             return task
 
     @staticmethod
-    def check_task_priority(priority: typing.Union[int, None]) -> typing.Union[int, None]:
-        """Check that a task priority exists."""
-        with session_scope() as session:
-            if not session.query(exists().where(TaskPriority.priority == priority)).scalar():
-                raise ResourceNotFoundError(f"Priority {priority} doesn't exist")
-
-        return priority
-
-    @staticmethod
-    def check_task_status(task_status: str) -> str:
-        """Check that a task status exists."""
-        with session_scope() as session:
-            if not session.query(exists().where(TaskStatus.status == task_status)).scalar():
-                raise ResourceNotFoundError(f"Task status {task_status} doesn't exist")
-
-        return task_status.strip()
-
-    @staticmethod
     def check_task_template_id(template_id: int):
         """Check if a task type exists."""
         if template_id is None:
@@ -107,34 +89,14 @@ class ObjectValidationController(Resource):
                 raise ResourceNotFoundError(f"Task template doesn't exist")
 
     @staticmethod
-    def check_task_labels(labels: typing.List[int], org_id: int) -> typing.List[int]:
+    def check_task_labels(labels: typing.List[int], org_id: int) -> None:
         """Check to make sure that the labels are valid"""
-        if labels is None:
-            return []
-        elif len(labels) > 3:
-            raise ValidationError(f"Tasks can only have up to 3 labels, you've supplied {len(labels)}.")
         with session_scope() as session:
             for label_id in labels:
                 if not session.query(
                     exists().where(and_(TaskLabel.id == label_id, TaskLabel.org_id == org_id))
                 ).scalar():
                     raise ResourceNotFoundError(f"Label {label_id} doesn't exist")
-        return labels
-
-    @staticmethod
-    def check_user_disabled(disabled: typing.Optional[datetime.datetime]) -> typing.Union[None, datetime.datetime]:
-        """Verify that the user disabled field can be converted to a datetime."""
-        if disabled is not None:
-            try:
-                disabled = datetime.datetime.strptime(disabled, current_app.config["REQUEST_DATE_FORMAT"])
-                return disabled
-            except ValueError:
-                raise ValidationError(
-                    f"Couldn't convert disabled {disabled} to datetime.datetime, please ensure it is "
-                    f"in the format {current_app.config['REQUEST_DATE_FORMAT']}"
-                )
-        else:
-            return None
 
     @staticmethod
     def check_user_id(

@@ -230,9 +230,7 @@ class ManageTask(RequestValidationController):
 
         # validate
         task_to_update = self.check_task_id(request_body["id"], kwargs["req_user"].org_id)
-        self.check_task_status(request_body["status"]),
         self.check_task_assignee(request_body.get("assignee"), **kwargs),
-        self.check_task_priority(request_body["priority"]),
         self.check_task_labels(request_body["labels"], kwargs["req_user"].org_id)
 
         # if the assignee isn't the same as before then assign someone to it, if the new assignee is null or
@@ -324,7 +322,6 @@ class ManageTask(RequestValidationController):
         request_body = request.get_json()
 
         self.check_task_template_id(request_body.get("template_id"))
-        self.check_task_priority(request_body["priority"])
         self.check_task_assignee(request_body.get("assignee"), **kwargs)
         self.check_task_labels(request_body.get("labels", []), req_user.org_id)
 

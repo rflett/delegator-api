@@ -88,5 +88,4 @@ class RequestValidationController(ObjectValidationController):
         task = self.check_task_id(request_body["task_id"], kwargs["req_user"].org_id)
         if task.assignee is not None:
             self.check_auth_scope(task.assignees, **kwargs)
-        self.check_task_status(request_body["task_status"])
         return task
