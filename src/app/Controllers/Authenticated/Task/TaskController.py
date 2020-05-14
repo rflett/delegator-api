@@ -9,9 +9,10 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError
-from app.Models import Activity, Notification
+from app.Models import Activity, Notification, NotificationAction
 from app.Models.Dao import Task, User
-from app.Models.Enums import Operations, Resources, Events, TaskStatuses, ClickActions
+from app.Models.Enums import Operations, Resources, Events, TaskStatuses
+from app.Models.Enums.Notifications import ClickActions, TargetTypes
 from app.Services import TaskService, UserService
 
 api = Namespace(path="/task", name="Task", description="Manage a task")
@@ -378,8 +379,7 @@ class ManageTask(RequestValidationController):
                 title="Task created",
                 event_name=Events.task_created,
                 msg=f"{task.title} task has been created.",
-                click_action=ClickActions.ASSIGN_TO_ME,
-                task_action_id=task.id,
+                actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, task.id, TargetTypes.TASK)],
                 user_ids=user_service.get_all_user_ids(req_user.org_id),
             )
             created_notification.push()
