@@ -140,11 +140,15 @@ class TaskService(object):
             task.status = status
             task.status_changed_at = datetime.datetime.utcnow()
 
+            # reindex the display orders
+            self.reindex_display_orders(task.org_id, new_position=0)
+            task.display_order = 0
+
         # get the pretty labels for the old and new status
         old_status_label = self._pretty_status_label(old_status)
         new_status_label = self._pretty_status_label(status)
 
-        # req_user will be none when this is called from the patch endpoint with key authentication
+        # req_user will be none when this is called from a service account
         if req_user is None:
             return
 
@@ -196,6 +200,30 @@ class TaskService(object):
             ).publish()
             req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=task.id)
             current_app.logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
+
+    @staticmethod
+    def reindex_display_orders(org_id: int, new_position: int = None):
+        """Reindex the task display orders, if new_position is provided it will only re-index from that position"""
+        with session_scope() as session:
+            if new_position is None:
+                session.execute(
+                    """
+                       UPDATE tasks 
+                       SET display_order = display_order + 1 
+                       WHERE org_id = :org_id
+                    """,
+                    {"org_id": org_id}
+                )
+            else:
+                session.execute(
+                    """
+                       UPDATE tasks 
+                       SET display_order = display_order + 1 
+                       WHERE org_id = :org_id 
+                       AND display_order >= :new_position
+                    """,
+                    {"org_id": org_id, "new_position": new_position}
+                )
 
     @staticmethod
     def _pretty_status_label(status: str) -> str:

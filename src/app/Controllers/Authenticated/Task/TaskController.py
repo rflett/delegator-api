@@ -255,6 +255,9 @@ class ManageTask(RequestValidationController):
         task_status = request_body["status"]
         if task_to_update.status != task_status:
             task_service.transition(task=task_to_update, status=task_status, req_user=req_user)
+        elif task_to_update.display_order != request_body["display_order"]:
+            # we only want to reindex if it's not being transitioned, since the transition method will reindex itself
+            task_service.reindex_display_orders(task_to_update.org_id, request_body["display_order"])
 
         # change priority
         task_priority = request_body["priority"]
@@ -270,10 +273,6 @@ class ManageTask(RequestValidationController):
             with session_scope():
                 task_to_update.scheduled_for = request_body.get("scheduled_for")
                 task_to_update.scheduled_notification_period = request_body.get("scheduled_notification_period")
-
-        # if the display order changed, re-index the other tasks
-        if task_to_update.display_order != request_body["display_order"]:
-            self._reindex_display_orders(task_to_update.org_id, request_body["display_order"])
 
         # update remaining attributes
         with session_scope():
@@ -334,7 +333,7 @@ class ManageTask(RequestValidationController):
         self.check_task_assignee(request_body.get("assignee"), **kwargs)
         self.check_task_labels(request_body.get("labels", []), req_user.org_id)
 
-        self._reindex_display_orders(req_user.org_id)
+        task_service.reindex_display_orders(req_user.org_id)
 
         with session_scope():
             task = Task(
@@ -430,27 +429,3 @@ class ManageTask(RequestValidationController):
         for i in range(1, len(label_attrs) + 1):
             labels[f"label_{i}"] = label_attrs[i - 1]
         return labels
-
-    @staticmethod
-    def _reindex_display_orders(org_id: int, new_position: int = None):
-        """Reindex the task display orders, if new_position is provided it will only re-index from that position"""
-        with session_scope() as session:
-            if new_position is None:
-                session.execute(
-                    """
-                       UPDATE tasks 
-                       SET display_order = display_order + 1 
-                       WHERE org_id = :org_id
-                    """,
-                    {"org_id": org_id}
-                )
-            else:
-                session.execute(
-                    """
-                       UPDATE tasks 
-                       SET display_order = display_order + 1 
-                       WHERE org_id = :org_id 
-                       AND display_order >= :new_position
-                    """,
-                    {"org_id": org_id, "new_position": new_position}
-                )
