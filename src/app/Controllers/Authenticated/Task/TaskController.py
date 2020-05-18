@@ -82,6 +82,7 @@ class GetTask(RequestValidationController):
             "custom_1": fields.String(),
             "custom_2": fields.String(),
             "custom_3": fields.String(),
+            "display_order": fields.Integer(),
         },
     )
 
@@ -115,6 +116,7 @@ class GetTask(RequestValidationController):
                            t.custom_1 AS task_custom_1,
                            t.custom_2 AS task_custom_2,
                            t.custom_3 AS task_custom_3,
+                           t.display_order AS task_display_order,
                            ts.status AS status_status,
                            ts.label AS status_label,
                            tp.priority AS priority_priority,
@@ -210,6 +212,7 @@ class ManageTask(RequestValidationController):
             "assignee": NullableInteger(),
             "priority": fields.Integer(min=0, max=2, required=True),
             "labels": fields.List(fields.Integer(), max_items=3, required=True, min_items=0),
+            "display_order": fields.Integer(required=True),
             "description": fields.String(),
             "time_estimate": fields.Integer(),
             "scheduled_for": NullableDateTime(),
@@ -268,6 +271,10 @@ class ManageTask(RequestValidationController):
                 task_to_update.scheduled_for = request_body.get("scheduled_for")
                 task_to_update.scheduled_notification_period = request_body.get("scheduled_notification_period")
 
+        # if the display order changed, re-index the other tasks
+        if task_to_update.display_order != request_body["display_order"]:
+            self._reindex_display_orders(task_to_update.org_id, request_body["display_order"])
+
         # update remaining attributes
         with session_scope():
             labels = self._get_labels(request_body["labels"])
@@ -278,6 +285,7 @@ class ManageTask(RequestValidationController):
             task_to_update.custom_1 = request_body.get("custom_1")
             task_to_update.custom_2 = request_body.get("custom_2")
             task_to_update.custom_3 = request_body.get("custom_3")
+            task_to_update.display_order = request_body["display_order"]
 
             if request_body.get("description") is not None:
                 task_to_update.description = request_body["description"]
@@ -325,6 +333,8 @@ class ManageTask(RequestValidationController):
         self.check_task_template_id(request_body.get("template_id"))
         self.check_task_assignee(request_body.get("assignee"), **kwargs)
         self.check_task_labels(request_body.get("labels", []), req_user.org_id)
+
+        self._reindex_display_orders(req_user.org_id)
 
         with session_scope():
             task = Task(
@@ -420,3 +430,27 @@ class ManageTask(RequestValidationController):
         for i in range(1, len(label_attrs) + 1):
             labels[f"label_{i}"] = label_attrs[i - 1]
         return labels
+
+    @staticmethod
+    def _reindex_display_orders(org_id: int, new_position: int = None):
+        """Reindex the task display orders, if new_position is provided it will only re-index from that position"""
+        with session_scope() as session:
+            if new_position is None:
+                session.execute(
+                    """
+                       UPDATE tasks 
+                       SET display_order = display_order + 1 
+                       WHERE org_id = :org_id
+                    """,
+                    {"org_id": org_id}
+                )
+            else:
+                session.execute(
+                    """
+                       UPDATE tasks 
+                       SET display_order = display_order + 1 
+                       WHERE org_id = :org_id 
+                       AND display_order >= :new_position
+                    """,
+                    {"org_id": org_id, "new_position": new_position}
+                )
