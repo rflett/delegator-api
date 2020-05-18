@@ -17,7 +17,7 @@ Flake8:
     - develop
     - master
   script:
-    - flake8 src/
+    - flake8 --config src/.flake8
 
 Build:
   stage: Build

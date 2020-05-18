@@ -85,7 +85,7 @@ class ObjectValidationController(Resource):
             return
         with session_scope() as session:
             if not session.query(exists().where(TaskTemplate.id == template_id)).scalar():
-                raise ResourceNotFoundError(f"Task template doesn't exist")
+                raise ResourceNotFoundError("Task template doesn't exist")
 
     @staticmethod
     def check_task_labels(labels: typing.List[int], org_id: int) -> None:

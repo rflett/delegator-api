@@ -208,8 +208,8 @@ class TaskService(object):
             if new_position is None:
                 session.execute(
                     """
-                       UPDATE tasks 
-                       SET display_order = display_order + 1 
+                       UPDATE tasks
+                       SET display_order = display_order + 1
                        WHERE org_id = :org_id
                     """,
                     {"org_id": org_id}
@@ -217,9 +217,9 @@ class TaskService(object):
             else:
                 session.execute(
                     """
-                       UPDATE tasks 
-                       SET display_order = display_order + 1 
-                       WHERE org_id = :org_id 
+                       UPDATE tasks
+                       SET display_order = display_order + 1
+                       WHERE org_id = :org_id
                        AND display_order >= :new_position
                     """,
                     {"org_id": org_id, "new_position": new_position}

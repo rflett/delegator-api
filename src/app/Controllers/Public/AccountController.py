@@ -224,7 +224,7 @@ class AccountController(RequestValidationController):
             # don't let them log in if they are deleted (unlikely to happen)
             if user.deleted is not None:
                 current_app.logger.warning(f"Deleted user {user.id} tried to log in.")
-                raise AuthenticationError(f"Email or password incorrect")
+                raise AuthenticationError("Email or password incorrect")
 
             # check login attempts
             if user.failed_login_attempts > 0:
