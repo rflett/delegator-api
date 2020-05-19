@@ -35,12 +35,13 @@ class ObjectValidationController(Resource):
     @staticmethod
     def check_auth_scope(affected_user: User, **kwargs):
         """Compares a users scope against the action they're trying to do"""
-        if kwargs["auth_scope"] == "SELF" and kwargs["req_user"].id != affected_user.id:
-            raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this action on themselves.")
-        elif kwargs["auth_scope"] == "ORG" and kwargs["req_user"].org_id != affected_user.org_id:
-            raise AuthorizationError(
-                f"User {kwargs['req_user'].id} can only perform this action within their organisation."
-            )
+        if affected_user is not None:
+            if kwargs["auth_scope"] == "SELF" and kwargs["req_user"].id != affected_user.id:
+                raise AuthorizationError(f"User {kwargs['req_user'].id} can only perform this action on themselves.")
+            elif kwargs["auth_scope"] == "ORG" and kwargs["req_user"].org_id != affected_user.org_id:
+                raise AuthorizationError(
+                    f"User {kwargs['req_user'].id} can only perform this action within their organisation."
+                )
 
     @staticmethod
     def check_password_reqs(password: str) -> bool:
