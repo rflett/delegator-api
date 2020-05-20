@@ -21,7 +21,7 @@ class NotificationAction:
         return {
             "label": self.label,
             "target_id": str(self.target_id),  # sns can't have integers
-            "target_type": self.target_type
+            "target_type": self.target_type,
         }
 
 
@@ -58,7 +58,7 @@ class Notification(object):
             "title": self.title,
             "msg": self.msg,
             "icon_url": "https://assets.delegator.com.au/web/logos/simple_colour.png",
-            "actions": [a.as_dict() for a in self.actions]
+            "actions": [a.as_dict() for a in self.actions],
         }
 
     @staticmethod

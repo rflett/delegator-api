@@ -244,7 +244,7 @@ def test_update_task():
         "description": "A new description",
         "time_estimate": 300,
         "labels": [],
-        "display_order": 2
+        "display_order": 2,
     }
     r = requests.put(
         "http://localhost:5000/task/",

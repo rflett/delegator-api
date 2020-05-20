@@ -19,7 +19,11 @@ class TransitionTask(RequestValidationController):
     statuses = ["READY", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
     request_dto = api.model(
         "Transition Task Request",
-        {"task_id": fields.Integer(required=True), "task_status": fields.String(enum=statuses, required=True)},
+        {
+            "task_id": fields.Integer(required=True),
+            "task_status": fields.String(enum=statuses, required=True),
+            "display_order": fields.Integer(min=0),
+        },
     )
 
     @requires_jwt
@@ -37,6 +41,12 @@ class TransitionTask(RequestValidationController):
         else:
             task = self.validate_transition_task(**kwargs)
             task_service.transition(task, request_body["task_status"], kwargs["req_user"])
+
+        # update the display order
+        display_order = request_body.get("display_order", 0)
+        task_service.reindex_display_orders(task.org_id, new_position=display_order)
+        with session_scope():
+            task.display_order = display_order
 
         return "", 204
 

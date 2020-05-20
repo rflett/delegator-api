@@ -51,7 +51,7 @@ class TaskService(object):
                 event_name=Events.user_assigned_to_task,
                 msg=f"{req_user.name()} assigned {task.title} to you.",
                 actions=[NotificationAction(ClickActions.VIEW_TASK, task.id, TargetTypes.TASK)],
-                user_ids=[assigned_user.id]
+                user_ids=[assigned_user.id],
             )
             assigned_notification.push()
         req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=task.id)
@@ -140,10 +140,6 @@ class TaskService(object):
             task.status = status
             task.status_changed_at = datetime.datetime.utcnow()
 
-            # reindex the display orders
-            self.reindex_display_orders(task.org_id, new_position=0)
-            task.display_order = 0
-
         # get the pretty labels for the old and new status
         old_status_label = self._pretty_status_label(old_status)
         new_status_label = self._pretty_status_label(status)
@@ -212,7 +208,7 @@ class TaskService(object):
                        SET display_order = display_order + 1
                        WHERE org_id = :org_id
                     """,
-                    {"org_id": org_id}
+                    {"org_id": org_id},
                 )
             else:
                 session.execute(
@@ -222,7 +218,7 @@ class TaskService(object):
                        WHERE org_id = :org_id
                        AND display_order >= :new_position
                     """,
-                    {"org_id": org_id, "new_position": new_position}
+                    {"org_id": org_id, "new_position": new_position},
                 )
 
     @staticmethod

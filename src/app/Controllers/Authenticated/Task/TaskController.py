@@ -212,7 +212,6 @@ class ManageTask(RequestValidationController):
             "assignee": NullableInteger(),
             "priority": fields.Integer(min=0, max=2, required=True),
             "labels": fields.List(fields.Integer(), max_items=3, required=True, min_items=0),
-            "display_order": fields.Integer(required=True),
             "description": fields.String(),
             "time_estimate": fields.Integer(),
             "scheduled_for": NullableDateTime(),
@@ -255,9 +254,6 @@ class ManageTask(RequestValidationController):
         task_status = request_body["status"]
         if task_to_update.status != task_status:
             task_service.transition(task=task_to_update, status=task_status, req_user=req_user)
-        elif task_to_update.display_order != request_body["display_order"]:
-            # we only want to reindex if it's not being transitioned, since the transition method will reindex itself
-            task_service.reindex_display_orders(task_to_update.org_id, request_body["display_order"])
 
         # change priority
         task_priority = request_body["priority"]
@@ -284,7 +280,6 @@ class ManageTask(RequestValidationController):
             task_to_update.custom_1 = request_body.get("custom_1")
             task_to_update.custom_2 = request_body.get("custom_2")
             task_to_update.custom_3 = request_body.get("custom_3")
-            task_to_update.display_order = request_body["display_order"]
 
             if request_body.get("description") is not None:
                 task_to_update.description = request_body["description"]
