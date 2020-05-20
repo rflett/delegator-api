@@ -6,9 +6,10 @@ from flask_restx import Namespace, fields
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models import Notification
+from app.Models import Notification, NotificationAction
 from app.Models.Dao import DelayedTask
-from app.Models.Enums import TaskStatuses, Operations, Resources, Events, ClickActions
+from app.Models.Enums import TaskStatuses, Operations, Resources, Events
+from app.Models.Enums.Notifications import ClickActions, TargetTypes
 from app.Services import TaskService
 
 api = Namespace(path="/task/delay", name="Task", description="Manage a task")
@@ -69,14 +70,13 @@ class DelayTask(RequestValidationController):
             title="Task delayed",
             event_name=Events.task_transitioned_delayed,
             msg=f"{task.title} was delayed by {req_user.name()}.",
-            click_action=ClickActions.VIEW_TASK,
-            task_action_id=task.id,
+            actions=[NotificationAction(ClickActions.VIEW_TASK, task.id, TargetTypes.TASK)],
         )
         if req_user.id == task.assignee:
-            delayed_notification.user_ids = task.created_by
+            delayed_notification.user_ids = [task.created_by]
             delayed_notification.push()
         elif req_user.id == task.created_by:
-            delayed_notification.user_ids = task.assignee
+            delayed_notification.user_ids = [task.assignee]
             delayed_notification.push()
 
         req_user.log(Operations.DELAY, Resources.TASK, resource_id=task.id)

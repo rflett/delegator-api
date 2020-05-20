@@ -42,6 +42,7 @@ class Task(db.Model):
     custom_1 = db.Column("custom_1", db.String, default=None)
     custom_2 = db.Column("custom_2", db.String, default=None)
     custom_3 = db.Column("custom_3", db.String, default=None)
+    display_order = db.Column("display_order", db.String)
 
     assignees = db.relationship("User", foreign_keys=[assignee], backref="assigned_user")
 
@@ -54,6 +55,7 @@ class Task(db.Model):
         time_estimate: int,
         priority: int,
         created_by: int,
+        display_order: int = 0,
         status: str = None,
         created_at: datetime = None,
         scheduled_for: datetime = None,
@@ -96,6 +98,7 @@ class Task(db.Model):
         self.custom_1 = custom_1
         self.custom_2 = custom_2
         self.custom_3 = custom_3
+        self.display_order = display_order
 
     def as_dict(self) -> dict:
         """
@@ -165,6 +168,7 @@ class Task(db.Model):
             "status_changed_at": status_changed_at,
             "priority_changed_at": priority_changed_at,
             "labels": [l for l in [self.label_1, self.label_2, self.label_3] if l is not None],
+            "display_order": self.display_order,
         }
 
     def activity(self, max_days_of_history: int) -> list:

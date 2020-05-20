@@ -1,3 +1,6 @@
+import datetime
+import pytz
+
 from flask import request, current_app
 from flask_restx import Namespace, fields
 from sqlalchemy import exists, and_
@@ -6,9 +9,10 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError
-from app.Models import Activity, Notification
+from app.Models import Activity, Notification, NotificationAction
 from app.Models.Dao import Task, User
-from app.Models.Enums import Operations, Resources, Events, TaskStatuses, ClickActions
+from app.Models.Enums import Operations, Resources, Events, TaskStatuses
+from app.Models.Enums.Notifications import ClickActions, TargetTypes
 from app.Services import TaskService, UserService
 
 api = Namespace(path="/task", name="Task", description="Manage a task")
@@ -16,7 +20,7 @@ api = Namespace(path="/task", name="Task", description="Manage a task")
 task_service = TaskService()
 user_service = UserService()
 
-task_statuses = ["SCHEDULED", "READY", "IN_PROGRESS", "DELAYED", "COMPLETED", "CANCELLED"]
+task_statuses = ["SCHEDULED", "READY", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
 
 
 class NullableDateTime(fields.DateTime):
@@ -78,6 +82,7 @@ class GetTask(RequestValidationController):
             "custom_1": fields.String(),
             "custom_2": fields.String(),
             "custom_3": fields.String(),
+            "display_order": fields.Integer(),
         },
     )
 
@@ -111,6 +116,7 @@ class GetTask(RequestValidationController):
                            t.custom_1 AS task_custom_1,
                            t.custom_2 AS task_custom_2,
                            t.custom_3 AS task_custom_3,
+                           t.display_order AS task_display_order,
                            ts.status AS status_status,
                            ts.label AS status_label,
                            tp.priority AS priority_priority,
@@ -170,7 +176,6 @@ class GetTask(RequestValidationController):
             "labels": [],
         }
 
-        # add task attributes to top level of ret dict
         for alias, value in result.items():
             if alias.startswith("task_"):
                 ret[alias[len("task_") :]] = value
@@ -185,6 +190,11 @@ class GetTask(RequestValidationController):
                         "colour": result[f"label{i}_colour"],
                     }
                 )
+
+        # convert to correct time format
+        for k, v in ret.items():
+            if isinstance(v, datetime.datetime):
+                ret[k] = pytz.utc.localize(v).strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
         req_user.log(Operations.GET, Resources.TASK, resource_id=task_id)
         return ret, 200
@@ -223,9 +233,7 @@ class ManageTask(RequestValidationController):
 
         # validate
         task_to_update = self.check_task_id(request_body["id"], kwargs["req_user"].org_id)
-        self.check_task_status(request_body["status"]),
         self.check_task_assignee(request_body.get("assignee"), **kwargs),
-        self.check_task_priority(request_body["priority"]),
         self.check_task_labels(request_body["labels"], kwargs["req_user"].org_id)
 
         # if the assignee isn't the same as before then assign someone to it, if the new assignee is null or
@@ -317,9 +325,10 @@ class ManageTask(RequestValidationController):
         request_body = request.get_json()
 
         self.check_task_template_id(request_body.get("template_id"))
-        self.check_task_priority(request_body["priority"])
         self.check_task_assignee(request_body.get("assignee"), **kwargs)
         self.check_task_labels(request_body.get("labels", []), req_user.org_id)
+
+        task_service.reindex_display_orders(req_user.org_id)
 
         with session_scope():
             task = Task(
@@ -336,10 +345,7 @@ class ManageTask(RequestValidationController):
                 **self._get_labels(request_body.get("labels", [])),
             )
 
-        if (
-            request_body.get("scheduled_for") is not None
-            and request_body.get("scheduled_notification_period") is not None
-        ):
+        if request_body.get("scheduled_for") is not None:
             self._schedule_task(req_user, task)
         else:
             self._create_task(req_user, task)
@@ -377,8 +383,7 @@ class ManageTask(RequestValidationController):
                 title="Task created",
                 event_name=Events.task_created,
                 msg=f"{task.title} task has been created.",
-                click_action=ClickActions.ASSIGN_TO_ME,
-                task_action_id=task.id,
+                actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, task.id, TargetTypes.TASK)],
                 user_ids=user_service.get_all_user_ids(req_user.org_id),
             )
             created_notification.push()
@@ -390,7 +395,7 @@ class ManageTask(RequestValidationController):
         with session_scope() as session:
             task.status = TaskStatuses.SCHEDULED
             task.scheduled_for = request_body["scheduled_for"]
-            task.scheduled_notification_period = request_body["scheduled_notification_period"]
+            task.scheduled_notification_period = request_body.get("scheduled_notification_period")
             session.add(task)
 
         Activity(

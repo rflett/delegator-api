@@ -2,6 +2,7 @@ from app.Models.Dao.ActiveUser import ActiveUser
 from app.Models.Dao.ContactUsEntry import ContactUsEntry
 from app.Models.Dao.DelayedTask import DelayedTask
 from app.Models.Dao.FailedLogin import FailedLogin
+from app.Models.Dao.JWTBlacklist import JWTBlacklist
 from app.Models.Dao.Organisation import Organisation
 from app.Models.Dao.Task import Task
 from app.Models.Dao.TaskLabel import TaskLabel
@@ -17,6 +18,7 @@ __all__ = [
     ContactUsEntry,
     DelayedTask,
     FailedLogin,
+    JWTBlacklist,
     Organisation,
     Task,
     TaskLabel,

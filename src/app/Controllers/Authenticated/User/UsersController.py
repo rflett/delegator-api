@@ -210,6 +210,7 @@ class UserController(RequestValidationController):
 
         # create user settings
         user.create_settings()
+        user.reset_avatar()
 
         # send welcome email
         email = Email(user.email)

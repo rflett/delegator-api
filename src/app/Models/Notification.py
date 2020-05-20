@@ -2,7 +2,7 @@ import datetime
 import json
 import typing
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from os import getenv
 
 import jwt
@@ -11,14 +11,27 @@ import requests
 
 
 @dataclass
+class NotificationAction:
+    label: str
+    target_id: int
+    target_type: str
+
+    def as_dict(self) -> dict:
+        """ Returns dict repr of a NotificationAction """
+        return {
+            "label": self.label,
+            "target_id": str(self.target_id),  # sns can't have integers
+            "target_type": self.target_type,
+        }
+
+
+@dataclass
 class Notification(object):
-    title: str
     event_name: str
+    title: str
     msg: str
-    user_ids: typing.Union[int, typing.List[int]] = None
-    click_action: str = None
-    user_action_id: int = None
-    task_action_id: int = None
+    actions: typing.List[NotificationAction]
+    user_ids: typing.List[int] = field(default=list)
 
     def push(self) -> None:
         """ Publish the message to SNS for pushing to the user """
@@ -39,19 +52,13 @@ class Notification(object):
 
     def as_dict(self) -> dict:
         """ Returns a notification as a dict, ready for SNS message """
-        # always set user_ids to be a list
-        if isinstance(self.user_ids, int):
-            user_ids = [self.user_ids]
-        else:
-            user_ids = self.user_ids
-
         return {
-            "title": self.title,
             "event_name": self.event_name,
+            "user_ids": self.user_ids,
+            "title": self.title,
             "msg": self.msg,
-            "user_ids": user_ids,
-            "click_action": self.click_action,
-            "action_ids": {"user_id": self.user_action_id, "task_id": self.task_action_id},
+            "icon_url": "https://assets.delegator.com.au/web/logos/simple_colour.png",
+            "actions": [a.as_dict() for a in self.actions],
         }
 
     @staticmethod
@@ -59,7 +66,7 @@ class Notification(object):
         """Create a new JWT token"""
         token = jwt.encode(
             payload={
-                "claims": {"type": "service-account", "service-account-name": "subscription-api"},
+                "claims": {"type": "service-account", "service-account-name": "delegator-api"},
                 "jti": str(uuid.uuid4()),
                 "aud": "delegator.com.au",
                 "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=30),

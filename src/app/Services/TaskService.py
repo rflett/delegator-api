@@ -3,9 +3,10 @@ import datetime
 from flask import current_app
 
 from app.Extensions.Database import session_scope
-from app.Models import Activity, Notification
+from app.Models import Activity, Notification, NotificationAction
 from app.Models.Dao import Task, User, DelayedTask
-from app.Models.Enums import Events, Operations, Resources, TaskStatuses, ClickActions
+from app.Models.Enums import Events, Operations, Resources, TaskStatuses
+from app.Models.Enums.Notifications import ClickActions, TargetTypes
 from app.Extensions.Errors import ResourceNotFoundError, ValidationError
 
 
@@ -49,9 +50,8 @@ class TaskService(object):
                 title="You've been assigned a task!",
                 event_name=Events.user_assigned_to_task,
                 msg=f"{req_user.name()} assigned {task.title} to you.",
-                click_action=ClickActions.VIEW_TASK,
-                task_action_id=task.id,
-                user_ids=assigned_user.id,
+                actions=[NotificationAction(ClickActions.VIEW_TASK, task.id, TargetTypes.TASK)],
+                user_ids=[assigned_user.id],
             )
             assigned_notification.push()
         req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=task.id)
@@ -71,8 +71,7 @@ class TaskService(object):
                     title="Task escalated",
                     event_name=Events.task_escalated,
                     msg=f"{task.title} task has been escalated.",
-                    click_action=ClickActions.ASSIGN_TO_ME,
-                    task_action_id=task.id,
+                    actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, task.id, TargetTypes.TASK)],
                     user_ids=UserService.get_all_user_ids(task.org_id),
                 )
                 priority_notification.push()
@@ -83,6 +82,7 @@ class TaskService(object):
         from app.Services import UserService
 
         """Drops a task"""
+        old_assignee = task.assignees.name()
         self.unassign(task, req_user)
 
         self.transition(task=task, status=TaskStatuses.READY, req_user=req_user)
@@ -90,15 +90,14 @@ class TaskService(object):
         dropped_notification = Notification(
             title="Task dropped",
             event_name=Events.task_transitioned_ready,
-            msg=f"{task.title} has been dropped.",
-            click_action=ClickActions.ASSIGN_TO_ME,
-            task_action_id=task.id,
+            msg=f"{task.title} has been dropped by {req_user.name()}.",
+            actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, task.id, TargetTypes.TASK)],
             user_ids=UserService.get_all_user_ids(req_user.org_id),
         )
         dropped_notification.push()
 
         req_user.log(Operations.DROP, Resources.TASK, resource_id=task.id)
-        current_app.logger.info(f"User {req_user.id} dropped task {task.id} " f"which was assigned to {task.assignee}.")
+        current_app.logger.info(f"User {req_user.id} dropped task {task.id} which was assigned to {old_assignee}.")
 
     @staticmethod
     def get(task_id: int, org_id: int) -> Task:
@@ -145,7 +144,7 @@ class TaskService(object):
         old_status_label = self._pretty_status_label(old_status)
         new_status_label = self._pretty_status_label(status)
 
-        # req_user will be none when this is called from the patch endpoint with key authentication
+        # req_user will be none when this is called from a service account
         if req_user is None:
             return
 
@@ -197,6 +196,30 @@ class TaskService(object):
             ).publish()
             req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=task.id)
             current_app.logger.info(f"Unassigned user {old_assignee.id} from task {task.id}")
+
+    @staticmethod
+    def reindex_display_orders(org_id: int, new_position: int = None):
+        """Reindex the task display orders, if new_position is provided it will only re-index from that position"""
+        with session_scope() as session:
+            if new_position is None:
+                session.execute(
+                    """
+                       UPDATE tasks
+                       SET display_order = display_order + 1
+                       WHERE org_id = :org_id
+                    """,
+                    {"org_id": org_id},
+                )
+            else:
+                session.execute(
+                    """
+                       UPDATE tasks
+                       SET display_order = display_order + 1
+                       WHERE org_id = :org_id
+                       AND display_order >= :new_position
+                    """,
+                    {"org_id": org_id, "new_position": new_position},
+                )
 
     @staticmethod
     def _pretty_status_label(status: str) -> str:

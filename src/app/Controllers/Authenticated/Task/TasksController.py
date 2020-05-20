@@ -42,6 +42,7 @@ class Tasks(RequestValidationController):
             "assignee_id": fields.Integer(),
             "assignee_uuid": fields.String(),
             "priority": fields.Integer(),
+            "display_order": fields.Integer(),
             "labels": fields.List(fields.Nested(task_label_dto)),
         },
     )
@@ -68,6 +69,7 @@ class Tasks(RequestValidationController):
                     Task.priority,
                     Task.scheduled_for,
                     Task.status,
+                    Task.display_order,
                     User.id,
                     User.uuid,
                     User.first_name,
@@ -89,6 +91,7 @@ class Tasks(RequestValidationController):
                         ),
                     )
                 )
+                .order_by(Task.display_order)
                 .all()
             )
 
@@ -102,6 +105,7 @@ class Tasks(RequestValidationController):
                 priority,
                 scheduled_for,
                 status,
+                display_order,
                 assignee_id,
                 assignee_uuid,
                 assignee_fn,
@@ -132,6 +136,7 @@ class Tasks(RequestValidationController):
                     "description": description,
                     "priority": priority,
                     "status": status,
+                    "display_order": display_order,
                     "assignee": assignee,
                     "assignee_id": assignee_id,
                     "assignee_uuid": assignee_uuid,

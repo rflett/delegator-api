@@ -15,11 +15,11 @@ from app.Controllers.Authenticated.Task.AssignTaskController import api as assig
 from app.Controllers.Authenticated.Task.CancelTaskController import api as cancel_task_v1
 from app.Controllers.Authenticated.Task.DelayTaskController import api as delay_task_v1
 from app.Controllers.Authenticated.Task.DropTaskController import api as drop_task_v1
+from app.Controllers.Authenticated.Task.RepositionTaskController import api as repo_task_v1
 from app.Controllers.Authenticated.Task.TaskActivityController import api as task_activity_v1
 from app.Controllers.Authenticated.Task.TaskController import api as task_v1
 from app.Controllers.Authenticated.Task.TaskLabelsController import api as task_labels_v1
 from app.Controllers.Authenticated.Task.TaskPrioritiesController import api as task_priorities_v1
-from app.Controllers.Authenticated.Task.TaskStatusesController import api as task_statuses_v1
 from app.Controllers.Authenticated.Task.TaskTemplatesController import api as task_templates_v1
 from app.Controllers.Authenticated.Task.TaskEscalationPolicyController import api as template_escalations_v1
 from app.Controllers.Authenticated.Task.TasksController import api as tasks_v1
@@ -56,11 +56,11 @@ api.add_namespace(assign_task_v1)
 api.add_namespace(cancel_task_v1)
 api.add_namespace(delay_task_v1)
 api.add_namespace(drop_task_v1)
+api.add_namespace(repo_task_v1)
 api.add_namespace(task_activity_v1)
 api.add_namespace(task_v1)
 api.add_namespace(task_labels_v1)
 api.add_namespace(task_priorities_v1)
-api.add_namespace(task_statuses_v1)
 api.add_namespace(task_templates_v1)
 api.add_namespace(template_escalations_v1)
 api.add_namespace(tasks_v1)

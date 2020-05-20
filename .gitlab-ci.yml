@@ -13,14 +13,18 @@ Flake8:
   allow_failure: true
   image: $GITLAB_REGISTRY/infrastructure/containers/python:latest
   only:
+    - /^feature\/.*$/
+    - develop
     - master
   script:
-    - flake8 src/
+    - flake8 --config src/.flake8
 
 Build:
   stage: Build
   image: $GITLAB_REGISTRY/infrastructure/containers/docker:latest
   only:
+    - /^feature\/.*$/
+    - develop
     - master
   services:
     - docker:dind
@@ -42,6 +46,8 @@ Build:
 .deploy:
   stage: Deploy
   only:
+    - /^feature\/.*$/
+    - develop
     - master
   script:
     - "curl 

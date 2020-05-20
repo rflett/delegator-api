@@ -4,7 +4,7 @@ from flask_restx import Namespace
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Models import Notification
-from app.Models.Enums import TaskStatuses, Operations, Resources, ClickActions, Events
+from app.Models.Enums import TaskStatuses, Operations, Resources, Events
 from app.Services import TaskService
 
 api = Namespace(path="/task/cancel", name="Task", description="Manage a task")
@@ -35,8 +35,8 @@ class CancelTask(RequestValidationController):
                 title="Task cancelled",
                 event_name=Events.task_transitioned_cancelled,
                 msg=f"{task_to_cancel.title} was cancelled by {req_user.name()}.",
-                user_ids=task_to_cancel.assignee,
-                click_action=ClickActions.CLOSE,
+                user_ids=[task_to_cancel.assignee],
+                actions=[],
             )
             cancelled_notification.push()
 

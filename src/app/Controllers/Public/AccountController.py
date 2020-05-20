@@ -90,6 +90,7 @@ class AccountController(RequestValidationController):
             user.created_by = user.id
 
         user.create_settings()
+        user.reset_avatar()
         user.log(Operations.CREATE, Resources.USER, resource_id=user.id)
         current_app.logger.info(f"User {user.id} signed up.")
 
@@ -174,7 +175,7 @@ class AccountController(RequestValidationController):
                 customer_id = user.orgs.chargebee_customer_id
                 try:
                     r = requests.get(
-                        url=f"{self.url}/subscription/{customer_id}",
+                        url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/{customer_id}",
                         headers={"Authorization": f"Bearer {self.create_service_account_jwt()}"},
                         timeout=10,
                     )
@@ -190,7 +191,7 @@ class AccountController(RequestValidationController):
                     # redirect to setup chargebee stuff
                     try:
                         r = requests.post(
-                            url=f"{self.url}/subscription/checkout/",
+                            url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/checkout/",
                             headers={
                                 "Content-Type": "application/json",
                                 "Authorization": f"Bearer {self.create_service_account_jwt()}",
@@ -223,7 +224,7 @@ class AccountController(RequestValidationController):
             # don't let them log in if they are deleted (unlikely to happen)
             if user.deleted is not None:
                 current_app.logger.warning(f"Deleted user {user.id} tried to log in.")
-                raise AuthenticationError(f"Email or password incorrect")
+                raise AuthenticationError("Email or password incorrect")
 
             # check login attempts
             if user.failed_login_attempts > 0:
