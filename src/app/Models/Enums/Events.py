@@ -54,6 +54,7 @@ class Events(str):
     task_updated = "task_updated"
     task_assigned = "task_assigned"
     task_unassigned = "task_unassigned"
+    task_repositioned = "task_repositioned"
 
     task_escalated = "task_escalated"
 

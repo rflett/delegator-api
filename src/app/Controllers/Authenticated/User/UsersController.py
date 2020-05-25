@@ -9,7 +9,7 @@ from sqlalchemy.orm import aliased
 from app.Extensions.Database import session_scope
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
-from app.Models import Activity, Email, Subscription
+from app.Models import Event, Email, Subscription
 from app.Models.Dao import User, UserPasswordToken, ActiveUser
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.RBAC import Role
@@ -222,14 +222,14 @@ class UserController(RequestValidationController):
 
         req_user.log(Operations.CREATE, Resources.USER, resource_id=user.id)
 
-        Activity(
+        Event(
             org_id=user.org_id,
             event=Events.user_created,
             event_id=user.id,
             event_friendly=f"Created by {req_user.name()}.",
         ).publish()
 
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_created_user,
             event_id=req_user.id,
@@ -276,13 +276,13 @@ class UserController(RequestValidationController):
             user_to_update.updated_at = datetime.datetime.utcnow()
             user_to_update.updated_by = req_user.id
 
-        Activity(
+        Event(
             org_id=user_to_update.org_id,
             event=Events.user_updated,
             event_id=user_to_update.id,
             event_friendly=f"Updated by {req_user.name()}",
         ).publish()
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_updated_user,
             event_id=req_user.id,

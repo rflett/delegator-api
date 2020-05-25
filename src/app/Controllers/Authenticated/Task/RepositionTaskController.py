@@ -4,7 +4,8 @@ from flask_restx import Namespace, fields
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models.Enums import Operations, Resources
+from app.Models import Event
+from app.Models.Enums import Operations, Resources, Events
 from app.Services import TaskService
 
 api = Namespace(path="/task/reposition", name="Task", description="Manage a task")
@@ -39,5 +40,12 @@ class RepositionTask(RequestValidationController):
 
         req_user.log(Operations.UPDATE, Resources.TASK_POSITION, resource_id=task_to_repo.id)
         current_app.logger.info(f"User {req_user.id} repositioned task {task_to_repo.id}")
+        Event(
+            org_id=req_user.org_id,
+            event=Events.task_repositioned,
+            event_id=task_to_repo.id,
+            event_friendly="Task repositioned in UI.",
+            store_in_db=False,
+        ).publish()
 
         return "", 204

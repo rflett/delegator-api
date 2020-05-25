@@ -4,7 +4,7 @@ from flask_restx import Namespace, fields
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import authorize, requires_jwt
 from app.Extensions.Database import session_scope
-from app.Models import Activity
+from app.Models import Event
 from app.Models.Enums import Operations, Resources, Events
 
 api = Namespace(path="/user", name="User", description="Manage a user")
@@ -68,7 +68,7 @@ class UserController(RequestValidationController):
         user_to_delete.delete(req_user)
 
         with session_scope():
-            Activity(
+            Event(
                 org_id=req_user.org_id,
                 event=Events.user_deleted_user,
                 event_id=req_user.id,

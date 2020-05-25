@@ -8,7 +8,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError, ResourceNotFoundError
-from app.Models import Activity
+from app.Models import Event
 from app.Models.Dao import TaskTemplate
 from app.Models.Enums import Events, Operations, Resources
 
@@ -186,7 +186,7 @@ class DeleteTaskType(RequestValidationController):
             else:
                 task_template.disabled = datetime.datetime.utcnow()
 
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_disabled_tasktemplate,
             event_id=req_user.id,
