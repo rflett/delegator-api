@@ -26,9 +26,12 @@ class NullableDateTime(fields.DateTime):
 
 @api.route("/")
 class Tasks(RequestValidationController):
-
     task_label_dto = api.model(
         "Get Tasks Label Dto", {"id": fields.Integer(), "label": fields.String(), "colour": fields.String()}
+    )
+    user_dto = api.model(
+        "Task User Dto",
+        {"id": fields.Integer(), "uuid": fields.String(), "first_name": fields.String(), "last_name": fields.String()},
     )
     task_dto = api.model(
         "Get Tasks Dto",
@@ -38,9 +41,7 @@ class Tasks(RequestValidationController):
             "description": fields.String(),
             "status": fields.String(),
             "scheduled_for": NullableDateTime,
-            "assignee": fields.String(),
-            "assignee_id": fields.Integer(),
-            "assignee_uuid": fields.String(),
+            "assignee": fields.Nested(user_dto),
             "priority": fields.Integer(),
             "display_order": fields.Integer(),
             "labels": fields.List(fields.Nested(task_label_dto)),
@@ -78,11 +79,11 @@ class Tasks(RequestValidationController):
                     label2,
                     label3,
                 )
-                .outerjoin(User, User.id == Task.assignee)
-                .outerjoin(label1, label1.id == Task.label_1)
-                .outerjoin(label2, label2.id == Task.label_2)
-                .outerjoin(label3, label3.id == Task.label_3)
-                .filter(
+                    .outerjoin(User, User.id == Task.assignee)
+                    .outerjoin(label1, label1.id == Task.label_1)
+                    .outerjoin(label2, label2.id == Task.label_2)
+                    .outerjoin(label3, label3.id == Task.label_3)
+                    .filter(
                     and_(
                         Task.org_id == req_user.org_id,
                         or_(
@@ -91,8 +92,8 @@ class Tasks(RequestValidationController):
                         ),
                     )
                 )
-                .order_by(Task.display_order)
-                .all()
+                    .order_by(Task.display_order)
+                    .all()
             )
 
         tasks = []
@@ -115,14 +116,8 @@ class Tasks(RequestValidationController):
                 label_3,
             ) = task
 
-            # assignee is either null, or return their first and last name concat
-            if assignee_fn is None and assignee_ln is None:
-                assignee = None
-            else:
-                assignee = assignee_fn + " " + assignee_ln
-
             # convert labels to a list
-            labels = [l.as_dict() for l in [label_1, label_2, label_3] if l is not None]
+            labels = [label.as_dict() for label in [label_1, label_2, label_3] if label is not None]
 
             # convert scheduled for to date
             if scheduled_for is not None:
@@ -137,7 +132,12 @@ class Tasks(RequestValidationController):
                     "priority": priority,
                     "status": status,
                     "display_order": display_order,
-                    "assignee": assignee,
+                    "assignee": {
+                        "id": assignee_id,
+                        "uuid": assignee_uuid,
+                        "first_name": assignee_fn,
+                        "last_name": assignee_ln,
+                    },
                     "assignee_id": assignee_id,
                     "assignee_uuid": assignee_uuid,
                     "labels": labels,
