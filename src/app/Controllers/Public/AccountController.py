@@ -139,6 +139,7 @@ class AccountController(RequestValidationController):
         "Login Response",
         {
             "id": fields.Integer(min=1),
+            "org_id": fields.Integer(min=1),
             "uuid": fields.String(),
             "jwt": fields.String(),
             "first_name": fields.String(),
