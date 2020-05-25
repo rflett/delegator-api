@@ -79,11 +79,11 @@ class Tasks(RequestValidationController):
                     label2,
                     label3,
                 )
-                    .outerjoin(User, User.id == Task.assignee)
-                    .outerjoin(label1, label1.id == Task.label_1)
-                    .outerjoin(label2, label2.id == Task.label_2)
-                    .outerjoin(label3, label3.id == Task.label_3)
-                    .filter(
+                .outerjoin(User, User.id == Task.assignee)
+                .outerjoin(label1, label1.id == Task.label_1)
+                .outerjoin(label2, label2.id == Task.label_2)
+                .outerjoin(label3, label3.id == Task.label_3)
+                .filter(
                     and_(
                         Task.org_id == req_user.org_id,
                         or_(
@@ -92,8 +92,8 @@ class Tasks(RequestValidationController):
                         ),
                     )
                 )
-                    .order_by(Task.display_order)
-                    .all()
+                .order_by(Task.display_order)
+                .all()
             )
 
         tasks = []

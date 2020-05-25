@@ -180,7 +180,7 @@ class GetTask(RequestValidationController):
 
         for alias, value in result.items():
             if alias.startswith("task_"):
-                ret[alias[len("task_"):]] = value
+                ret[alias[len("task_") :]] = value
 
         # add the labels (at most 3)
         for i in range(1, 4):
@@ -263,9 +263,9 @@ class ManageTask(RequestValidationController):
 
         # don't update scheduled info if it wasn't scheduled to begin with, or the notification has been sent
         if (
-                task_to_update.scheduled_for is None
-                and task_to_update.scheduled_notification_period is None
-                or task_to_update.scheduled_notification_sent
+            task_to_update.scheduled_for is None
+            and task_to_update.scheduled_notification_period is None
+            or task_to_update.scheduled_notification_sent
         ):
             with session_scope():
                 task_to_update.scheduled_for = request_body.get("scheduled_for")
