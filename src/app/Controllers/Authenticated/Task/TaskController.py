@@ -40,7 +40,6 @@ class NullableString(fields.Integer):
 
 @api.route("/<int:task_id>")
 class GetTask(RequestValidationController):
-
     task_status_dto = api.model(
         "Task Status Dto",
         {
@@ -51,7 +50,8 @@ class GetTask(RequestValidationController):
         },
     )
     user_dto = api.model(
-        "Task User Dto", {"id": fields.Integer(), "first_name": fields.String(), "last_name": fields.String()},
+        "Task User Dto",
+        {"id": fields.Integer(), "uuid": fields.String(), "first_name": fields.String(), "last_name": fields.String()},
     )
     priority_dto = api.model("Task Priority Dto", {"priority": fields.Integer(min=0, max=1), "label": fields.String()})
     task_label_dto = api.model(
@@ -132,6 +132,7 @@ class GetTask(RequestValidationController):
                            tl3.colour AS label3_colour,
                            ta.id AS assignee_id,
                            ta.first_name AS assignee_first_name,
+                           ta.uuid AS assignee_uuid,
                            ta.last_name AS assignee_last_name,
                            tcb.id AS created_by_id,
                            tcb.first_name AS created_by_first_name,
@@ -160,6 +161,7 @@ class GetTask(RequestValidationController):
             "priority": {"priority": result["priority_priority"], "label": result["priority_label"]},
             "assignee": {
                 "id": result["assignee_id"],
+                "uuid": result["assignee_uuid"],
                 "first_name": result["assignee_first_name"],
                 "last_name": result["assignee_last_name"],
             },
@@ -178,7 +180,7 @@ class GetTask(RequestValidationController):
 
         for alias, value in result.items():
             if alias.startswith("task_"):
-                ret[alias[len("task_") :]] = value
+                ret[alias[len("task_"):]] = value
 
         # add the labels (at most 3)
         for i in range(1, 4):
@@ -202,7 +204,6 @@ class GetTask(RequestValidationController):
 
 @api.route("/")
 class ManageTask(RequestValidationController):
-
     update_task_dto = api.model(
         "Update Task Request",
         {
@@ -262,9 +263,9 @@ class ManageTask(RequestValidationController):
 
         # don't update scheduled info if it wasn't scheduled to begin with, or the notification has been sent
         if (
-            task_to_update.scheduled_for is None
-            and task_to_update.scheduled_notification_period is None
-            or task_to_update.scheduled_notification_sent
+                task_to_update.scheduled_for is None
+                and task_to_update.scheduled_notification_period is None
+                or task_to_update.scheduled_notification_sent
         ):
             with session_scope():
                 task_to_update.scheduled_for = request_body.get("scheduled_for")
