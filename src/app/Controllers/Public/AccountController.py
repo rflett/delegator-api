@@ -272,7 +272,7 @@ class AccountController(RequestValidationController):
                 current_app.logger.info(f"Incorrect password attempt for user {user.id}.")
                 user.failed_login_attempts += 1
                 user.failed_login_time = datetime.datetime.utcnow()
-                raise AuthenticationError("Password incorrect.")
+                raise AuthenticationError("Email or password incorrect")
 
     @requires_jwt
     @api.response(204, "Success")
