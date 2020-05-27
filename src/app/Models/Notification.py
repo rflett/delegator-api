@@ -13,23 +13,23 @@ import requests
 @dataclass
 class NotificationAction:
     label: str
-    target_id: int
-    target_type: str
+    icon: str  # The icon name without extension to use for this action
 
     def as_dict(self) -> dict:
         """ Returns dict repr of a NotificationAction """
         return {
             "label": self.label,
-            "target_id": str(self.target_id),  # sns can't have integers
-            "target_type": self.target_type,
+            "icon": self.icon,
         }
 
 
 @dataclass
 class Notification(object):
-    event_name: str
     title: str
+    event_name: str
     msg: str
+    target_type: str
+    target_id: int
     actions: typing.List[NotificationAction]
     user_ids: typing.List[int] = field(default=list)
 
@@ -53,12 +53,13 @@ class Notification(object):
     def as_dict(self) -> dict:
         """ Returns a notification as a dict, ready for SNS message """
         return {
-            "event_name": self.event_name,
-            "user_ids": self.user_ids,
             "title": self.title,
+            "event_name": self.event_name,
             "msg": self.msg,
-            "icon_url": "https://assets.delegator.com.au/web/logos/simple_colour.png",
+            "target_type": self.target_type,
+            "target_id": str(self.target_id),  # SNS can't use ints
             "actions": [a.as_dict() for a in self.actions],
+            "user_ids": self.user_ids,
         }
 
     @staticmethod

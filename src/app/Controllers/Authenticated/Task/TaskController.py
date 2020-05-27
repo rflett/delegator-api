@@ -13,6 +13,7 @@ from app.Models import Activity, Notification, NotificationAction
 from app.Models.Dao import Task, User
 from app.Models.Enums import Operations, Resources, Events, TaskStatuses
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
+from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
 from app.Services import TaskService, UserService
 
 api = Namespace(path="/task", name="Task", description="Manage a task")
@@ -180,7 +181,7 @@ class GetTask(RequestValidationController):
 
         for alias, value in result.items():
             if alias.startswith("task_"):
-                ret[alias[len("task_"):]] = value
+                ret[alias[len("task_") :]] = value
 
         # add the labels (at most 3)
         for i in range(1, 4):
@@ -263,9 +264,9 @@ class ManageTask(RequestValidationController):
 
         # don't update scheduled info if it wasn't scheduled to begin with, or the notification has been sent
         if (
-                task_to_update.scheduled_for is None
-                and task_to_update.scheduled_notification_period is None
-                or task_to_update.scheduled_notification_sent
+            task_to_update.scheduled_for is None
+            and task_to_update.scheduled_notification_period is None
+            or task_to_update.scheduled_notification_sent
         ):
             with session_scope():
                 task_to_update.scheduled_for = request_body.get("scheduled_for")
@@ -384,7 +385,9 @@ class ManageTask(RequestValidationController):
                 title="Task created",
                 event_name=Events.task_created,
                 msg=f"{task.title} task has been created.",
-                actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, task.id, TargetTypes.TASK)],
+                target_type=TargetTypes.TASK,
+                target_id=task.id,
+                actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.ASSIGN_TO_ME_ICON)],
                 user_ids=user_service.get_all_user_ids(req_user.org_id),
             )
             created_notification.push()
