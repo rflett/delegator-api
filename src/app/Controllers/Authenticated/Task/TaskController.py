@@ -9,7 +9,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError
-from app.Models import Activity, Notification, NotificationAction
+from app.Models import Event, Notification, NotificationAction
 from app.Models.Dao import Task, User
 from app.Models.Enums import Operations, Resources, Events, TaskStatuses
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
@@ -289,7 +289,7 @@ class ManageTask(RequestValidationController):
                 task_to_update.time_estimate = request_body["time_estimate"]
 
         # publish event
-        Activity(
+        Event(
             org_id=task_to_update.org_id,
             event=Events.task_updated,
             event_id=task_to_update.id,
@@ -362,13 +362,13 @@ class ManageTask(RequestValidationController):
             task.status = TaskStatuses.READY
             session.add(task)
 
-        Activity(
+        Event(
             org_id=task.org_id,
             event=Events.task_created,
             event_id=task.id,
             event_friendly=f"Created by {req_user.name()}.",
         ).publish()
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_created_task,
             event_id=req_user.id,
@@ -402,13 +402,13 @@ class ManageTask(RequestValidationController):
             task.scheduled_notification_period = request_body.get("scheduled_notification_period")
             session.add(task)
 
-        Activity(
+        Event(
             org_id=task.org_id,
             event=Events.task_scheduled,
             event_id=task.id,
             event_friendly=f"Scheduled by {req_user.name()}.",
         ).publish()
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_scheduled_task,
             event_id=req_user.id,

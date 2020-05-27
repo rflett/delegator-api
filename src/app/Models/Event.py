@@ -10,11 +10,12 @@ sns = boto3.resource("sns")
 
 
 @dataclass
-class Activity(object):
+class Event(object):
     org_id: int
     event: str
     event_id: int
     event_friendly: str = ""
+    store_in_db: bool = True
 
     def __post_init__(self):
         self.event_time = datetime.utcnow().strftime(current_app.config["DYN_DB_ACTIVITY_DATE_FORMAT"])
@@ -44,4 +45,5 @@ class Activity(object):
             "event_id": self.event_id,
             "event_time": self.event_time,
             "event_friendly": self.event_friendly,
+            "store_in_db": self.store_in_db,
         }

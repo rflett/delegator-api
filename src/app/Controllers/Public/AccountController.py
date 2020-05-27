@@ -13,7 +13,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import AuthenticationError, ValidationError
-from app.Models import Activity, Email
+from app.Models import Event, Email
 from app.Models.Dao import User, Organisation, TaskTemplate, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
 from app.Services import UserService
@@ -263,7 +263,7 @@ class AccountController(RequestValidationController):
                     return {"role": user.role, "role_before_locked": user.role_before_locked}, 200
 
                 user.is_active()
-                Activity(
+                Event(
                     org_id=user.org_id, event=Events.user_login, event_id=user.id, event_friendly="Logged in."
                 ).publish()
 
@@ -280,7 +280,7 @@ class AccountController(RequestValidationController):
         """Log a user out"""
         req_user = kwargs["req_user"]
         req_user.is_inactive()
-        Activity(
+        Event(
             org_id=req_user.org_id, event=Events.user_logout, event_id=req_user.id, event_friendly="Logged out."
         ).publish()
         current_app.logger.info(f"user {req_user.id} logged out")

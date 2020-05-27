@@ -6,7 +6,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import authorize, requires_jwt
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
-from app.Models import Activity, Subscription
+from app.Models import Event, Subscription
 from app.Models.Dao import Task
 from app.Models.Enums import Operations, Resources, Events
 
@@ -35,13 +35,13 @@ class DisableUserController(RequestValidationController):
         for task in users_tasks:
             task.drop(req_user)
 
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_disabled_user,
             event_id=req_user.id,
             event_friendly=f"Disabled user {user_to_disable.name()}.",
         ).publish()
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_disabled_user,
             event_id=user_to_disable.id,
@@ -71,13 +71,13 @@ class DisableUserController(RequestValidationController):
         with session_scope():
             user_to_enable.disabled = None
 
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_enabled_user,
             event_id=req_user.id,
             event_friendly=f"Enabled user {user_to_enable.name()}.",
         ).publish()
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_enabled_user,
             event_id=user_to_enable.id,

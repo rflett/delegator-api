@@ -3,7 +3,7 @@ import datetime
 from flask import current_app
 
 from app.Extensions.Database import session_scope
-from app.Models import Activity, Notification, NotificationAction
+from app.Models import Event, Notification, NotificationAction
 from app.Models.Dao import Task, User, DelayedTask
 from app.Models.Enums import Events, Operations, Resources, TaskStatuses
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
@@ -27,19 +27,19 @@ class TaskService(object):
         if assigned_user.id == req_user.id:
             notify = False
 
-        Activity(
+        Event(
             org_id=task.org_id,
             event=Events.task_assigned,
             event_id=task.id,
             event_friendly=f"{assigned_user.name()} assigned to task by {req_user.name()}.",
         ).publish()
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_assigned_task,
             event_id=req_user.id,
             event_friendly=f"Assigned {assigned_user.name()} to {task.title}.",
         ).publish()
-        Activity(
+        Event(
             org_id=assigned_user.org_id,
             event=Events.user_assigned_to_task,
             event_id=assigned_user.id,
@@ -148,13 +148,13 @@ class TaskService(object):
         if req_user is None:
             return
 
-        Activity(
+        Event(
             org_id=task.org_id,
             event=f"task_transitioned_{task.status.lower()}",
             event_id=task.id,
             event_friendly=f"Transitioned from {old_status_label} to {new_status_label}.",
         ).publish()
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_transitioned_task,
             event_id=req_user.id,
@@ -176,19 +176,19 @@ class TaskService(object):
             with session_scope():
                 task.assignee = None
 
-            Activity(
+            Event(
                 org_id=task.org_id,
                 event=Events.task_unassigned,
                 event_id=task.id,
                 event_friendly=f"{old_assignee.name()} unassigned from task by {req_user.name()}.",
             ).publish()
-            Activity(
+            Event(
                 org_id=req_user.org_id,
                 event=Events.user_unassigned_task,
                 event_id=req_user.id,
                 event_friendly=f"Unassigned {old_assignee.name()} from {task.title}.",
             ).publish()
-            Activity(
+            Event(
                 org_id=old_assignee.org_id,
                 event=Events.user_unassigned_from_task,
                 event_id=old_assignee.id,
