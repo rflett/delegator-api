@@ -8,6 +8,7 @@ from app.Models.Dao import Task, User, DelayedTask
 from app.Models.Enums import Events, Operations, Resources, TaskStatuses
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
 from app.Extensions.Errors import ResourceNotFoundError, ValidationError
+from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
 
 
 class TaskService(object):
@@ -50,7 +51,9 @@ class TaskService(object):
                 title="You've been assigned a task!",
                 event_name=Events.user_assigned_to_task,
                 msg=f"{req_user.name()} assigned {task.title} to you.",
-                actions=[NotificationAction(ClickActions.VIEW_TASK, task.id, TargetTypes.TASK)],
+                target_id=task.id,
+                target_type=TargetTypes.TASK,
+                actions=[NotificationAction(ClickActions.VIEW_TASK, NotificationIcons.VIEW_TASK_ICON)],
                 user_ids=[assigned_user.id],
             )
             assigned_notification.push()
@@ -71,7 +74,9 @@ class TaskService(object):
                     title="Task escalated",
                     event_name=Events.task_escalated,
                     msg=f"{task.title} task has been escalated.",
-                    actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, task.id, TargetTypes.TASK)],
+                    target_type=TargetTypes.TASK,
+                    target_id=task.id,
+                    actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.VIEW_TASK_ICON)],
                     user_ids=UserService.get_all_user_ids(task.org_id),
                 )
                 priority_notification.push()
@@ -91,7 +96,9 @@ class TaskService(object):
             title="Task dropped",
             event_name=Events.task_transitioned_ready,
             msg=f"{task.title} has been dropped by {req_user.name()}.",
-            actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, task.id, TargetTypes.TASK)],
+            target_type=TargetTypes.TASK,
+            target_id=task.id,
+            actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.ASSIGN_TO_ME_ICON)],
             user_ids=UserService.get_all_user_ids(req_user.org_id),
         )
         dropped_notification.push()

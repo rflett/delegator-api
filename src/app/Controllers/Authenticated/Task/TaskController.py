@@ -13,6 +13,7 @@ from app.Models import Event, Notification, NotificationAction
 from app.Models.Dao import Task, User
 from app.Models.Enums import Operations, Resources, Events, TaskStatuses
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
+from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
 from app.Services import TaskService, UserService
 
 api = Namespace(path="/task", name="Task", description="Manage a task")
@@ -384,7 +385,9 @@ class ManageTask(RequestValidationController):
                 title="Task created",
                 event_name=Events.task_created,
                 msg=f"{task.title} task has been created.",
-                actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, task.id, TargetTypes.TASK)],
+                target_type=TargetTypes.TASK,
+                target_id=task.id,
+                actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.ASSIGN_TO_ME_ICON)],
                 user_ids=user_service.get_all_user_ids(req_user.org_id),
             )
             created_notification.push()

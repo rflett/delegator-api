@@ -5,6 +5,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Models import Notification
 from app.Models.Enums import TaskStatuses, Operations, Resources, Events
+from app.Models.Enums.Notifications import TargetTypes
 from app.Services import TaskService
 
 api = Namespace(path="/task/cancel", name="Task", description="Manage a task")
@@ -34,6 +35,8 @@ class CancelTask(RequestValidationController):
             cancelled_notification = Notification(
                 title="Task cancelled",
                 event_name=Events.task_transitioned_cancelled,
+                target_id=None,
+                target_type=TargetTypes.TASK,
                 msg=f"{task_to_cancel.title} was cancelled by {req_user.name()}.",
                 user_ids=[task_to_cancel.assignee],
                 actions=[],

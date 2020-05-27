@@ -10,6 +10,7 @@ from app.Models import Notification, NotificationAction
 from app.Models.Dao import DelayedTask
 from app.Models.Enums import TaskStatuses, Operations, Resources, Events
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
+from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
 from app.Services import TaskService
 
 api = Namespace(path="/task/delay", name="Task", description="Manage a task")
@@ -19,7 +20,6 @@ task_service = TaskService()
 
 @api.route("/")
 class DelayTask(RequestValidationController):
-
     request_dto = api.model(
         "Delay Task Request",
         {
@@ -70,7 +70,9 @@ class DelayTask(RequestValidationController):
             title="Task delayed",
             event_name=Events.task_transitioned_delayed,
             msg=f"{task.title} was delayed by {req_user.name()}.",
-            actions=[NotificationAction(ClickActions.VIEW_TASK, task.id, TargetTypes.TASK)],
+            target_type=TargetTypes.TASK,
+            target_id=task.id,
+            actions=[NotificationAction(ClickActions.VIEW_TASK, NotificationIcons.ASSIGN_TO_ME_ICON)],
         )
         if req_user.id == task.assignee:
             delayed_notification.user_ids = [task.created_by]
