@@ -10,6 +10,7 @@ from app.Models import Notification, NotificationAction
 from app.Models.Dao import DelayedTask
 from app.Models.Enums import TaskStatuses, Operations, Resources, Events
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
+from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
 from app.Services import TaskService
 
 api = Namespace(path="/task/delay", name="Task", description="Manage a task")
@@ -19,7 +20,6 @@ task_service = TaskService()
 
 @api.route("/")
 class DelayTask(RequestValidationController):
-
     request_dto = api.model(
         "Delay Task Request",
         {
@@ -28,7 +28,7 @@ class DelayTask(RequestValidationController):
             "reason": fields.String(required=True),
         },
     )
-
+    
     @requires_jwt
     @authorize(Operations.DELAY, Resources.TASK)
     @api.expect(request_dto, validate=True)
@@ -37,17 +37,17 @@ class DelayTask(RequestValidationController):
         """Delays a task """
         req_user = kwargs["req_user"]
         request_body = request.get_json()
-
+        
         task = self.validate_delay_task_request(**kwargs)
         reason = request_body["reason"]
         delay_for = request_body["delay_for"]
-
+        
         with session_scope() as session:
             # transition a task to delayed
             task_service.transition(task=task, status=TaskStatuses.DELAYED, req_user=req_user)
             # check to see if the task has been delayed previously
             delay = session.query(DelayedTask).filter_by(task_id=task.id).first()
-
+            
             # if the task has been delayed before, update it, otherwise create it
             if delay is not None:
                 delay.delay_for = delay_for
@@ -64,13 +64,16 @@ class DelayTask(RequestValidationController):
                     reason=reason,
                 )
                 session.add(delayed_task)
-
+        
         # send notifications
         delayed_notification = Notification(
             title="Task delayed",
             event_name=Events.task_transitioned_delayed,
             msg=f"{task.title} was delayed by {req_user.name()}.",
-            actions=[NotificationAction(ClickActions.VIEW_TASK, task.id, TargetTypes.TASK)],
+            target_type=TargetTypes.TASK,
+            target_id=task.id,
+            actions=[NotificationAction(ClickActions.VIEW_TASK, NotificationIcons.ASSIGN_TO_ME_ICON)],
+            user_ids=[req_user.id]
         )
         if req_user.id == task.assignee:
             delayed_notification.user_ids = [task.created_by]
@@ -78,7 +81,7 @@ class DelayTask(RequestValidationController):
         elif req_user.id == task.created_by:
             delayed_notification.user_ids = [task.assignee]
             delayed_notification.push()
-
+        
         req_user.log(Operations.DELAY, Resources.TASK, resource_id=task.id)
         current_app.logger.info(f"User {req_user.id} delayed task {task.id} for {delay_for}s.")
         return "", 204
@@ -89,7 +92,7 @@ class GetDelayTask(RequestValidationController):
     class NullableDateTime(fields.DateTime):
         __schema_type__ = ["string", "null"]
         __schema_example__ = "None|2019-09-17T19:08:00+10:00"
-
+    
     response_dto = api.model(
         "Delayed Tasks Response",
         {
@@ -102,7 +105,7 @@ class GetDelayTask(RequestValidationController):
             "expired": NullableDateTime,
         },
     )
-
+    
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK)
     @api.marshal_with(response_dto, code=200)

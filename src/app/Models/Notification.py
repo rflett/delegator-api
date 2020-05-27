@@ -29,7 +29,7 @@ class Notification(object):
     event_name: str
     msg: str
     target_type: str
-    target_id: int
+    target_id: typing.Optional[int]
     actions: typing.List[NotificationAction]
     user_ids: typing.List[int] = field(default=list)
 
