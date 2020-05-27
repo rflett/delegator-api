@@ -32,6 +32,7 @@ class Dev(Config):
     PUBLIC_WEB_URL = "http://localhost:4200"
     JWT_SECRET = "dev_s3cr3t"
     XRAY_RULE_IGNORE_HEALTH = "{}"
+    WEBSITE_URL = "staging.delegator.com.au"
 
 
 class Docker(Dev):
@@ -61,6 +62,7 @@ class Staging(Config):
     ORG_SETTINGS_TABLE = "organisation-settings-staging"
     USER_ACTIVITY_TABLE = "user-activity-staging"
     TASK_ACTIVITY_TABLE = "task-activity-staging"
+    WEBSITE_URL = "staging.delegator.com.au"
 
 
 class Production(Config):
@@ -72,3 +74,4 @@ class Production(Config):
     ORG_SETTINGS_TABLE = "organisation-settings-production"
     USER_ACTIVITY_TABLE = "user-activity-production"
     TASK_ACTIVITY_TABLE = "task-activity-production"
+    WEBSITE_URL = "delegator.com.au"
