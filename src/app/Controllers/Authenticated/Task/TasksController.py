@@ -44,6 +44,9 @@ class Tasks(RequestValidationController):
             "assignee": fields.Nested(user_dto),
             "priority": fields.Integer(),
             "display_order": fields.Integer(),
+            "scheduled_notification_period": fields.Integer(),
+            "scheduled_notification_sent": NullableDateTime(),
+            "time_estimate": fields.Integer(),
             "labels": fields.List(fields.Nested(task_label_dto)),
         },
     )
@@ -71,6 +74,9 @@ class Tasks(RequestValidationController):
                     Task.scheduled_for,
                     Task.status,
                     Task.display_order,
+                    Task.time_estimate,
+                    Task.scheduled_notification_period,
+                    Task.scheduled_notification_sent,
                     User.id,
                     User.uuid,
                     User.first_name,
@@ -107,6 +113,9 @@ class Tasks(RequestValidationController):
                 scheduled_for,
                 status,
                 display_order,
+                time_estimate,
+                scheduled_noti_period,
+                scheduled_noti_sent,
                 assignee_id,
                 assignee_uuid,
                 assignee_fn,
@@ -119,10 +128,14 @@ class Tasks(RequestValidationController):
             # convert labels to a list
             labels = [label.as_dict() for label in [label_1, label_2, label_3] if label is not None]
 
-            # convert scheduled for to date
+            # convert dates
             if scheduled_for is not None:
                 scheduled_for = pytz.utc.localize(scheduled_for)
                 scheduled_for = scheduled_for.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
+
+            if scheduled_noti_sent is not None:
+                scheduled_noti_sent = pytz.utc.localize(scheduled_noti_sent)
+                scheduled_noti_sent = scheduled_noti_sent.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
             tasks.append(
                 {
@@ -138,10 +151,11 @@ class Tasks(RequestValidationController):
                         "first_name": assignee_fn,
                         "last_name": assignee_ln,
                     },
-                    "assignee_id": assignee_id,
-                    "assignee_uuid": assignee_uuid,
                     "labels": labels,
                     "scheduled_for": scheduled_for,
+                    "scheduled_notification_period": scheduled_noti_period,
+                    "scheduled_notification_sent": scheduled_noti_sent,
+                    "time_estimate": time_estimate,
                 }
             )
         return {"tasks": tasks}, 200
