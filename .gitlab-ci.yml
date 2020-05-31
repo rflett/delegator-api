@@ -17,7 +17,9 @@ Flake8:
     - develop
     - master
   script:
-    - flake8 --config src/.flake8
+    - cd src/
+    - flake8
+    - black --check .
 
 Build:
   stage: Build
@@ -70,6 +72,8 @@ Staging:
 Production:
   extends: .deploy
   when: manual
+  only:
+    - master
   variables:
     DEPLOY_ENV: production
   environment:

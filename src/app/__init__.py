@@ -10,7 +10,6 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 
 from app.Apis import api
 from app.Config.parameter_store import ParameterStore
-from app.Config.secrets_manager import SecretsManager
 from app.Extensions.Database import db
 from app.Extensions.ErrorHandlers import handle_error
 from app.Extensions.Errors import ValidationError
@@ -35,11 +34,6 @@ if app_env not in ["Local", "Docker", "Ci"]:
     app.config.update(params)
     # sentry
     sentry_sdk.init(app.config["SENTRY_DSN"], environment=app_env, integrations=[FlaskIntegration()])
-
-# load secrets from aws secrets manager in production (specifically DB creds)
-if app_env == "Production":
-    secrets = SecretsManager().get_params()
-    app.config.update(secrets)
 
 # db conf
 app.config["SQLALCHEMY_DATABASE_URI"] = app.config["DB_URI"]
