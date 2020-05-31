@@ -32,6 +32,7 @@ class Dev(Config):
     PUBLIC_WEB_URL = "http://localhost:4200"
     JWT_SECRET = "dev_s3cr3t"
     XRAY_RULE_IGNORE_HEALTH = "{}"
+    WEBSITE_URL = "staging.delegator.com.au"
 
 
 class Docker(Dev):
@@ -40,7 +41,6 @@ class Docker(Dev):
     DB_URI = "postgresql://delegator:delegator@postgres:5432/delegator"
     SUBSCRIPTION_API_PUBLIC_URL = "http://subscription-api:5001"
     NOTIFICATION_API_PUBLIC_URL = "http://notification-api:5002"
-    EMAIL_API_PUBLIC_URL = "http://email-api:5003"
 
 
 class Local(Dev):
@@ -49,7 +49,6 @@ class Local(Dev):
     DB_URI = "postgresql://delegator:delegator@127.0.0.1:5432/delegator"
     SUBSCRIPTION_API_PUBLIC_URL = "http://localhost:5001"
     NOTIFICATION_API_PUBLIC_URL = "http://localhost:5002"
-    EMAIL_API_PUBLIC_URL = "http://localhost:5003"
 
 
 class Staging(Config):
@@ -61,6 +60,7 @@ class Staging(Config):
     ORG_SETTINGS_TABLE = "organisation-settings-staging"
     USER_ACTIVITY_TABLE = "user-activity-staging"
     TASK_ACTIVITY_TABLE = "task-activity-staging"
+    WEBSITE_URL = "staging.delegator.com.au"
 
 
 class Production(Config):
@@ -72,3 +72,4 @@ class Production(Config):
     ORG_SETTINGS_TABLE = "organisation-settings-production"
     USER_ACTIVITY_TABLE = "user-activity-production"
     TASK_ACTIVITY_TABLE = "task-activity-production"
+    WEBSITE_URL = "delegator.com.au"

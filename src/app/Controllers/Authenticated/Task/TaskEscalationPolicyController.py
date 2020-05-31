@@ -6,7 +6,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError
-from app.Models import Activity
+from app.Models import Event
 from app.Models.Dao import TaskTemplate, TaskTemplateEscalation
 from app.Models.Enums import Events, Operations, Resources
 
@@ -56,7 +56,7 @@ class EscalationPolicies(RequestValidationController):
             )
             session.add(new_policy)
 
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_created_tasktemplate_escalation,
             event_id=req_user.id,
@@ -109,7 +109,7 @@ class EscalationPolicies(RequestValidationController):
             escalation.from_priority = request_body["from_priority"]
             escalation.to_priority = request_body["to_priority"]
 
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_updated_tasktemplate_escalation,
             event_id=req_user.id,
@@ -155,7 +155,7 @@ class DeleteEscalationPolicies(RequestValidationController):
                 )
                 current_app.logger.info(f"deleted escalation id={escalation_id}, template_id={template_id}")
 
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_deleted_tasktemplate_escalation,
             event_id=req_user.id,

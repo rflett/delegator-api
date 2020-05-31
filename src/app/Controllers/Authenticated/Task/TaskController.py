@@ -9,10 +9,11 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError
-from app.Models import Activity, Notification, NotificationAction
+from app.Models import Event, Notification, NotificationAction
 from app.Models.Dao import Task, User
 from app.Models.Enums import Operations, Resources, Events, TaskStatuses
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
+from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
 from app.Services import TaskService, UserService
 
 api = Namespace(path="/task", name="Task", description="Manage a task")
@@ -40,7 +41,6 @@ class NullableString(fields.Integer):
 
 @api.route("/<int:task_id>")
 class GetTask(RequestValidationController):
-
     task_status_dto = api.model(
         "Task Status Dto",
         {
@@ -51,7 +51,8 @@ class GetTask(RequestValidationController):
         },
     )
     user_dto = api.model(
-        "Task User Dto", {"id": fields.Integer(), "first_name": fields.String(), "last_name": fields.String()},
+        "Task User Dto",
+        {"id": fields.Integer(), "uuid": fields.String(), "first_name": fields.String(), "last_name": fields.String()},
     )
     priority_dto = api.model("Task Priority Dto", {"priority": fields.Integer(min=0, max=1), "label": fields.String()})
     task_label_dto = api.model(
@@ -132,6 +133,7 @@ class GetTask(RequestValidationController):
                            tl3.colour AS label3_colour,
                            ta.id AS assignee_id,
                            ta.first_name AS assignee_first_name,
+                           ta.uuid AS assignee_uuid,
                            ta.last_name AS assignee_last_name,
                            tcb.id AS created_by_id,
                            tcb.first_name AS created_by_first_name,
@@ -160,6 +162,7 @@ class GetTask(RequestValidationController):
             "priority": {"priority": result["priority_priority"], "label": result["priority_label"]},
             "assignee": {
                 "id": result["assignee_id"],
+                "uuid": result["assignee_uuid"],
                 "first_name": result["assignee_first_name"],
                 "last_name": result["assignee_last_name"],
             },
@@ -202,7 +205,6 @@ class GetTask(RequestValidationController):
 
 @api.route("/")
 class ManageTask(RequestValidationController):
-
     update_task_dto = api.model(
         "Update Task Request",
         {
@@ -287,7 +289,7 @@ class ManageTask(RequestValidationController):
                 task_to_update.time_estimate = request_body["time_estimate"]
 
         # publish event
-        Activity(
+        Event(
             org_id=task_to_update.org_id,
             event=Events.task_updated,
             event_id=task_to_update.id,
@@ -360,13 +362,13 @@ class ManageTask(RequestValidationController):
             task.status = TaskStatuses.READY
             session.add(task)
 
-        Activity(
+        Event(
             org_id=task.org_id,
             event=Events.task_created,
             event_id=task.id,
             event_friendly=f"Created by {req_user.name()}.",
         ).publish()
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_created_task,
             event_id=req_user.id,
@@ -383,7 +385,9 @@ class ManageTask(RequestValidationController):
                 title="Task created",
                 event_name=Events.task_created,
                 msg=f"{task.title} task has been created.",
-                actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, task.id, TargetTypes.TASK)],
+                target_type=TargetTypes.TASK,
+                target_id=task.id,
+                actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.ASSIGN_TO_ME_ICON)],
                 user_ids=user_service.get_all_user_ids(req_user.org_id),
             )
             created_notification.push()
@@ -398,13 +402,13 @@ class ManageTask(RequestValidationController):
             task.scheduled_notification_period = request_body.get("scheduled_notification_period")
             session.add(task)
 
-        Activity(
+        Event(
             org_id=task.org_id,
             event=Events.task_scheduled,
             event_id=task.id,
             event_friendly=f"Scheduled by {req_user.name()}.",
         ).publish()
-        Activity(
+        Event(
             org_id=req_user.org_id,
             event=Events.user_scheduled_task,
             event_id=req_user.id,

@@ -13,14 +13,23 @@ sns = boto3.resource("sns")
 class Email(object):
     def __init__(self, recipient: str):
         self.recipient = recipient
+        self.web_url = current_app.config["WEBSITE_URL"]
 
     def send_welcome(self, first_name: str):
-        """Sends a welcome email"""
         dto = {
             "recipient": self.recipient,
             "template": EmailTemplates.WELCOME,
-            "template_data": {"first_name": first_name},
+            "template_data": {
+                "first_name": first_name,
+                "website_url": self.web_url,
+                "website_link": f"https://{self.web_url}",
+                "faq_link": f"https://{self.web_url}/faq/",
+                "kb_link": f"https://{self.web_url}/kb/",
+                "login_link": f"app.{self.web_url}/login",
+                "privacy_link": f"https://{self.web_url}/privacy-policy/",
+            },
         }
+        """Sends a welcome email"""
         current_app.logger.info(f"Sending welcome email to {self.recipient}")
         self._publish(dto)
 
@@ -29,7 +38,13 @@ class Email(object):
         dto = {
             "recipient": self.recipient,
             "template": EmailTemplates.RESET_PASSWORD,
-            "template_data": {"first_name": first_name, "c2a_link": link},
+            "template_data": {
+                "first_name": first_name,
+                "c2a_link": link,
+                "privacy_link": f"https://{self.web_url}/privacy-policy/",
+                "website_url": self.web_url,
+                "website_link": f"https://{self.web_url}",
+            },
         }
         current_app.logger.info(f"Sending password reset email to {self.recipient}")
         self._publish(dto)
@@ -44,6 +59,10 @@ class Email(object):
                 "c2a_link": link,
                 "inviter_name": inviter.first_name,
                 "org_name": inviter.orgs.name,
+                "kb_link": f"https://{self.web_url}/kb/",
+                "privacy_link": f"https://{self.web_url}/privacy-policy/",
+                "website_url": self.web_url,
+                "website_link": f"https://{self.web_url}",
             },
         }
         current_app.logger.info(f"Sending welcome email to {self.recipient} from {inviter.email}")

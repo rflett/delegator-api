@@ -11,7 +11,7 @@ class ParameterStore(object):
     def _get_param_path(ssm, app_env: str, path: str) -> dict:
         """Get params for a particular path"""
         ret = {}
-        params_qry = ssm.get_parameters_by_path(Path=f"/{app_env.lower()}/application/{path}/")
+        params_qry = ssm.get_parameters_by_path(Path=f"/{app_env.lower()}/application/{path}/", WithDecryption=True)
 
         for param in params_qry["Parameters"]:
             # break up /staging/application/global/db-uri to just db-uri
