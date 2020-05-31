@@ -260,7 +260,9 @@ class ManageTask(RequestValidationController):
         # change priority
         task_priority = request_body["priority"]
         if task_to_update.priority != task_priority:
-            task_service.change_priority(task=task_to_update, priority=task_priority)
+            task_service.change_priority(
+                task=task_to_update, priority=task_priority, notification_exclusions=req_user.id
+            )
 
         # don't update scheduled info if it wasn't scheduled to begin with, or the notification has been sent
         if (
@@ -388,7 +390,7 @@ class ManageTask(RequestValidationController):
                 target_type=TargetTypes.TASK,
                 target_id=task.id,
                 actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.ASSIGN_TO_ME_ICON)],
-                user_ids=user_service.get_all_user_ids(req_user.org_id),
+                user_ids=user_service.get_all_user_ids(req_user.org_id, exclude=[req_user.id]),
             )
             created_notification.push()
 

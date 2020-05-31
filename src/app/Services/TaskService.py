@@ -61,7 +61,7 @@ class TaskService(object):
         current_app.logger.info(f"assigned task {task.id} to user {assignee}")
 
     @staticmethod
-    def change_priority(task: Task, priority: int) -> None:
+    def change_priority(task: Task, priority: int, notification_exclusions: list = None) -> None:
         """Common function for changing a tasks priority"""
         from app.Services import UserService
 
@@ -77,7 +77,7 @@ class TaskService(object):
                     target_type=TargetTypes.TASK,
                     target_id=task.id,
                     actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.VIEW_TASK_ICON)],
-                    user_ids=UserService.get_all_user_ids(task.org_id),
+                    user_ids=UserService.get_all_user_ids(task.org_id, exclude=notification_exclusions),
                 )
                 priority_notification.push()
 
@@ -99,7 +99,7 @@ class TaskService(object):
             target_type=TargetTypes.TASK,
             target_id=task.id,
             actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.ASSIGN_TO_ME_ICON)],
-            user_ids=UserService.get_all_user_ids(req_user.org_id),
+            user_ids=UserService.get_all_user_ids(req_user.org_id, exclude=[req_user.id]),
         )
         dropped_notification.push()
 
