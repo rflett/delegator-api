@@ -41,7 +41,7 @@ class Tasks(RequestValidationController):
             "description": fields.String(),
             "status": fields.String(),
             "scheduled_for": NullableDateTime,
-            "assignee": fields.Nested(user_dto),
+            "assignee": fields.Nested(user_dto, allow_null=True),
             "priority": fields.Integer(),
             "display_order": fields.Integer(),
             "scheduled_notification_period": fields.Integer(),
@@ -137,6 +137,16 @@ class Tasks(RequestValidationController):
                 scheduled_noti_sent = pytz.utc.localize(scheduled_noti_sent)
                 scheduled_noti_sent = scheduled_noti_sent.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
+            if assignee_id is None:
+                assignee = None
+            else:
+                assignee = {
+                    "id": assignee_id,
+                    "uuid": assignee_uuid,
+                    "first_name": assignee_fn,
+                    "last_name": assignee_ln,
+                }
+
             tasks.append(
                 {
                     "id": id_,
@@ -145,12 +155,7 @@ class Tasks(RequestValidationController):
                     "priority": priority,
                     "status": status,
                     "display_order": display_order,
-                    "assignee": {
-                        "id": assignee_id,
-                        "uuid": assignee_uuid,
-                        "first_name": assignee_fn,
-                        "last_name": assignee_ln,
-                    },
+                    "assignee": assignee,
                     "labels": labels,
                     "scheduled_for": scheduled_for,
                     "scheduled_notification_period": scheduled_noti_period,

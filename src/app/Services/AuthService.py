@@ -6,7 +6,7 @@ from aws_xray_sdk.core import xray_recorder
 from sentry_sdk import configure_scope
 
 from app.Extensions.Database import session_scope
-from app.Extensions.Errors import ResourceNotFoundError, AuthorizationError
+from app.Extensions.Errors import ResourceNotFoundError, AuthenticationError
 from app.Models.Dao import User
 from app.Models.RBAC import ServiceAccount
 
@@ -23,11 +23,11 @@ class AuthService(object):
                 jwt=token, key=current_app.config["JWT_SECRET"], audience="delegator.com.au", algorithms="HS256"
             )
         except (KeyError, AttributeError) as e:
-            raise AuthorizationError(f"Invalid request - {e}")
+            raise AuthenticationError(f"Invalid request - {e}")
         except Exception as e:
             current_app.logger.error(str(e))
             current_app.logger.info(f"Decoding JWT raised {e}")
-            raise AuthorizationError("Couldn't validate the JWT.")
+            raise AuthenticationError("Couldn't validate the JWT.")
 
         document = xray_recorder.current_segment()
         with configure_scope() as sentry_scope:
@@ -41,7 +41,7 @@ class AuthService(object):
                 sentry_scope.set_user({"id": str(decoded["claims"]["service-account-name"])})
                 return ServiceAccount(decoded["claims"]["service-account-name"])
             else:
-                raise AuthorizationError("Can't determine requester type from token.")
+                raise AuthenticationError("Can't determine requester type from token.")
 
     @staticmethod
     def _get_user(user_id: int) -> User:

@@ -1,7 +1,6 @@
 import typing
 
-from sqlalchemy import func
-
+from sqlalchemy import func, and_
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError
 from app.Models.Dao import User
@@ -30,10 +29,13 @@ class UserService(object):
             return user
 
     @staticmethod
-    def get_all_user_ids(org_id: int) -> typing.List[int]:
+    def get_all_user_ids(org_id: int, exclude: list = None) -> typing.List[int]:
         """Returns a list of all user ids in an org"""
+        if exclude is None:
+            exclude = []
+
         with session_scope() as session:
-            user_ids_qry = session.query(User.id).filter_by(org_id=org_id).all()
+            user_ids_qry = session.query(User.id).filter(and_(User.org_id == org_id, User.id.notin_(exclude)))
 
         return [user_id[0] for user_id in user_ids_qry]
 

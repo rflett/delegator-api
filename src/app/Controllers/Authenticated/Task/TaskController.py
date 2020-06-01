@@ -70,12 +70,12 @@ class GetTask(RequestValidationController):
             "scheduled_for": NullableDateTime,
             "scheduled_notification_period": fields.Integer(),
             "scheduled_notification_sent": NullableDateTime,
-            "assignee": fields.Nested(user_dto),
+            "assignee": fields.Nested(user_dto, allow_null=True),
             "priority": fields.Nested(priority_dto),
-            "created_by": fields.Nested(user_dto),
+            "created_by": fields.Nested(user_dto, allow_null=True),
             "created_at": fields.DateTime(),
             "started_at": NullableDateTime,
-            "finished_by": fields.Nested(user_dto),
+            "finished_by": fields.Nested(user_dto, allow_null=True),
             "finished_at": NullableDateTime,
             "status_changed_at": NullableDateTime,
             "priority_changed_at": NullableDateTime,
@@ -157,25 +157,40 @@ class GetTask(RequestValidationController):
 
         result = dict(qry.fetchone().items())
 
-        ret = {
-            "status": {"status": result["status_status"], "label": result["status_label"]},
-            "priority": {"priority": result["priority_priority"], "label": result["priority_label"]},
-            "assignee": {
+        if result["assignee_id"] is None:
+            assignee = None
+        else:
+            assignee = {
                 "id": result["assignee_id"],
                 "uuid": result["assignee_uuid"],
                 "first_name": result["assignee_first_name"],
                 "last_name": result["assignee_last_name"],
-            },
-            "created_by": {
+            }
+
+        if result["created_by_id"] is None:
+            created_by = None
+        else:
+            created_by = {
                 "id": result["created_by_id"],
                 "first_name": result["created_by_first_name"],
                 "last_name": result["created_by_last_name"],
-            },
-            "finished_by": {
+            }
+
+        if result["finished_by_id"] is None:
+            finished_by = None
+        else:
+            finished_by = {
                 "id": result["finished_by_id"],
                 "first_name": result["finished_by_first_name"],
                 "last_name": result["finished_by_last_name"],
-            },
+            }
+
+        ret = {
+            "status": {"status": result["status_status"], "label": result["status_label"]},
+            "priority": {"priority": result["priority_priority"], "label": result["priority_label"]},
+            "assignee": assignee,
+            "created_by": created_by,
+            "finished_by": finished_by,
             "labels": [],
         }
 
@@ -260,7 +275,9 @@ class ManageTask(RequestValidationController):
         # change priority
         task_priority = request_body["priority"]
         if task_to_update.priority != task_priority:
-            task_service.change_priority(task=task_to_update, priority=task_priority)
+            task_service.change_priority(
+                task=task_to_update, priority=task_priority, notification_exclusions=req_user.id
+            )
 
         # don't update scheduled info if it wasn't scheduled to begin with, or the notification has been sent
         if (
@@ -388,7 +405,7 @@ class ManageTask(RequestValidationController):
                 target_type=TargetTypes.TASK,
                 target_id=task.id,
                 actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.ASSIGN_TO_ME_ICON)],
-                user_ids=user_service.get_all_user_ids(req_user.org_id),
+                user_ids=user_service.get_all_user_ids(req_user.org_id, exclude=[req_user.id]),
             )
             created_notification.push()
 
