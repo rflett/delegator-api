@@ -260,6 +260,7 @@ class User(db.Model):
             "updated_at": updated_at.strftime(current_app.config["RESPONSE_DATE_FORMAT"]),
             "updated_by": self.updated_by,
             "invite_accepted": self.invite_accepted(),
+            "invite_expires_in": None if self.invite_accepted() else self.invite_expires_in(),
             "last_seen": self.last_active(),
         }
 
@@ -312,21 +313,41 @@ class User(db.Model):
         setting = UserSetting(self.id)
         setting.update()
 
+    def generate_new_invite_(self):
+        """Create a new invite token"""
+        from app.Models.Dao import UserPasswordToken
+        with session_scope() as session:
+            # delete old link if there's one
+            session.query(UserPasswordToken).filter_by(user_id=self.id).delete()
+            # create new link
+            token = UserPasswordToken(self.id)
+            session.add(token)
+        return token
+
     def invite_accepted(self) -> bool:
         """Check to see if they have accepted their invite"""
         return self.password is not None
 
-    def get_password_token(self) -> typing.Union[str, None]:
+    def invite_expires_in(self) -> typing.Union[int, None]:
+        """Return when their invite expires"""
+        token = self.get_password_token()
+        minutes = int(token.created_at + token.expire_after - datetime.datetime.utcnow().timestamp()) // 60
+        if minutes < 0:
+            return None
+        else:
+            return minutes
+
+    def get_password_token(self):
         """Get the password token if it exists"""
         from app.Models.Dao import UserPasswordToken
 
         with session_scope() as session:
-            token_qry = session.query(UserPasswordToken).filter_by(user_id=self.id).first()
+            token = session.query(UserPasswordToken).filter_by(user_id=self.id).first()
 
-        if token_qry is None:
+        if token is None:
             return None
         else:
-            return token_qry.token
+            return token
 
     def set_avatar(self, file: typing.IO) -> None:
         """Sets the avatar for the user"""

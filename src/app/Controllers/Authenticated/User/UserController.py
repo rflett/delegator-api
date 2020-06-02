@@ -15,6 +15,11 @@ class NullableDateTime(fields.DateTime):
     __schema_example__ = "None|2019-09-17T19:08:00+10:00"
 
 
+class NullableInteger(fields.Integer):
+    __schema_type__ = ["integer", "null"]
+    __schema_example__ = "nullable string"
+
+
 @api.route("/<int:user_id>")
 class UserController(RequestValidationController):
     response_roles = ["ORG_ADMIN", "MANAGER", "STAFF", "USER", "LOCKED"]
@@ -44,6 +49,7 @@ class UserController(RequestValidationController):
             "updated_at": NullableDateTime,
             "updated_by": fields.String(),
             "invite_accepted": fields.Boolean,
+            "invite_expires_in": NullableInteger,
         },
     )
 
