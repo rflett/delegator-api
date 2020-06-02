@@ -331,11 +331,14 @@ class User(db.Model):
     def invite_expires_in(self) -> typing.Union[int, None]:
         """Return when their invite expires"""
         token = self.get_password_token()
+        if token is None:
+            return
+
         minutes = int(token.created_at + token.expire_after - datetime.datetime.utcnow().timestamp()) // 60
         if minutes < 0:
-            return None
-        else:
-            return minutes
+            return
+        
+        return minutes
 
     def get_password_token(self):
         """Get the password token if it exists"""
@@ -344,10 +347,7 @@ class User(db.Model):
         with session_scope() as session:
             token = session.query(UserPasswordToken).filter_by(user_id=self.id).first()
 
-        if token is None:
-            return None
-        else:
-            return token
+        return token
 
     def set_avatar(self, file: typing.IO) -> None:
         """Sets the avatar for the user"""
