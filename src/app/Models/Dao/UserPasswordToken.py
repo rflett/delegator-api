@@ -15,7 +15,7 @@ class UserPasswordToken(db.Model):
 
     users = db.relationship("User", backref="password_token_user")
 
-    def __init__(self, user_id: int, expire_after: int = 86400):
+    def __init__(self, user_id: int, expire_after: int = 604800):
         self.user_id = user_id
         self.token = "".join([random.choice(string.ascii_letters + string.digits) for n in range(40)])
         self.created_at = int(time.time())

@@ -20,6 +20,16 @@ api = Namespace(path="/users", name="Users", description="Manage a user or users
 user_service = UserService()
 
 
+class NullableDateTime(fields.DateTime):
+    __schema_type__ = ["string", "null"]
+    __schema_example__ = "None|2019-09-17T19:08:00+10:00"
+
+
+class NullableInteger(fields.Integer):
+    __schema_type__ = ["integer", "null"]
+    __schema_example__ = "nullable string"
+
+
 @api.route("/minimal")
 class MinimalUsers(RequestValidationController):
     min_user_response = api.model(
@@ -72,10 +82,6 @@ class MinimalUsers(RequestValidationController):
 
 @api.route("/")
 class UserController(RequestValidationController):
-    class NullableDateTime(fields.DateTime):
-        __schema_type__ = ["string", "null"]
-        __schema_example__ = "None|2019-09-17T19:08:00+10:00"
-
     role_dto = api.model(
         "Get Users Role",
         {
@@ -105,6 +111,7 @@ class UserController(RequestValidationController):
             "updated_by": fields.String(),
             "last_active": fields.String(),
             "invite_accepted": fields.Boolean,
+            "invite_expires_in": NullableInteger,
         },
     )
     get_users_response = api.model("Get Users Response", {"users": fields.List(fields.Nested(user_response))})

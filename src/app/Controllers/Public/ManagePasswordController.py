@@ -5,7 +5,6 @@ from app.Controllers.Base import RequestValidationController
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError, ResourceNotFoundError
 from app.Models import Email
-from app.Models.Dao import UserPasswordToken
 from app.Services import UserService
 
 user_service = UserService()
@@ -45,12 +44,7 @@ class PasswordSetup(RequestValidationController):
         except (ValidationError, ResourceNotFoundError):
             return "", 204
 
-        with session_scope() as session:
-            # delete old link if there's one
-            session.query(UserPasswordToken).filter_by(user_id=user.id).delete()
-            # create new link
-            reset_link = UserPasswordToken(user.id)
-            session.add(reset_link)
+        reset_link = user.generate_new_invite_()
 
         link = current_app.config["PUBLIC_WEB_URL"] + "/reset-password?token=" + reset_link.token
 

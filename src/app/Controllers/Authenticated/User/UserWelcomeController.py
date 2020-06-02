@@ -25,16 +25,16 @@ class UserController(RequestValidationController):
 
         user = self.check_user_id(request_body.get("user_id"), should_exist=True)
 
-        # check if invite has been accepted
-        token = user.get_password_token()
-        if user.invite_accepted() or token is None:
+        if user.invite_accepted():
             raise ValidationError("User has already accepted their invitation.")
+
+        token = user.generate_new_invite_()
 
         # resend
         email = Email(user.email)
         email.send_welcome_new_user(
             first_name=user.first_name,
-            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + token,
+            link=current_app.config["PUBLIC_WEB_URL"] + "/account-setup?token=" + token.token,
             inviter=req_user,
         )
 
