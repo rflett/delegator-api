@@ -131,11 +131,11 @@ class TaskService(object):
 
             # remove delayed task if the new status isn't DELAYED
             if old_status == TaskStatuses.DELAYED and status != TaskStatuses.DELAYED:
-                delayed_task = session.query(DelayedTask).filter_by(task_id=task.id).first()
+                delayed_task = session.query(DelayedTask).filter_by(task_id=task.id, expired=None).first()
                 delayed_task.expired = datetime.datetime.utcnow()
 
             # assign finished_by and _at if the task is being completed
-            if status == TaskStatuses.COMPLETED:
+            if status in (TaskStatuses.COMPLETED, TaskStatuses.CANCELLED):
                 task.finished_by = req_user.id
                 task.finished_at = datetime.datetime.utcnow()
 
