@@ -41,11 +41,13 @@ class Version(Resource):
 
             if not response_body["success"]:
                 current_app.logger.error(f"failed to verify recaptcha - {response_body['error-codes']}")
+                return "", 204
             else:
                 current_app.logger.info("successfully verified recaptcha")
 
         except requests.RequestException:
             current_app.logger.error("failed to make request for verifying recaptcha")
+            return "", 204
 
         # add to db
         with session_scope() as session:
@@ -53,7 +55,7 @@ class Version(Resource):
             session.add(entry)
 
         # send email
-        email = Email("devops@delegator.com.au")
+        email = Email("contact@delegator.com.au")
         email.send_contact_us(**entry.to_email())
 
         return "", 204
