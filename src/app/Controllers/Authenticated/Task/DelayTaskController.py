@@ -46,24 +46,20 @@ class DelayTask(RequestValidationController):
             # transition a task to delayed
             task_service.transition(task=task, status=TaskStatuses.DELAYED, req_user=req_user)
             # check to see if the task has been delayed previously
-            delay = session.query(DelayedTask).filter_by(task_id=task.id).first()
+            delay = session.query(DelayedTask).filter_by(task_id=task.id, expired=None).first()
 
-            # if the task has been delayed before, update it, otherwise create it
+            # if the task has been delayed before, expire it
             if delay is not None:
-                delay.delay_for = delay_for
-                delay.delayed_at = datetime.datetime.utcnow()
-                delay.snoozed = None
-                if reason is not None:
-                    delay.reason = reason
-            else:
-                delayed_task = DelayedTask(
-                    task_id=task.id,
-                    delay_for=delay_for,
-                    delayed_at=datetime.datetime.utcnow(),
-                    delayed_by=req_user.id,
-                    reason=reason,
-                )
-                session.add(delayed_task)
+                delay.expired = datetime.datetime.utcnow()
+
+            delayed_task = DelayedTask(
+                task_id=task.id,
+                delay_for=delay_for,
+                delayed_at=datetime.datetime.utcnow(),
+                delayed_by=req_user.id,
+                reason=reason,
+            )
+            session.add(delayed_task)
 
         # send notifications
         delayed_notification = Notification(

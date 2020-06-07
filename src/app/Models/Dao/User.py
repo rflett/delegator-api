@@ -316,6 +316,7 @@ class User(db.Model):
     def generate_new_invite_(self):
         """Create a new invite token"""
         from app.Models.Dao import UserPasswordToken
+
         with session_scope() as session:
             # delete old link if there's one
             session.query(UserPasswordToken).filter_by(user_id=self.id).delete()
