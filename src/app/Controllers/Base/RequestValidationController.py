@@ -21,7 +21,7 @@ class RequestValidationController(ObjectValidationController):
         """Validates the delete user request"""
         user = self.check_user_id(user_id, should_exist=True)
         self.check_auth_scope(user, **kwargs)
-        if user_service.is_user_only_org_admin(user):
+        if user.is_only_org_admin():
             raise ValidationError("Can't delete the only remaining Administrator")
         return user
 
@@ -29,7 +29,7 @@ class RequestValidationController(ObjectValidationController):
         """Validates the disable user request"""
         user = self.check_user_id(user_id, should_exist=True)
         self.check_auth_scope(user, **kwargs)
-        if user_service.is_user_only_org_admin(user):
+        if user.is_only_org_admin():
             raise ValidationError("Can't disable the only remaining Administrator")
         return user
 

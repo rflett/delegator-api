@@ -5,7 +5,6 @@ import os
 import pytz
 import random
 import string
-import time
 import typing
 import uuid
 from os import getenv
@@ -14,11 +13,13 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from flask import current_app
-from sqlalchemy import exists
+from sqlalchemy import exists, func
 
 from app.Extensions.Database import db, session_scope
 from app.Extensions.Errors import AuthorizationError
+from app.Models.Dao import ActiveUser
 from app.Models.RBAC import Log, Permission
+from app.Models.Enums import Roles
 from app.Models.LocalMockData import MockActivity
 
 
@@ -164,31 +165,37 @@ class User(db.Model):
         self.password = _hash_password(password)
 
     def is_active(self) -> None:
-        """
-        Marks the user as active
-        :return:
-        """
-        from app.Services import ActiveUserService
-
-        ActiveUserService.user_is_active(self)
+        """Marks user as active if they are not active already. If they're already active then update them."""
+        with session_scope() as session:
+            already_active = session.query(ActiveUser).filter_by(user_id=self.id).first()
+            if already_active is None:
+                # user is not active, so create
+                active_user = ActiveUser(
+                    user_id=self.id,
+                    org_id=self.org_id,
+                    first_name=self.first_name,
+                    last_name=self.last_name,
+                    last_active=datetime.datetime.utcnow(),
+                )
+                session.add(active_user)
+            else:
+                # user is active, so update
+                already_active.last_active = datetime.datetime.utcnow()
 
     def is_inactive(self) -> None:
-        """
-        Marks the user as inactive
-        :return:
-        """
-        from app.Services import ActiveUserService
+        """Mark user as inactive by deleting their record in the active users table"""
+        with session_scope() as session:
+            session.query(ActiveUser).filter_by(user_id=self.id).delete()
 
-        ActiveUserService.user_is_inactive(self)
-
-    def last_active(self) -> str:
-        """
-        Returns when the user was last active
-        :return:
-        """
-        from app.Services import ActiveUserService
-
-        return ActiveUserService.user_last_active(self)
+    def last_active(self) -> typing.Union[str, None]:
+        """Returns when the user was last active"""
+        with session_scope() as session:
+            qry = session.query(ActiveUser).filter_by(user_id=self.id).first()
+            if qry is None:
+                return None
+            else:
+                last_active = pytz.utc.localize(qry.last_active)
+                return last_active.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
     def clear_failed_logins(self) -> None:
         """ Clears a user's failed login attempts """
@@ -220,6 +227,9 @@ class User(db.Model):
 
         for task in users_tasks:
             task.drop(req_user)
+
+        # delete their avatar
+        self._delete_avatar()
 
         self.password = _hash_password(make_random())
         self.deleted = datetime.datetime.utcnow()
@@ -313,7 +323,7 @@ class User(db.Model):
         setting = UserSetting(self.id)
         setting.update()
 
-    def generate_new_invite_(self):
+    def generate_new_invite(self):
         """Create a new invite token"""
         from app.Models.Dao import UserPasswordToken
 
@@ -338,7 +348,7 @@ class User(db.Model):
         minutes = int(token.created_at + token.expire_after - datetime.datetime.utcnow().timestamp()) // 60
         if minutes < 0:
             return
-        
+
         return minutes
 
     def get_password_token(self):
@@ -401,3 +411,21 @@ class User(db.Model):
         except ClientError as e:
             current_app.logger.error(f"Error tagging file {bucket}/{key} for deletion - {e}")
 
+    def is_only_org_admin(self) -> bool:
+        """Checks to see if the user is the only ORG_ADMIN"""
+        if self.role != Roles.ORG_ADMIN:
+            return False
+
+        with session_scope() as session:
+            org_admins_cnt = (
+                session.query(func.count(User.id))
+                .filter(
+                    User.role == Roles.ORG_ADMIN,
+                    User.org_id == self.org_id,
+                    User.disabled == None,  # noqa
+                    User.deleted == None,  # noqa
+                )
+                .scalar()
+            )
+
+        return True if org_admins_cnt == 1 else False

@@ -28,7 +28,7 @@ class UserController(RequestValidationController):
         if user.invite_accepted():
             raise ValidationError("User has already accepted their invitation.")
 
-        token = user.generate_new_invite_()
+        token = user.generate_new_invite()
 
         # resend
         email = Email(user.email)

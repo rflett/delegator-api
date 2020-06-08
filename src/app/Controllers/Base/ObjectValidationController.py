@@ -135,7 +135,7 @@ class ObjectValidationController(Resource):
             return _role.id
         elif user_to_update is not None and user_to_update.roles.rank < req_user.roles.rank:
             raise AuthorizationError(f"No permissions to pass the role {role} on")
-        elif user_to_update.role != role and user_service.is_user_only_org_admin(user_to_update):
+        elif user_to_update.role != role and user_to_update.is_only_org_admin():
             raise ValidationError("Can't demote the only remaining Administrator's role")
         else:
             return _role.id
