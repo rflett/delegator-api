@@ -11,9 +11,6 @@ from app.Extensions.Database import session_scope
 from app.Extensions.Errors import AuthorizationError, ValidationError, ResourceNotFoundError
 from app.Models.Dao import User, TaskTemplate, Task, TaskLabel, UserPasswordToken
 from app.Models.RBAC import Role
-from app.Services import UserService
-
-user_service = UserService()
 
 
 class ObjectValidationController(Resource):

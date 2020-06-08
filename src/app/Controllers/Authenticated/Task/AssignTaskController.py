@@ -4,9 +4,6 @@ from flask_restx import Namespace, fields
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Models.Enums import Operations, Resources
-from app.Services import TaskService
-
-task_service = TaskService()
 
 api = Namespace(path="/task/assign", name="Task", description="Manage a task")
 request_dto = api.model(
@@ -29,6 +26,6 @@ class AssignTask(RequestValidationController):
         assignee_id = self.check_task_assignee(request_body["assignee"], **kwargs)
 
         # assign
-        task_service.assign(task=task, assignee=assignee_id, req_user=kwargs["req_user"])
+        task.assign(assignee=assignee_id, req_user=kwargs["req_user"])
 
         return "", 204

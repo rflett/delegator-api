@@ -8,8 +8,13 @@ import boto3
 
 from app.Extensions.Database import db, session_scope
 from app.Extensions.Errors import ValidationError
+from app.Models import Event
+from app.Models.Notification import NotificationAction, Notification
 from app.Models.Dao import DelayedTask, User
+from app.Models.Enums import Events, Operations, Resources, TaskStatuses
+from app.Models.Enums.Notifications import ClickActions, TargetTypes, NotificationIcons
 from app.Models.LocalMockData import MockActivity
+from app.Utilities.All import get_all_user_ids
 
 dyn_db = boto3.resource("dynamodb")
 
@@ -44,7 +49,7 @@ class Task(db.Model):
     custom_3 = db.Column("custom_3", db.String, default=None)
     display_order = db.Column("display_order", db.String)
 
-    assignees = db.relationship("User", foreign_keys=[assignee], backref="assigned_user")
+    assigned_user = db.relationship("User", foreign_keys=[assignee], backref="assigned_user")
 
     def __init__(
         self,
@@ -235,6 +240,180 @@ class Task(db.Model):
 
     def drop(self, req_user: User) -> None:
         """ Drops this task """
-        from app.Services import TaskService
+        old_assignee = self.assigned_user.name()
+        self.unassign(req_user)
 
-        TaskService().drop(self, req_user)
+        self.transition(status=TaskStatuses.READY, req_user=req_user)
+
+        dropped_notification = Notification(
+            title="Task dropped",
+            event_name=Events.task_transitioned_ready,
+            msg=f"{self.title} has been dropped by {req_user.name()}.",
+            target_type=TargetTypes.TASK,
+            target_id=self.id,
+            actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.ASSIGN_TO_ME_ICON)],
+            user_ids=get_all_user_ids(req_user.org_id, exclude=[req_user.id]),
+        )
+        dropped_notification.push()
+
+        req_user.log(Operations.DROP, Resources.TASK, resource_id=self.id)
+        current_app.logger.info(f"User {req_user.id} dropped task {self.id} which was assigned to {old_assignee}.")
+
+    def assign(self, assignee: int, req_user: User, notify: bool = True) -> None:
+        """Common function for assigning a task """
+        # set the task assignee
+        with session_scope():
+            self.assignee = assignee
+
+        # get the assigned user
+        assigned_user = self.assigned_user
+
+        # don't notify the assignee if they assigned themselves to the task
+        if assigned_user.id == req_user.id:
+            notify = False
+
+        Event(
+            org_id=self.org_id,
+            event=Events.task_assigned,
+            event_id=self.id,
+            event_friendly=f"{assigned_user.name()} assigned to task by {req_user.name()}.",
+        ).publish()
+        Event(
+            org_id=req_user.org_id,
+            event=Events.user_assigned_task,
+            event_id=req_user.id,
+            event_friendly=f"Assigned {assigned_user.name()} to {self.title}.",
+        ).publish()
+        Event(
+            org_id=assigned_user.org_id,
+            event=Events.user_assigned_to_task,
+            event_id=assigned_user.id,
+            event_friendly=f"Assigned to {self.title} by {req_user.name()}.",
+        ).publish()
+        if notify:
+            assigned_notification = Notification(
+                title="You've been assigned a task!",
+                event_name=Events.user_assigned_to_task,
+                msg=f"{req_user.name()} assigned {self.title} to you.",
+                target_id=self.id,
+                target_type=TargetTypes.TASK,
+                actions=[NotificationAction(ClickActions.VIEW_TASK, NotificationIcons.VIEW_TASK_ICON)],
+                user_ids=[assigned_user.id],
+            )
+            assigned_notification.push()
+        req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=self.id)
+        current_app.logger.info(f"assigned task {self.id} to user {assignee}")
+
+    def change_priority(self, priority: int, notification_exclusions: list = None) -> None:
+        """Change the tasks priority"""
+        with session_scope():
+            if priority > self.priority:
+                self.priority = priority
+                self.priority_changed_at = datetime.datetime.utcnow()
+                # task priority is increasing
+                priority_notification = Notification(
+                    title="Task escalated",
+                    event_name=Events.task_escalated,
+                    msg=f"{self.title} task has been escalated.",
+                    target_type=TargetTypes.TASK,
+                    target_id=self.id,
+                    actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.VIEW_TASK_ICON)],
+                    user_ids=get_all_user_ids(self.org_id, exclude=notification_exclusions),
+                )
+                priority_notification.push()
+
+        current_app.logger.info(f"Changed task {self.id} priority to {priority}")
+
+    def unassign(self, req_user: User) -> None:
+        """Common function for unassigning a task """
+        # only proceed if the task is assigned to someone
+        if self.assignee is not None:
+            # get the old assignee
+            old_assignee = self.assigned_user
+
+            with session_scope():
+                self.assignee = None
+
+            Event(
+                org_id=self.org_id,
+                event=Events.task_unassigned,
+                event_id=self.id,
+                event_friendly=f"{old_assignee.name()} unassigned from task by {req_user.name()}.",
+            ).publish()
+            Event(
+                org_id=req_user.org_id,
+                event=Events.user_unassigned_task,
+                event_id=req_user.id,
+                event_friendly=f"Unassigned {old_assignee.name()} from {self.title}.",
+            ).publish()
+            Event(
+                org_id=old_assignee.org_id,
+                event=Events.user_unassigned_from_task,
+                event_id=old_assignee.id,
+                event_friendly=f"Unassigned from {self.title} by {req_user.name()}.",
+            ).publish()
+            req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=self.id)
+            current_app.logger.info(f"Unassigned user {old_assignee.id} from task {self.id}")
+
+    def transition(self, status: str, req_user: User = None) -> None:
+        """Common function for transitioning a task """
+        with session_scope() as session:
+            old_status = self.status
+
+            # don't do anything if the statuses are the same
+            if status == old_status:
+                return
+
+            # don't transition a task if it's not assigned to anyone - unless it's being cancelled
+            if old_status == TaskStatuses.READY and self.assignee is None and status != TaskStatuses.CANCELLED:
+                raise ValidationError("Cannot move task out of ready because it's not assigned to anyone.")
+
+            # remove delayed task if the new status isn't DELAYED
+            if old_status == TaskStatuses.DELAYED and status != TaskStatuses.DELAYED:
+                delayed_task = session.query(DelayedTask).filter_by(task_id=self.id, expired=None).first()
+                delayed_task.expired = datetime.datetime.utcnow()
+
+            # assign finished_by and _at if the task is being completed
+            if status in (TaskStatuses.COMPLETED, TaskStatuses.CANCELLED):
+                self.finished_by = req_user.id
+                self.finished_at = datetime.datetime.utcnow()
+
+            # assign started_at if the task is being started for the first time
+            if status == TaskStatuses.IN_PROGRESS and self.started_at is None:
+                self.started_at = datetime.datetime.utcnow()
+
+            # update task status and status_changed_at
+            self.status = status
+            self.status_changed_at = datetime.datetime.utcnow()
+
+        # get the pretty labels for the old and new status
+        old_status_label = self._pretty_status_label(old_status)
+        new_status_label = self._pretty_status_label(status)
+
+        # req_user will be none when this is called from a service account
+        if req_user is None:
+            return
+
+        Event(
+            org_id=self.org_id,
+            event=f"task_transitioned_{self.status.lower()}",
+            event_id=self.id,
+            event_friendly=f"Transitioned from {old_status_label} to {new_status_label}.",
+        ).publish()
+        Event(
+            org_id=req_user.org_id,
+            event=Events.user_transitioned_task,
+            event_id=req_user.id,
+            event_friendly=f"Transitioned {self.title} from {old_status_label} to {new_status_label}.",
+        ).publish()
+        req_user.log(Operations.TRANSITION, Resources.TASK, resource_id=self.id)
+        current_app.logger.info(f"User {req_user.id} transitioned task {self.id} from {old_status} to {status}")
+
+    @staticmethod
+    def _pretty_status_label(status: str) -> str:
+        """Converts a task status from IN_PROGRESS to 'In Progress' """
+        if "_" in status:
+            words = status.lower().split("_")
+            return " ".join([w.capitalize() for w in words])
+        else:
+            return status.lower().capitalize()

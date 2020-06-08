@@ -16,11 +16,8 @@ from app.Extensions.Errors import AuthenticationError, ValidationError
 from app.Models import Event, Email
 from app.Models.Dao import User, Organisation, TaskTemplate, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
-from app.Services import UserService
 
 api = Namespace(path="/account", name="Account", description="Manage an account")
-
-user_service = UserService()
 
 
 @api.route("/")

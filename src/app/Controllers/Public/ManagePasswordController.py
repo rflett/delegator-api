@@ -6,9 +6,6 @@ from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError, ResourceNotFoundError
 from app.Models import Email
 from app.Models.Dao import User
-from app.Services import UserService
-
-user_service = UserService()
 
 api = Namespace(path="/password", name="Password Management", description="Manage passwords")
 
@@ -72,7 +69,11 @@ class PasswordSetup(RequestValidationController):
         password = self.validate_password(request_body["password"])
 
         # set password
-        user = user_service.get_by_id(password_token.user_id)
+        with session_scope() as session:
+            user = session.query(User).filter_by(id=password_token.user_id, deleted=None).first()
+
+        if user is None:
+            raise ResourceNotFoundError(f"User with id {password_token.user_id} does not exist.")
 
         # only reset if the password hasn't been set (or has been reset)
         with session_scope() as session:

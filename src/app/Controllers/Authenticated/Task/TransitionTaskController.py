@@ -7,11 +7,9 @@ from app.Extensions.Database import session_scope
 from app.Models.Dao import TaskStatus, Task
 from app.Models.Enums import TaskStatuses, Operations, Resources
 from app.Models.RBAC import ServiceAccount
-from app.Services import TaskService
+from app.Utilities.All import reindex_display_orders, get_task_by_id
 
 api = Namespace(path="/task/transition", name="Task", description="Manage a task")
-
-task_service = TaskService()
 
 
 @api.route("/")
@@ -36,15 +34,15 @@ class TransitionTask(RequestValidationController):
         request_body = request.get_json()
 
         if isinstance(req_user, ServiceAccount):
-            task = task_service.get(request_body["task_id"], request_body["org_id"])
-            task_service.transition(task, request_body["task_status"])
+            task = get_task_by_id(request_body["task_id"], request_body["org_id"])
+            task.transition(request_body["task_status"])
         else:
             task = self.validate_transition_task(**kwargs)
-            task_service.transition(task, request_body["task_status"], kwargs["req_user"])
+            task.transition(request_body["task_status"], kwargs["req_user"])
 
         # update the display order
         display_order = request_body.get("display_order", 0)
-        task_service.reindex_display_orders(task.org_id, new_position=display_order)
+        reindex_display_orders(task.org_id, new_position=display_order)
         with session_scope():
             task.display_order = display_order
 

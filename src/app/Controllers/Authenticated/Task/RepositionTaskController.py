@@ -5,11 +5,9 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Models.Enums import Operations, Resources
-from app.Services import TaskService
+from app.Utilities.All import reindex_display_orders
 
 api = Namespace(path="/task/reposition", name="Task", description="Manage a task")
-
-task_service = TaskService()
 
 
 @api.route("/")
@@ -32,7 +30,7 @@ class RepositionTask(RequestValidationController):
         task_to_repo = self.check_task_id(request_body["task_id"], kwargs["req_user"].org_id)
 
         if task_to_repo.display_order != request_body["display_order"]:
-            task_service.reindex_display_orders(task_to_repo.org_id, request_body["display_order"])
+            reindex_display_orders(task_to_repo.org_id, request_body["display_order"])
 
         with session_scope():
             task_to_repo.display_order = request_body["display_order"]

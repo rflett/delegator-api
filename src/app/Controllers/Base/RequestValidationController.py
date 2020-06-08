@@ -3,9 +3,6 @@ from flask import request
 from app.Controllers.Base import ObjectValidationController
 from app.Extensions.Errors import ValidationError
 from app.Models.Dao import User, Task
-from app.Services import UserService
-
-user_service = UserService()
 
 
 class RequestValidationController(ObjectValidationController):
@@ -14,7 +11,7 @@ class RequestValidationController(ObjectValidationController):
         request_body = request.get_json()
         task = self.check_task_id(request_body.get("task_id"), kwargs["req_user"].org_id)
         if task.assignee is not None:
-            self.check_auth_scope(task.assignees, **kwargs)
+            self.check_auth_scope(task.assigned_user, **kwargs)
         return task
 
     def validate_delete_user(self, user_id: int, **kwargs) -> User:
@@ -44,7 +41,7 @@ class RequestValidationController(ObjectValidationController):
         if task.assignee is None:
             raise ValidationError("Can't drop task because it is not assigned to anyone.")
         else:
-            self.check_auth_scope(task.assignees, **kwargs)
+            self.check_auth_scope(task.assigned_user, **kwargs)
             return task
 
     @staticmethod
@@ -87,5 +84,5 @@ class RequestValidationController(ObjectValidationController):
         request_body = request.get_json()
         task = self.check_task_id(request_body["task_id"], kwargs["req_user"].org_id)
         if task.assignee is not None:
-            self.check_auth_scope(task.assignees, **kwargs)
+            self.check_auth_scope(task.assigned_user, **kwargs)
         return task

@@ -99,7 +99,7 @@ def test_update_org_settings():
 
 # password
 def test_reset_password():
-    r = requests.delete("http://localhost:5000/password/?email=foo@bar.com")
+    r = requests.delete("http://localhost:5000/password/?email=admin@delegator.com.au")
     assert r.status_code == 204
 
 
@@ -345,11 +345,6 @@ def test_cancel_task():
 # tasks
 def test_get_priorities():
     r = requests.get("http://localhost:5000/tasks/priorities/", headers={"Authorization": auth})
-    assert r.status_code == 200
-
-
-def test_get_statuses():
-    r = requests.get("http://localhost:5000/tasks/statuses/", headers={"Authorization": auth})
     assert r.status_code == 200
 
 

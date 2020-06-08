@@ -12,11 +12,8 @@ from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Models.Dao import User, Task, TaskLabel, TaskStatus, DelayedTask
 from app.Models.Enums import Operations, Resources, TaskStatuses
-from app.Services import TaskService
 
 api = Namespace(path="/tasks", name="Tasks", description="Manage tasks")
-
-task_service = TaskService()
 
 
 class NullableDateTime(fields.DateTime):
