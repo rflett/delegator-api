@@ -363,6 +363,8 @@ class User(db.Model):
             )
             current_app.logger.info(f"Uploaded avatar {self.uuid}.jpg")
 
+            self._delete_avatar()
+
             with session_scope():
                 self.uuid = new_uuid
 
@@ -381,8 +383,21 @@ class User(db.Model):
             )
             current_app.logger.info(f"Reset avatar {new_uuid}.jpg")
 
+            self._delete_avatar()
+
             with session_scope():
                 self.uuid = new_uuid
 
         except ClientError as e:
             current_app.logger.error(f"Error resetting user avatar - {e}")
+
+    def _delete_avatar(self):
+        """Tag avatar for deletion"""
+        bucket = current_app.config["ASSETS_BUCKET"]
+        key = f"user/avatar/{self.uuid}.jpg"
+        try:
+            s3.put_object_tagging(Bucket=bucket, Key=key, Tagging={"TagSet": [{"Key": "deleted", "Value": "true"}]})
+            current_app.logger.info(f"Tagged {bucket}/{key} for deletion")
+        except ClientError as e:
+            current_app.logger.error(f"Error tagging file {bucket}/{key} for deletion - {e}")
+
