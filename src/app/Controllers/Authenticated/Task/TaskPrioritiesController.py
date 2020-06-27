@@ -8,11 +8,9 @@ from app.Extensions.Errors import AuthorizationError
 from app.Models.Dao import TaskPriority
 from app.Models.Enums import Operations, Resources
 from app.Models.RBAC import ServiceAccount
-from app.Services import TaskService
+from app.Utilities.All import get_task_by_id
 
 api = Namespace(path="/tasks/priorities", name="Tasks", description="Manage tasks")
-
-task_service = TaskService()
 
 
 @api.route("/")
@@ -56,8 +54,8 @@ class TaskPriorities(RequestValidationController):
         if not isinstance(req_user, ServiceAccount):
             raise AuthorizationError("Invalid requester - expected ServiceAccount")
 
-        task = task_service.get(request_body["task_id"], request_body["org_id"])
-        task_service.change_priority(task, request_body["priority"])
+        task = get_task_by_id(request_body["task_id"], request_body["org_id"])
+        task.change_priority(request_body["priority"])
 
         req_user.log(Operations.UPDATE, Resources.TASK_PRIORITY, task.id)
         return "", 204

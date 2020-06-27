@@ -14,12 +14,9 @@ from app.Models.Dao import Task, User
 from app.Models.Enums import Operations, Resources, Events, TaskStatuses
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
 from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
-from app.Services import TaskService, UserService
+from app.Utilities.All import get_all_user_ids, reindex_display_orders
 
 api = Namespace(path="/task", name="Task", description="Manage a task")
-
-task_service = TaskService()
-user_service = UserService()
 
 task_statuses = ["SCHEDULED", "READY", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
 
@@ -258,10 +255,9 @@ class ManageTask(RequestValidationController):
         assignee = request_body.get("assignee")
         if task_to_update.assignee != assignee:
             if assignee is None:
-                task_service.unassign(task=task_to_update, req_user=req_user)
+                task_to_update.unassign(req_user)
             else:
-                task_service.assign(
-                    task=task_to_update,
+                task_to_update.assign(
                     assignee=assignee,
                     req_user=req_user,
                     notify=False if task_to_update.status == TaskStatuses.SCHEDULED else True,
@@ -270,14 +266,12 @@ class ManageTask(RequestValidationController):
         # transition
         task_status = request_body["status"]
         if task_to_update.status != task_status:
-            task_service.transition(task=task_to_update, status=task_status, req_user=req_user)
+            task_to_update.transition(status=task_status, req_user=req_user)
 
         # change priority
         task_priority = request_body["priority"]
         if task_to_update.priority != task_priority:
-            task_service.change_priority(
-                task=task_to_update, priority=task_priority, notification_exclusions=req_user.id
-            )
+            task_to_update.change_priority(priority=task_priority, notification_exclusions=[req_user.id])
 
         # don't update scheduled info if it wasn't scheduled to begin with, or the notification has been sent
         if (
@@ -347,7 +341,7 @@ class ManageTask(RequestValidationController):
         self.check_task_assignee(request_body.get("assignee"), **kwargs)
         self.check_task_labels(request_body.get("labels", []), req_user.org_id)
 
-        task_service.reindex_display_orders(req_user.org_id)
+        reindex_display_orders(req_user.org_id)
 
         with session_scope():
             task = Task(
@@ -396,7 +390,7 @@ class ManageTask(RequestValidationController):
 
         # optionally assign the task if an assignee was present in the create task request
         if request_body.get("assignee") is not None:
-            task_service.assign(task=task, assignee=request_body["assignee"], req_user=req_user)
+            task.assign(assignee=request_body["assignee"], req_user=req_user)
         else:
             created_notification = Notification(
                 title="Task created",
@@ -405,7 +399,7 @@ class ManageTask(RequestValidationController):
                 target_type=TargetTypes.TASK,
                 target_id=task.id,
                 actions=[NotificationAction(ClickActions.ASSIGN_TO_ME, NotificationIcons.ASSIGN_TO_ME_ICON)],
-                user_ids=user_service.get_all_user_ids(req_user.org_id, exclude=[req_user.id]),
+                user_ids=get_all_user_ids(req_user.org_id, exclude=[req_user.id]),
             )
             created_notification.push()
 
@@ -436,7 +430,7 @@ class ManageTask(RequestValidationController):
 
         # optionally assign the task if an assignee was present in the create task request
         if request_body.get("assignee") is not None:
-            task_service.assign(task=task, assignee=request_body.get("assignee"), req_user=req_user, notify=False)
+            task.assign(assignee=request_body.get("assignee"), req_user=req_user, notify=False)
 
     @staticmethod
     def _get_labels(label_attrs: dict) -> dict:

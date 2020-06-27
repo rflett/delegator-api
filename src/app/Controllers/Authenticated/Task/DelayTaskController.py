@@ -11,11 +11,9 @@ from app.Models.Dao import DelayedTask
 from app.Models.Enums import TaskStatuses, Operations, Resources, Events
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
 from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
-from app.Services import TaskService
+from app.Utilities.All import get_task_by_id
 
 api = Namespace(path="/task/delay", name="Task", description="Manage a task")
-
-task_service = TaskService()
 
 
 @api.route("/")
@@ -44,7 +42,7 @@ class DelayTask(RequestValidationController):
 
         with session_scope() as session:
             # transition a task to delayed
-            task_service.transition(task=task, status=TaskStatuses.DELAYED, req_user=req_user)
+            task.transition(status=TaskStatuses.DELAYED, req_user=req_user)
             # check to see if the task has been delayed previously
             delay = session.query(DelayedTask).filter_by(task_id=task.id, expired=None).first()
 
@@ -107,6 +105,6 @@ class GetDelayTask(RequestValidationController):
     def get(self, task_id: int, **kwargs):
         """Returns the delayed info for a task """
         req_user = kwargs["req_user"]
-        task = task_service.get(task_id, req_user.org_id)
+        task = get_task_by_id(task_id, req_user.org_id)
         req_user.log(Operations.GET, Resources.TASK, resource_id=task.id)
         return task.delayed_info(), 200

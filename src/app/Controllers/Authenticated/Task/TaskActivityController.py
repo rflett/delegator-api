@@ -5,11 +5,9 @@ from app.Decorators import authorize, requires_jwt
 from app.Controllers.Base import RequestValidationController
 from app.Models import Subscription
 from app.Models.Enums import Operations, Resources
-from app.Services import TaskService
+from app.Utilities.All import get_task_by_id
 
 api = Namespace(path="/task/activity", name="Task", description="Manage a task")
-
-task_service = TaskService()
 
 
 @api.route("/<int:task_id>")
@@ -32,7 +30,7 @@ class TaskActivity(RequestValidationController):
         subscription = Subscription(req_user.orgs.chargebee_subscription_id)
         activity_log_history_limit = subscription.task_activity_log_history()
         # get the task
-        task = task_service.get(task_id, req_user.org_id)
+        task = get_task_by_id(task_id, req_user.org_id)
         req_user.log(Operations.GET, Resources.TASK_ACTIVITY, resource_id=task.id)
         current_app.logger.info(f"Getting activity for task with id {task.id}")
         return {"activity": task.activity(activity_log_history_limit)}, 200

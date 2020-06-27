@@ -5,9 +5,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError, ResourceNotFoundError
 from app.Models import Email
-from app.Services import UserService
-
-user_service = UserService()
+from app.Models.Dao import User
 
 api = Namespace(path="/password", name="Password Management", description="Manage passwords")
 
@@ -33,20 +31,20 @@ class PasswordSetup(RequestValidationController):
     def delete(self, **kwargs):
         """Request a password reset"""
         try:
-            user_email = request.args["email"]
+            email = request.args["email"]
         except KeyError as e:
             raise ValidationError(f"Missing {e} from query params")
 
-        try:
-            self.validate_email(user_email)
-            user = user_service.get_by_email(user_email)
-            current_app.logger.info(f"User {user.name()} requested password reset.")
-        except (ValidationError, ResourceNotFoundError):
-            return "", 204
+        with session_scope() as session:
+            user = session.query(User).filter_by(email=email, deleted=None).first()
 
-        reset_link = user.generate_new_invite_()
+        if user is None:
+            raise ResourceNotFoundError(f"User with email {email} does not exist.")
 
-        link = current_app.config["PUBLIC_WEB_URL"] + "/reset-password?token=" + reset_link.token
+        current_app.logger.info(f"User {user.name()} requested password reset.")
+
+        invite = user.generate_new_invite()
+        link = current_app.config["PUBLIC_WEB_URL"] + "/reset-password?token=" + invite.token
 
         email = Email(user.email)
         email.send_password_reset(user.first_name, link)
@@ -71,7 +69,11 @@ class PasswordSetup(RequestValidationController):
         password = self.validate_password(request_body["password"])
 
         # set password
-        user = user_service.get_by_id(password_token.user_id)
+        with session_scope() as session:
+            user = session.query(User).filter_by(id=password_token.user_id, deleted=None).first()
+
+        if user is None:
+            raise ResourceNotFoundError(f"User with id {password_token.user_id} does not exist.")
 
         # only reset if the password hasn't been set (or has been reset)
         with session_scope() as session:

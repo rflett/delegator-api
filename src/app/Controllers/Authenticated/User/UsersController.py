@@ -13,11 +13,8 @@ from app.Models import Event, Email, Subscription
 from app.Models.Dao import User, UserPasswordToken, ActiveUser
 from app.Models.Enums import Operations, Resources, Events
 from app.Models.RBAC import Role
-from app.Services import UserService
 
 api = Namespace(path="/users", name="Users", description="Manage a user or users")
-
-user_service = UserService()
 
 
 class NullableDateTime(fields.DateTime):

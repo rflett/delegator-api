@@ -16,11 +16,8 @@ from app.Extensions.Errors import AuthenticationError, ValidationError
 from app.Models import Event, Email
 from app.Models.Dao import User, Organisation, TaskTemplate, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
-from app.Services import UserService
 
 api = Namespace(path="/account", name="Account", description="Manage an account")
-
-user_service = UserService()
 
 
 @api.route("/")
@@ -180,10 +177,13 @@ class AccountController(RequestValidationController):
                         headers={"Authorization": f"Bearer {self.create_service_account_jwt()}"},
                         timeout=10,
                     )
-                    if r.status_code != 200:
+                    if r.status_code == 200:
+                        subscription_id = r.json()["id"]
+                    elif r.status_code == 404:
+                        subscription_id = None
+                    else:
                         current_app.logger.error(str(r.content))
                         return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
-                    subscription_id = r.json()["id"]
                 except requests.exceptions.RequestException as e:
                     current_app.logger.error(str(e))
                     return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
@@ -200,7 +200,7 @@ class AccountController(RequestValidationController):
                             data=json.dumps({"customer_id": customer_id, "plan_id": user.orgs.chargebee_signup_plan}),
                             timeout=10,
                         )
-                        if r.status_code != 200:
+                        if r.status_code != 201:
                             current_app.logger.error(str(r.content))
                             return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
                         url = r.json()["url"]
