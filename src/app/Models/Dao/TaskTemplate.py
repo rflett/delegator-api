@@ -18,6 +18,9 @@ class TaskTemplate(db.Model):
     default_priority = db.Column("default_priority", db.Integer, db.ForeignKey("task_priorities.priority"), default=-1)
     default_description = db.Column("default_description", db.String, default="")
     escalations = db.relationship("TaskTemplateEscalation", lazy=True)
+    label_1 = db.Column("label_1", db.Integer, default=None)
+    label_2 = db.Column("label_2", db.Integer, default=None)
+    label_3 = db.Column("label_3", db.Integer, default=None)
 
     def __init__(
         self,
@@ -27,6 +30,9 @@ class TaskTemplate(db.Model):
         default_time_estimate: int = -1,
         default_description: str = None,
         default_priority: int = -1,
+        label_1: int = None,
+        label_2: int = None,
+        label_3: int = None,
     ):
         self.title = title
         self.org_id = org_id
@@ -34,6 +40,9 @@ class TaskTemplate(db.Model):
         self.default_description = default_description
         self.default_priority = default_priority
         self.default_time_estimate = default_time_estimate
+        self.label_1 = label_1
+        self.label_2 = label_2
+        self.label_3 = label_3
 
     def as_dict(self) -> dict:
         """
@@ -54,4 +63,5 @@ class TaskTemplate(db.Model):
             "default_description": self.default_description,
             "default_priority": self.default_priority,
             "default_time_estimate": self.default_time_estimate,
+            "labels": [l for l in [self.label_1, self.label_2, self.label_3] if l is not None],
         }

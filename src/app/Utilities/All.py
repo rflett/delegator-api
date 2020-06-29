@@ -1,5 +1,8 @@
+import datetime
+import pytz
 import typing
 
+from flask import current_app
 from sqlalchemy import and_
 
 from app.Extensions.Database import session_scope
@@ -69,3 +72,15 @@ def reindex_display_orders(org_id: int, new_position: int = None):
                 """,
                 {"org_id": org_id, "new_position": new_position},
             )
+
+
+def format_date(date: typing.Union[datetime.datetime, None]) -> typing.Union[str, None]:
+    """Given a datetime object in UTC, convert it to a str in UTC in the format that the UI will expect
+
+    :param date: The date to format
+    :return: The date as a string in the RESPONSE_DATE_FORMAT
+    """
+    if date is None:
+        return None
+    else:
+        return pytz.utc.localize(date).strftime(current_app.config["RESPONSE_DATE_FORMAT"])
