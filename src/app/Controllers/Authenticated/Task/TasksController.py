@@ -4,14 +4,16 @@ from dateutil import tz
 
 from flask import current_app, request
 from flask_restx import Namespace, fields
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, or_, func, cast, Date
 from sqlalchemy.orm import aliased
 
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models.Dao import User, Task, TaskLabel, TaskStatus, DelayedTask
+from app.Extensions.Errors import ValidationError
+from app.Models.Dao import User, Task, TaskLabel, TaskStatus, DelayedTask, TaskPriority
 from app.Models.Enums import Operations, Resources, TaskStatuses
+from app.Utilities.All import format_date
 
 api = Namespace(path="/tasks", name="Tasks", description="Manage tasks")
 
@@ -19,6 +21,21 @@ api = Namespace(path="/tasks", name="Tasks", description="Manage tasks")
 class NullableDateTime(fields.DateTime):
     __schema_type__ = ["string", "null"]
     __schema_example__ = "None|2019-09-17T19:08:00+10:00"
+
+
+class NullableString(fields.Integer):
+    __schema_type__ = ["string", "null"]
+    __schema_example__ = "nullable string"
+
+
+class NullableInteger(fields.Integer):
+    __schema_type__ = ["integer", "null"]
+    __schema_example__ = "nullable string"
+
+
+class NullableList(fields.Integer):
+    __schema_type__ = ["list", "null"]
+    __schema_example__ = "nullable list"
 
 
 @api.route("/")
@@ -169,9 +186,9 @@ class CompletedTasks(RequestValidationController):
     filters = api.model(
         "Completed Task Filters Dto",
         {
-            "status": fields.String(enum=[TaskStatuses.COMPLETED, TaskStatuses.CANCELLED]),
-            "assignee": fields.Integer(),
-            "labels": fields.List(fields.Integer()),
+            "status": NullableString(enum=[TaskStatuses.COMPLETED, TaskStatuses.CANCELLED]),
+            "assignee": NullableInteger(),
+            "labels": fields.List(fields.Integer(), min_items=0),
         },
     )
     request_dto = api.model(
@@ -223,7 +240,7 @@ class CompletedTasks(RequestValidationController):
 
     @requires_jwt
     @authorize(Operations.GET, Resources.TASKS)
-    @api.expect(request_dto)
+    @api.expect(request_dto, validate=True)
     @api.marshal_with(response_dto, code=200)
     def post(self, **kwargs):
         """Get all completed tasks"""
@@ -394,3 +411,84 @@ class CompletedTasks(RequestValidationController):
 
         # return as minutes
         return time_spent_delayed // 60
+
+
+@api.route("/scheduled")
+class ScheduledTasks(RequestValidationController):
+    # request
+    request_dto = api.model(
+        "ScheduledTasksRequestDto", {"start_date": fields.Date(required=True), "end_date": fields.Date(required=True)}
+    )
+
+    # response
+    priority_dto = api.model("Task Priority Dto", {"priority": fields.Integer(min=0, max=2), "label": fields.String()})
+    task_dto = api.model(
+        "ScheduledTasksTaskDto",
+        {
+            "id": fields.Integer(),
+            "title": fields.String(),
+            "priority": fields.Nested(priority_dto),
+            "start": fields.DateTime(),
+            "end": NullableDateTime(),
+        },
+    )
+    response_dto = api.model("ScheduledTasksResponseDto", {"tasks": fields.List(fields.Nested(task_dto))})
+
+    @requires_jwt
+    @authorize(Operations.GET, Resources.TASKS)
+    @api.expect(request_dto, validate=True)
+    @api.marshal_with(response_dto, code=200)
+    def post(self, **kwargs):
+        """Get all scheduled tasks"""
+        req_user: User = kwargs["req_user"]
+        request_body = request.get_json()
+
+        try:
+            start_year, start_month, start_day = request_body["start_date"].split("-")
+            end_year, end_month, end_day = request_body["end_date"].split("-")
+        except ValueError:
+            raise ValidationError("start_date and end_date must be in format YYYY-MM-DD")
+
+        try:
+            start_date = datetime.date(int(start_year), int(start_month), int(start_day))
+            end_date = datetime.date(int(end_year), int(end_month), int(end_day))
+        except ValueError:
+            raise ValidationError("start_date and end_date must be valid dates")
+
+        if start_date > end_date:
+            raise ValidationError("end_date must be after start_date")
+
+        with session_scope() as session:
+            qry = (
+                session.query(Task.id, Task.title, TaskPriority, Task.scheduled_for, Task.time_estimate)
+                .join(TaskPriority, Task.priority == TaskPriority.priority)
+                .filter(
+                    Task.org_id == req_user.org_id,
+                    Task.status == TaskStatuses.SCHEDULED,
+                    cast(Task.scheduled_for, Date) <= end_date,
+                    cast(Task.scheduled_for, Date) >= start_date,
+                )
+                .all()
+            )
+
+        tasks = []
+
+        for task in qry:
+            id_, title, priority, scheduled_for, time_estimate = task
+
+            if time_estimate > 0:
+                end = scheduled_for + datetime.timedelta(seconds=time_estimate)
+            else:
+                end = None
+
+            tasks.append(
+                {
+                    "id": id_,
+                    "title": title,
+                    "priority": priority.as_dict(),
+                    "start": format_date(scheduled_for),
+                    "end": format_date(end),
+                }
+            )
+
+        return {"tasks": tasks}, 200

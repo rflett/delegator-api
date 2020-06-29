@@ -51,7 +51,7 @@ class GetTask(RequestValidationController):
         "Task User Dto",
         {"id": fields.Integer(), "uuid": fields.String(), "first_name": fields.String(), "last_name": fields.String()},
     )
-    priority_dto = api.model("Task Priority Dto", {"priority": fields.Integer(min=0, max=1), "label": fields.String()})
+    priority_dto = api.model("Task Priority Dto", {"priority": fields.Integer(min=0, max=2), "label": fields.String()})
     task_label_dto = api.model(
         "Task Label Dto", {"id": fields.Integer(), "label": fields.String(), "colour": fields.String()}
     )
