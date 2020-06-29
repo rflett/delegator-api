@@ -44,6 +44,7 @@ class TaskTypes(RequestValidationController):
             "default_priority": fields.Integer(),
             "tooltip": fields.String(),
             "escalations": fields.List(fields.Nested(escalation_dto)),
+            "labels": fields.List(fields.Integer()),
         },
     )
     get_response_dto = api.model(
@@ -76,6 +77,7 @@ class TaskTypes(RequestValidationController):
             "default_time_estimate": fields.Integer(min=-1, required=True),
             "default_priority": fields.Integer(enum=[-1, 0, 1, 2], required=True),
             "default_description": fields.String(),
+            "labels": fields.List(fields.Integer(), max_items=3),
         },
     )
 
@@ -109,6 +111,7 @@ class TaskTypes(RequestValidationController):
                     default_time_estimate=request_body["default_time_estimate"],
                     default_priority=request_body["default_priority"],
                     default_description=request_body.get("default_description"),
+                    **self._get_labels(request_body.get("labels", [])),
                 )
                 session.add(new_template)
             tt_dict = new_template.as_dict()
@@ -134,6 +137,7 @@ class TaskTypes(RequestValidationController):
             "default_time_estimate": fields.Integer(min=-1, required=True),
             "default_priority": fields.Integer(enum=[-1, 0, 1, 2], required=True),
             "default_description": fields.String(),
+            "labels": fields.List(fields.Integer(), max_items=3, min_items=0),
         },
     )
 
@@ -163,8 +167,20 @@ class TaskTypes(RequestValidationController):
             task_template.default_time_estimate = request_body["default_time_estimate"]
             task_template.default_priority = request_body["default_priority"]
             task_template.default_description = request_body.get("default_description")
+            labels = self._get_labels(request_body.get("labels", []))
+            task_template.label_1 = labels["label_1"]
+            task_template.label_2 = labels["label_2"]
+            task_template.label_3 = labels["label_3"]
 
         return "", 204
+
+    @staticmethod
+    def _get_labels(label_attrs: dict) -> dict:
+        """labels provided as a list, so map their index to the Task column"""
+        labels = {"label_1": None, "label_2": None, "label_3": None}
+        for i in range(1, len(label_attrs) + 1):
+            labels[f"label_{i}"] = label_attrs[i - 1]
+        return labels
 
 
 @api.route("/<int:template_id>")
