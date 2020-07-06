@@ -3,8 +3,6 @@ import datetime
 import hashlib
 import os
 import pytz
-import random
-import string
 import typing
 import uuid
 from os import getenv
@@ -52,6 +50,7 @@ class User(db.Model):
     uuid = db.Column("uuid", db.String)
     org_id = db.Column("org_id", db.Integer, db.ForeignKey("organisations.id"))
     email = db.Column("email", db.String)
+    previous_email = db.Column("previous_email", db.String, default=None)
     first_name = db.Column("first_name", db.String)
     last_name = db.Column("last_name", db.String)
     password = db.Column("password", db.String, default=None)
@@ -214,9 +213,6 @@ class User(db.Model):
         from app.Models.Dao import Task
         from app.Models import Subscription
 
-        def make_random() -> str:
-            return "".join(random.choices(string.ascii_uppercase + string.digits, k=15))
-
         if self.disabled is None:
             subscription = Subscription(self.orgs.chargebee_subscription_id)
             subscription.decrement_subscription(req_user)
@@ -229,10 +225,11 @@ class User(db.Model):
             task.drop(req_user)
 
         # delete their avatar
-        self._delete_avatar()
-
-        self.password = _hash_password(make_random())
+        self.previous_email = self.email
+        self.email = None
+        self.password = None
         self.deleted = datetime.datetime.utcnow()
+        self._delete_avatar()
 
     def as_dict(self) -> dict:
         """
@@ -408,6 +405,8 @@ class User(db.Model):
         try:
             s3.put_object_tagging(Bucket=bucket, Key=key, Tagging={"TagSet": [{"Key": "deleted", "Value": "true"}]})
             current_app.logger.info(f"Tagged {bucket}/{key} for deletion")
+        except s3.exceptions.NoSuchKey:
+            return
         except ClientError as e:
             current_app.logger.error(f"Error tagging file {bucket}/{key} for deletion - {e}")
 

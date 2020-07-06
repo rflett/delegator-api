@@ -203,7 +203,6 @@ class UserController(RequestValidationController):
                 last_name=request_body["last_name"],
                 role=request_body["role_id"],
                 job_title=request_body.get("job_title"),
-                disabled=None,
                 created_by=req_user.id,
             )
             session.add(user)
