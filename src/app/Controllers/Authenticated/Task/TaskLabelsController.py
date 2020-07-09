@@ -27,7 +27,7 @@ class TaskLabels(RequestValidationController):
         req_user = kwargs["req_user"]
 
         with session_scope() as session:
-            task_labels_qry = session.query(TaskLabel).filter_by(org_id=req_user.org_id).all()
+            task_labels_qry = session.query(TaskLabel).filter_by(org_id=req_user.org_id).order_by(TaskLabel.id).all()
 
         req_user.log(Operations.GET, Resources.TASK_LABELS)
         return {"labels": [tl.as_dict() for tl in task_labels_qry]}, 200
