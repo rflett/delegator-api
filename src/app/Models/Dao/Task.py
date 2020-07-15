@@ -173,7 +173,7 @@ class Task(db.Model):
             "finished_at": finished_at,
             "status_changed_at": status_changed_at,
             "priority_changed_at": priority_changed_at,
-            "labels": [l for l in [self.label_1, self.label_2, self.label_3] if l is not None],
+            "labels": [_ for _ in [self.label_1, self.label_2, self.label_3] if _ is not None],
             "display_order": self.display_order,
         }
 
