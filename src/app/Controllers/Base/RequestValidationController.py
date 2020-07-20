@@ -1,6 +1,8 @@
 from flask import request
+from sqlalchemy import exists
 
 from app.Controllers.Base import ObjectValidationController
+from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
 from app.Models.Dao import User, Task
 
@@ -53,6 +55,11 @@ class RequestValidationController(ObjectValidationController):
         :param email:   The email to validate
         :return:        True if the email is valid, or a Flask Response.
         """
+        # check the email isn't in use currently
+        with session_scope() as session:
+            if session.query(exists().where(User.email == email)).scalar():
+                raise ValidationError("That email is already in use.")
+
         return True
 
     def validate_get_user(self, user_id: int, **kwargs) -> User:

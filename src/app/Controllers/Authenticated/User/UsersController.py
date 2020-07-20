@@ -7,11 +7,12 @@ from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
 from app.Extensions.Database import session_scope
+from app.Extensions.Errors import AuthorizationError
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Models import Event, Email, Subscription
 from app.Models.Dao import User, UserPasswordToken, ActiveUser
-from app.Models.Enums import Operations, Resources, Events
+from app.Models.Enums import Operations, Resources, Events, Roles
 from app.Models.RBAC import Role
 
 api = Namespace(path="/users", name="Users", description="Manage a user or users")
@@ -250,6 +251,7 @@ class UserController(RequestValidationController):
         "Update User Request",
         {
             "id": fields.Integer(required=True),
+            "email": fields.String(required=True),
             "role_id": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER"], required=True),
             "first_name": fields.String(required=True),
             "last_name": fields.String(required=True),
@@ -263,15 +265,24 @@ class UserController(RequestValidationController):
     @api.response(204, "Success")
     def put(self, **kwargs):
         """Update a user. """
-        req_user = kwargs["req_user"]
+        req_user: User = kwargs["req_user"]
         request_body = request.get_json()
 
         user_to_update = self.check_user_id(request_body["id"], should_exist=True)
         self.check_auth_scope(user_to_update, **kwargs)
         self.check_user_role(req_user, request_body["role_id"], user_to_update)
+        self.validate_email(request_body["email"])
 
-        # for all attributes in the request, update them on the user if they exist
+        if user_to_update.email != request_body["email"]:
+            # only admins can update emails of other users
+            if req_user.role != Roles.ORG_ADMIN:
+                raise AuthorizationError("Only an organisation administrator can update a user email")
+            # org admin email cannot be changed yet without Delegator assistance
+            if user_to_update.role == Roles.ORG_ADMIN:
+                raise AuthorizationError("Please contact us to change the administrators email address")
+
         with session_scope():
+            user_to_update.email = request_body["email"]
             user_to_update.role = request_body["role_id"]
             user_to_update.first_name = request_body["first_name"]
             user_to_update.last_name = request_body["last_name"]

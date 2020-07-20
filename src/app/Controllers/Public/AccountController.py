@@ -156,7 +156,6 @@ class AccountController(RequestValidationController):
 
         email = request_body["email"]
         password = request_body["password"]
-        self.validate_email(email)
         self.validate_password(password)
 
         with session_scope() as session:
