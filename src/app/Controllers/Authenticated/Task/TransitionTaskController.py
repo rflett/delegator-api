@@ -4,9 +4,8 @@ from flask_restx import Namespace, fields
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models import Event
 from app.Models.Dao import TaskStatus, Task
-from app.Models.Enums import TaskStatuses, Operations, Resources, Events
+from app.Models.Enums import TaskStatuses, Operations, Resources
 from app.Models.RBAC import ServiceAccount
 from app.Utilities.All import reindex_display_orders, get_task_by_id
 
@@ -46,15 +45,6 @@ class TransitionTask(RequestValidationController):
         reindex_display_orders(task.org_id, new_position=display_order)
         with session_scope():
             task.display_order = display_order
-
-        # send event so reloads occur
-        Event(
-            org_id=req_user.org_id,
-            event=Events.task_repositioned,
-            event_id=task.id,
-            event_friendly="Repositioned in dashboard.",
-            store_in_db=False
-        ).publish()
 
         return "", 204
 
