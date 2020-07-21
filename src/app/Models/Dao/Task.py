@@ -310,8 +310,6 @@ class Task(db.Model):
         """Change the tasks priority"""
         with session_scope():
             if priority > self.priority:
-                self.priority = priority
-                self.priority_changed_at = datetime.datetime.utcnow()
                 # task priority is increasing
                 priority_notification = Notification(
                     title="Task escalated",
@@ -323,7 +321,8 @@ class Task(db.Model):
                     user_ids=get_all_user_ids(self.org_id, exclude=notification_exclusions),
                 )
                 priority_notification.push()
-
+            self.priority = priority
+            self.priority_changed_at = datetime.datetime.utcnow()
         current_app.logger.info(f"Changed task {self.id} priority to {priority}")
 
     def unassign(self, req_user: User) -> None:
