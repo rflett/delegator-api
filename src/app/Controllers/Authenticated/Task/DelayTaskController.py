@@ -2,12 +2,13 @@ import datetime
 
 from flask import current_app, request
 from flask_restx import Namespace, fields
+from sqlalchemy import desc
 
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Models import Notification, NotificationAction
-from app.Models.Dao import DelayedTask
+from app.Models.Dao import DelayedTask, User, Task
 from app.Models.Enums import TaskStatuses, Operations, Resources, Events
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
 from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
@@ -86,8 +87,8 @@ class GetDelayTask(RequestValidationController):
         __schema_type__ = ["string", "null"]
         __schema_example__ = "None|2019-09-17T19:08:00+10:00"
 
-    response_dto = api.model(
-        "Delayed Tasks Response",
+    delayed_task_dto = api.model(
+        "Delayed Task Dto",
         {
             "task_id": fields.Integer(),
             "delay_for": fields.Integer(),
@@ -98,6 +99,7 @@ class GetDelayTask(RequestValidationController):
             "expired": NullableDateTime,
         },
     )
+    response_dto = api.model("Delayed Tasks Response", {"tasks": fields.List(fields.Nested(delayed_task_dto))})
 
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK)
@@ -105,6 +107,26 @@ class GetDelayTask(RequestValidationController):
     def get(self, task_id: int, **kwargs):
         """Returns the delayed info for a task """
         req_user = kwargs["req_user"]
+
+        ret = []
+
+        with session_scope() as session:
+            qry = (
+                session.query(DelayedTask, User.first_name, User.last_name)
+                .join(Task, DelayedTask.task_id == task_id)
+                .join(User, DelayedTask.delayed_by == User.id)
+                .filter(Task.org_id == req_user.org_id)
+                .order_by(desc(DelayedTask.delayed_at))
+                .all()
+            )
+
+        for result in qry:
+            task, db_fn, db_ln = result
+            delayed_task_dict = task.as_dict()
+            delayed_task_dict["delayed_by"] = db_fn + " " + db_ln
+            ret.append(delayed_task_dict)
+
         task = get_task_by_id(task_id, req_user.org_id)
         req_user.log(Operations.GET, Resources.TASK, resource_id=task.id)
-        return task.delayed_info(), 200
+
+        return {"tasks": ret}, 200

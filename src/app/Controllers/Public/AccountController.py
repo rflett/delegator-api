@@ -156,7 +156,6 @@ class AccountController(RequestValidationController):
 
         email = request_body["email"]
         password = request_body["password"]
-        self.validate_email(email)
         self.validate_password(password)
 
         with session_scope() as session:
@@ -174,7 +173,7 @@ class AccountController(RequestValidationController):
                 try:
                     r = requests.get(
                         url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/{customer_id}",
-                        headers={"Authorization": f"Bearer {self.create_service_account_jwt()}"},
+                        headers={"Authorization": f"{self.create_service_account_jwt()}"},
                         timeout=10,
                     )
                     if r.status_code == 200:
@@ -195,7 +194,7 @@ class AccountController(RequestValidationController):
                             url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/checkout/",
                             headers={
                                 "Content-Type": "application/json",
-                                "Authorization": f"Bearer {self.create_service_account_jwt()}",
+                                "Authorization": f"{self.create_service_account_jwt()}",
                             },
                             data=json.dumps({"customer_id": customer_id, "plan_id": user.orgs.chargebee_signup_plan}),
                             timeout=10,

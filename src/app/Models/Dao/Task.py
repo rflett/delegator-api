@@ -2,9 +2,10 @@ import datetime
 import pytz
 from os import getenv
 
+import boto3
 from boto3.dynamodb.conditions import Key
 from flask import current_app
-import boto3
+from sqlalchemy import desc
 
 from app.Extensions.Database import db, session_scope
 from app.Extensions.Errors import ValidationError
@@ -172,7 +173,7 @@ class Task(db.Model):
             "finished_at": finished_at,
             "status_changed_at": status_changed_at,
             "priority_changed_at": priority_changed_at,
-            "labels": [l for l in [self.label_1, self.label_2, self.label_3] if l is not None],
+            "labels": [_ for _ in [self.label_1, self.label_2, self.label_3] if _ is not None],
             "display_order": self.display_order,
         }
 
@@ -225,8 +226,9 @@ class Task(db.Model):
         with session_scope() as session:
             qry = (
                 session.query(DelayedTask, User.first_name, User.last_name)
+                .join(Task, DelayedTask.task_id == self.id)
                 .join(User, DelayedTask.delayed_by == User.id)
-                .filter(Task.id == self.id)
+                .order_by(desc(DelayedTask.delayed_at))
                 .first()
             )
 
