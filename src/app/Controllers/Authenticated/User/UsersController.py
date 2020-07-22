@@ -271,7 +271,6 @@ class UserController(RequestValidationController):
         user_to_update = self.check_user_id(request_body["id"], should_exist=True)
         self.check_auth_scope(user_to_update, **kwargs)
         self.check_user_role(req_user, request_body["role_id"], user_to_update)
-        self.validate_email(request_body["email"])
 
         if user_to_update.email != request_body["email"]:
             # only admins can update emails of other users
@@ -281,8 +280,11 @@ class UserController(RequestValidationController):
             if user_to_update.role == Roles.ORG_ADMIN:
                 raise AuthorizationError("Please contact us to change the administrators email address")
 
+            self.validate_email(request_body["email"])
+            with session_scope():
+                user_to_update.email = request_body["email"]
+
         with session_scope():
-            user_to_update.email = request_body["email"]
             user_to_update.role = request_body["role_id"]
             user_to_update.first_name = request_body["first_name"]
             user_to_update.last_name = request_body["last_name"]
