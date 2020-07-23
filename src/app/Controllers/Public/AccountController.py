@@ -12,7 +12,7 @@ from sqlalchemy import func, exists
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt
 from app.Extensions.Database import session_scope
-from app.Extensions.Errors import AuthenticationError, ValidationError
+from app.Extensions.Errors import ValidationError
 from app.Models import Event, Email
 from app.Models.Dao import User, Organisation, TaskTemplate, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
@@ -216,7 +216,7 @@ class AccountController(RequestValidationController):
             # don't let them log in if they are disabled
             if user.disabled is not None:
                 current_app.logger.info(f"Disabled user {user.id} tried to log in.")
-                raise AuthenticationError(
+                raise ValidationError(
                     "Cannot log in since this account has been disabled. Please consult your "
                     "Administrator for assistance."
                 )
@@ -224,7 +224,7 @@ class AccountController(RequestValidationController):
             # don't let them log in if they are deleted (unlikely to happen)
             if user.deleted is not None:
                 current_app.logger.warning(f"Deleted user {user.id} tried to log in.")
-                raise AuthenticationError("Email or password incorrect")
+                raise ValidationError("Email or password incorrect")
 
             # check login attempts
             if user.failed_login_attempts > 0:
@@ -240,7 +240,7 @@ class AccountController(RequestValidationController):
                             f"user last failed {diff}s ago. "
                             f"timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s"
                         )
-                        raise AuthenticationError("Too many incorrect password attempts.")
+                        raise ValidationError("Too many incorrect password attempts.")
                     else:
                         with session_scope():
                             # reset timeout
@@ -271,7 +271,7 @@ class AccountController(RequestValidationController):
                 current_app.logger.info(f"Incorrect password attempt for user {user.id}.")
                 user.failed_login_attempts += 1
                 user.failed_login_time = datetime.datetime.utcnow()
-                raise AuthenticationError("Email or password incorrect")
+                raise ValidationError("Email or password incorrect")
 
     @requires_jwt
     @api.response(204, "Success")
@@ -308,7 +308,7 @@ class AccountController(RequestValidationController):
                             f"Email last failed {diff}s ago. "
                             f"Timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s"
                         )
-                        raise AuthenticationError("Too many incorrect attempts.")
+                        raise ValidationError("Too many incorrect attempts.")
                     else:
                         # reset
                         current_app.logger.info(
@@ -316,7 +316,7 @@ class AccountController(RequestValidationController):
                             f"Timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s, resetting timeout."
                         )
                         session.delete(failed_email)
-                        raise AuthenticationError("Email incorrect.")
+                        raise ValidationError("Email incorrect.")
                 else:
                     # increment failed attempts
                     failed_email.failed_attempts += 1
@@ -324,13 +324,13 @@ class AccountController(RequestValidationController):
                     current_app.logger.info(
                         f"Incorrect email attempt for user, " f"total failed attempts: {failed_email.failed_attempts}"
                     )
-                    raise AuthenticationError("Email incorrect.")
+                    raise ValidationError("Email incorrect.")
             else:
                 # hasn't failed before, so create it
                 current_app.logger.info("User failed to log in.")
                 new_failure = FailedLogin(email=email)
                 session.add(new_failure)
-                raise AuthenticationError("Email incorrect.")
+                raise ValidationError("Email incorrect.")
 
     @staticmethod
     def _generate_jwt_token(user: User) -> str:
