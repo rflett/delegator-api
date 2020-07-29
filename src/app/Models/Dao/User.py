@@ -8,6 +8,7 @@ import uuid
 from os import getenv
 
 import boto3
+import structlog
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from flask import current_app
@@ -24,6 +25,7 @@ from app.Models.LocalMockData import MockActivity
 dyn_db = boto3.resource("dynamodb")
 s3 = boto3.client("s3")
 cloudfront = boto3.client("cloudfront")
+log = structlog.getLogger()
 
 
 def _hash_password(password: str) -> str:
@@ -151,9 +153,7 @@ class User(db.Model):
         )
         with session_scope() as session:
             session.add(audit_log)
-        current_app.logger.info(
-            f"user with id {self.id} did {operation} on {resource} with " f"a resource_id of {resource_id}"
-        )
+        log.info(f"user with id {self.id} did {operation} on {resource} with " f"a resource_id of {resource_id}")
 
     def set_password(self, password) -> None:
         """
@@ -206,7 +206,7 @@ class User(db.Model):
             if failed_email:
                 session.query(FailedLogin).filter_by(email=self.email).delete()
 
-            current_app.logger.info(f"cleared failed logins for {self.email}")
+            log.info(f"cleared failed logins for {self.email}")
 
     def delete(self, req_user) -> None:
         """ Deletes the user """
@@ -295,9 +295,9 @@ class User(db.Model):
         activity = user_activity_table.query(
             Select="ALL_ATTRIBUTES", KeyConditionExpression=Key("id").eq(self.id), ScanIndexForward=False
         )
-        current_app.logger.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
+        log.info(f"Found {activity.get('Count')} activity items for user id {self.id}")
 
-        log = []
+        activity_log = []
 
         for item in activity.get("Items"):
             activity_timestamp = datetime.datetime.strptime(
@@ -305,9 +305,9 @@ class User(db.Model):
             )
             activity_timestamp = pytz.utc.localize(activity_timestamp)
             item["activity_timestamp"] = activity_timestamp.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
-            log.append(item)
+            activity_log.append(item)
 
-        return log
+        return activity_log
 
     def name(self) -> str:
         """ Returns their full name """
@@ -368,7 +368,7 @@ class User(db.Model):
                 f"user/avatar/{new_uuid}.jpg",
                 ExtraArgs={"Metadata": {"Content-Type": "image/jpeg"}},
             )
-            current_app.logger.info(f"Uploaded avatar {self.uuid}.jpg")
+            log.info(f"Uploaded avatar {self.uuid}.jpg")
 
             self._delete_avatar()
 
@@ -376,7 +376,7 @@ class User(db.Model):
                 self.uuid = new_uuid
 
         except ClientError as e:
-            current_app.logger.error(f"error uploading profile avatar - {e}")
+            log.error(f"error uploading profile avatar - {e}")
 
     def reset_avatar(self) -> None:
         """Copies the default.jpg avatar to the user uuid to 'reset' it"""
@@ -388,7 +388,7 @@ class User(db.Model):
                 CopySource={"Bucket": current_app.config["ASSETS_BUCKET"], "Key": "user/avatar/default.jpg"},
                 Key=f"user/avatar/{new_uuid}.jpg",
             )
-            current_app.logger.info(f"Reset avatar {new_uuid}.jpg")
+            log.info(f"Reset avatar {new_uuid}.jpg")
 
             self._delete_avatar()
 
@@ -396,7 +396,7 @@ class User(db.Model):
                 self.uuid = new_uuid
 
         except ClientError as e:
-            current_app.logger.error(f"Error resetting user avatar - {e}")
+            log.error(f"Error resetting user avatar - {e}")
 
     def _delete_avatar(self):
         """Tag avatar for deletion"""
@@ -404,11 +404,11 @@ class User(db.Model):
         key = f"user/avatar/{self.uuid}.jpg"
         try:
             s3.put_object_tagging(Bucket=bucket, Key=key, Tagging={"TagSet": [{"Key": "deleted", "Value": "true"}]})
-            current_app.logger.info(f"Tagged {bucket}/{key} for deletion")
+            log.info(f"Tagged {bucket}/{key} for deletion")
         except s3.exceptions.NoSuchKey:
             return
         except ClientError as e:
-            current_app.logger.error(f"Error tagging file {bucket}/{key} for deletion - {e}")
+            log.error(f"Error tagging file {bucket}/{key} for deletion - {e}")
 
     def is_only_org_admin(self) -> bool:
         """Checks to see if the user is the only ORG_ADMIN"""

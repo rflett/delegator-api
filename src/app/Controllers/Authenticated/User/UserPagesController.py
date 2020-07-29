@@ -1,4 +1,4 @@
-from flask import current_app
+import structlog
 from flask_restx import Namespace, fields
 
 from app.Controllers.Base import RequestValidationController
@@ -8,6 +8,7 @@ from app.Models.Enums import Operations, Resources
 from app.Models.RBAC import Permission
 
 api = Namespace(path="/user/pages", name="User", description="Manage a user")
+log = structlog.getLogger()
 
 
 @api.route("/")
@@ -34,5 +35,5 @@ class UserPagesController(RequestValidationController):
                     pages.append(page.split("_PAGE")[0])
 
             req_user.log(Operations.GET, Resources.PAGES)
-            current_app.logger.info(f"found {len(pages)} pages.")
+            log.info(f"found {len(pages)} pages.")
             return sorted(pages), 200

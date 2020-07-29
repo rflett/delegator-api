@@ -1,4 +1,5 @@
-from flask import request, current_app
+import structlog
+from flask import request
 from flask_restx import Namespace, fields
 from sqlalchemy import and_
 
@@ -11,6 +12,7 @@ from app.Models.Dao import TaskTemplate, TaskTemplateEscalation
 from app.Models.Enums import Events, Operations, Resources
 
 api = Namespace(path="/task-templates", name="Task Templates", description="Manage Task Templates")
+log = structlog.getLogger()
 
 
 class NullableDateTime(fields.DateTime):
@@ -63,7 +65,7 @@ class EscalationPolicies(RequestValidationController):
             event_friendly=f"Created escalation for {task_template.title}.",
         ).publish()
         req_user.log(Operations.CREATE, Resources.TASK_TEMPLATE_ESCALATION, task_template.id)
-        current_app.logger.info(f"created task type escalation {new_policy.as_dict()}")
+        log.info(f"created task type escalation {new_policy.as_dict()}")
 
         return "", 204
 
@@ -116,7 +118,7 @@ class EscalationPolicies(RequestValidationController):
             event_friendly=f"Updated escalation for {title}.",
         ).publish()
         req_user.log(Operations.UPDATE, Resources.TASK_TEMPLATE_ESCALATION, escalation.id)
-        current_app.logger.info(f"updated task type escalation {escalation.as_dict()}")
+        log.info(f"updated task type escalation {escalation.as_dict()}")
 
         return "", 204
 
@@ -153,7 +155,7 @@ class DeleteEscalationPolicies(RequestValidationController):
                     .filter_by(id=escalation_id, template_id=template_id, org_id=req_user.org_id)
                     .delete(synchronize_session=False)
                 )
-                current_app.logger.info(f"deleted escalation id={escalation_id}, template_id={template_id}")
+                log.info(f"deleted escalation id={escalation_id}, template_id={template_id}")
 
         Event(
             org_id=req_user.org_id,

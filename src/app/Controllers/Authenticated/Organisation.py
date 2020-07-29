@@ -1,7 +1,8 @@
 import datetime
 from decimal import Decimal
 
-from flask import request, current_app
+import structlog
+from flask import request
 from flask_restx import Namespace, fields
 from sqlalchemy import exists, and_, func
 
@@ -15,6 +16,7 @@ from app.Models.Dao import Organisation
 from app.Models.Enums import Operations, Resources
 
 api = Namespace(path="/org", name="Organisation", description="Manage the organisation")
+log = structlog.getLogger()
 
 
 class NullableString(fields.String):
@@ -228,7 +230,7 @@ class OrganisationSubscription(RequestValidationController):
             else:
                 # check subscription_id matches
                 if not org.chargebee_subscription_id == subscription_id:
-                    current_app.logger.error(
+                    log.error(
                         f"org subscription id {org.chargebee_subscription_id} doesn't match "
                         f"subscription_id in the request {subscription_id}"
                     )
@@ -236,7 +238,7 @@ class OrganisationSubscription(RequestValidationController):
                 else:
                     org.chargebee_setup_complete = True
                     req_user.log(Operations.UPDATE, Resources.ORGANISATION_SUBSCRIPTION, org.id)
-                    current_app.logger.info(f"Org {org.name} has completed chargebee setup")
+                    log.info(f"Org {org.name} has completed chargebee setup")
                     return "", 204
 
 

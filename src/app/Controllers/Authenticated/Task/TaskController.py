@@ -1,6 +1,7 @@
 import datetime
 import pytz
 
+import structlog
 from flask import request, current_app
 from flask_restx import Namespace, fields
 from sqlalchemy import exists, and_
@@ -17,7 +18,7 @@ from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
 from app.Utilities.All import get_all_user_ids, reindex_display_orders
 
 api = Namespace(path="/task", name="Task", description="Manage a task")
-
+log = structlog.getLogger()
 task_statuses = ["SCHEDULED", "READY", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
 
 
@@ -386,7 +387,7 @@ class ManageTask(RequestValidationController):
             event_friendly=f"Created task {task.title}.",
         ).publish()
         req_user.log(Operations.CREATE, Resources.TASK, resource_id=task.id)
-        current_app.logger.info(f"created task {task.id}")
+        log.info(f"created task {task.id}")
 
         # optionally assign the task if an assignee was present in the create task request
         if request_body.get("assignee") is not None:
@@ -426,7 +427,7 @@ class ManageTask(RequestValidationController):
             event_friendly=f"Scheduled task {task.title}.",
         ).publish()
         req_user.log(Operations.CREATE, Resources.TASK, resource_id=task.id)
-        current_app.logger.info(f"Scheduled task {task.id}")
+        log.info(f"Scheduled task {task.id}")
 
         # optionally assign the task if an assignee was present in the create task request
         if request_body.get("assignee") is not None:

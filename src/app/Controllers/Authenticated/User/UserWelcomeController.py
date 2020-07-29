@@ -1,3 +1,4 @@
+import structlog
 from flask import request, current_app
 from flask_restx import Namespace, fields
 
@@ -8,6 +9,7 @@ from app.Models import Email
 from app.Models.Enums import Operations, Resources
 
 api = Namespace(path="/user", name="User", description="Manage a user")
+log = structlog.getLogger()
 
 
 @api.route("/resend-welcome")
@@ -38,7 +40,7 @@ class UserController(RequestValidationController):
             inviter=req_user,
         )
 
-        current_app.logger.info(f"User {req_user.id} resent verification email to user {user.id}.")
+        log.info(f"User {req_user.id} resent verification email to user {user.id}.")
         req_user.log(Operations.UPDATE, Resources.USER, resource_id=user.id)
 
         return "", 204

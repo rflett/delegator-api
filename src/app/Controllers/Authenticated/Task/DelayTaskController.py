@@ -1,6 +1,7 @@
 import datetime
 
-from flask import current_app, request
+import structlog
+from flask import request
 from flask_restx import Namespace, fields
 from sqlalchemy import desc
 
@@ -15,6 +16,7 @@ from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
 from app.Utilities.All import get_task_by_id
 
 api = Namespace(path="/task/delay", name="Task", description="Manage a task")
+log = structlog.getLogger()
 
 
 @api.route("/")
@@ -77,7 +79,7 @@ class DelayTask(RequestValidationController):
             delayed_notification.push()
 
         req_user.log(Operations.DELAY, Resources.TASK, resource_id=task.id)
-        current_app.logger.info(f"User {req_user.id} delayed task {task.id} for {delay_for}s.")
+        log.info(f"User {req_user.id} delayed task {task.id} for {delay_for}s.")
         return "", 204
 
 

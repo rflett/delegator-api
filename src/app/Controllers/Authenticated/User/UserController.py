@@ -1,4 +1,4 @@
-from flask import current_app
+import structlog
 from flask_restx import Namespace, fields
 
 from app.Controllers.Base import RequestValidationController
@@ -8,6 +8,7 @@ from app.Models import Event
 from app.Models.Enums import Operations, Resources, Events
 
 api = Namespace(path="/user", name="User", description="Manage a user")
+log = structlog.getLogger()
 
 
 class NullableDateTime(fields.DateTime):
@@ -83,5 +84,5 @@ class UserController(RequestValidationController):
 
         req_user.log(Operations.DELETE, Resources.USER, resource_id=user_to_delete.id)
 
-        current_app.logger.info(f"User {req_user.id} deleted user {user_to_delete.id}")
+        log.info(f"User {req_user.id} deleted user {user_to_delete.id}")
         return "", 204

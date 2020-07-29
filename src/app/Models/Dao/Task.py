@@ -3,6 +3,7 @@ import pytz
 from os import getenv
 
 import boto3
+import structlog
 from boto3.dynamodb.conditions import Key
 from flask import current_app
 from sqlalchemy import desc
@@ -18,6 +19,7 @@ from app.Models.LocalMockData import MockActivity
 from app.Utilities.All import get_all_user_ids
 
 dyn_db = boto3.resource("dynamodb")
+log = structlog.getLogger()
 
 
 class Task(db.Model):
@@ -187,7 +189,7 @@ class Task(db.Model):
 
         start_of_history_str = start_of_history.strftime(current_app.config["DYN_DB_ACTIVITY_DATE_FORMAT"])
 
-        current_app.logger.info(
+        log.info(
             f"Retrieving {max_days_of_history} days of history "
             f"({start_of_history.strftime('%Y-%m-%d %H:%M:%S')} "
             f"to {datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}) for task {self.id}. "
@@ -205,9 +207,9 @@ class Task(db.Model):
             ScanIndexForward=False,
         )
 
-        current_app.logger.info(f"Found {activity.get('Count')} activity items for task id {self.id}")
+        log.info(f"Found {activity.get('Count')} activity items for task id {self.id}")
 
-        log = []
+        activity_log = []
 
         for item in activity.get("Items"):
             activity_timestamp = datetime.datetime.strptime(
@@ -215,9 +217,9 @@ class Task(db.Model):
             )
             activity_timestamp = pytz.utc.localize(activity_timestamp)
             item["activity_timestamp"] = activity_timestamp.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
-            log.append(item)
+            activity_log.append(item)
 
-        return log
+        return activity_log
 
     def delayed_info(self) -> dict:
         """ Gets the latest delayed information about a task """
@@ -259,7 +261,7 @@ class Task(db.Model):
         dropped_notification.push()
 
         req_user.log(Operations.DROP, Resources.TASK, resource_id=self.id)
-        current_app.logger.info(f"User {req_user.id} dropped task {self.id} which was assigned to {old_assignee}.")
+        log.info(f"User {req_user.id} dropped task {self.id} which was assigned to {old_assignee}.")
 
     def assign(self, assignee: int, req_user: User, notify: bool = True) -> None:
         """Common function for assigning a task """
@@ -304,7 +306,7 @@ class Task(db.Model):
             )
             assigned_notification.push()
         req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=self.id)
-        current_app.logger.info(f"assigned task {self.id} to user {assignee}")
+        log.info(f"assigned task {self.id} to user {assignee}")
 
     def change_priority(self, priority: int, notification_exclusions: list = None) -> None:
         """Change the tasks priority"""
@@ -323,7 +325,7 @@ class Task(db.Model):
                 priority_notification.push()
             self.priority = priority
             self.priority_changed_at = datetime.datetime.utcnow()
-        current_app.logger.info(f"Changed task {self.id} priority to {priority}")
+        log.info(f"Changed task {self.id} priority to {priority}")
 
     def unassign(self, req_user: User) -> None:
         """Common function for unassigning a task """
@@ -354,7 +356,7 @@ class Task(db.Model):
                 event_friendly=f"Unassigned from {self.title} by {req_user.name()}.",
             ).publish()
             req_user.log(Operations.ASSIGN, Resources.TASK, resource_id=self.id)
-            current_app.logger.info(f"Unassigned user {old_assignee.id} from task {self.id}")
+            log.info(f"Unassigned user {old_assignee.id} from task {self.id}")
 
     def transition(self, status: str, req_user: User = None) -> None:
         """Common function for transitioning a task """
@@ -408,7 +410,7 @@ class Task(db.Model):
             event_friendly=f"Transitioned {self.title} from {old_status_label} to {new_status_label}.",
         ).publish()
         req_user.log(Operations.TRANSITION, Resources.TASK, resource_id=self.id)
-        current_app.logger.info(f"User {req_user.id} transitioned task {self.id} from {old_status} to {status}")
+        log.info(f"User {req_user.id} transitioned task {self.id} from {old_status} to {status}")
 
     @staticmethod
     def _pretty_status_label(status: str) -> str:

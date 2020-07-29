@@ -5,6 +5,7 @@ from os import getenv
 
 import jwt
 import requests
+import structlog
 from flask import request, current_app
 from flask_restx import Namespace, fields
 from sqlalchemy import func, exists
@@ -18,6 +19,7 @@ from app.Models.Dao import User, Organisation, TaskTemplate, FailedLogin
 from app.Models.Enums import Events, Operations, Resources
 
 api = Namespace(path="/account", name="Account", description="Manage an account")
+log = structlog.getLogger()
 
 
 @api.route("/")
@@ -68,7 +70,7 @@ class AccountController(RequestValidationController):
 
         except Exception as e:
             # rollback
-            current_app.logger.error(str(e))
+            log.error(str(e))
             return "Hmm, we couldn't sign you up! Please contact support@delegator.com.au", 500
 
         # create user
@@ -89,7 +91,7 @@ class AccountController(RequestValidationController):
         user.create_settings()
         user.reset_avatar()
         user.log(Operations.CREATE, Resources.USER, resource_id=user.id)
-        current_app.logger.info(f"User {user.id} signed up.")
+        log.info(f"User {user.id} signed up.")
 
         # send email
         email = Email(user.email)
@@ -115,11 +117,11 @@ class AccountController(RequestValidationController):
                 timeout=10,
             )
             if r.status_code != 200:
-                current_app.logger.error(str(r.content))
+                log.error(str(r.content))
                 return "Hmm, we couldn't sign you up! Please contact support@delegator.com.au", 500
 
         except requests.exceptions.RequestException as e:
-            current_app.logger.error(str(e))
+            log.error(str(e))
             return "Hmm, we couldn't sign you up! Please contact support@delegator.com.au", 500
 
         response = r.json()
@@ -181,10 +183,10 @@ class AccountController(RequestValidationController):
                     elif r.status_code == 404:
                         subscription_id = None
                     else:
-                        current_app.logger.error(str(r.content))
+                        log.error(str(r.content))
                         return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
                 except requests.exceptions.RequestException as e:
-                    current_app.logger.error(str(e))
+                    log.error(str(e))
                     return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
 
                 if not subscription_id == customer_id:
@@ -200,12 +202,12 @@ class AccountController(RequestValidationController):
                             timeout=10,
                         )
                         if r.status_code != 201:
-                            current_app.logger.error(str(r.content))
+                            log.error(str(r.content))
                             return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
                         url = r.json()["url"]
                         return {"url": url}, 200
                     except requests.exceptions.RequestException as e:
-                        current_app.logger.error(str(e))
+                        log.error(str(e))
                         return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
 
                 else:
@@ -215,7 +217,7 @@ class AccountController(RequestValidationController):
 
             # don't let them log in if they are disabled
             if user.disabled is not None:
-                current_app.logger.info(f"Disabled user {user.id} tried to log in.")
+                log.info(f"Disabled user {user.id} tried to log in.")
                 raise ValidationError(
                     "Cannot log in since this account has been disabled. Please consult your "
                     "Administrator for assistance."
@@ -223,12 +225,12 @@ class AccountController(RequestValidationController):
 
             # don't let them log in if they are deleted (unlikely to happen)
             if user.deleted is not None:
-                current_app.logger.warning(f"Deleted user {user.id} tried to log in.")
+                log.warning(f"Deleted user {user.id} tried to log in.")
                 raise ValidationError("Email or password incorrect")
 
             # check login attempts
             if user.failed_login_attempts > 0:
-                current_app.logger.info(
+                log.info(
                     f"User {user.id} has failed to log in "
                     f"{user.failed_login_attempts} / {current_app.config['FAILED_LOGIN_ATTEMPTS_MAX']} times."
                 )
@@ -236,7 +238,7 @@ class AccountController(RequestValidationController):
                     # check timeout
                     diff = (datetime.datetime.utcnow() - user.failed_login_time).seconds
                     if diff < current_app.config["FAILED_LOGIN_ATTEMPTS_TIMEOUT"]:
-                        current_app.logger.info(
+                        log.info(
                             f"user last failed {diff}s ago. "
                             f"timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s"
                         )
@@ -244,7 +246,7 @@ class AccountController(RequestValidationController):
                     else:
                         with session_scope():
                             # reset timeout
-                            current_app.logger.info(
+                            log.info(
                                 f"User last failed {diff}s ago. "
                                 f"timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s."
                             )
@@ -258,7 +260,7 @@ class AccountController(RequestValidationController):
                 user.failed_login_time = None
 
                 if user.role == "LOCKED":
-                    current_app.logger.warning(f"Locked user {user.email} attempted to login.")
+                    log.warning(f"Locked user {user.email} attempted to login.")
                     return {"role": user.role, "role_before_locked": user.role_before_locked}, 200
 
                 user.is_active()
@@ -268,7 +270,7 @@ class AccountController(RequestValidationController):
 
                 return {**user.as_dict(), **{"jwt": self._generate_jwt_token(user)}}, 200
             else:
-                current_app.logger.info(f"Incorrect password attempt for user {user.id}.")
+                log.info(f"Incorrect password attempt for user {user.id}.")
                 user.failed_login_attempts += 1
                 user.failed_login_time = datetime.datetime.utcnow()
                 raise ValidationError("Email or password incorrect")
@@ -282,7 +284,7 @@ class AccountController(RequestValidationController):
         Event(
             org_id=req_user.org_id, event=Events.user_logout, event_id=req_user.id, event_friendly="Logged out."
         ).publish()
-        current_app.logger.info(f"user {req_user.id} logged out")
+        log.info(f"user {req_user.id} logged out")
         return "Successfully logged out", 204
 
     @staticmethod
@@ -304,14 +306,14 @@ class AccountController(RequestValidationController):
                     # check timeout
                     diff = (datetime.datetime.utcnow() - failed_email.failed_time).seconds
                     if diff < current_app.config["FAILED_LOGIN_ATTEMPTS_TIMEOUT"]:
-                        current_app.logger.info(
+                        log.info(
                             f"Email last failed {diff}s ago. "
                             f"Timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s"
                         )
                         raise ValidationError("Too many incorrect attempts.")
                     else:
                         # reset
-                        current_app.logger.info(
+                        log.info(
                             f"Email last failed {diff}s ago. "
                             f"Timeout is {current_app.config['FAILED_LOGIN_ATTEMPTS_TIMEOUT']}s, resetting timeout."
                         )
@@ -321,13 +323,13 @@ class AccountController(RequestValidationController):
                     # increment failed attempts
                     failed_email.failed_attempts += 1
                     failed_email.failed_time = datetime.datetime.utcnow()
-                    current_app.logger.info(
+                    log.info(
                         f"Incorrect email attempt for user, " f"total failed attempts: {failed_email.failed_attempts}"
                     )
                     raise ValidationError("Email incorrect.")
             else:
                 # hasn't failed before, so create it
-                current_app.logger.info("User failed to log in.")
+                log.info("User failed to log in.")
                 new_failure = FailedLogin(email=email)
                 session.add(new_failure)
                 raise ValidationError("Email incorrect.")

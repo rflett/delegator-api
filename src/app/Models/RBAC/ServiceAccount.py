@@ -1,11 +1,13 @@
 import typing
 from dataclasses import dataclass
 
-from flask import current_app
+import structlog
 
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import AuthorizationError
 from app.Models.RBAC import Permission
+
+log = structlog.getLogger()
 
 
 @dataclass
@@ -44,6 +46,4 @@ class ServiceAccount:
         )
         with session_scope() as session:
             session.add(audit_log)
-        current_app.logger.info(
-            f"service account {self.name} did {operation} on {resource} with " f"a resource_id of {resource_id}"
-        )
+        log.info(f"service account {self.name} did {operation} on {resource} with " f"a resource_id of {resource_id}")

@@ -1,6 +1,7 @@
 import datetime
 import pytz
 
+import structlog
 from flask import request, current_app
 from flask_restx import Namespace, fields
 from sqlalchemy import and_
@@ -16,6 +17,7 @@ from app.Models.Enums import Operations, Resources, Events, Roles
 from app.Models.RBAC import Role
 
 api = Namespace(path="/users", name="Users", description="Manage a user or users")
+log = structlog.getLogger()
 
 
 class NullableDateTime(fields.DateTime):
@@ -166,7 +168,7 @@ class UserController(RequestValidationController):
 
             users.append(user_dict)
 
-        current_app.logger.info(f"found {len(users)} users.")
+        log.info(f"found {len(users)} users.")
         req_user.log(Operations.GET, Resources.USERS)
         return {"users": users}, 200
 
@@ -239,7 +241,7 @@ class UserController(RequestValidationController):
             event_id=req_user.id,
             event_friendly=f"Created {user.name()}.",
         ).publish()
-        current_app.logger.info(f"User {req_user.id} created user {user.id}")
+        log.info(f"User {req_user.id} created user {user.id}")
 
         # increment chargebee subscription plan_quantity
         subscription = Subscription(user.orgs.chargebee_subscription_id)
@@ -305,5 +307,5 @@ class UserController(RequestValidationController):
             event_friendly=f"Updated {user_to_update.name()}.",
         ).publish()
         req_user.log(Operations.UPDATE, Resources.USER, resource_id=user_to_update.id)
-        current_app.logger.info(f"User {req_user.id} updated user {user_to_update.id}")
+        log.info(f"User {req_user.id} updated user {user_to_update.id}")
         return "", 204

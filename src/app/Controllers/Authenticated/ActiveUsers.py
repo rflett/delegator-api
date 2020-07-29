@@ -1,5 +1,6 @@
 import datetime
 
+import structlog
 from flask import current_app
 from flask_restx import Namespace, fields
 
@@ -10,6 +11,8 @@ from app.Models.Dao import ActiveUser
 from app.Models.Enums import Operations, Resources
 
 api = Namespace(path="/active-users", name="Active Users", description="Get the recently active users")
+log = structlog.getLogger()
+
 active_user_dto = api.model(
     "ActiveUser",
     {
@@ -42,7 +45,7 @@ class ActiveUsers(RequestValidationController):
         # convert to list of active user dicts
         active_users = [au.as_dict() for au in active_users_qry]
         req_user.log(Operations.GET, Resources.ACTIVE_USERS)
-        current_app.logger.debug(f"Found {len(active_users)} active users.")
+        log.debug(f"Found {len(active_users)} active users.")
         return {"active_users": active_users}, 200
 
     @staticmethod
@@ -53,4 +56,4 @@ class ActiveUsers(RequestValidationController):
                 seconds=current_app.config["INACTIVE_USER_TTL"]
             )
             delete_inactive = session.query(ActiveUser).filter(ActiveUser.last_active < inactive_cutoff).delete()
-            current_app.logger.info(f"Purged {delete_inactive} users who have not been active for {inactive_cutoff}s.")
+            log.info(f"Purged {delete_inactive} users who have not been active for {inactive_cutoff}s.")

@@ -1,4 +1,4 @@
-from flask import current_app
+import structlog
 from flask_restx import Namespace
 
 from app.Controllers.Base import RequestValidationController
@@ -8,6 +8,7 @@ from app.Models.Enums import TaskStatuses, Operations, Resources, Events
 from app.Models.Enums.Notifications import TargetTypes
 
 api = Namespace(path="/task/cancel", name="Task", description="Manage a task")
+log = structlog.getLogger()
 
 
 @api.route("/<int:task_id>")
@@ -40,5 +41,5 @@ class CancelTask(RequestValidationController):
             )
             cancelled_notification.push()
 
-        current_app.logger.info(f"User {req_user.id} cancelled task {task_to_cancel.id}")
+        log.info(f"User {req_user.id} cancelled task {task_to_cancel.id}")
         return "", 204
