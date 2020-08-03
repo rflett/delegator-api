@@ -372,7 +372,7 @@ class AccountController(RequestValidationController):
         decoded_key = base64.b64decode(current_app.config["PRIVATE_KEY"]).decode("utf-8")
         return jwt.encode(
             payload={
-                "sub": user.id,
+                "sub": str(user.id),
                 "aud": "delegator.com.au",
                 "jti": str(uuid.uuid4()),
                 "iat": datetime.datetime.utcnow(),
