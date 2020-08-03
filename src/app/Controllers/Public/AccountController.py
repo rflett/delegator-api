@@ -1,3 +1,4 @@
+import base64
 import datetime
 import json
 import uuid
@@ -141,6 +142,7 @@ class AccountController(RequestValidationController):
             "org_id": fields.Integer(min=1),
             "uuid": fields.String(),
             "jwt": fields.String(),
+            "log_jwt": fields.String(),
             "first_name": fields.String(),
             "last_name": fields.String(),
             "job_title": fields.String(),
@@ -268,7 +270,13 @@ class AccountController(RequestValidationController):
                     org_id=user.org_id, event=Events.user_login, event_id=user.id, event_friendly="Logged in."
                 ).publish()
 
-                return {**user.as_dict(), **{"jwt": self._generate_jwt_token(user)}}, 200
+                return (
+                    {
+                        **user.as_dict(),
+                        **{"jwt": self._generate_jwt_token(user), "log_jwt": self._generate_log_token(user)},
+                    },
+                    200,
+                )
             else:
                 log.info(f"Incorrect password attempt for user {user.id}.")
                 user.failed_login_attempts += 1
@@ -356,4 +364,21 @@ class AccountController(RequestValidationController):
             },
             key=current_app.config["JWT_SECRET"],
             algorithm="HS256",
+        ).decode("utf-8")
+
+    @staticmethod
+    def _generate_log_token(user: User) -> str:
+        """Create a log token for use against the HTTPS log endpoint"""
+        decoded_key = base64.b64decode(current_app.config["PRIVATE_KEY"]).decode("utf-8")
+        return jwt.encode(
+            payload={
+                "sub": user.id,
+                "aud": "delegator.com.au",
+                "jti": str(uuid.uuid4()),
+                "iat": datetime.datetime.utcnow(),
+                "exp": datetime.datetime.utcnow()
+                + datetime.timedelta(minutes=current_app.config["TOKEN_TTL_IN_MINUTES"]),
+            },
+            key=decoded_key,
+            algorithm="RS256",
         ).decode("utf-8")
