@@ -51,7 +51,7 @@ if app_env not in ["Local", "Docker", "Ci"]:
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
         env_injector,
-        structlog.processors.TimeStamper(fmt="iso", key="time"),
+        structlog.processors.TimeStamper(key="time"),
         structlog.processors.JSONRenderer(),
     ]
 else:
