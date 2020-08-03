@@ -1,3 +1,4 @@
+import structlog
 from flask import request, current_app
 from flask_restx import Namespace, fields
 
@@ -8,6 +9,7 @@ from app.Models import Email
 from app.Models.Dao import User
 
 api = Namespace(path="/password", name="Password Management", description="Manage passwords")
+log = structlog.getLogger()
 
 
 @api.route("/validate")
@@ -41,7 +43,7 @@ class PasswordSetup(RequestValidationController):
         if user is None:
             raise ResourceNotFoundError(f"User with email {email} does not exist.")
 
-        current_app.logger.info(f"User {user.name()} requested password reset.")
+        log.info(f"User {user.name()} requested password reset.")
 
         invite = user.generate_new_invite()
         link = current_app.config["PUBLIC_WEB_URL"] + "/reset-password?token=" + invite.token

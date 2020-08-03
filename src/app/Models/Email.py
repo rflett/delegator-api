@@ -1,13 +1,15 @@
 import json
 from os import getenv
 
-from flask import current_app
 import boto3
+import structlog
+from flask import current_app
 
 from app.Models.Dao import User
 from app.Models.Enums import EmailTemplates
 
 sns = boto3.resource("sns")
+log = structlog.getLogger()
 
 
 class Email(object):
@@ -30,7 +32,7 @@ class Email(object):
             },
         }
         """Sends a welcome email"""
-        current_app.logger.info(f"Sending welcome email to {self.recipient}")
+        log.info(f"Sending welcome email to {self.recipient}")
         self._publish(dto)
 
     def send_password_reset(self, first_name: str, link: str):
@@ -46,7 +48,7 @@ class Email(object):
                 "website_link": f"https://{self.web_url}",
             },
         }
-        current_app.logger.info(f"Sending password reset email to {self.recipient}")
+        log.info(f"Sending password reset email to {self.recipient}")
         self._publish(dto)
 
     def send_welcome_new_user(self, first_name: str, link: str, inviter: User):
@@ -65,7 +67,7 @@ class Email(object):
                 "website_link": f"https://{self.web_url}",
             },
         }
-        current_app.logger.info(f"Sending welcome email to {self.recipient} from {inviter.email}")
+        log.info(f"Sending welcome email to {self.recipient} from {inviter.email}")
         self._publish(dto)
 
     def send_contact_us(self, first_name: str, last_name: str, email: str, lead: str, question: str):
@@ -81,14 +83,14 @@ class Email(object):
                 "question": question,
             },
         }
-        current_app.logger.info(f"Sending contact-us from {email}")
+        log.info(f"Sending contact-us from {email}")
         self._publish(dto)
 
     @staticmethod
     def _publish(dto: dict) -> None:
         """ Publishes an email to SNS """
         if getenv("MOCK_AWS"):
-            current_app.logger.info(f"WOULD have sent email message {dto}")
+            log.info(f"WOULD have sent email message {dto}")
             return None
 
         email_sns_topic = sns.Topic(current_app.config["EMAIL_SNS_TOPIC_ARN"])
@@ -98,4 +100,4 @@ class Email(object):
                 TopicArn=email_sns_topic.arn, Message=json.dumps({"default": json.dumps(dto)}), MessageStructure="json"
             )
         except Exception as e:
-            current_app.logger.error(e)
+            log.error(e)

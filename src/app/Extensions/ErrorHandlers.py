@@ -1,8 +1,10 @@
-from flask import jsonify, current_app
+import structlog
+from flask import jsonify
 
 
 def handle_error(error):
+    log = structlog.getLogger()
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
-    current_app.logger.info(error.to_dict())
+    log.info(error.to_dict())
     return response

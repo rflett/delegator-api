@@ -1,12 +1,14 @@
 from flask import current_app
 from flask_restx import Namespace, Resource, reqparse
 import requests
+import structlog
 
 from app.Extensions.Database import session_scope
 from app.Models.Dao import ContactUsEntry
 from app.Models import Email
 
 api = Namespace(path="/contact", name="Contact Us", description="Sends an email to the Delegator team")
+log = structlog.getLogger()
 
 parser = reqparse.RequestParser()
 parser.add_argument("first_name", type=str, location="form", required=True, help="Your first name")
@@ -40,13 +42,13 @@ class Version(Resource):
             response_body = r.json()
 
             if not response_body["success"]:
-                current_app.logger.error(f"failed to verify recaptcha - {response_body['error-codes']}")
+                log.error(f"failed to verify recaptcha - {response_body['error-codes']}")
                 return "", 204
             else:
-                current_app.logger.info("successfully verified recaptcha")
+                log.info("successfully verified recaptcha")
 
         except requests.RequestException:
-            current_app.logger.error("failed to make request for verifying recaptcha")
+            log.error("failed to make request for verifying recaptcha")
             return "", 204
 
         # add to db

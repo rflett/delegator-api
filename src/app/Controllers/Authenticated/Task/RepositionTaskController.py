@@ -1,4 +1,5 @@
-from flask import current_app, request
+import structlog
+from flask import request
 from flask_restx import Namespace, fields
 
 from app.Controllers.Base import RequestValidationController
@@ -9,6 +10,7 @@ from app.Models.Enums import Operations, Resources, Events
 from app.Utilities.All import reindex_display_orders
 
 api = Namespace(path="/task/reposition", name="Task", description="Manage a task")
+log = structlog.getLogger()
 
 
 @api.route("/")
@@ -37,7 +39,7 @@ class RepositionTask(RequestValidationController):
             task_to_repo.display_order = request_body["display_order"]
 
         req_user.log(Operations.UPDATE, Resources.TASK_POSITION, resource_id=task_to_repo.id)
-        current_app.logger.info(f"User {req_user.id} repositioned task {task_to_repo.id}")
+        log.info(f"User {req_user.id} repositioned task {task_to_repo.id}")
 
         # send event so reloads occur
         Event(

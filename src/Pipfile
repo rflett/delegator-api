@@ -6,6 +6,7 @@ verify_ssl = true
 [dev-packages]
 pytest = "*"
 faker = "*"
+colorama = "*"
 
 [packages]
 flask = "*"
@@ -21,6 +22,8 @@ requests = "*"
 aws-xray-sdk = "*"
 sentry-sdk = {extras = ["flask"],version = "*"}
 flask-restx = "*"
+structlog = "*"
+cryptography = "*"
 
 [requires]
 python_version = "3.8"

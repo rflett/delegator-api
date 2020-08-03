@@ -2,6 +2,7 @@ import typing
 from functools import wraps
 
 import jwt
+import structlog
 from aws_xray_sdk.core import xray_recorder
 from flask import request, current_app
 from sentry_sdk import configure_scope
@@ -10,6 +11,8 @@ from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError, AuthenticationError
 from app.Models.Dao import User
 from app.Models.RBAC import ServiceAccount
+
+log = structlog.getLogger()
 
 
 def requires_jwt(f):
@@ -55,8 +58,8 @@ def _get_requester_details() -> typing.Union[User, ServiceAccount]:
     except (KeyError, AttributeError) as e:
         raise AuthenticationError(f"Invalid request - {e}")
     except Exception as e:
-        current_app.logger.error(str(e))
-        current_app.logger.info(f"Decoding JWT raised {e}")
+        log.error(str(e))
+        log.info(f"Decoding JWT raised {e}")
         raise AuthenticationError("Couldn't validate the JWT.")
 
     document = xray_recorder.current_segment()

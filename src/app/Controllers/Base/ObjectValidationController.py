@@ -3,6 +3,7 @@ import typing
 import uuid
 
 import jwt
+import structlog
 from flask_restx import Resource
 from flask import current_app
 from sqlalchemy import exists, and_, func
@@ -11,6 +12,8 @@ from app.Extensions.Database import session_scope
 from app.Extensions.Errors import AuthorizationError, ValidationError, ResourceNotFoundError
 from app.Models.Dao import User, TaskTemplate, Task, TaskLabel, UserPasswordToken
 from app.Models.RBAC import Role
+
+log = structlog.getLogger()
 
 
 class ObjectValidationController(Resource):
@@ -159,4 +162,4 @@ class ObjectValidationController(Resource):
                 .delete()
             )
             if delete_expired > 0:
-                current_app.logger.info(f"Purged {delete_expired} password tokens which expired.")
+                log.info(f"Purged {delete_expired} password tokens which expired.")

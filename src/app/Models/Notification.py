@@ -6,8 +6,11 @@ from dataclasses import dataclass, field
 from os import getenv
 
 import jwt
-from flask import current_app
 import requests
+import structlog
+from flask import current_app
+
+log = structlog.getLogger()
 
 
 @dataclass
@@ -36,7 +39,7 @@ class Notification(object):
     def push(self) -> None:
         """ Publish the message to SNS for pushing to the user """
         if getenv("MOCK_SERVICES"):
-            current_app.logger.info(f"WOULD have pushed notification {self.as_dict()} to NotificationApi")
+            log.info(f"WOULD have pushed notification {self.as_dict()} to NotificationApi")
             return
         try:
             r = requests.post(
@@ -46,9 +49,9 @@ class Notification(object):
                 timeout=10,
             )
             if r.status_code != 204:
-                current_app.logger.error(f"there was an issue sending the notification {self.as_dict()}")
+                log.error(f"there was an issue sending the notification {self.as_dict()}")
         except requests.exceptions.RequestException:
-            current_app.logger.error(f"there was an issue sending the notification {self.as_dict()}")
+            log.error(f"there was an issue sending the notification {self.as_dict()}")
 
     def as_dict(self) -> dict:
         """ Returns a notification as a dict, ready for SNS message """

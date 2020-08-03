@@ -1,4 +1,4 @@
-from flask import current_app
+import structlog
 from flask_restx import Namespace, fields
 
 from app.Decorators import authorize, requires_jwt
@@ -8,6 +8,7 @@ from app.Models.Enums import Operations, Resources
 from app.Utilities.All import get_task_by_id
 
 api = Namespace(path="/task/activity", name="Task", description="Manage a task")
+log = structlog.getLogger()
 
 
 @api.route("/<int:task_id>")
@@ -32,5 +33,5 @@ class TaskActivity(RequestValidationController):
         # get the task
         task = get_task_by_id(task_id, req_user.org_id)
         req_user.log(Operations.GET, Resources.TASK_ACTIVITY, resource_id=task.id)
-        current_app.logger.info(f"Getting activity for task with id {task.id}")
+        log.info(f"Getting activity for task with id {task.id}")
         return {"activity": task.activity(activity_log_history_limit)}, 200
