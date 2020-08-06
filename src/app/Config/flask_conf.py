@@ -22,7 +22,7 @@ class Dev(Config):
 
     FAILED_LOGIN_ATTEMPTS_TIMEOUT = 5
     EVENTS_SNS_TOPIC_ARN = "arn:aws:sns:ap-southeast-2:239304980652:api-dev-events"
-    EMAIL_SNS_TOPIC_ARN = "arn:aws:sns:ap-southeast-2:239304980652:email-sender-dev"
+    EMAIL_SQS_ENDPOINT = "https://sqs.ap-southeast-2.amazonaws.com/239304980652/email-sender-dev"
     USER_SETTINGS_TABLE = "user-settings-dev"
     ORG_SETTINGS_TABLE = "organisation-settings-dev"
     USER_ACTIVITY_TABLE = "user-activity-dev"
@@ -81,7 +81,7 @@ class Staging(Config):
     """Staging ECS"""
 
     EVENTS_SNS_TOPIC_ARN = "arn:aws:sns:ap-southeast-2:239304980652:api-staging-events"
-    EMAIL_SNS_TOPIC_ARN = "arn:aws:sns:ap-southeast-2:239304980652:email-sender-staging"
+    EMAIL_SQS_ENDPOINT = "https://sqs.ap-southeast-2.amazonaws.com/239304980652/email-sender-staging"
     USER_SETTINGS_TABLE = "user-settings-staging"
     ORG_SETTINGS_TABLE = "organisation-settings-staging"
     USER_ACTIVITY_TABLE = "user-activity-staging"
@@ -93,7 +93,7 @@ class Production(Config):
     """Production ECS"""
 
     EVENTS_SNS_TOPIC_ARN = "arn:aws:sns:ap-southeast-2:239304980652:api-production-events"
-    EMAIL_SNS_TOPIC_ARN = "arn:aws:sns:ap-southeast-2:239304980652:email-sender-production"
+    EMAIL_SQS_ENDPOINT = "https://sqs.ap-southeast-2.amazonaws.com/239304980652/email-sender-production"
     USER_SETTINGS_TABLE = "user-settings-production"
     ORG_SETTINGS_TABLE = "organisation-settings-production"
     USER_ACTIVITY_TABLE = "user-activity-production"
