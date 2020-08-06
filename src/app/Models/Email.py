@@ -8,7 +8,7 @@ from flask import current_app
 from app.Models.Dao import User
 from app.Models.Enums import EmailTemplates
 
-sns = boto3.resource("sns")
+sqs = boto3.resource("sqs")
 log = structlog.getLogger()
 
 
@@ -93,11 +93,9 @@ class Email(object):
             log.info(f"WOULD have sent email message {dto}")
             return None
 
-        email_sns_topic = sns.Topic(current_app.config["EMAIL_SNS_TOPIC_ARN"])
+        email_queue = sqs.Queue(current_app.config["EMAIL_SQS_ENDPOINT"])
 
         try:
-            email_sns_topic.publish(
-                TopicArn=email_sns_topic.arn, Message=json.dumps({"default": json.dumps(dto)}), MessageStructure="json"
-            )
+            email_queue.send_message(MessageBody=json.dumps(dto))
         except Exception as e:
             log.error(e)
