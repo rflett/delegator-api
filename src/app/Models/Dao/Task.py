@@ -393,16 +393,17 @@ class Task(db.Model):
         old_status_label = self._pretty_status_label(old_status)
         new_status_label = self._pretty_status_label(status)
 
-        # req_user will be none when this is called from a service account
-        if req_user is None:
-            return
-
         Event(
             org_id=self.org_id,
             event=f"task_transitioned_{self.status.lower()}",
             event_id=self.id,
             event_friendly=f"Transitioned from {old_status_label} to {new_status_label}.",
         ).publish()
+
+        # req_user will be none when this is called from a service account
+        if req_user is None:
+            return
+
         Event(
             org_id=req_user.org_id,
             event=Events.user_transitioned_task,

@@ -49,6 +49,7 @@ class Events(str):
     task_transitioned_cancelled = "task_transitioned_cancelled"
     task_transitioned_delayed = "task_transitioned_delayed"
     task_transitioned_completed = "task_transitioned_completed"
+    task_scheduled_notification_sent = "task_scheduled_notification_sent"
     task_created = "task_created"
     task_scheduled = "task_scheduled"
     task_updated = "task_updated"
