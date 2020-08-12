@@ -26,4 +26,4 @@ ENV COMMIT_SHA=${COMMIT_SHA}
 USER daemon
 
 # run
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--config", "/app/gunicorn.py", "api:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "-w", "4", "--log-level", "warning", "--access-logfile", "-", "--access-logformat", "%(h)s %(t)s %(m)s %(U)s %(s)s %(B)s %(a)s %(D)s", "--config", "/app/gunicorn.py", "api:app"]
