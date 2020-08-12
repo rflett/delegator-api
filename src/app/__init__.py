@@ -18,21 +18,17 @@ from app.Extensions.Errors import AuthenticationError
 from app.Extensions.Errors import AuthorizationError
 from app.Extensions.Errors import InternalServerError
 from app.Extensions.Errors import ResourceNotFoundError
+from app.Extensions.Logging import SetupLogging
 
-app_env = getenv("APP_ENV", "Local")
+SetupLogging()
 log = structlog.get_logger()
-
-
-def env_injector(_, __, event_dict):
-    event_dict["environment"] = app_env.lower()
-    return event_dict
-
 
 # flask conf
 app = Flask(__name__)
 CORS(app)
 
 # config
+app_env = getenv("APP_ENV", "Local")
 app.config.from_object(f"app.Config.flask_conf.{app_env}")
 logging.basicConfig(level=app.config["LOG_LEVEL"])
 
@@ -43,32 +39,6 @@ if app_env not in ["Local", "Docker", "Ci"]:
     app.config.update(params)
     # sentry
     sentry_sdk.init(app.config["SENTRY_DSN"], environment=app_env, integrations=[FlaskIntegration()])
-    # logging
-    processors = [
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        env_injector,
-        structlog.processors.TimeStamper(key="time"),
-        structlog.processors.JSONRenderer(),
-    ]
-else:
-    # logging
-    processors = [
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        env_injector,
-        structlog.processors.TimeStamper(fmt="%H:%M:%S", key="time", utc=False),
-        structlog.dev.ConsoleRenderer(),
-    ]
-
-structlog.configure(processors=processors, cache_logger_on_first_use=True)
-log.info("Starting init")
 
 # db conf
 app.config["SQLALCHEMY_DATABASE_URI"] = app.config["DB_URI"]
