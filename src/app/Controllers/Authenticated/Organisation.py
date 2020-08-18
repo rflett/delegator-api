@@ -13,7 +13,7 @@ from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
 from app.Models import OrgSetting
 from app.Models.Dao import Organisation
-from app.Models.Enums import Operations, Resources
+from app.Models.Enums import Operations, Resources, Roles
 
 api = Namespace(path="/org", name="Organisation", description="Manage the organisation")
 log = structlog.getLogger()
@@ -151,10 +151,10 @@ class OrganisationLock(RequestValidationController):
                 session.execute(
                     """
                     UPDATE users
-                    SET role = 'LOCKED'
+                    SET role = :role
                     WHERE org_id = :org_id
                     """,
-                    {"org_id": org.id},
+                    {"org_id": org.id, "role": Roles.LOCKED},
                 )
                 # lock org
                 org.locked = datetime.datetime.utcnow()

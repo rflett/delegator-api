@@ -17,7 +17,7 @@ from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
 from app.Models import Event, Email
 from app.Models.Dao import User, Organisation, TaskTemplate, FailedLogin
-from app.Models.Enums import Events, Operations, Resources
+from app.Models.Enums import Events, Operations, Resources, Roles
 
 api = Namespace(path="/account", name="Account", description="Manage an account")
 log = structlog.getLogger()
@@ -146,8 +146,8 @@ class AccountController(RequestValidationController):
             "first_name": fields.String(),
             "last_name": fields.String(),
             "job_title": fields.String(),
-            "role": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER", "LOCKED"]),
-            "role_before_locked": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER"]),
+            "role": fields.String(enum=Roles.all),
+            "role_before_locked": fields.String(enum=[Roles.ORG_ADMIN, Roles.DELEGATOR, Roles.USER]),
             "url": fields.String(),
         },
     )
@@ -261,7 +261,7 @@ class AccountController(RequestValidationController):
                 user.failed_login_attempts = 0
                 user.failed_login_time = None
 
-                if user.role == "LOCKED":
+                if user.role == Roles.LOCKED:
                     log.warning(f"Locked user {user.email} attempted to login.")
                     return {"role": user.role, "role_before_locked": user.role_before_locked}, 200
 

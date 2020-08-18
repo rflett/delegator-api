@@ -85,9 +85,9 @@ class UserController(RequestValidationController):
     role_dto = api.model(
         "Get Users Role",
         {
-            "id": fields.String(enum=["ADMIN", "DELEGATOR", "USER", "LOCKED"]),
+            "id": fields.String(enum=Roles.all),
             "rank": fields.Integer(min=0, max=2),
-            "name": fields.String(enum=["Admin", "Delegator", "User", "Locked"]),
+            "name": fields.String(enum=["Administrator", "Delegator", "Team Member", "Locked Account"]),
             "description": fields.String(),
         },
     )
