@@ -1,15 +1,18 @@
 import datetime
 import typing
 
+import structlog
 from marshmallow import Schema, fields, ValidationError
 from sqlalchemy import or_, func
-from sqlalchemy.orm import aliased
 
 from app.Models.Enums import TaskStatuses
 from app.Models.Dao import Task, TaskLabel
 
+log = structlog.getLogger()
+
 
 def _validate_str_list(s: str):
+    """Parses a string containing comma separated ints and ensures they're all ints"""
     # try and split into list
     items = s.split(",")
     if len(items) == 0:
@@ -21,11 +24,12 @@ def _validate_str_list(s: str):
     for i in items:
         try:
             _ = int(i)
-        except ValueError as e:
+        except ValueError:
             raise ValidationError(f"'{i}' is not an integer")
 
 
 def _validate_status(s: str):
+    """Parses a string containing comma separated ints and ensures they're all valid statuses"""
     # try and split into list
     items = s.split(",")
     if len(items) == 0:
@@ -40,6 +44,8 @@ def _validate_status(s: str):
 
 
 class GetTasksFiltersSchema(Schema):
+    """The schema for validating query parameters on the request"""
+
     assignee = fields.Str(validate=_validate_str_list)
     created_by = fields.Str(validate=_validate_str_list)
     status = fields.Str(validate=_validate_status)
@@ -78,18 +84,21 @@ class GetTasksFilters(object):
             self.to_date = None
 
     def __repr__(self):
-        fd = self.from_date.strftime('%Y-%m-%d %H:%M:%S') if self.from_date is not None else None
-        td = self.to_date.strftime('%Y-%m-%d %H:%M:%S') if self.to_date is not None else None
-
-        return f"assignee={self.assignee}, " \
-               f"createdBy={self.created_by}, " \
-               f"priority={self.priority}, " \
-               f"labels={self.labels}, " \
-               f"status={self.status}, " \
-               f"fromDate={fd}, " \
-               f"toDate={td}"
+        """Returns a str repr of the filters"""
+        fd = self.from_date.strftime("%Y-%m-%d %H:%M:%S") if self.from_date is not None else None
+        td = self.to_date.strftime("%Y-%m-%d %H:%M:%S") if self.to_date is not None else None
+        return (
+            f"assignee={self.assignee}, "
+            f"createdBy={self.created_by}, "
+            f"priority={self.priority}, "
+            f"labels={self.labels}, "
+            f"status={self.status}, "
+            f"fromDate={fd}, "
+            f"toDate={td}"
+        )
 
     def filters(self, org_id: int, label1: TaskLabel, label2: TaskLabel, label3: TaskLabel) -> list:
+        """Returns a list of sqlalchemy filters to be added to a query"""
         # filter things
         filters = [Task.org_id == org_id]
 
@@ -122,11 +131,17 @@ class GetTasksFilters(object):
         if self.to_date is not None:
             filters.append(func.coalesce(Task.finished_at, Task.created_at) <= self.to_date)
 
+        log.info(f"Parsed {len(filters)} filters")
         return filters
 
     @staticmethod
     def _get_ints_from_strlist(s: str, _min: int = None, _max: int = None) -> typing.Union[typing.List[int], None]:
-        """Given comma separated integers in a string, return them as a list"""
+        """ Given comma separated integers in a string, return them as a list
+        :param s: The str containing comma separated ints, e.g. 1,2,3
+        :param _min: Integers in the string less than the min are not returned
+        :param _max: Integers in the string greater than the min are not returned
+        :return: A list of ints or None if no ints meet validation criteria
+        """
         if s is None or not isinstance(s, str):
             return None
         items = s.split(",")

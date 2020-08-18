@@ -1,12 +1,10 @@
 import datetime
 import pytz
-from dateutil import tz
 
 import structlog
-import sqlparse
 from flask import current_app, request
 from flask_restx import Namespace, fields
-from sqlalchemy import and_, or_, func, cast, Date
+from sqlalchemy import or_, func, cast, Date
 from sqlalchemy.orm import aliased
 
 from app.Controllers.Base import RequestValidationController
@@ -180,6 +178,8 @@ class Tasks(RequestValidationController):
                     "time_estimate": time_estimate,
                 }
             )
+
+        log.info(f"Found {len(tasks)} tasks matching filters")
         return {"tasks": tasks}, 200
 
 
@@ -276,6 +276,8 @@ class CompletedTasks(RequestValidationController):
                 for label_id in label_filter:
                     filters.append(or_(label1.id == label_id, label2.id == label_id, label3.id == label_id))
 
+            log.info(f"Applying {len(filters)} filters to query")
+
             qry = (
                 session.query(
                     Task.id,
@@ -352,7 +354,7 @@ class CompletedTasks(RequestValidationController):
                 time_to_finish_min = 0
             else:
                 time_to_finish_date = finished_at - started_at
-                time_to_finish_min = time_to_finish_date.seconds // 60
+                time_to_finish_min = time_to_finish_date.total_seconds() // 60
 
             # convert labels to a list
             labels = [label.as_dict() for label in [label_1, label_2, label_3] if label is not None]
@@ -389,10 +391,13 @@ class CompletedTasks(RequestValidationController):
 
         # we need to sort by time_to_finish or time_spent_delayed in place
         if request_body["sort_by"] == "timeToFinish":
+            log.info("Sorting by timeToFinish")
             tasks.sort(key=lambda x: x["time_to_finish"], reverse=(request_body["sort_direction"] == "desc"))
         elif request_body["sort_by"] == "timeSpentDelayed":
+            log.info("Sorting by timeSpentDelayed")
             tasks.sort(key=lambda x: x["time_spent_delayed"], reverse=(request_body["sort_direction"] == "desc"))
 
+        log.info(f"Found {count} tasks that matched filters")
         return {"count": count, "tasks": tasks}, 200
 
     @staticmethod
@@ -410,7 +415,7 @@ class CompletedTasks(RequestValidationController):
         for task in qry:
             delayed_at, expired = task
             # get the seconds it was delayed for
-            time_spent_delayed += (expired - delayed_at).seconds
+            time_spent_delayed += (expired - delayed_at).total_seconds()
 
         # return as minutes
         return time_spent_delayed // 60

@@ -40,9 +40,11 @@ class TransitionTask(RequestValidationController):
         request_body = request.get_json()
 
         if isinstance(req_user, ServiceAccount):
+            log.info("Transition request from service-account")
             task = get_task_by_id(request_body["task_id"], request_body["org_id"])
             task.transition(request_body["task_status"])
         else:
+            log.info("Transition request from user")
             task = self.validate_transition_task(**kwargs)
             task.transition(request_body["task_status"], kwargs["req_user"])
 
@@ -50,6 +52,7 @@ class TransitionTask(RequestValidationController):
         display_order = request_body.get("display_order", 0)
         reindex_display_orders(task.org_id, new_position=display_order)
         with session_scope():
+            log.info("Changing task display order", old=task.display_order, new=display_order)
             task.display_order = display_order
 
         return "", 204
@@ -107,4 +110,5 @@ class TransitionTask(RequestValidationController):
 
             all_task_transitions.append(this_task_transitions)
 
+        log.info(f"Found {len(all_task_transitions)} task transitions matching filters")
         return all_task_transitions, 200
