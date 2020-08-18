@@ -55,6 +55,60 @@ class GetTasksFiltersSchema(Schema):
     to_date = fields.Date(format="%Y-%m-%dT%H:%M:%S.%f")
 
 
+get_tasks_schema_docs = {
+    "assignee": {
+        "description": "Filter tasks in response by the assignee's ID. "
+        "The value is a comma separated list of user IDs: e.g. 1,2,3. "
+        "The presence of this parameter with no values returns unassigned tasks.",
+        "in": "query",
+        "type": "str",
+        "default": "null",
+    },
+    "created_by": {
+        "description": "Filter tasks in response by the user who created them. "
+        "The value is a comma separated list of user IDs: e.g. 1,2,3 ",
+        "in": "query",
+        "type": "str",
+        "default": "null",
+    },
+    "status": {
+        "description": "Filter tasks in response by their status. "
+        "The value is a comma separated list of statuses: e.g. READY,CANCELLED",
+        "in": "query",
+        "type": "str",
+        "default": "null",
+    },
+    "priority": {
+        "description": "Filter tasks in response by their priority. "
+        "The value is a comma separated list of priority enums: e.g. 0,1",
+        "in": "query",
+        "type": "str",
+        "default": "null",
+    },
+    "labels": {
+        "description": "Filter tasks in response by their labels. "
+        "The value is a comma separated list of label IDs: e.g. 1,2,3",
+        "in": "query",
+        "type": "str",
+        "default": "null",
+    },
+    "from_date": {
+        "description": "Only return tasks in response which were created after this date. "
+        "The format is %Y-%m-%dT%H:%M:%S.%f",
+        "in": "query",
+        "type": "str",
+        "default": "null",
+    },
+    "to_date": {
+        "description": "Only return tasks in response which were either finished or created before this date. "
+        "The format is %Y-%m-%dT%H:%M:%S.%f",
+        "in": "query",
+        "type": "str",
+        "default": "null",
+    },
+}
+
+
 class GetTasksFilters(object):
     def __init__(self, dto: dict):
         """
@@ -103,8 +157,12 @@ class GetTasksFilters(object):
         filters = [Task.org_id == org_id]
 
         # filter by assignee
-        if self.assignee is not None:
+        if self.assignee is not None and len(self.assignee) > 0:
+            log.info("Adding list of assignees")
             filters.append(Task.assignee.in_(self.assignee))
+        elif self.assignee is not None and len(self.assignee) == 0:
+            log.info("Filtering by no assignee")
+            filters.append(Task.assignee == None)  # noqa
 
         # filter by created by
         if self.created_by is not None:
@@ -145,8 +203,6 @@ class GetTasksFilters(object):
         if s is None or not isinstance(s, str):
             return None
         items = s.split(",")
-        if len(items) == 0:
-            return None
 
         ret = []
         for i in items:
@@ -163,6 +219,6 @@ class GetTasksFilters(object):
             ret.append(item)
 
         if len(ret) == 0:
-            return None
+            return []
 
         return ret

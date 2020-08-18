@@ -11,7 +11,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
-from app.Models import GetTasksFilters, GetTasksFiltersSchema
+from app.Models import GetTasksFilters, GetTasksFiltersSchema, get_tasks_schema_docs
 from app.Models.Dao import User, Task, TaskLabel, TaskStatus, DelayedTask, TaskPriority
 from app.Models.Enums import Operations, Resources, TaskStatuses
 from app.Utilities.All import format_date
@@ -70,6 +70,7 @@ class Tasks(RequestValidationController):
 
     @requires_jwt
     @authorize(Operations.GET, Resources.TASKS)
+    @api.doc(params=get_tasks_schema_docs)
     @api.marshal_with(response_dto, code=200)
     def get(self, **kwargs):
         """Get all tasks"""

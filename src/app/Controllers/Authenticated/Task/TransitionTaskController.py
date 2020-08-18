@@ -8,7 +8,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
-from app.Models import GetTasksFilters, GetTasksFiltersSchema
+from app.Models import GetTasksFilters, GetTasksFiltersSchema, get_tasks_schema_docs
 from app.Models.Dao import TaskLabel, Task
 from app.Models.Enums import TaskStatuses, Operations, Resources
 from app.Models.RBAC import ServiceAccount
@@ -64,6 +64,7 @@ class TransitionTask(RequestValidationController):
 
     @requires_jwt
     @authorize(Operations.GET, Resources.TASK_TRANSITIONS)
+    @api.doc(params=get_tasks_schema_docs)
     @api.marshal_with(task_transition_dto, code=200)
     def get(self, **kwargs):
         """Returns all tasks and the statuses they can be transitioned to"""
