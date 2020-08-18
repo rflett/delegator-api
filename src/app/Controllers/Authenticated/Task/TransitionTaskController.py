@@ -1,15 +1,21 @@
 from flask import request
 from flask_restx import Namespace, fields
 
+import structlog
+from sqlalchemy.orm import aliased
+
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models.Dao import TaskStatus, Task
+from app.Extensions.Errors import ValidationError
+from app.Models import GetTasksFilters, GetTasksFiltersSchema
+from app.Models.Dao import TaskLabel, Task
 from app.Models.Enums import TaskStatuses, Operations, Resources
 from app.Models.RBAC import ServiceAccount
 from app.Utilities.All import reindex_display_orders, get_task_by_id
 
 api = Namespace(path="/task/transition", name="Task", description="Manage a task")
+log = structlog.getLogger()
 
 
 @api.route("/")
@@ -60,55 +66,44 @@ class TransitionTask(RequestValidationController):
         """Returns all tasks and the statuses they can be transitioned to"""
         req_user = kwargs["req_user"]
 
+        # validate the filtering arguments
+        arg_errors = GetTasksFiltersSchema().validate(request.args)
+        if arg_errors:
+            raise ValidationError(arg_errors)
+
+        task_filters = GetTasksFilters(request.args)
+        log.info("Parsed request filters", filters=task_filters)
+
+        valid_unassigned_transitions = {
+            TaskStatuses.READY: [TaskStatuses.READY],
+            TaskStatuses.SCHEDULED: [TaskStatuses.READY],
+        }
+        valid_assigned_transitions = {
+            TaskStatuses.READY: [TaskStatuses.READY, TaskStatuses.IN_PROGRESS, TaskStatuses.CANCELLED],
+            TaskStatuses.IN_PROGRESS: [
+                TaskStatuses.IN_PROGRESS,
+                TaskStatuses.DELAYED,
+                TaskStatuses.COMPLETED,
+                TaskStatuses.CANCELLED,
+            ],
+            TaskStatuses.DELAYED: [TaskStatuses.DELAYED, TaskStatuses.IN_PROGRESS],
+            TaskStatuses.SCHEDULED: [TaskStatuses.READY],
+        }
+
         with session_scope() as session:
-            tasks = session.query(Task).filter_by(org_id=req_user.org_id).all()
+            label1, label2, label3 = aliased(TaskLabel), aliased(TaskLabel), aliased(TaskLabel)
+            filters = task_filters.filters(req_user.org_id, label1, label2, label3)
+            tasks = session.query(Task.id, Task.status, Task.assignee).filter(*filters).all()
 
         # handle case where no-one is assigned to the task
         all_task_transitions = []
-        for task in tasks:
-            this_task_transitions = {"task_id": task.id, "valid_transitions": []}
+        for task_id, task_status, task_assignee in tasks:
+            this_task_transitions = {"task_id": task_id, "valid_transitions": []}
 
-            if task.assignee is None:
-                # you can move from ready to ready, cancelled and dropped are not included because they are handled
-                # separately
-                valid_transitions = {
-                    TaskStatuses.READY: [TaskStatuses.READY],
-                    TaskStatuses.SCHEDULED: [TaskStatuses.READY],
-                }
-
-                # search list for querying db
-                search = valid_transitions.get(task.status, [])
-
-                with session_scope() as session:
-                    # will return all the attributes for the ready status
-                    enabled_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
-
-                # enabled options
-                this_task_transitions["valid_transitions"] += [ts.status for ts in enabled_qry]
-
+            if task_assignee is None:
+                this_task_transitions["valid_transitions"] += valid_unassigned_transitions.get(task_status, [])
             else:
-                # if someone is assigned to the task, then these are the available transitions
-                valid_transitions = {
-                    TaskStatuses.READY: [TaskStatuses.READY, TaskStatuses.IN_PROGRESS, TaskStatuses.CANCELLED],
-                    TaskStatuses.IN_PROGRESS: [
-                        TaskStatuses.IN_PROGRESS,
-                        TaskStatuses.DELAYED,
-                        TaskStatuses.COMPLETED,
-                        TaskStatuses.CANCELLED,
-                    ],
-                    TaskStatuses.DELAYED: [TaskStatuses.DELAYED, TaskStatuses.IN_PROGRESS],
-                    TaskStatuses.SCHEDULED: [TaskStatuses.READY],
-                }
-
-                # search list for querying db
-                search = valid_transitions.get(task.status, [])
-
-                with session_scope() as session:
-                    # will return all attributes for the enabled tasks
-                    enabled_qry = session.query(TaskStatus).filter(TaskStatus.status.in_(search)).all()
-
-                # enabled options
-                this_task_transitions["valid_transitions"] += [ts.status for ts in enabled_qry]
+                this_task_transitions["valid_transitions"] += valid_assigned_transitions.get(task_status, [])
 
             all_task_transitions.append(this_task_transitions)
 

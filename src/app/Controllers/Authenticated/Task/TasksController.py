@@ -2,6 +2,8 @@ import datetime
 import pytz
 from dateutil import tz
 
+import structlog
+import sqlparse
 from flask import current_app, request
 from flask_restx import Namespace, fields
 from sqlalchemy import and_, or_, func, cast, Date
@@ -11,11 +13,13 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
+from app.Models import GetTasksFilters, GetTasksFiltersSchema
 from app.Models.Dao import User, Task, TaskLabel, TaskStatus, DelayedTask, TaskPriority
 from app.Models.Enums import Operations, Resources, TaskStatuses
 from app.Utilities.All import format_date
 
 api = Namespace(path="/tasks", name="Tasks", description="Manage tasks")
+log = structlog.getLogger()
 
 
 class NullableDateTime(fields.DateTime):
@@ -73,12 +77,19 @@ class Tasks(RequestValidationController):
         """Get all tasks"""
         req_user = kwargs["req_user"]
 
-        # start_period, end_period = self.validate_time_period(req.get_json())
-        end_period = now = datetime.datetime.utcnow()
-        start_period = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())  # start_of_this_month
+        # validate the filtering arguments
+        arg_errors = GetTasksFiltersSchema().validate(request.args)
+        if arg_errors:
+            raise ValidationError(arg_errors)
+
+        task_filters = GetTasksFilters(request.args)
+        log.info("Parsed request filters", filters=task_filters)
 
         with session_scope() as session:
             label1, label2, label3 = aliased(TaskLabel), aliased(TaskLabel), aliased(TaskLabel)
+
+            filters = task_filters.filters(req_user.org_id, label1, label2, label3)
+
             tasks_qry = (
                 session.query(
                     Task.id,
@@ -103,15 +114,7 @@ class Tasks(RequestValidationController):
                 .outerjoin(label1, label1.id == Task.label_1)
                 .outerjoin(label2, label2.id == Task.label_2)
                 .outerjoin(label3, label3.id == Task.label_3)
-                .filter(
-                    and_(
-                        Task.org_id == req_user.org_id,
-                        or_(
-                            and_(Task.finished_at >= start_period, Task.finished_at <= end_period),
-                            Task.finished_at == None,  # noqa
-                        ),
-                    )
-                )
+                .filter(*filters)
                 .order_by(Task.display_order)
                 .all()
             )
