@@ -90,7 +90,7 @@ class TransitionTask(RequestValidationController):
                 TaskStatuses.COMPLETED,
                 TaskStatuses.CANCELLED,
             ],
-            TaskStatuses.DELAYED: [TaskStatuses.DELAYED, TaskStatuses.IN_PROGRESS],
+            TaskStatuses.DELAYED: [TaskStatuses.DELAYED, TaskStatuses.IN_PROGRESS, TaskStatuses.CANCELLED],
             TaskStatuses.SCHEDULED: [TaskStatuses.READY],
         }
 
