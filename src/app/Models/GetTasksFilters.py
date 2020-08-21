@@ -51,8 +51,8 @@ class GetTasksFiltersSchema(Schema):
     status = fields.Str(validate=_validate_status)
     priority = fields.Str(validate=_validate_str_list)
     labels = fields.Str(validate=_validate_str_list)
-    from_date = fields.Date(format="%Y-%m-%dT%H:%M:%S.%f")
-    to_date = fields.Date(format="%Y-%m-%dT%H:%M:%S.%f")
+    from_date = fields.Date(format="%Y-%m-%dT%H:%M:%S.%fZ")
+    to_date = fields.Date(format="%Y-%m-%dT%H:%M:%S.%fZ")
 
 
 get_tasks_schema_docs = {
@@ -127,13 +127,13 @@ class GetTasksFilters(object):
 
         from_date = dto.get("from_date")
         if from_date is not None:
-            self.from_date = datetime.datetime.strptime(from_date, "%Y-%m-%dT%H:%M:%S.%f")
+            self.from_date = datetime.datetime.strptime(from_date, "%Y-%m-%dT%H:%M:%S.%fZ")
         else:
             self.from_date = None
 
         to_date = dto.get("to_date")
         if to_date is not None:
-            self.to_date = datetime.datetime.strptime(to_date, "%Y-%m-%dT%H:%M:%S.%f")
+            self.to_date = datetime.datetime.strptime(to_date, "%Y-%m-%dT%H:%M:%S.%fZ")
         else:
             self.to_date = None
 
