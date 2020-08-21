@@ -58,8 +58,8 @@ class GetTasksFiltersSchema(Schema):
 get_tasks_schema_docs = {
     "assignee": {
         "description": "Filter tasks in response by the assignee's ID. "
-        "The value is a comma separated list of user IDs: e.g. 1,2,3. "
-        "The presence of this parameter with no values returns unassigned tasks.",
+        "The value is a comma separated list of user IDs: e.g. -1,1,2,3. "
+        "A value of -1 indicates to return tasks that are unassigned.",
         "in": "query",
         "type": "str",
         "default": "null",
@@ -115,7 +115,7 @@ class GetTasksFilters(object):
         Create the object
         :param dto: A request.args object
         """
-        self.assignee = self._get_ints_from_strlist(dto.get("assignee"))
+        self.assignee = self._get_ints_from_strlist(dto.get("assignee"), -1)
         self.created_by = self._get_ints_from_strlist(dto.get("created_by"))
         self.priority = self._get_ints_from_strlist(dto.get("priority"), 0, 2)
         self.labels = self._get_ints_from_strlist(dto.get("labels"), 1)
@@ -156,13 +156,13 @@ class GetTasksFilters(object):
         # filter things
         filters = [Task.org_id == org_id]
 
-        # filter by assignee
-        if self.assignee is not None and len(self.assignee) > 0:
-            log.info("Adding list of assignees")
-            filters.append(Task.assignee.in_(self.assignee))
-        elif self.assignee is not None and len(self.assignee) == 0:
-            log.info("Filtering by no assignee")
-            filters.append(Task.assignee == None)  # noqa
+        # filter by assignee, if a -1 is in the list then include unassigned users
+        if self.assignee is not None:
+            try:
+                self.assignee.remove(-1)
+                filters.append(or_(Task.assignee.in_(self.assignee), Task.assignee == None))  # noqa
+            except ValueError:
+                filters.append(Task.assignee.in_(self.assignee))
 
         # filter by created by
         if self.created_by is not None:
