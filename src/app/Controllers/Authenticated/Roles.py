@@ -4,7 +4,7 @@ from sqlalchemy import and_
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Models.Enums import Operations, Resources
+from app.Models.Enums import Operations, Resources, Roles
 from app.Models.RBAC import Role
 
 api = Namespace(path="/roles", name="Roles", description="Manage roles")
@@ -15,7 +15,7 @@ role_dto = api.model(
     {
         "id": fields.String(),
         "rank": fields.Integer(min=0, max=2),
-        "name": fields.String(enum=["ORG_ADMIN", "DELEGATOR", "USER", "LOCKED"]),
+        "name": fields.String(enum=Roles.all),
         "description": fields.String(),
         "disabled": fields.Boolean(),
         "tooltip": fields.String(),

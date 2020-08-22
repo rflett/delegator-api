@@ -5,7 +5,7 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import authorize, requires_jwt
 from app.Extensions.Database import session_scope
 from app.Models import Event
-from app.Models.Enums import Operations, Resources, Events
+from app.Models.Enums import Operations, Resources, Events, Roles
 
 api = Namespace(path="/user", name="User", description="Manage a user")
 log = structlog.getLogger()
@@ -23,11 +23,10 @@ class NullableInteger(fields.Integer):
 
 @api.route("/<int:user_id>")
 class UserController(RequestValidationController):
-    response_roles = ["ORG_ADMIN", "MANAGER", "STAFF", "USER", "LOCKED"]
     role_dto = api.model(
         "Get User Role",
         {
-            "id": fields.String(enum=["ADMIN", "DELEGATOR", "USER", "LOCKED"]),
+            "id": fields.String(enum=Roles.all),
             "rank": fields.Integer(min=0, max=2),
             "name": fields.String(enum=["Admin", "Delegator", "User", "Locked"]),
             "description": fields.String(),

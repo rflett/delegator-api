@@ -1,21 +1,23 @@
 import datetime
 import pytz
-from dateutil import tz
 
+import structlog
 from flask import current_app, request
 from flask_restx import Namespace, fields
-from sqlalchemy import and_, or_, func, cast, Date
+from sqlalchemy import or_, func, cast, Date
 from sqlalchemy.orm import aliased
 
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
+from app.Models import GetTasksFilters, GetTasksFiltersSchema, get_tasks_schema_docs
 from app.Models.Dao import User, Task, TaskLabel, TaskStatus, DelayedTask, TaskPriority
 from app.Models.Enums import Operations, Resources, TaskStatuses
 from app.Utilities.All import format_date
 
 api = Namespace(path="/tasks", name="Tasks", description="Manage tasks")
+log = structlog.getLogger()
 
 
 class NullableDateTime(fields.DateTime):
@@ -68,17 +70,25 @@ class Tasks(RequestValidationController):
 
     @requires_jwt
     @authorize(Operations.GET, Resources.TASKS)
+    @api.doc(params=get_tasks_schema_docs)
     @api.marshal_with(response_dto, code=200)
     def get(self, **kwargs):
         """Get all tasks"""
         req_user = kwargs["req_user"]
 
-        # start_period, end_period = self.validate_time_period(req.get_json())
-        end_period = now = datetime.datetime.utcnow()
-        start_period = datetime.datetime(now.year, now.month, 1, tzinfo=tz.tzutc())  # start_of_this_month
+        # validate the filtering arguments
+        arg_errors = GetTasksFiltersSchema().validate(request.args)
+        if arg_errors:
+            raise ValidationError(arg_errors)
+
+        task_filters = GetTasksFilters(request.args)
+        log.info("Parsed request filters", filters=task_filters)
 
         with session_scope() as session:
             label1, label2, label3 = aliased(TaskLabel), aliased(TaskLabel), aliased(TaskLabel)
+
+            filters = task_filters.filters(req_user.org_id, label1, label2, label3)
+
             tasks_qry = (
                 session.query(
                     Task.id,
@@ -103,15 +113,7 @@ class Tasks(RequestValidationController):
                 .outerjoin(label1, label1.id == Task.label_1)
                 .outerjoin(label2, label2.id == Task.label_2)
                 .outerjoin(label3, label3.id == Task.label_3)
-                .filter(
-                    and_(
-                        Task.org_id == req_user.org_id,
-                        or_(
-                            and_(Task.finished_at >= start_period, Task.finished_at <= end_period),
-                            Task.finished_at == None,  # noqa
-                        ),
-                    )
-                )
+                .filter(*filters)
                 .order_by(Task.display_order)
                 .all()
             )
@@ -177,6 +179,8 @@ class Tasks(RequestValidationController):
                     "time_estimate": time_estimate,
                 }
             )
+
+        log.info(f"Found {len(tasks)} tasks matching filters")
         return {"tasks": tasks}, 200
 
 
@@ -273,6 +277,8 @@ class CompletedTasks(RequestValidationController):
                 for label_id in label_filter:
                     filters.append(or_(label1.id == label_id, label2.id == label_id, label3.id == label_id))
 
+            log.info(f"Applying {len(filters)} filters to query")
+
             qry = (
                 session.query(
                     Task.id,
@@ -349,7 +355,7 @@ class CompletedTasks(RequestValidationController):
                 time_to_finish_min = 0
             else:
                 time_to_finish_date = finished_at - started_at
-                time_to_finish_min = time_to_finish_date.seconds // 60
+                time_to_finish_min = time_to_finish_date.total_seconds() // 60
 
             # convert labels to a list
             labels = [label.as_dict() for label in [label_1, label_2, label_3] if label is not None]
@@ -386,10 +392,13 @@ class CompletedTasks(RequestValidationController):
 
         # we need to sort by time_to_finish or time_spent_delayed in place
         if request_body["sort_by"] == "timeToFinish":
+            log.info("Sorting by timeToFinish")
             tasks.sort(key=lambda x: x["time_to_finish"], reverse=(request_body["sort_direction"] == "desc"))
         elif request_body["sort_by"] == "timeSpentDelayed":
+            log.info("Sorting by timeSpentDelayed")
             tasks.sort(key=lambda x: x["time_spent_delayed"], reverse=(request_body["sort_direction"] == "desc"))
 
+        log.info(f"Found {count} tasks that matched filters")
         return {"count": count, "tasks": tasks}, 200
 
     @staticmethod
@@ -407,7 +416,7 @@ class CompletedTasks(RequestValidationController):
         for task in qry:
             delayed_at, expired = task
             # get the seconds it was delayed for
-            time_spent_delayed += (expired - delayed_at).seconds
+            time_spent_delayed += (expired - delayed_at).total_seconds()
 
         # return as minutes
         return time_spent_delayed // 60
