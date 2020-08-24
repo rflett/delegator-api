@@ -83,7 +83,10 @@ class RequestValidationController(ObjectValidationController):
         """
         if not isinstance(password, str):
             raise ValidationError(f"Bad password expected str got {type(password)}")
-        # password_check = self.check_password_reqs(password)
+        if len(password) < 8:
+            raise ValidationError("Password must be at least 8 characters long")
+        if len(password) > 64:
+            raise ValidationError("Password must be at most 64 characters long")
         return password
 
     def validate_transition_task(self, **kwargs) -> Task:

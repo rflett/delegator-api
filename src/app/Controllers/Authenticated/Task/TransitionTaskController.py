@@ -9,8 +9,8 @@ from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
 from app.Models import GetTasksFilters, GetTasksFiltersSchema, get_tasks_schema_docs
-from app.Models.Dao import TaskLabel, Task
-from app.Models.Enums import TaskStatuses, Operations, Resources
+from app.Models.Dao import TaskLabel, Task, User
+from app.Models.Enums import TaskStatuses, Operations, Resources, Roles
 from app.Models.RBAC import ServiceAccount
 from app.Utilities.All import reindex_display_orders, get_task_by_id
 
@@ -68,7 +68,7 @@ class TransitionTask(RequestValidationController):
     @api.marshal_with(task_transition_dto, code=200)
     def get(self, **kwargs):
         """Returns all tasks and the statuses they can be transitioned to"""
-        req_user = kwargs["req_user"]
+        req_user: User = kwargs["req_user"]
 
         # validate the filtering arguments
         arg_errors = GetTasksFiltersSchema().validate(request.args)
@@ -106,6 +106,9 @@ class TransitionTask(RequestValidationController):
 
             if task_assignee is None:
                 this_task_transitions["valid_transitions"] += valid_unassigned_transitions.get(task_status, [])
+            elif req_user.role == Roles.USER and task_assignee != req_user.id:
+                # USERs can only transition their own tasks
+                this_task_transitions["valid_transitions"] += [task_status]
             else:
                 this_task_transitions["valid_transitions"] += valid_assigned_transitions.get(task_status, [])
 
