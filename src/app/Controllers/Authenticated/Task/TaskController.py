@@ -9,7 +9,7 @@ from sqlalchemy import exists, and_
 from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
-from app.Extensions.Errors import ResourceNotFoundError
+from app.Extensions.Errors import ResourceNotFoundError, ValidationError
 from app.Models import Event, Notification, NotificationAction
 from app.Models.Dao import Task, User
 from app.Models.Enums import Operations, Resources, Events, TaskStatuses
@@ -274,15 +274,16 @@ class ManageTask(RequestValidationController):
         if task_to_update.priority != task_priority:
             task_to_update.change_priority(priority=task_priority, notification_exclusions=[req_user.id])
 
-        # don't update scheduled info if it wasn't scheduled to begin with, or the notification has been sent
-        if (
-            task_to_update.scheduled_for is None
-            and task_to_update.scheduled_notification_period is None
-            or task_to_update.scheduled_notification_sent
-        ):
+        # rescheduling
+        if task_to_update.status == TaskStatuses.SCHEDULED:
+            if request_body.get("scheduled_for") is None or request_body.get("scheduled_notification_period") is None:
+                raise ValidationError(
+                    "Task is scheduled so scheduled_for and scheduled_notification_period are required"
+                )
             with session_scope():
                 task_to_update.scheduled_for = request_body.get("scheduled_for")
                 task_to_update.scheduled_notification_period = request_body.get("scheduled_notification_period")
+            # TODO do we want send task rescheduled notifications here?
 
         # update remaining attributes
         with session_scope():
