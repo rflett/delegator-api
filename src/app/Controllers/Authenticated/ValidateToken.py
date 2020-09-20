@@ -1,18 +1,8 @@
-import datetime
-from decimal import Decimal
-
 import structlog
-from flask import request
 from flask_restx import Namespace, fields
-from sqlalchemy import exists, and_, func
 
 from app.Controllers.Base import RequestValidationController
-from app.Decorators import requires_jwt, authorize
-from app.Extensions.Database import session_scope
-from app.Extensions.Errors import ValidationError
-from app.Models import OrgSetting
-from app.Models.Dao import Organisation
-from app.Models.Enums import Operations, Resources, Roles
+from app.Decorators import requires_jwt
 
 api = Namespace(path="/validate", name="Validate", description="Validate the User's token")
 log = structlog.getLogger()
