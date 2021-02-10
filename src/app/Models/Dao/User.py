@@ -378,7 +378,7 @@ class User(db.Model):
         except ClientError as e:
             log.error(f"error uploading profile avatar - {e}")
 
-    def reset_avatar(self, init=False) -> None:
+    def reset_avatar(self, from_signup=False) -> None:
         """Copies the default.jpg avatar to the user uuid to 'reset' it"""
         new_uuid = str(uuid.uuid4())
 
@@ -390,7 +390,7 @@ class User(db.Model):
             )
             log.info(f"Reset avatar {new_uuid}.jpg")
 
-            if not init:
+            if not from_signup:
                 self._delete_avatar()
 
             with session_scope():
