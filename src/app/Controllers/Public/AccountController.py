@@ -90,7 +90,7 @@ class AccountController(RequestValidationController):
             user.created_by = user.id
 
         user.create_settings()
-        user.reset_avatar()
+        user.reset_avatar(from_signup=True)
         user.log(Operations.CREATE, Resources.USER, resource_id=user.id)
         log.info(f"User {user.id} signed up.")
 
@@ -364,7 +364,7 @@ class AccountController(RequestValidationController):
             },
             key=current_app.config["JWT_SECRET"],
             algorithm="HS256",
-        ).decode("utf-8")
+        )
 
     @staticmethod
     def _generate_log_token(user: User) -> str:
@@ -381,4 +381,4 @@ class AccountController(RequestValidationController):
             },
             key=decoded_key,
             algorithm="RS256",
-        ).decode("utf-8")
+        )

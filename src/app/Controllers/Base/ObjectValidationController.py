@@ -29,7 +29,7 @@ class ObjectValidationController(Resource):
             },
             key=current_app.config["JWT_SECRET"],
             algorithm="HS256",
-        ).decode("utf-8")
+        )
         return "Bearer " + token
 
     @staticmethod
