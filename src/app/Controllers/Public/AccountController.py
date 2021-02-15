@@ -90,7 +90,7 @@ class AccountController(RequestValidationController):
             user.created_by = user.id
 
         user.create_settings()
-        user.reset_avatar(from_signup=True)
+        user.reset_avatar(first_time=True)
         user.log(Operations.CREATE, Resources.USER, resource_id=user.id)
         log.info(f"User {user.id} signed up.")
 
