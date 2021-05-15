@@ -3,8 +3,6 @@ from os import getenv
 
 import sentry_sdk
 import structlog
-from aws_xray_sdk.core import xray_recorder, patch_all
-from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 from flask import Flask
 from flask_cors import CORS
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -60,29 +58,5 @@ app.register_error_handler(AuthenticationError, handle_error)
 app.register_error_handler(AuthorizationError, handle_error)
 app.register_error_handler(ResourceNotFoundError, handle_error)
 app.register_error_handler(InternalServerError, handle_error)
-
-# xray
-xray_recorder.configure(
-    service="delegator-api",
-    context_missing="LOG_ERROR",
-    plugins=("ECSPlugin",),
-    sampling_rules={
-        "version": 2,
-        "rules": [
-            {
-                "description": "Ignore health checks",
-                "host": "*",
-                "http_method": "*",
-                "url_path": "/health/",
-                "fixed_target": 0,
-                "rate": 0,
-            }
-        ],
-        "default": {"fixed_target": 0, "rate": 0},
-    },
-)
-logging.getLogger("aws_xray_sdk").setLevel(logging.WARNING)
-XRayMiddleware(app, xray_recorder)
-patch_all()
 
 log.info("Finished init")

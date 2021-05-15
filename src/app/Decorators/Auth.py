@@ -3,7 +3,6 @@ from functools import wraps
 
 import jwt
 import structlog
-from aws_xray_sdk.core import xray_recorder
 from flask import request, current_app
 from sentry_sdk import configure_scope
 
@@ -62,11 +61,9 @@ def _get_requester_details() -> typing.Union[User, ServiceAccount]:
         log.info(f"Decoding JWT raised {e}")
         raise AuthenticationError("Couldn't validate the JWT.")
 
-    document = xray_recorder.current_segment()
     with configure_scope() as sentry_scope:
 
         if decoded["claims"]["type"] == "user":
-            document.set_user(str(decoded["claims"]["user-id"]))
             sentry_scope.set_user({"id": str(decoded["claims"]["user-id"]), "email": decoded["claims"]["email"]})
             return _get_user(decoded["claims"]["user-id"])
         elif decoded["claims"]["type"] == "service-account":

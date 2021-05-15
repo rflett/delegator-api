@@ -1,8 +1,8 @@
 from contextlib import contextmanager
 
-from aws_xray_sdk.ext.flask_sqlalchemy.query import XRayFlaskSqlAlchemy
+from flask_sqlalchemy import SQLAlchemy
 
-db = XRayFlaskSqlAlchemy()
+db = SQLAlchemy()
 
 
 @contextmanager
