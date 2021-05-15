@@ -38,7 +38,7 @@ class Organisation(db.Model):
         self.locked_reason = locked_reason
 
     def create_settings(self) -> None:
-        """ Creates the settings for this user """
+        """Creates the settings for this user"""
         from app.Models import OrgSetting
 
         org_setting = OrgSetting(self.id)

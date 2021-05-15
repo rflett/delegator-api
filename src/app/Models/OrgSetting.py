@@ -11,7 +11,7 @@ dyn_db = boto3.resource("dynamodb")
 
 @dataclass
 class OrgSetting:
-    """ Org settings model"""
+    """Org settings model"""
 
     org_id: Decimal
     custom_task_fields: dict = None
@@ -20,13 +20,13 @@ class OrgSetting:
         return {"org_id": int(self.org_id), "custom_task_fields": self.custom_task_fields}
 
     def update(self):
-        """ Updates DynamoDB table with UserSetting as dict"""
+        """Updates DynamoDB table with UserSetting as dict"""
         if getenv("MOCK_AWS"):
             return
         self._table().put_item(Item=self.as_dict(), ReturnValues="NONE")
 
     def get(self):
-        """ Returns user settings from DynamoDB as a UserSetting object """
+        """Returns user settings from DynamoDB as a UserSetting object"""
         if getenv("MOCK_AWS"):
             return
 

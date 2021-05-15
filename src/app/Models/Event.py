@@ -23,7 +23,7 @@ class Event(object):
         self.event_time = datetime.utcnow().strftime(current_app.config["DYN_DB_ACTIVITY_DATE_FORMAT"])
 
     def publish(self) -> None:
-        """ Publishes an event to SNS """
+        """Publishes an event to SNS"""
         if getenv("MOCK_AWS"):
             log.info(f"WOULD have published message {self.as_dict()}")
             return None
@@ -40,7 +40,7 @@ class Event(object):
         )
 
     def as_dict(self) -> dict:
-        """ Returns an activity as a dict, ready for SNS message """
+        """Returns an activity as a dict, ready for SNS message"""
         return {
             "org_id": self.org_id,
             "event": self.event,

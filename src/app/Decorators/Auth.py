@@ -67,7 +67,6 @@ def _get_requester_details() -> typing.Union[User, ServiceAccount]:
             sentry_scope.set_user({"id": str(decoded["claims"]["user-id"]), "email": decoded["claims"]["email"]})
             return _get_user(decoded["claims"]["user-id"])
         elif decoded["claims"]["type"] == "service-account":
-            document.set_user(str(decoded["claims"]["service-account-name"]))
             sentry_scope.set_user({"id": str(decoded["claims"]["service-account-name"])})
             return ServiceAccount(decoded["claims"]["service-account-name"])
         else:

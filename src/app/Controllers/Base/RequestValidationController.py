@@ -9,7 +9,7 @@ from app.Models.Dao import User, Task
 
 class RequestValidationController(ObjectValidationController):
     def validate_delay_task_request(self, **kwargs) -> Task:
-        """ Validates the transition task request """
+        """Validates the transition task request"""
         request_body = request.get_json()
         task = self.check_task_id(request_body.get("task_id"), kwargs["req_user"].org_id)
         if task.assignee is not None:
@@ -90,7 +90,7 @@ class RequestValidationController(ObjectValidationController):
         return password
 
     def validate_transition_task(self, **kwargs) -> Task:
-        """ Validates the transition task request """
+        """Validates the transition task request"""
         request_body = request.get_json()
         task = self.check_task_id(request_body["task_id"], kwargs["req_user"].org_id)
         if task.assignee is not None:

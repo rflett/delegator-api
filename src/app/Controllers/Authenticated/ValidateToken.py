@@ -15,7 +15,6 @@ class NullableString(fields.String):
 
 @api.route("/")
 class ValidationChecker(RequestValidationController):
-
     @requires_jwt
     @api.response(204, "Token Valid")
     def get(self, **kwargs):

@@ -57,7 +57,7 @@ class UserController(RequestValidationController):
     @authorize(Operations.GET, Resources.USER)
     @api.marshal_with(user_response, code=200)
     def get(self, user_id: int, **kwargs):
-        """Get a single user by email or ID """
+        """Get a single user by email or ID"""
         user = self.validate_get_user(user_id, **kwargs)
         kwargs["req_user"].log(Operations.GET, Resources.USER, resource_id=user.id)
         return user.fat_dict(), 200
@@ -66,7 +66,7 @@ class UserController(RequestValidationController):
     @authorize(Operations.DELETE, Resources.USER)
     @api.response(204, "Success")
     def delete(self, user_id: int, **kwargs):
-        """Deletes a user """
+        """Deletes a user"""
         req_user = kwargs["req_user"]
 
         user_to_delete = self.validate_delete_user(user_id, **kwargs)

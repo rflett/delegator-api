@@ -50,7 +50,7 @@ class ActiveUsers(RequestValidationController):
 
     @staticmethod
     def _purge_inactive_users() -> None:
-        """ Removes users from the active users table which have been inactive for longer than the TTL. """
+        """Removes users from the active users table which have been inactive for longer than the TTL."""
         with session_scope() as session:
             inactive_cutoff = datetime.datetime.utcnow() - datetime.timedelta(
                 seconds=current_app.config["INACTIVE_USER_TTL"]

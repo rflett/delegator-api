@@ -35,7 +35,7 @@ class DelayTask(RequestValidationController):
     @api.expect(request_dto, validate=True)
     @api.response(204, "Success")
     def put(self, **kwargs):
-        """Delays a task """
+        """Delays a task"""
         req_user = kwargs["req_user"]
         request_body = request.get_json()
 
@@ -107,7 +107,7 @@ class GetDelayTask(RequestValidationController):
     @authorize(Operations.GET, Resources.TASK)
     @api.marshal_with(response_dto, code=200)
     def get(self, task_id: int, **kwargs):
-        """Returns the delayed info for a task """
+        """Returns the delayed info for a task"""
         req_user = kwargs["req_user"]
 
         ret = []

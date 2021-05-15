@@ -19,7 +19,7 @@ class NotificationAction:
     icon: str  # The icon name without extension to use for this action
 
     def as_dict(self) -> dict:
-        """ Returns dict repr of a NotificationAction """
+        """Returns dict repr of a NotificationAction"""
         return {
             "label": self.label,
             "icon": self.icon,
@@ -37,7 +37,7 @@ class Notification(object):
     user_ids: typing.List[int] = field(default=list)
 
     def push(self) -> None:
-        """ Publish the message to SNS for pushing to the user """
+        """Publish the message to SNS for pushing to the user"""
         if getenv("MOCK_SERVICES"):
             log.info(f"WOULD have pushed notification {self.as_dict()} to NotificationApi")
             return
@@ -54,7 +54,7 @@ class Notification(object):
             log.error(f"there was an issue sending the notification {self.as_dict()}")
 
     def as_dict(self) -> dict:
-        """ Returns a notification as a dict, ready for SNS message """
+        """Returns a notification as a dict, ready for SNS message"""
         return {
             "title": self.title,
             "event_name": self.event_name,

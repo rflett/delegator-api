@@ -22,7 +22,7 @@ class UserActivityController(RequestValidationController):
     @authorize(Operations.GET, Resources.USER_ACTIVITY)
     @api.marshal_with(activity_response_dto, code=200)
     def get(self, user_id: int, **kwargs):
-        """Returns the activity for a user """
+        """Returns the activity for a user"""
         req_user = kwargs["req_user"]
 
         # TODO limit the history based on plan

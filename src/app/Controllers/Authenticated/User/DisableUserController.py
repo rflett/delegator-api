@@ -59,7 +59,7 @@ class DisableUserController(RequestValidationController):
     @authorize(Operations.UPDATE, Resources.USER)
     @api.response(204, "Success")
     def delete(self, user_id: int, **kwargs):
-        """Enable a user """
+        """Enable a user"""
         req_user = kwargs["req_user"]
 
         user_to_enable = self.check_user_id(user_id, should_exist=True)

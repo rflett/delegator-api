@@ -194,7 +194,7 @@ class GetTasksFilters(object):
 
     @staticmethod
     def _get_ints_from_strlist(s: str, _min: int = None, _max: int = None) -> typing.Union[typing.List[int], None]:
-        """ Given comma separated integers in a string, return them as a list
+        """Given comma separated integers in a string, return them as a list
         :param s: The str containing comma separated ints, e.g. 1,2,3
         :param _min: Integers in the string less than the min are not returned
         :param _max: Integers in the string greater than the min are not returned

@@ -120,7 +120,7 @@ class UserController(RequestValidationController):
     @authorize(Operations.GET, Resources.USERS)
     @api.marshal_with(get_users_response, code=200)
     def get(self, **kwargs):
-        """Get all users """
+        """Get all users"""
         req_user = kwargs["req_user"]
 
         # query for all users in the requesting user's organisation
@@ -266,7 +266,7 @@ class UserController(RequestValidationController):
     @api.expect(update_user_request, validate=True)
     @api.response(204, "Success")
     def put(self, **kwargs):
-        """Update a user. """
+        """Update a user."""
         req_user: User = kwargs["req_user"]
         request_body = request.get_json()
 
