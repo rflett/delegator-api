@@ -88,7 +88,7 @@ class Email(object):
 
     @staticmethod
     def _publish(dto: dict) -> None:
-        """ Publishes an email to SNS """
+        """Publishes an email to SNS"""
         if getenv("MOCK_AWS"):
             log.info(f"WOULD have sent email message {dto}")
             return None

@@ -57,7 +57,6 @@ class Dev(Config):
                     qQjJJdApKNm9MWUFLWEtTZHFIT0tlczNYN1J1Z3FIMlgxK1FFa08rWVlKRHV4OWpibzZsZ2hudVJ4RGc9PQotLS0tLUVORC
                     BSU0EgUFJJVkFURSBLRVktLS0tLQo=
     """
-    XRAY_RULE_IGNORE_HEALTH = "{}"
     WEBSITE_URL = "staging.delegator.com.au"
 
 

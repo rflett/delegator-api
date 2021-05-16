@@ -197,7 +197,7 @@ class User(db.Model):
                 return last_active.strftime(current_app.config["RESPONSE_DATE_FORMAT"])
 
     def clear_failed_logins(self) -> None:
-        """ Clears a user's failed login attempts """
+        """Clears a user's failed login attempts"""
         from app.Models.Dao import FailedLogin
 
         with session_scope() as session:
@@ -209,7 +209,7 @@ class User(db.Model):
             log.info(f"cleared failed logins for {self.email}")
 
     def delete(self, req_user) -> None:
-        """ Deletes the user """
+        """Deletes the user"""
         from app.Models.Dao import Task
         from app.Models import Subscription
 
@@ -272,7 +272,7 @@ class User(db.Model):
         }
 
     def fat_dict(self) -> dict:
-        """ Returns a full user dict with all of its FK's joined. """
+        """Returns a full user dict with all of its FK's joined."""
         with session_scope() as session:
             created_by = session.query(User.first_name, User.last_name).filter_by(id=self.created_by).first()
             updated_by = session.query(User.first_name, User.last_name).filter_by(id=self.updated_by).first()
@@ -285,7 +285,7 @@ class User(db.Model):
         return user_dict
 
     def activity(self) -> list:
-        """ Returns the activity of a user"""
+        """Returns the activity of a user"""
         if getenv("MOCK_AWS"):
             activity = MockActivity()
             return activity.data
@@ -310,11 +310,11 @@ class User(db.Model):
         return activity_log
 
     def name(self) -> str:
-        """ Returns their full name """
+        """Returns their full name"""
         return self.first_name + " " + self.last_name
 
     def create_settings(self) -> None:
-        """ Creates the settings for this user """
+        """Creates the settings for this user"""
         from app.Models import UserSetting
 
         setting = UserSetting(self.id)

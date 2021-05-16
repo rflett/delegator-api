@@ -180,7 +180,7 @@ class Task(db.Model):
         }
 
     def activity(self, max_days_of_history: int) -> list:
-        """ Returns the activity of a task. """
+        """Returns the activity of a task."""
         if max_days_of_history == -1:
             # all time, THE TIME OF THIS ORIGINAL COMMIT
             start_of_history = datetime.datetime(2019, 12, 6, 22, 51, 7, 856186)
@@ -222,7 +222,7 @@ class Task(db.Model):
         return activity_log
 
     def delayed_info(self) -> dict:
-        """ Gets the latest delayed information about a task """
+        """Gets the latest delayed information about a task"""
         from app.Models.Dao import User
 
         with session_scope() as session:
@@ -243,7 +243,7 @@ class Task(db.Model):
             return delayed_task_dict
 
     def drop(self, req_user: User) -> None:
-        """ Drops this task """
+        """Drops this task"""
         old_assignee = self.assigned_user.name()
         self.unassign(req_user)
 
@@ -264,7 +264,7 @@ class Task(db.Model):
         log.info(f"User {req_user.id} dropped task {self.id} which was assigned to {old_assignee}.")
 
     def assign(self, assignee: int, req_user: User, notify: bool = True) -> None:
-        """Common function for assigning a task """
+        """Common function for assigning a task"""
         # set the task assignee
         with session_scope():
             self.assignee = assignee
@@ -328,7 +328,7 @@ class Task(db.Model):
         log.info(f"Changed task {self.id} priority to {priority}")
 
     def unassign(self, req_user: User) -> None:
-        """Common function for unassigning a task """
+        """Common function for unassigning a task"""
         # only proceed if the task is assigned to someone
         if self.assignee is not None:
             # get the old assignee
@@ -359,7 +359,7 @@ class Task(db.Model):
             log.info(f"Unassigned user {old_assignee.id} from task {self.id}")
 
     def transition(self, status: str, req_user: User = None) -> None:
-        """Common function for transitioning a task """
+        """Common function for transitioning a task"""
         with session_scope() as session:
             old_status = self.status
 
@@ -415,7 +415,7 @@ class Task(db.Model):
 
     @staticmethod
     def _pretty_status_label(status: str) -> str:
-        """Converts a task status from IN_PROGRESS to 'In Progress' """
+        """Converts a task status from IN_PROGRESS to 'In Progress'"""
         if "_" in status:
             words = status.lower().split("_")
             return " ".join([w.capitalize() for w in words])

@@ -17,7 +17,7 @@ class UserPagesController(RequestValidationController):
     @authorize(Operations.GET, Resources.PAGES)
     @api.response(200, "Success", fields.List(fields.String()))
     def get(self, **kwargs):
-        """Returns the pages a user can access """
+        """Returns the pages a user can access"""
         req_user = kwargs["req_user"]
 
         # query for permissions that have the resource id like %_PAGE

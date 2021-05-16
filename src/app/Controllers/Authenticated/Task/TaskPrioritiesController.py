@@ -23,7 +23,7 @@ class TaskPriorities(RequestValidationController):
     @authorize(Operations.GET, Resources.TASK_PRIORITIES)
     @api.marshal_with(get_response, code=200)
     def get(self, **kwargs):
-        """Returns all task priorities """
+        """Returns all task priorities"""
         req_user = kwargs["req_user"]
 
         with session_scope() as session:

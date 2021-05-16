@@ -242,7 +242,7 @@ class ManageTask(RequestValidationController):
     @api.expect(update_task_dto, validate=True)
     @api.response(204, "Success")
     def put(self, **kwargs):
-        """Update a task """
+        """Update a task"""
         req_user: User = kwargs["req_user"]
         request_body = request.get_json()
 

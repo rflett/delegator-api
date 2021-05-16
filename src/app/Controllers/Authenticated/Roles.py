@@ -32,7 +32,7 @@ class Roles(RequestValidationController):
     @api.marshal_with(roles_response, code=200)
     @api.response(200, "Roles Retrieved", roles_response)
     def get(self, **kwargs):
-        """Return all roles lower in rank than the requesting user's role. """
+        """Return all roles lower in rank than the requesting user's role."""
         req_user = kwargs["req_user"]
 
         with session_scope() as session:

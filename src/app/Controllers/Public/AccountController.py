@@ -34,7 +34,7 @@ class AccountController(RequestValidationController):
             "password": fields.String(required=True),
             "first_name": fields.String(required=True),
             "last_name": fields.String(required=True),
-            "plan_id": fields.String(required=True, enum=["basic"]),
+            "plan_id": fields.String(required=True),
         },
     )
     signup_response = api.model("Signup Response", {"url": fields.String()})

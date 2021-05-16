@@ -18,7 +18,7 @@ class AssignTask(RequestValidationController):
     @api.expect(request_dto, validate=True)
     @api.response(204, "Success")
     def post(self, **kwargs):
-        """Assigns a user to task """
+        """Assigns a user to task"""
         request_body = request.get_json()
 
         # validate

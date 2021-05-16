@@ -23,7 +23,7 @@ class TaskLabels(RequestValidationController):
     @authorize(Operations.GET, Resources.TASK_LABELS)
     @api.marshal_with(task_labels_response, code=200)
     def get(self, **kwargs):
-        """Returns all task labels """
+        """Returns all task labels"""
         req_user = kwargs["req_user"]
 
         with session_scope() as session:

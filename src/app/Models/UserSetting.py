@@ -10,7 +10,7 @@ dyn_db = boto3.resource("dynamodb")
 
 @dataclass
 class UserSetting:
-    """ User settings model"""
+    """User settings model"""
 
     user_id: Decimal
 
@@ -18,7 +18,7 @@ class UserSetting:
         return {"user_id": int(self.user_id)}
 
     def update(self):
-        """ Updates DynamoDB table with UserSetting as dict"""
+        """Updates DynamoDB table with UserSetting as dict"""
         if getenv("MOCK_AWS"):
             return
         # TODO should be changed to update_item
@@ -26,7 +26,7 @@ class UserSetting:
 
     @staticmethod
     def get():
-        """ Returns user settings from DynamoDB as a UserSetting object """
+        """Returns user settings from DynamoDB as a UserSetting object"""
         if getenv("MOCK_AWS"):
             return
 
