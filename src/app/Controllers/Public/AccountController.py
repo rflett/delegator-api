@@ -1,6 +1,7 @@
 import base64
 import datetime
 import json
+import urllib
 import uuid
 from os import getenv
 
@@ -44,16 +45,16 @@ class AccountController(RequestValidationController):
     def put(self):
         """Signup a user."""
         request_body = request.get_json()
+        login_url = "https://app." + current_app.config["WEBSITE_URL"] + "/login?email=" + request_body["email"]
 
         with session_scope() as session:
             if session.query(
                 exists().where(func.lower(Organisation.name) == func.lower(request_body["org_name"]))
             ).scalar():
-                raise ValidationError("That organisation already exists.")
+                return {"url": login_url}, 200
             if session.query(exists().where(func.lower(User.email) == func.lower(request_body["email"]))).scalar():
-                raise ValidationError("That email already exists.")
+                return {"url": login_url}, 200
 
-        self.validate_email(request_body["email"])
         self.validate_password(request_body["password"])
 
         # create organisation
