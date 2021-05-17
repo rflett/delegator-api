@@ -153,7 +153,7 @@ class GetTask(RequestValidationController):
                 {"task_id": task_id, "org_id": req_user.org_id},
             )
 
-        result = dict(qry.fetchone().items())
+        result = dict(qry.fetchone())
 
         if result["assignee_id"] is None:
             assignee = None
