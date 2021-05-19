@@ -52,6 +52,7 @@ class DelayTask(RequestValidationController):
             # if the task has been delayed before, expire it
             if delay is not None:
                 delay.expired = datetime.datetime.utcnow()
+                delay.delay_for = (datetime.datetime.utcnow() - delay.delayed_at).seconds
 
             delayed_task = DelayedTask(
                 task_id=task.id,

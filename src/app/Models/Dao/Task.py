@@ -375,6 +375,7 @@ class Task(db.Model):
             if old_status == TaskStatuses.DELAYED and status != TaskStatuses.DELAYED:
                 delayed_task = session.query(DelayedTask).filter_by(task_id=self.id, expired=None).first()
                 delayed_task.expired = datetime.datetime.utcnow()
+                delayed_task.delay_for = (datetime.datetime.utcnow() - delayed_task.delayed_at).seconds
 
             # assign finished_by and _at if the task is being completed
             if status in (TaskStatuses.COMPLETED, TaskStatuses.CANCELLED):
