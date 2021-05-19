@@ -251,6 +251,8 @@ class CompletedTasks(RequestValidationController):
         req_user = kwargs["req_user"]
         request_body = request.get_json()
 
+        log.info("Getting completed tasks with filters", **request_body)
+
         with session_scope() as session:
             label1, label2, label3 = aliased(TaskLabel), aliased(TaskLabel), aliased(TaskLabel)
             assignee, created_by, finished_by = aliased(User), aliased(User), aliased(User)
@@ -277,8 +279,6 @@ class CompletedTasks(RequestValidationController):
                 for label_id in label_filter:
                     filters.append(or_(label1.id == label_id, label2.id == label_id, label3.id == label_id))
 
-            log.info(f"Applying {len(filters)} filters to query")
-
             qry = (
                 session.query(
                     Task.id,
@@ -299,6 +299,7 @@ class CompletedTasks(RequestValidationController):
                     label2,
                     label3,
                 )
+                .select_from(Task)
                 .join(TaskStatus, TaskStatus.status == Task.status)
                 .outerjoin(assignee, assignee.id == Task.assignee)
                 .outerjoin(created_by, created_by.id == Task.created_by)
@@ -312,6 +313,7 @@ class CompletedTasks(RequestValidationController):
             # work out count efficiently
             count_qry = qry.statement.with_only_columns([func.count()]).order_by(None)
             count = qry.session.execute(count_qry).scalar()
+            log.info(f"Found {count} completed tasks to sort and paginate")
 
             # we can sort by finished_at in this query
             if request_body["sort_by"] == "finishedAt" and request_body["sort_direction"] == "desc":
@@ -392,13 +394,10 @@ class CompletedTasks(RequestValidationController):
 
         # we need to sort by time_to_finish or time_spent_delayed in place
         if request_body["sort_by"] == "timeToFinish":
-            log.info("Sorting by timeToFinish")
             tasks.sort(key=lambda x: x["time_to_finish"], reverse=(request_body["sort_direction"] == "desc"))
         elif request_body["sort_by"] == "timeSpentDelayed":
-            log.info("Sorting by timeSpentDelayed")
             tasks.sort(key=lambda x: x["time_spent_delayed"], reverse=(request_body["sort_direction"] == "desc"))
 
-        log.info(f"Found {count} tasks that matched filters")
         return {"count": count, "tasks": tasks}, 200
 
     @staticmethod
