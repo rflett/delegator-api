@@ -25,6 +25,7 @@ Build:
     - master
   script:
     - /kaniko/executor
+      --build-arg COMMIT_SHA=$IMAGE_TAG
       --context $CI_PROJECT_DIR/src
       --dockerfile $CI_PROJECT_DIR/src/Dockerfile
       --destination $AMZ_REGISTRY:$IMAGE_TAG
