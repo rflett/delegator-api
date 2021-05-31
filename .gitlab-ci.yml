@@ -5,17 +5,12 @@ stages:
 
 variables:
   AMZ_REGISTRY: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/delegator-api
-  GITLAB_REGISTRY: registry.gitlab.com/delegator-au
   IMAGE_TAG: $CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
 
 Flake8:
   stage: Lint
   allow_failure: true
-  image: $GITLAB_REGISTRY/infrastructure/containers/python:latest
-  only:
-    - /^feature\/.*$/
-    - develop
-    - master
+  image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/python:latest
   script:
     - cd src/
     - flake8
@@ -23,27 +18,17 @@ Flake8:
 
 Build:
   stage: Build
-  image: $GITLAB_REGISTRY/infrastructure/containers/docker:latest
+  image: 650215746119.dkr.ecr.ap-southeast-2.amazonaws.com/kaniko:latest
   only:
     - /^feature\/.*$/
     - develop
     - master
-  services:
-    - docker:dind
-  tags:
-    - docker
   script:
-    # docker-login to ecr
-    - eval $(aws ecr get-login --no-include-email --registry-ids 650215746119)
-    # docker-login to gitlab
-    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
-    # build
-    - docker pull $AMZ_REGISTRY:latest
-    - docker build --build-arg COMMIT_SHA=$CI_COMMIT_SHORT_SHA -t $AMZ_REGISTRY:$IMAGE_TAG -t $AMZ_REGISTRY:latest -t $GITLAB_REGISTRY/dev/api --cache-from $AMZ_REGISTRY:latest src/
-    # push tagged images
-    - docker push $AMZ_REGISTRY:$IMAGE_TAG
-    - docker push $AMZ_REGISTRY:latest
-    - docker push $GITLAB_REGISTRY/dev/api
+    - /kaniko/executor
+      --context $CI_PROJECT_DIR/src
+      --dockerfile $CI_PROJECT_DIR/src/Dockerfile
+      --destination $AMZ_REGISTRY:$IMAGE_TAG
+      --destination $AMZ_REGISTRY:latest
 
 .deploy:
   stage: Deploy
