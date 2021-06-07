@@ -47,6 +47,9 @@ class AccountController(RequestValidationController):
         request_body = request.get_json()
         login_url = "https://app." + current_app.config["WEBSITE_URL"] + "/login?email=" + request_body["email"]
 
+        self.validate_email(request_body["email"])
+        self.validate_password(request_body["password"])
+
         with session_scope() as session:
             if session.query(
                 exists().where(func.lower(Organisation.name) == func.lower(request_body["org_name"]))
@@ -54,8 +57,6 @@ class AccountController(RequestValidationController):
                 return {"url": login_url}, 200
             if session.query(exists().where(func.lower(User.email) == func.lower(request_body["email"]))).scalar():
                 return {"url": login_url}, 200
-
-        self.validate_password(request_body["password"])
 
         # create organisation
         try:

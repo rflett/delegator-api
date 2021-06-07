@@ -1,3 +1,4 @@
+from email_validator import validate_email, EmailNotValidError
 from flask import request
 from sqlalchemy import exists
 
@@ -59,6 +60,12 @@ class RequestValidationController(ObjectValidationController):
         with session_scope() as session:
             if session.query(exists().where(User.email == email)).scalar():
                 raise ValidationError("That email is already in use.")
+
+        # validate the email itself
+        try:
+            validate_email(email)
+        except EmailNotValidError as e:
+            raise ValidationError(e)
 
         return True
 

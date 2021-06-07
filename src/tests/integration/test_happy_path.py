@@ -13,9 +13,7 @@ def test_login():
         "password": "B4ckburn3r",
     }
     r = requests.post(
-        "http://localhost:5000/account/",
-        headers={"Content-Type": "application/json"},
-        data=json.dumps(data),
+        "http://localhost:5000/account/", headers={"Content-Type": "application/json"}, data=json.dumps(data),
     )
     body = r.json()
     assert r.status_code == 200
@@ -35,9 +33,7 @@ def test_account_signup():
         "plan_id": "basic",
     }
     r = requests.put(
-        "http://localhost:5000/account/",
-        headers={"Content-Type": "application/json"},
-        data=json.dumps(data),
+        "http://localhost:5000/account/", headers={"Content-Type": "application/json"}, data=json.dumps(data),
     )
     assert r.status_code == 200
     assert "url" in r.json()
@@ -341,8 +337,7 @@ def test_drop_task():
 
 def test_cancel_task():
     r = requests.post(
-        "http://localhost:5000/task/cancel/1",
-        headers={"Content-Type": "application/json", "Authorization": auth},
+        "http://localhost:5000/task/cancel/1", headers={"Content-Type": "application/json", "Authorization": auth},
     )
     assert r.status_code == 204
 

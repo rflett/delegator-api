@@ -25,6 +25,7 @@ flask-restx = "==0.3.0"
 structlog = "*"
 cryptography = "*"
 marshmallow = "*"
+email-validator = "*"
 
 [requires]
 python_version = "3.8"
