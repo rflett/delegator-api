@@ -7,7 +7,10 @@ class TaskTemplateEscalation(db.Model):
     id = db.Column("id", db.Integer, primary_key=True)
     org_id = db.Column("org_id", db.Integer, db.ForeignKey("organisations.id"))
     template_id = db.Column("template_id", db.Integer, db.ForeignKey("task_templates.id"))
-    delay = db.Column("delay", db.Integer,)
+    delay = db.Column(
+        "delay",
+        db.Integer,
+    )
     from_priority = db.Column("from_priority", db.Integer, db.ForeignKey("task_priorities.priority"))
     to_priority = db.Column("to_priority", db.Integer, db.ForeignKey("task_priorities.priority"))
 
