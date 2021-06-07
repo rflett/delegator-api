@@ -268,7 +268,7 @@ class User(db.Model):
             "updated_by": self.updated_by,
             "invite_accepted": self.invite_accepted(),
             "invite_expires_in": None if self.invite_accepted() else self.invite_expires_in(),
-            "last_seen": self.last_active(),
+            "last_active": self.last_active(),
         }
 
     def fat_dict(self) -> dict:

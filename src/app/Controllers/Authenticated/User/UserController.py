@@ -50,6 +50,7 @@ class UserController(RequestValidationController):
             "updated_by": fields.String(),
             "invite_accepted": fields.Boolean,
             "invite_expires_in": NullableInteger,
+            "last_active": fields.String(),
         },
     )
 
