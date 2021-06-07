@@ -65,7 +65,7 @@ class RequestValidationController(ObjectValidationController):
         try:
             validate_email(email)
         except EmailNotValidError as e:
-            raise ValidationError(e)
+            raise ValidationError(str(e))
 
         return True
 
