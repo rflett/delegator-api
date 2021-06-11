@@ -1,7 +1,6 @@
 import base64
 import datetime
 import json
-import urllib
 import uuid
 from os import getenv
 
@@ -47,6 +46,9 @@ class AccountController(RequestValidationController):
         request_body = request.get_json()
         login_url = "https://app." + current_app.config["WEBSITE_URL"] + "/login?email=" + request_body["email"]
 
+        self.validate_email(request_body["email"])
+        self.validate_password(request_body["password"])
+
         with session_scope() as session:
             if session.query(
                 exists().where(func.lower(Organisation.name) == func.lower(request_body["org_name"]))
@@ -54,8 +56,6 @@ class AccountController(RequestValidationController):
                 return {"url": login_url}, 200
             if session.query(exists().where(func.lower(User.email) == func.lower(request_body["email"]))).scalar():
                 return {"url": login_url}, 200
-
-        self.validate_password(request_body["password"])
 
         # create organisation
         try:
@@ -173,26 +173,7 @@ class AccountController(RequestValidationController):
 
             # check that the org is setup
             if not user.orgs.chargebee_setup_complete:
-                # check with the subscription api to see if it has been completed
-                customer_id = user.orgs.chargebee_customer_id
-                try:
-                    r = requests.get(
-                        url=f"{current_app.config['SUBSCRIPTION_API_PUBLIC_URL']}/subscription/{customer_id}",
-                        headers={"Authorization": f"{self.create_service_account_jwt()}"},
-                        timeout=10,
-                    )
-                    if r.status_code == 200:
-                        subscription_id = r.json()["id"]
-                    elif r.status_code == 404:
-                        subscription_id = None
-                    else:
-                        log.error(str(r.content))
-                        return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
-                except requests.exceptions.RequestException as e:
-                    log.error(str(e))
-                    return "Hmm, we couldn't log you in! Please contact support@delegator.com.au", 500
-
-                if not subscription_id == customer_id:
+                if user.orgs.chargebee_customer_id is None or user.orgs.chargebee_subscription_id is None:
                     # redirect to setup chargebee stuff
                     try:
                         r = requests.post(
@@ -201,7 +182,12 @@ class AccountController(RequestValidationController):
                                 "Content-Type": "application/json",
                                 "Authorization": f"{self.create_service_account_jwt()}",
                             },
-                            data=json.dumps({"customer_id": customer_id, "plan_id": user.orgs.chargebee_signup_plan}),
+                            data=json.dumps(
+                                {
+                                    "customer_id": user.orgs.chargebee_customer_id,
+                                    "plan_id": user.orgs.chargebee_signup_plan,
+                                }
+                            ),
                             timeout=10,
                         )
                         if r.status_code != 201:
