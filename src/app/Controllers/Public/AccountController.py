@@ -16,7 +16,7 @@ from app.Decorators import requires_jwt
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ValidationError
 from app.Models import Event, Email
-from app.Models.Dao import User, Organisation, TaskTemplate, FailedLogin
+from app.Models.Dao import User, Organisation, FailedLogin
 from app.Models.Enums import Events, Operations, Resources, Roles
 
 api = Namespace(path="/account", name="Account", description="Manage an account")
@@ -64,9 +64,6 @@ class AccountController(RequestValidationController):
                     name=request_body["org_name"], chargebee_signup_plan=request_body["plan_id"]
                 )
                 session.add(organisation)
-
-            with session_scope() as session:
-                session.add(TaskTemplate(title="Other", org_id=organisation.id))
 
             organisation.create_settings()
 

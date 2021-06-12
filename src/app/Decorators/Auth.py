@@ -1,4 +1,3 @@
-import typing
 from functools import wraps
 
 import jwt
@@ -9,7 +8,6 @@ from sentry_sdk import configure_scope
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError, AuthenticationError
 from app.Models.Dao import User
-from app.Models.RBAC import ServiceAccount
 
 log = structlog.getLogger()
 
@@ -33,8 +31,8 @@ def authorize(operation: str, resource: str):
     def decorator(f):
         @wraps(f)
         def wrapped_func(*args, **kwargs):
-            req_user = kwargs["req_user"]
-            if isinstance(req_user, User):
+            req_user: User = kwargs["req_user"]
+            if not req_user.is_service_account:
                 req_user.is_active()
             auth_scope = req_user.can(operation, resource)
             return f(auth_scope=auth_scope, *args, **kwargs)
@@ -44,7 +42,7 @@ def authorize(operation: str, resource: str):
     return decorator
 
 
-def _get_requester_details() -> typing.Union[User, ServiceAccount]:
+def _get_requester_details() -> User:
     """Determine the requester and return their object"""
     try:
         # get token from header
@@ -68,7 +66,7 @@ def _get_requester_details() -> typing.Union[User, ServiceAccount]:
             return _get_user(decoded["claims"]["user-id"])
         elif decoded["claims"]["type"] == "service-account":
             sentry_scope.set_user({"id": str(decoded["claims"]["service-account-name"])})
-            return ServiceAccount(decoded["claims"]["service-account-name"])
+            return _get_service_account(decoded["claims"]["service-account-name"])
         else:
             raise AuthenticationError("Can't determine requester type from token.")
 
@@ -77,8 +75,18 @@ def _get_user(user_id: int) -> User:
     """Get the user object that is claimed in the JWT payload."""
     # return user in claim or 404 if they are disabled
     with session_scope() as session:
-        user = session.query(User).filter_by(id=user_id, deleted=None).first()
+        user = session.query(User).filter_by(id=user_id, deleted=None, is_service_account=False).first()
         if user is None:
-            raise ResourceNotFoundError("User in JWT claim either doesn't exist or is disabled.")
+            raise ResourceNotFoundError("User in JWT claim either doesn't exist or is deleted.")
+        else:
+            return user
+
+
+def _get_service_account(role: str) -> User:
+    """Get the user object for an SA based on the role"""
+    with session_scope() as session:
+        user = session.query(User).filter_by(role=role, is_service_account=True).first()
+        if user is None:
+            raise ResourceNotFoundError(f"Service account {role} doesn't exist.")
         else:
             return user

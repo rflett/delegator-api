@@ -10,6 +10,7 @@ from app.Models.Dao.TaskPriority import TaskPriority
 from app.Models.Dao.TaskStatus import TaskStatus
 from app.Models.Dao.TaskTemplate import TaskTemplate
 from app.Models.Dao.TaskTemplateEscalation import TaskTemplateEscalation
+from app.Models.Dao.TaskTransitionEvents import TaskTransitionEvent
 from app.Models.Dao.User import User
 from app.Models.Dao.UserPasswordToken import UserPasswordToken
 
@@ -26,6 +27,7 @@ __all__ = [
     TaskStatus,
     TaskTemplate,
     TaskTemplateEscalation,
+    TaskTransitionEvent,
     User,
     UserPasswordToken,
 ]

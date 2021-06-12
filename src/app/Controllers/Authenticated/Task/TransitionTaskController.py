@@ -11,7 +11,6 @@ from app.Extensions.Errors import ValidationError
 from app.Models import GetTasksFilters, GetTasksFiltersSchema, get_tasks_schema_docs
 from app.Models.Dao import TaskLabel, Task, User
 from app.Models.Enums import TaskStatuses, Operations, Resources, Roles
-from app.Models.RBAC import ServiceAccount
 from app.Utilities.All import reindex_display_orders, get_task_by_id
 
 api = Namespace(path="/task/transition", name="Task", description="Manage a task")
@@ -36,17 +35,17 @@ class TransitionTask(RequestValidationController):
     @api.response(204, "Success")
     def put(self, **kwargs):
         """Transitions a task to another status"""
-        req_user = kwargs["req_user"]
+        req_user: User = kwargs["req_user"]
         request_body = request.get_json()
 
-        if isinstance(req_user, ServiceAccount):
+        if req_user.is_service_account:
             log.info("Transition request from service-account")
             task = get_task_by_id(request_body["task_id"], request_body["org_id"])
-            task.transition(request_body["task_status"])
         else:
             log.info("Transition request from user")
             task = self.validate_transition_task(**kwargs)
-            task.transition(request_body["task_status"], kwargs["req_user"])
+
+        task.transition(request_body["task_status"], kwargs["req_user"])
 
         # update the display order
         display_order = request_body.get("display_order", 0)

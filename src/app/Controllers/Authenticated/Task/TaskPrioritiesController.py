@@ -5,9 +5,8 @@ from app.Controllers.Base import RequestValidationController
 from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import AuthorizationError
-from app.Models.Dao import TaskPriority
+from app.Models.Dao import TaskPriority, User
 from app.Models.Enums import Operations, Resources
-from app.Models.RBAC import ServiceAccount
 from app.Utilities.All import get_task_by_id
 
 api = Namespace(path="/tasks/priorities", name="Tasks", description="Manage tasks")
@@ -48,10 +47,10 @@ class TaskPriorities(RequestValidationController):
     @api.response(204, "Success")
     def put(self, **kwargs):
         """Change a tasks priority"""
-        req_user = kwargs["req_user"]
+        req_user: User = kwargs["req_user"]
         request_body = request.get_json()
 
-        if not isinstance(req_user, ServiceAccount):
+        if not req_user.is_service_account:
             raise AuthorizationError("Invalid requester - expected ServiceAccount")
 
         task = get_task_by_id(request_body["task_id"], request_body["org_id"])
