@@ -51,15 +51,16 @@ class Task(db.Model):
 
     created_by = db.Column("created_by", db.Integer, db.ForeignKey("users.id"))
     created_at = db.Column("created_at", db.DateTime, default=datetime.datetime.utcnow)
-    finished_by = db.Column("finished_by", db.Integer, db.ForeignKey("users.id"), default=None)
-
-    # to be deprecated
     started_at = db.Column("started_at", db.DateTime)
+    finished_by = db.Column("finished_by", db.Integer, db.ForeignKey("users.id"), default=None)
     finished_at = db.Column("finished_at", db.DateTime)
-    time_estimate = db.Column("time_estimate", db.Integer, default=0)
-    scheduled_for = db.Column("scheduled_for", db.DateTime, default=None)
+
     status_changed_at = db.Column("status_changed_at", db.DateTime)
     priority_changed_at = db.Column("priority_changed_at", db.DateTime)
+
+    # to be deprecated
+    time_estimate = db.Column("time_estimate", db.Integer, default=0)
+    scheduled_for = db.Column("scheduled_for", db.DateTime, default=None)
 
     assigned_user = db.relationship("User", foreign_keys=[assignee], backref="assigned_user")
 
