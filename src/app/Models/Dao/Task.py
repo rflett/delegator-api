@@ -27,30 +27,39 @@ class Task(db.Model):
 
     id = db.Column("id", db.Integer, primary_key=True)
     org_id = db.Column("org_id", db.Integer, db.ForeignKey("organisations.id"))
-    title = db.Column("title", db.String)
+
     template_id = db.Column("template_id", db.Integer, db.ForeignKey("task_templates.id"), default=None)
+    title = db.Column("title", db.String)
     description = db.Column("description", db.String)
+
     status = db.Column("status", db.String, db.ForeignKey("task_statuses.status"))
-    time_estimate = db.Column("time_estimate", db.Integer, default=0)
-    scheduled_for = db.Column("scheduled_for", db.DateTime, default=None)
-    scheduled_notification_period = db.Column("scheduled_notification_period", db.Integer, default=None)
-    scheduled_notification_sent = db.Column("scheduled_notification_sent", db.DateTime, default=None)
     assignee = db.Column("assignee", db.Integer, db.ForeignKey("users.id"), default=None)
     priority = db.Column("priority", db.Integer, db.ForeignKey("task_priorities.priority"), default=1)
-    created_by = db.Column("created_by", db.Integer, db.ForeignKey("users.id"))
-    created_at = db.Column("created_at", db.DateTime, default=datetime.datetime.utcnow)
-    started_at = db.Column("started_at", db.DateTime)
-    finished_by = db.Column("finished_by", db.Integer, db.ForeignKey("users.id"), default=None)
-    finished_at = db.Column("finished_at", db.DateTime)
-    status_changed_at = db.Column("status_changed_at", db.DateTime)
-    priority_changed_at = db.Column("priority_changed_at", db.DateTime)
+
+    scheduled_notification_period = db.Column("scheduled_notification_period", db.Integer, default=None)
+    scheduled_notification_sent = db.Column("scheduled_notification_sent", db.DateTime, default=None)
+
     label_1 = db.Column("label_1", db.Integer, default=None)
     label_2 = db.Column("label_2", db.Integer, default=None)
     label_3 = db.Column("label_3", db.Integer, default=None)
+
     custom_1 = db.Column("custom_1", db.String, default=None)
     custom_2 = db.Column("custom_2", db.String, default=None)
     custom_3 = db.Column("custom_3", db.String, default=None)
+
     display_order = db.Column("display_order", db.String)
+
+    created_by = db.Column("created_by", db.Integer, db.ForeignKey("users.id"))
+    created_at = db.Column("created_at", db.DateTime, default=datetime.datetime.utcnow)
+    finished_by = db.Column("finished_by", db.Integer, db.ForeignKey("users.id"), default=None)
+
+    # to be deprecated
+    started_at = db.Column("started_at", db.DateTime)
+    finished_at = db.Column("finished_at", db.DateTime)
+    time_estimate = db.Column("time_estimate", db.Integer, default=0)
+    scheduled_for = db.Column("scheduled_for", db.DateTime, default=None)
+    status_changed_at = db.Column("status_changed_at", db.DateTime)
+    priority_changed_at = db.Column("priority_changed_at", db.DateTime)
 
     assigned_user = db.relationship("User", foreign_keys=[assignee], backref="assigned_user")
 
@@ -360,6 +369,8 @@ class Task(db.Model):
 
     def transition(self, status: str, req_user: User = None) -> None:
         """Common function for transitioning a task"""
+        from app.Models.Dao import TaskTransitionEvent
+
         with session_scope() as session:
             old_status = self.status
 
@@ -390,6 +401,15 @@ class Task(db.Model):
             self.status = status
             self.status_changed_at = datetime.datetime.utcnow()
 
+            # create the transition event
+            transition_event = TaskTransitionEvent(
+                task_id=self.id,
+                transitioned_by=req_user.id,
+                new_status=status,
+                old_status=old_status,
+            )
+            session.add(transition_event)
+
         # get the pretty labels for the old and new status
         old_status_label = self._pretty_status_label(old_status)
         new_status_label = self._pretty_status_label(status)
@@ -401,8 +421,8 @@ class Task(db.Model):
             event_friendly=f"Transitioned from {old_status_label} to {new_status_label}.",
         ).publish()
 
-        # req_user will be none when this is called from a service account
-        if req_user is None:
+        # the following is not applicable to service accounts
+        if req_user.is_service_account:
             return
 
         Event(
