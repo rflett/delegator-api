@@ -11,7 +11,7 @@ from app.Decorators import requires_jwt, authorize
 from app.Extensions.Database import session_scope
 from app.Extensions.Errors import ResourceNotFoundError, ValidationError
 from app.Models import Event, Notification, NotificationAction
-from app.Models.Dao import Task, User
+from app.Models.Dao import Task, User, TaskTransitionEvent
 from app.Models.Enums import Operations, Resources, Events, TaskStatuses
 from app.Models.Enums.Notifications import ClickActions, TargetTypes
 from app.Models.Enums.Notifications.NotificationIcons import NotificationIcons
@@ -375,6 +375,10 @@ class ManageTask(RequestValidationController):
             task.status = TaskStatuses.READY
             session.add(task)
 
+            # create the first transition event
+            transition_event = TaskTransitionEvent(task.id, task.created_by, task.status)
+            session.add(transition_event)
+
         Event(
             org_id=task.org_id,
             event=Events.task_created,
@@ -414,6 +418,10 @@ class ManageTask(RequestValidationController):
             task.scheduled_for = request_body["scheduled_for"]
             task.scheduled_notification_period = request_body.get("scheduled_notification_period")
             session.add(task)
+
+            # create the first transition event
+            transition_event = TaskTransitionEvent(task.id, task.created_by, task.status)
+            session.add(transition_event)
 
         Event(
             org_id=task.org_id,

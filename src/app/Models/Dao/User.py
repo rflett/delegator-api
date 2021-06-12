@@ -17,7 +17,7 @@ from sqlalchemy import exists, func
 from app.Extensions.Database import db, session_scope
 from app.Extensions.Errors import AuthorizationError
 from app.Models.Dao import ActiveUser
-from app.Models.RBAC import Log, Permission
+from app.Models.RBAC import Log, Permission, ServiceAccountLog
 from app.Models.Enums import Roles
 from app.Models.LocalMockData import MockActivity
 
@@ -68,6 +68,7 @@ class User(db.Model):
     updated_at = db.Column("updated_at", db.DateTime, default=datetime.datetime.utcnow)
     updated_by = db.Column("updated_by", db.Integer, db.ForeignKey("users.id"))
     password_last_changed = db.Column("password_last_changed", db.DateTime, default=datetime.datetime.utcnow)
+    is_service_account = db.Column("is_service_account", db.Boolean, default=False)
 
     orgs = db.relationship("Organisation", backref="users")
     roles = db.relationship("Role", backref="rbac_roles", foreign_keys=[role])
@@ -148,12 +149,20 @@ class User(db.Model):
         """
         Logs an action that a user would perform.
         """
-        audit_log = Log(
-            org_id=self.org_id, user_id=self.id, operation=operation, resource=resource, resource_id=resource_id
-        )
+        common = {
+            "operation": operation,
+            "resource": resource,
+            "resource_id": resource_id,
+        }
+        if self.is_service_account:
+            log_entry = ServiceAccountLog(account_name=self.role, **common)
+            log.info(f"Service Account did {operation} {resource} with id {resource_id}", user_id=self.role)
+        else:
+            log_entry = Log(org_id=self.org_id, user_id=self.id, **common)
+            log.info(f"User did {operation} {resource} with id {resource_id}", user_id=self.id)
+
         with session_scope() as session:
-            session.add(audit_log)
-        log.info(f"user with id {self.id} did {operation} on {resource} with " f"a resource_id of {resource_id}")
+            session.add(log_entry)
 
     def set_password(self, password) -> None:
         """
