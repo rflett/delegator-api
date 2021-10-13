@@ -1,8 +1,7 @@
 import requests
 import structlog
 from flask import current_app, request
-from flask_restplus import fields
-from flask_restx import Namespace
+from flask_restx import fields, Namespace
 
 from app.Controllers.Base import RequestValidationController
 from app.Extensions.Database import session_scope
