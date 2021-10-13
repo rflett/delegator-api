@@ -1,33 +1,42 @@
-from flask import current_app
-from flask_restx import Namespace, Resource, reqparse
 import requests
 import structlog
+from flask import current_app, request
+from flask_restplus import fields
+from flask_restx import Namespace
 
+from app.Controllers.Base import RequestValidationController
 from app.Extensions.Database import session_scope
-from app.Models.Dao import ContactUsEntry
 from app.Models import Email
+from app.Models.Dao import ContactUsEntry
 
 api = Namespace(path="/contact", name="Contact Us", description="Sends an email to the Delegator team")
 log = structlog.getLogger()
 
-parser = reqparse.RequestParser()
-parser.add_argument("first_name", type=str, location="form", required=True, help="Your first name")
-parser.add_argument("last_name", type=str, location="form", help="Your surname")
-parser.add_argument("email", type=str, location="form", required=True, help="Your email")
-parser.add_argument("lead", type=str, location="form", help="Where did you find us?")
-parser.add_argument("question", type=str, location="form", required=True, help="What is your question?")
-parser.add_argument("g-recaptcha-response", type=str, location="form", required=True, help="Recaptcha code")
-
 
 @api.route("/")
-class Version(Resource):
+class ContactUs(RequestValidationController):
+    contact_request = api.model(
+        "Contact Request",
+        {
+            "first_name": fields.String(required=True),
+            "last_name": fields.String(),
+            "email": fields.String(required=True),
+            "lead": fields.String(),
+            "question": fields.String(required=True),
+            "g-recaptcha-response": fields.String(required=True),
+        },
+    )
+
+    @api.expect(contact_request, validate=True)
     @api.response(204, "Success")
-    @api.expect(parser)
     def post(self):
         """Sends an email to the Delegator team"""
+        request_body = request.get_json()
 
-        # parse the request form-data
-        args = parser.parse_args()
+        # validate the form data
+        self.validate_email(request_body["email"])
+
+        captcha_code = request_body["g-recaptcha-response"]
 
         # verify captcha
         try:
@@ -35,7 +44,7 @@ class Version(Resource):
                 url="https://www.google.com/recaptcha/api/siteverify",
                 data={
                     "secret": current_app.config["CONTACT_US_GOOGLE_RECAPTCHA_SECRET"],
-                    "response": args.pop("g-recaptcha-response"),
+                    "response": captcha_code,
                 },
                 timeout=5,
             )
@@ -53,7 +62,13 @@ class Version(Resource):
 
         # add to db
         with session_scope() as session:
-            entry = ContactUsEntry(**args)
+            entry = ContactUsEntry(
+                first_name=request_body["first_name"],
+                last_name=request_body["last_name"],
+                email=request_body["email"],
+                lead=request_body["lead"],
+                question=request_body["question"]
+            )
             session.add(entry)
 
         # send email
